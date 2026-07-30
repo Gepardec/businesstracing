@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "decisionCategories": [
+    {
+      "category": "reference-application-isolation",
+      "count": 1,
+      "pattern": "Keep pinned brownfield knowledge in conformance artifacts; production gains only target-neutral construct support."
+    },
+    {
+      "category": "runtime-correlation",
+      "count": 1,
+      "pattern": "Use opaque graph IDs plus developer-only source provenance to correlate lightweight probes without leaking Java details."
+    },
+    {
+      "category": "multi-format-projection",
+      "count": 1,
+      "pattern": "Resolve graph semantics once and keep text formats as deterministic dependency-free projections."
+    },
+    {
+      "category": "business-vocabulary-normalization",
+      "count": 1,
+      "pattern": "Preserve result-relevant optionality as absent/exists while stripping language- and persistence-specific vocabulary from business projections."
+    }
+  ],
+  "fileOverlaps": []
+}

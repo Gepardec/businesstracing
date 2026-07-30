@@ -1,0 +1,27 @@
+[
+  {
+    "id": "generic-tracing-walking-skeleton",
+    "type": "feature",
+    "status": "completed",
+    "version": 2,
+    "author": "lucostus",
+    "updated": "2026-07-24T10:30:55Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "mermaid-diagram-rendering",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-24T10:54:11Z"
+  },
+  {
+    "id": "business-graph-terminal-semantics",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-24T11:32:48Z"
+  }
+]

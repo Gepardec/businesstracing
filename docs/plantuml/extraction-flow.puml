@@ -1,0 +1,19 @@
+@startuml
+title Learn a business decision graph
+start
+:Find an annotated decision entry;
+:Attribute source symbols and types;
+:Start from every returned value;
+:Walk backwards through data dependencies;
+:Add result-relevant conditions and computations;
+if (Call target known?) then (yes)
+  :Include its relevant decision slice;
+else (multiple possibilities)
+  :Add candidate decision-rule branches;
+endif
+if (Relevant construct unsupported?) then (yes)
+  :Add visible coverage gap;
+endif
+:Publish graph and separate correlation manifest;
+stop
+@enduml

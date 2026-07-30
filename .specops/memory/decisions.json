@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "decisions": [
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Use plain-Java executable contract tests",
+      "rationale": "The approved dependency set contains no test framework; assertion-based test mains exercise behavior without expanding the dependency surface.",
+      "task": "Task 1",
+      "date": "2026-07-10",
+      "completedAt": "2026-07-24T08:38:42Z"
+    },
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Keep compiler provenance outside business records",
+      "rationale": "Source locations and Java owner/member hints are required for instrumentation, but business graphs retain only opaque IDs and business labels.",
+      "task": "Task 2",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T08:38:42Z"
+    },
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Correlate dispatch at implementation entry",
+      "rationale": "Candidate implementation entries emit the precomputed opaque edge ID while an active graph context verifies that the edge belongs to it.",
+      "task": "Task 3",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T08:38:42Z"
+    },
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "specType": "feature",
+      "number": 7,
+      "decision": "Use the fully source-visible journey-warning manager as the polymorphic Mega proof",
+      "rationale": "It exercises three real brownfield strategies without pretending binary-only dependency logic is understood.",
+      "task": "Task 7",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T10:30:55Z"
+    },
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "specType": "feature",
+      "number": 8,
+      "decision": "Bind runtime predicate probes to developer-only source lines",
+      "rationale": "Sequence-only bytecode matching could attribute unrelated conditional jumps as business reasons.",
+      "task": "Task 7",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T10:30:55Z"
+    },
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "specType": "feature",
+      "number": 9,
+      "decision": "Interleave baseline and enabled load windows",
+      "rationale": "Adjacent windows preserve workload totals while controlling phase-order machine drift in p95 comparison.",
+      "task": "Task 7",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T10:30:55Z"
+    },
+    {
+      "specId": "mermaid-diagram-rendering",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Share visited-edge resolution between PlantUML and Mermaid",
+      "rationale": "Both persisted formats must highlight exactly the same observed execution path.",
+      "task": "Task 1",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T10:54:11Z"
+    },
+    {
+      "specId": "business-graph-terminal-semantics",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Reuse one Stop node with multiple outcome probes",
+      "rationale": "The static business topology stays simple while each compiled return site still records the typed result.",
+      "task": "Task 1",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T11:32:48Z"
+    },
+    {
+      "specId": "business-graph-terminal-semantics",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Translate result-relevant null checks to absence semantics",
+      "rationale": "Optionality can explain a decision, but Java null syntax and identifier suffixes are implementation details.",
+      "task": "Task 1",
+      "date": "2026-07-24",
+      "completedAt": "2026-07-24T11:32:48Z"
+    }
+  ]
+}

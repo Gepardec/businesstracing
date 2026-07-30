@@ -1,0 +1,61 @@
+{
+  "id": "generic-tracing-walking-skeleton",
+  "type": "feature",
+  "status": "completed",
+  "version": 2,
+  "created": "2026-07-10T14:03:23Z",
+  "updated": "2026-07-24T10:30:55Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [],
+  "relatedSpecs": [
+    "static-business-logic-extractor",
+    "runtime-decision-path-capture",
+    "decision-protocol-and-scale",
+    "generality-conformance-suite"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-07-24T08:47:01Z"
+    },
+    "implementation": {
+      "iterations": 3,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 9,
+        "codeQuality": 8,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-07-24T10:30:55Z",
+      "stale": false
+    }
+  },
+  "metrics": {
+    "artifactWords": 7939,
+    "filesInDeliveryScope": 215,
+    "completedTasks": 7,
+    "verifiedCriteria": 23,
+    "durationSeconds": 1196820,
+    "gitFilesChanged": 0,
+    "gitInsertions": 0,
+    "gitDeletions": 0,
+    "capturedAt": "2026-07-24T10:30:55Z"
+  }
+}

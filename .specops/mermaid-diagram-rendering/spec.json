@@ -1,0 +1,54 @@
+{
+  "id": "mermaid-diagram-rendering",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-07-24T10:48:02Z",
+  "updated": "2026-07-24T10:54:11Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "reason": "Mermaid renders its completed graph and execution contracts.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": ["generic-tracing-walking-skeleton"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-07-24T10:48:02Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 10,
+        "codeQuality": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-07-24T10:54:11Z"
+    }
+  },
+  "metrics": {
+    "artifactWords": 539,
+    "completedTasks": 1,
+    "verifiedCriteria": 5,
+    "durationSeconds": 369,
+    "capturedAt": "2026-07-24T10:54:11Z"
+  }
+}

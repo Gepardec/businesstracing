@@ -1,0 +1,18 @@
+@startuml
+title Correlate one actual decision path
+participant "Application decision" as App
+participant "Failure-safe probes" as Probe
+participant "In-memory collector" as Collector
+participant "Asynchronous record consumer" as Consumer
+App -> Probe : begin decision
+Probe -> Collector : open isolated invocation
+loop evaluated reasons
+  App -> Probe : observed graph node
+  Probe -> Collector : append opaque observation
+end
+App -> Probe : selected decision rule
+Probe -> Collector : append selected opaque edge
+App -> Probe : typed final result
+Probe -> Collector : complete in-memory record
+Consumer -> Collector : drain completed record
+@enduml

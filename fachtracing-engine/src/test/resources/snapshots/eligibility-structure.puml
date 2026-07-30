@@ -1,0 +1,13 @@
+@startuml
+title customer eligibility
+left to right direction
+usecase "Start" as n1
+diamond "age is below 24" as n2
+diamond "location equals Vienna" as n3
+usecase "Stop" as n4
+n1 --> n2 : next
+n2 --> n3 : true
+n2 --> n4 : false; returns false
+n3 --> n4 : true; returns account active
+n3 --> n4 : false; returns false
+@enduml

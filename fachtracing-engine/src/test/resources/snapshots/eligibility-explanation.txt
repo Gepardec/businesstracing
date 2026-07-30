@@ -1,0 +1,6 @@
+Decision: customer eligibility
+Result: true [boolean]
+Reasons:
+- age is below 24 (age was 20) — true
+- location equals Vienna (location was Vienna) — true
+Coverage: complete

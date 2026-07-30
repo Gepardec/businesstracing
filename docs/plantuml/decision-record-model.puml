@@ -1,0 +1,50 @@
+@startuml
+title Decision record model
+class "Business decision graph" as Graph {
+  opaque graph ID
+  version
+  coverage status
+}
+class "Decision node" as Node {
+  opaque node ID
+  business statement
+}
+class "Decision edge" as Edge {
+  opaque edge ID
+  business outcome
+}
+class "Decision execution" as Execution {
+  opaque execution ID
+  start and completion time
+}
+class "Observed reason" as Observation {
+  sequence
+  outcome
+  redacted evidence
+}
+class "Typed decision value" as Value {
+  type
+  canonical value
+  display value
+}
+class "Business explanation" as Explanation {
+  what
+  why
+  how
+  coverage status
+}
+class "Diagram projections" as Diagrams {
+  structural PlantUML
+  execution PlantUML
+  structural Mermaid
+  execution Mermaid
+}
+Graph "1" o-- "many" Node
+Graph "1" o-- "many" Edge
+Execution "1" o-- "many" Observation
+Execution --> Value : final decision
+Explanation ..> Graph
+Explanation ..> Execution
+Diagrams ..> Graph
+Diagrams ..> Execution
+@enduml

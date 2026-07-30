@@ -1,0 +1,15 @@
+@startuml
+title Explain what, why, and how
+start
+:Load matching graph and execution versions;
+:Validate observed opaque node IDs;
+:Use already adapted and redacted values;
+:Render visited conditions as business statements;
+:Order reasons by execution sequence;
+:State the typed final decision;
+if (Evidence or analysis incomplete?) then (yes)
+  :Show coverage gaps;
+endif
+:Render explanation and execution-highlighted PlantUML;
+stop
+@enduml
