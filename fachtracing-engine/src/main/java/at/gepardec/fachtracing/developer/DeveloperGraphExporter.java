@@ -171,19 +171,26 @@ public final class DeveloperGraphExporter {
             Path source = Path.of(path);
             String relativePath = revision.relativePath(source);
             try {
-                String actual = java.util.HexFormat.of().formatHex(
-                        MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(source)));
+                String actual = sha256(Files.readAllBytes(source));
                 if (!actual.equals(expected)) {
                     throw new IllegalStateException(
                             "source file does not match the analyzed content: " + relativePath);
                 }
+                revision.verifyCommittedSource(source, expected);
             } catch (IOException exception) {
                 throw new IllegalStateException(
                         "cannot verify analyzed source file: " + relativePath, exception);
-            } catch (NoSuchAlgorithmException impossible) {
-                throw new IllegalStateException("SHA-256 unavailable", impossible);
             }
         });
+    }
+
+    private static String sha256(byte[] content) {
+        try {
+            return java.util.HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 unavailable", impossible);
+        }
     }
 
     private static void appendStringMap(StringBuilder output, Map<String, String> values) {
@@ -322,6 +329,36 @@ public final class DeveloperGraphExporter {
                     .replace("{path}", encodePath(relativePath))
                     .replace("{line}", Long.toString(line))
                     .replace("{column}", Long.toString(column));
+        }
+
+        private void verifyCommittedSource(Path source, String expectedFingerprint) {
+            String path = relativePath(source);
+            byte[] content = gitBlob(repositoryRoot, commit, path);
+            if (!sha256(content).equals(expectedFingerprint)) {
+                throw new IllegalStateException(
+                        "source file does not match the captured Git commit: " + path);
+            }
+        }
+
+        private static byte[] gitBlob(Path root, String commit, String path) {
+            var command = List.of("git", "-C", root.toString(), "show", commit + ":" + path);
+            try {
+                Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+                byte[] output = process.getInputStream().readAllBytes();
+                int exit = process.waitFor();
+                if (exit != 0) {
+                    throw new IllegalStateException(
+                            "analyzed source is not present in the captured Git commit: " + path);
+                }
+                return output;
+            } catch (IOException exception) {
+                throw new IllegalStateException(
+                        "cannot read analyzed source from the captured Git commit: " + path, exception);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(
+                        "Git source verification was interrupted: " + path, exception);
+            }
         }
 
         private static String git(Path root, String... arguments) {
