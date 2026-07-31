@@ -47,3 +47,11 @@ optionally bind the goal to `process-classes`, making normal `mvn process-classe
 Maven source roots and resolved classpaths are discovered automatically; empty reactor modules skip,
 strict incomplete coverage is configurable, and stale generated graphs are safely removed. Generic
 and pinned Mega conformance remain green.
+
+### developer-graph-json-export (feature) — 2026-07-31
+
+Completed 2 tasks. Fachtracing now emits a deterministic schema-v1 JSON graph for developer tools.
+The export contains stable topology, clean Git commit metadata, repository-relative locations,
+source fingerprints, and commit-pinned links. Business graphs, records, Mermaid, and PlantUML stay
+free of repository data. A final correction made source fingerprints an enforced check instead of
+passive evidence. All executable contracts pass.

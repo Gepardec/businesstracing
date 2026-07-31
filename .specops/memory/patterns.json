@@ -25,7 +25,30 @@
       "category": "build-tool-adapter",
       "count": 1,
       "pattern": "Let the build tool provide source roots and resolved classpaths, while keeping generation independent and domain-neutral."
+    },
+    {
+      "category": "source-provenance",
+      "count": 2,
+      "pattern": "Keep source data outside business records and verify source fingerprints before a developer export claims a Git revision."
     }
   ],
-  "fileOverlaps": []
+  "fileOverlaps": [
+    {
+      "file": "README.md",
+      "specs": [
+        "generic-tracing-walking-skeleton",
+        "maven-project-analysis",
+        "developer-graph-json-export"
+      ],
+      "count": 3
+    },
+    {
+      "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
+      "specs": [
+        "generic-tracing-walking-skeleton",
+        "developer-graph-json-export"
+      ],
+      "count": 2
+    }
+  ]
 }
