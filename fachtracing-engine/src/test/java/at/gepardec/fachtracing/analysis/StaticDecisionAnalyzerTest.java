@@ -34,6 +34,7 @@ public final class StaticDecisionAnalyzerTest {
         removesIdentifierAndNullImplementationVocabulary();
         exportsDeveloperGraphWithRevisionPinnedSourceLinks();
         capturesOnlyCleanGitRevisions();
+        rejectsSourceMissingFromCapturedCommit();
     }
 
     private static void supportedConstructsAcrossDomains() {
@@ -333,6 +334,41 @@ public final class StaticDecisionAnalyzerTest {
                 throw new AssertionError("dirty Git revision was accepted");
             } catch (IllegalStateException expected) {
                 assert expected.getMessage().contains("uncommitted") : expected;
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (repository != null) deleteTree(repository);
+        }
+    }
+
+    private static void rejectsSourceMissingFromCapturedCommit() {
+        Path repository = null;
+        try {
+            repository = Files.createTempDirectory("fachtracing-export-ignored-source-");
+            Files.writeString(repository.resolve(".gitignore"), "generated/\n", StandardCharsets.UTF_8);
+            Path source = repository.resolve("generated/Policy.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class Policy {
+                        @FachTracing boolean decide(int age) { return age >= 18; }
+                    }
+                    """, StandardCharsets.UTF_8);
+            initializeGitRepository(repository);
+            var result = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            var revision = DeveloperGraphExporter.SourceRevision.captureGit(
+                    repository,
+                    "https://example.invalid/rules",
+                    "https://example.invalid/rules/blob/{commit}/{path}#L{line}");
+
+            try {
+                new DeveloperGraphExporter().export(result, revision);
+                throw new AssertionError("source missing from commit was exported");
+            } catch (IllegalStateException expected) {
+                assert expected.getMessage().contains("not present") : expected;
+                assert expected.getMessage().contains("generated/Policy.java") : expected;
             }
         } catch (IOException exception) {
             throw new AssertionError(exception);

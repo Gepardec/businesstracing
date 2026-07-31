@@ -55,3 +55,12 @@ The export contains stable topology, clean Git commit metadata, repository-relat
 source fingerprints, and commit-pinned links. Business graphs, records, Mermaid, and PlantUML stay
 free of repository data. A final correction made source fingerprints an enforced check instead of
 passive evidence. All executable contracts pass.
+
+### maven-developer-graph-export (feature) — 2026-07-31
+
+Completed 4 tasks. The Maven plugin can now write one opt-in UTF-8 `*-developer.json` artifact per
+decision and link it from `index.md`. Diagram-only builds remain Git-free. Configured export captures
+one clean revision and proves that every analyzed source matches the exact blob in that commit, so
+ignored generated files cannot create false source links. A separate test parser verifies the full
+artifact and non-empty coverage gaps. The missing Maven guide now documents the workflow. Full
+verification passed with 0.146% p95 overhead and zero errors, mismatches, drops, or contamination.

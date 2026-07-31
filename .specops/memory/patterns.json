@@ -23,13 +23,13 @@
     },
     {
       "category": "build-tool-adapter",
-      "count": 1,
-      "pattern": "Let the build tool provide source roots and resolved classpaths, while keeping generation independent and domain-neutral."
+      "count": 2,
+      "pattern": "Let the build tool provide source roots, resolved classpaths, and explicit repository settings, while the engine owns graph and provenance contracts."
     },
     {
       "category": "source-provenance",
-      "count": 2,
-      "pattern": "Keep source data outside business records and verify source fingerprints before a developer export claims a Git revision."
+      "count": 3,
+      "pattern": "Keep source data outside business records and verify both working files and exact commit blobs before a developer export claims a Git revision."
     }
   ],
   "fileOverlaps": [
@@ -38,15 +38,25 @@
       "specs": [
         "generic-tracing-walking-skeleton",
         "maven-project-analysis",
-        "developer-graph-json-export"
+        "developer-graph-json-export",
+        "maven-developer-graph-export"
       ],
-      "count": 3
+      "count": 4
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
       "specs": [
         "generic-tracing-walking-skeleton",
-        "developer-graph-json-export"
+        "developer-graph-json-export",
+        "maven-developer-graph-export"
+      ],
+      "count": 3
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
+      "specs": [
+        "developer-graph-json-export",
+        "maven-developer-graph-export"
       ],
       "count": 2
     }

@@ -19,8 +19,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
-/** Generates static business-decision diagrams for the current Maven module. */
+/** Generates static decision graphs and optional developer JSON for the current Maven module. */
 @Mojo(name = "analyze", defaultPhase = LifecyclePhase.PROCESS_CLASSES,
         requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public final class AnalyzeMojo extends AbstractMojo {
@@ -40,6 +41,14 @@ public final class AnalyzeMojo extends AbstractMojo {
     @Parameter(defaultValue = "false", property = "fachtracing.skip")
     private boolean skip;
 
+    /** Browser-facing repository URL stored in developer JSON. */
+    @Parameter(property = "fachtracing.repositoryUrl")
+    private String repositoryUrl;
+
+    /** Commit-pinned source URL template with commit and path placeholders. */
+    @Parameter(property = "fachtracing.sourceUrlTemplate")
+    private String sourceUrlTemplate;
+
     @Override public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
             getLog().info("Fachtracing analysis skipped");
@@ -52,7 +61,8 @@ public final class AnalyzeMojo extends AbstractMojo {
             Charset charset = encoding == null || encoding.isBlank()
                     ? StandardCharsets.UTF_8 : Charset.forName(encoding);
             var result = new ProjectGraphGenerator().generate(
-                    sources, classpath, charset, outputDirectory.toPath(), failOnIncomplete);
+                    sources, classpath, charset, outputDirectory.toPath(), failOnIncomplete,
+                    developerOutput());
             if (result.skipped()) {
                 getLog().info("No @FachTracing decision found in " + module + "; skipping");
                 return;
@@ -68,11 +78,16 @@ public final class AnalyzeMojo extends AbstractMojo {
                     + ". Review the generated diagrams or set -Dfachtracing.failOnIncomplete=false.", error);
         } catch (DependencyResolutionRequiredException error) {
             throw new MojoExecutionException("Could not resolve the compile classpath for " + module, error);
-        } catch (IllegalArgumentException error) {
+        } catch (IllegalArgumentException | IllegalStateException error) {
             throw new MojoFailureException("Could not analyze " + module + ": " + error.getMessage(), error);
         } catch (IOException error) {
             throw new MojoExecutionException("Could not write Fachtracing output for " + module, error);
         }
+    }
+
+    private Optional<ProjectGraphGenerator.DeveloperOutput> developerOutput() {
+        return ProjectGraphGenerator.developerOutput(
+                project.getBasedir().toPath(), repositoryUrl, sourceUrlTemplate);
     }
 
     private static List<Path> sourceFiles(List<String> roots) throws IOException {

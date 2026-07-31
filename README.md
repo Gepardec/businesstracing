@@ -27,7 +27,8 @@ The module receives a Markdown index plus Mermaid and PlantUML diagrams under
 `target/fachtracing`. Maven supplies the source roots and complete compilation classpath; no
 analysis launcher, plugin block, or path assembly is required. See the copyable
 [Maven plugin setup](docs/maven-plugin.md), including automatic lifecycle and parent-POM usage for
-adding many modules.
+adding many modules. When repository and source-link settings are present, the same goal also writes
+revision-pinned developer JSON that another tool can visualize.
 
 ## Integration flow
 

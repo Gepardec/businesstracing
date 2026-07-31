@@ -10,7 +10,7 @@
   </parent>
   <artifactId>fachtracing-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <description>Analyze annotated Maven projects and generate Fachtracing business diagrams.</description>
+  <description>Analyze annotated Maven projects and generate Fachtracing graph artifacts.</description>
 
   <dependencies>
     <dependency>
