@@ -13,7 +13,7 @@
 
 ### Task 1: Restore repository and specification integrity
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** None
 **Priority:** High
@@ -57,7 +57,7 @@ fresh-clone integrity gate.
 
 ### Task 2: Define the application source-boundary API
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 1
 **Priority:** High
@@ -99,7 +99,7 @@ the engine independent of Maven.
 
 ### Task 3: Add safe external source inputs
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Task 2
 **Priority:** High
@@ -497,7 +497,7 @@ Run one clean, reproducible release gate that proves every requirement and preve
 ## Progress Tracking
 
 - Total Tasks: 11
-- Completed: 0
+- Completed: 2
 - In Progress: 1
 - Blocked: 0
-- Pending: 10
+- Pending: 8

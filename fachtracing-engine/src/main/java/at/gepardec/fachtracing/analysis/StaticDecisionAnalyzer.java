@@ -74,6 +74,17 @@ import java.util.stream.Collectors;
 
 /** Framework-neutral Java 21 source analyzer for {@code @FachTracing} entry points. */
 public final class StaticDecisionAnalyzer {
+    /** Analyzes the first graph entry from a project-aware application boundary. */
+    public AnalysisManifest.AnalysisResult analyze(ApplicationSourceBoundary boundary) {
+        return analyze(boundary.toAnalysisRequest());
+    }
+
+    /** Analyzes every graph entry from a compatible project-aware application boundary. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(ApplicationSourceBoundary boundary) {
+        Objects.requireNonNull(boundary, "boundary");
+        return analyzeAll(boundary.toAnalysisRequest());
+    }
+
     /** Parses and attributes sources, then analyzes the first annotated method in source order. */
     public AnalysisManifest.AnalysisResult analyze(AnalysisRequest request) {
         List<AnalysisManifest.AnalysisResult> results = analyzeAll(request);

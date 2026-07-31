@@ -25,6 +25,8 @@ public final class StaticDecisionAnalyzerTest {
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
+        resolvesImplementationsAcrossProjectAwareSourceRoles();
+        rejectsInvalidApplicationBoundaries();
         rejectsGraphRootsOutsideTheSourceUniverse();
         exposesRelevantCoverageGaps();
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
@@ -150,6 +152,56 @@ public final class StaticDecisionAnalyzerTest {
         assert graph.nodes().stream()
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE).count() == 2
                 : graph.nodes();
+    }
+
+    private static void resolvesImplementationsAcrossProjectAwareSourceRoles() {
+        Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
+        Path local = FIXTURES.resolve("reactor/LocalDecisionRule.java");
+        Path regional = FIXTURES.resolve("reactor/RegionalDecisionRule.java");
+        var compiler = ApplicationSourceBoundary.CompilerModel.java21();
+        var boundary = new ApplicationSourceBoundary(List.of(
+                new ApplicationSourceBoundary.ProjectSources(
+                        "entry", List.of(entry), List.of(entry), CLASSPATH, compiler,
+                        List.of("implementations")),
+                new ApplicationSourceBoundary.ProjectSources(
+                        "implementations", List.of(), List.of(local, regional), CLASSPATH, compiler,
+                        List.of())), List.of());
+
+        var results = new StaticDecisionAnalyzer().analyzeAll(boundary);
+        assert results.size() == 1 : results;
+        long candidates = results.getFirst().graph().edges().stream()
+                .filter(edge -> edge.outcome().startsWith("candidate ")).count();
+        assert candidates == 2 : results.getFirst().graph().edges();
+        assert boundary.entrySourceFiles().equals(List.of(entry.toAbsolutePath().normalize()));
+        assert boundary.resolutionSourceFiles().size() == 3 : boundary.resolutionSourceFiles();
+        assert boundary.fingerprint().length() == 64 : boundary.fingerprint();
+        assert boundary.fingerprint().equals(boundary.fingerprint());
+    }
+
+    private static void rejectsInvalidApplicationBoundaries() {
+        Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
+        try {
+            new ApplicationSourceBoundary(List.of(new ApplicationSourceBoundary.ProjectSources(
+                    "entry", List.of(entry), List.of(entry), CLASSPATH,
+                    ApplicationSourceBoundary.CompilerModel.java21(), List.of("missing"))), List.of());
+            throw new AssertionError("boundary accepted an unknown project dependency");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("unknown project dependency") : expected.getMessage();
+        }
+
+        var java17 = new ApplicationSourceBoundary.CompilerModel(StandardCharsets.UTF_8, "17", List.of());
+        var incompatible = new ApplicationSourceBoundary(List.of(
+                new ApplicationSourceBoundary.ProjectSources(
+                        "entry", List.of(entry), List.of(entry), CLASSPATH,
+                        ApplicationSourceBoundary.CompilerModel.java21(), List.of("other")),
+                new ApplicationSourceBoundary.ProjectSources(
+                        "other", List.of(), List.of(), CLASSPATH, java17, List.of())), List.of());
+        try {
+            incompatible.toAnalysisRequest();
+            throw new AssertionError("flat analysis accepted incompatible compiler models");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("compiler models differ") : expected.getMessage();
+        }
     }
 
     private static void rejectsGraphRootsOutsideTheSourceUniverse() {

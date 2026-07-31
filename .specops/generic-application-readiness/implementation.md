@@ -39,6 +39,7 @@
 | 3 | Keep source dependencies explicit and resolution-only | Controlled scope avoids false entries and automatic dependency scanning. | 3 | 2026-07-31 |
 | 4 | Define Java support through a capability matrix | A verified boundary is testable; “all Java” without a boundary is not. | 7 | 2026-07-31 |
 | 5 | Keep persistence off the decision thread | Runtime performance and application behavior must not depend on repository latency. | 8 | 2026-07-31 |
+| 6 | Add a separate project-aware boundary API and adapt compatible boundaries to `AnalysisRequest` | The existing record constructors remain unchanged while new Maven and compiler work gets explicit project, role, compiler, dependency, and origin data. | 2 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -73,3 +74,15 @@
 - 2026-07-31: Replaced three missing initiative placeholders with this umbrella completion spec and
   added a repository integrity gate for tracked evidence, SpecOps references, README links, and
   immutable Mega hashes.
+- 2026-07-31: Task 1 completed. The generic verifier passed with 5,000 correct traces at 1,000 RPS.
+  The pinned Mega run analyzed 420 sources, matched five exact graphs, and captured three strategy
+  dispatches. A clean local clone passed the new repository integrity gate. The recovered overlay
+  needed one corrected hunk count, and the runtime assertion now distinguishes dispatch selections
+  from exact predicate edges.
+- 2026-07-31: Started Task 2.
+- 2026-07-31: Task 2 completed. Added immutable project-aware source, compiler, dependency, and origin
+  models with deterministic boundary fingerprints and compatibility conversion. Analyzer contracts
+  resolve two implementation sources from a resolution-only project, reject unknown dependencies,
+  and reject incompatible compiler models on the flat compatibility path. The full verifier passed
+  with 5,000 correct traces at 1,000 RPS and 0.177% p95 overhead.
+- 2026-07-31: Started Task 3.
