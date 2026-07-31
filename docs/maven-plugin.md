@@ -48,6 +48,25 @@ The plugin ignores `module-info.java` during graph analysis. Maven still compile
 descriptor and applies its JPMS rules. A module with no Java source skips analysis before the plugin
 resolves reactor classpaths, and it removes stale Fachtracing output.
 
+### One aggregate reactor result
+
+Run the aggregator after compilation when you want one result directory for the effective Maven
+selection:
+
+```sh
+mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze-reactor
+```
+
+The goal runs once. It uses the projects that Maven selected, including the effect of `-pl` and
+`-am`. It writes the diagrams, `index.md`, and `activation.json` under the execution root's
+`target/fachtracing` directory. The activation file contains stable project coordinates, analyzed
+source fingerprints, and graph counts. Duplicate decision labels get graph-ID suffixes, so one graph
+cannot replace another.
+
+Optional `includeProjects` and `excludeProjects` lists use exact `groupId:artifactId` values. They
+filter Maven's effective selection. An include value that is not in that selection causes a failure.
+The existing `analyze` goal remains available for per-module output.
+
 ## Explicit external source inputs
 
 Use extra roots when reachable decision code is not in the active reactor. An additional source root

@@ -27,6 +27,7 @@ public final class AnalyzeMojoTest {
         generatesParsedDeveloperJsonFromCleanRevision();
         validatesDeveloperOutputSettings();
         resolvesReactorSourcesWithoutGeneratingSiblingEntries();
+        preventsAggregateOutputCollisions();
         extractsBoundedSourceArtifactsSafely();
         skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
@@ -158,6 +159,34 @@ public final class AnalyzeMojoTest {
         String diagram = Files.readString(output.resolve("reactor-approval-structure.mmd"));
         assert index.contains("reactor approval") && !index.contains("sibling entry") : index;
         assert diagram.contains("candidate 1") && diagram.contains("candidate 2") : diagram;
+    }
+
+    private static void preventsAggregateOutputCollisions() throws Exception {
+        Path sources = Files.createTempDirectory("fachtracing-collision-sources");
+        Path first = sources.resolve("FirstPolicy.java");
+        Path second = sources.resolve("SecondPolicy.java");
+        Files.writeString(first, """
+                import at.gepardec.fachtracing.api.FachTracing;
+                final class FirstPolicy {
+                    @FachTracing("same decision") boolean decide(int age) { return age >= 18; }
+                }
+                """);
+        Files.writeString(second, """
+                import at.gepardec.fachtracing.api.FachTracing;
+                final class SecondPolicy {
+                    @FachTracing("same decision") boolean decide(int score) { return score >= 10; }
+                }
+                """);
+        Path output = Files.createTempDirectory("fachtracing-collision-output");
+        var result = new ProjectGraphGenerator().generate(
+                List.of(first, second), CLASSPATH, StandardCharsets.UTF_8,
+                output, false, Optional.empty());
+        try (var files = Files.list(output)) {
+            long diagrams = files.filter(path -> path.getFileName().toString()
+                    .matches("same-decision-[0-9a-f]{8}-structure\\.mmd")).count();
+            assert diagrams == 2 : output;
+        }
+        assert result.graphCount() == 2 : result;
     }
 
     private static void skipsSourceEmptyModuleWithReactorSources() throws Exception {

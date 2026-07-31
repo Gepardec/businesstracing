@@ -41,6 +41,7 @@
 | 5 | Keep persistence off the decision thread | Runtime performance and application behavior must not depend on repository latency. | 8 | 2026-07-31 |
 | 6 | Add a separate project-aware boundary API and adapt compatible boundaries to `AnalysisRequest` | The existing record constructors remain unchanged while new Maven and compiler work gets explicit project, role, compiler, dependency, and origin data. | 2 | 2026-07-31 |
 | 7 | Use developer graph V2 only when analysis has non-Git origins | V1 remains compatible for one clean Git revision, while V2 can identify Maven, generated, and local sources without false Git URLs. | 3 | 2026-07-31 |
+| 8 | Make `analyze-reactor` a direct aggregator over Maven's effective project list | Maven already applies `-pl` and `-am`; a second independent selector would disagree with the build. | 4 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -92,3 +93,8 @@
   and multi-origin developer graph V2. V1 remains unchanged for one Git origin. The full verifier
   passed with 5,000 correct traces at 1,000 RPS and 0.383% p95 overhead.
 - 2026-07-31: Started Task 4.
+- 2026-07-31: Task 4 completed. Added the direct `analyze-reactor` aggregator, exact include and
+  exclude filters, collision-safe aggregate output, and a deterministic activation bundle. The
+  per-module goal remains unchanged. The full verifier passed the direct reactor goal and 5,000
+  correct traces at 1,000 RPS with 0.142% p95 overhead.
+- 2026-07-31: Started Task 5.

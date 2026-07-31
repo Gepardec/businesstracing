@@ -41,3 +41,11 @@ test ! -e "$REACTOR_FIXTURE/decision-implementations/target/fachtracing/index.md
 rg -q 'candidate 1' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/reactor-approval-structure.mmd"
 rg -q 'candidate 2' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/reactor-approval-structure.mmd"
 rg -q 'reactor approval' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/index.md"
+mvn -q -f "$REACTOR_FIXTURE/pom.xml" clean compile \
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze-reactor
+test -f "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.mmd"
+test -f "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.puml"
+test -f "$REACTOR_FIXTURE/target/fachtracing/index.md"
+test -f "$REACTOR_FIXTURE/target/fachtracing/activation.json"
+rg -q '"schema":"fachtracing-activation/v1"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
+rg -q '"graphCount":1' "$REACTOR_FIXTURE/target/fachtracing/activation.json"

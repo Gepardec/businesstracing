@@ -211,7 +211,7 @@ public final class AnalyzeMojo extends AbstractMojo {
         return List.copyOf(result);
     }
 
-    private static List<Path> sourceFiles(List<String> roots) throws IOException {
+    static List<Path> sourceFiles(List<String> roots) throws IOException {
         var sources = new TreeSet<Path>(Comparator.comparing(Path::toString));
         for (String root : roots) {
             Path directory = Path.of(root);
@@ -235,7 +235,7 @@ public final class AnalyzeMojo extends AbstractMojo {
         return List.copyOf(projects);
     }
 
-    private static List<Path> compileClasspath(List<MavenProject> projects)
+    static List<Path> compileClasspath(List<MavenProject> projects)
             throws DependencyResolutionRequiredException {
         var classpath = new TreeSet<Path>(Comparator.comparing(Path::toString));
         for (MavenProject candidate : projects) {

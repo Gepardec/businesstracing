@@ -145,7 +145,7 @@ Add resolution-only local source roots and exact Maven source dependencies with 
 
 ### Task 4: Add one aggregate Maven analysis goal
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 2 and 3
 **Priority:** High
@@ -187,7 +187,7 @@ Run project-aware analysis once for the effective reactor and create determinist
 
 ### Task 5: Make compiler and JPMS analysis project-safe
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Tasks 2 and 4
 **Priority:** High
