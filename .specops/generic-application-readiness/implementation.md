@@ -44,6 +44,7 @@
 | 8 | Make `analyze-reactor` a direct aggregator over Maven's effective project list | Maven already applies `-pl` and `-am`; a second independent selector would disagree with the build. | 4 | 2026-07-31 |
 | 9 | Analyze each connected project component in the entry project's compiler context | This preserves compiler settings and duplicate-type isolation while allowing declared implementation modules to supply dispatch candidates. | 5 | 2026-07-31 |
 | 10 | Propagate runtime context only through explicit tokens and wrappers | Explicit capture and scoped restoration prevent accidental cross-trace inheritance. | 6 | 2026-07-31 |
+| 11 | Bind each published Java capability to an executable contract name | A release check can detect documentation claims that have no matching contract method. | 7 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -110,3 +111,7 @@
   SPI, and executor and completion-stage wrappers. Unsupported async boundaries make evidence
   incomplete. The full 1,000-RPS verifier passed with 0.168% p95 overhead and no contamination.
 - 2026-07-31: Started Task 7.
+- 2026-07-31: Task 7 completed. Added the versioned Java capability matrix, explicit supported,
+  gap, and runtime-only statuses, and a drift verifier that requires every capability to name an
+  existing executable contract and a documented ID.
+- 2026-07-31: Started Task 8.

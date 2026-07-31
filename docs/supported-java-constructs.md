@@ -1,5 +1,16 @@
 # Supported Java constructs
 
+The versioned machine-readable contract is in `docs/java-capabilities.json`. The release verifier
+checks that every entry names an executable contract and appears in this document.
+
+## Machine-readable capability IDs
+
+- `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
+- `assignment-data-flow`, `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
+- `switch-forms`, `ternary-expression`, `loops-and-collection-mutation`, `records-and-equality`
+- `lambdas-and-streams`, `try-synchronized-exception-flow`, `source-unavailable-call`
+- `reflection-service-loader-proxy`, `async-boundary`, `java17-java21-projects`
+
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
 “technical”; work disappears only when it cannot affect the decision result.

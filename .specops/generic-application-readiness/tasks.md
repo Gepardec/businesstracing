@@ -275,7 +275,7 @@ across explicit in-JVM asynchronous boundaries without changing business records
 
 ### Task 7: Create the verified Java capability contract
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 2, 5, and 6
 **Priority:** High
@@ -319,7 +319,7 @@ declared Java 21 baseline.
 
 ### Task 8: Define the durable decision-record protocol
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Task 6
 **Priority:** High

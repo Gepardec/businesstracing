@@ -1,0 +1,28 @@
+{
+  "schema": "fachtracing-java-capabilities/v1",
+  "baseline": {
+    "source": "Java 21",
+    "compiler": "javac",
+    "bytecode": "class-file major 65"
+  },
+  "capabilities": [
+    {"id":"annotated-entry","status":"supported","contract":"StaticDecisionAnalyzerTest.analyzesEveryAnnotatedEntry"},
+    {"id":"conditional-branch","status":"supported","contract":"StaticDecisionAnalyzerTest.bindsCompleteBooleanPredicatesToExactEdges"},
+    {"id":"null-optionality","status":"supported","contract":"StaticDecisionAnalyzerTest.removesIdentifierAndNullImplementationVocabulary"},
+    {"id":"short-circuit-boolean","status":"supported","contract":"StaticDecisionAnalyzerTest.bindsCompleteBooleanPredicatesToExactEdges"},
+    {"id":"assignment-data-flow","status":"supported","contract":"StaticDecisionAnalyzerTest.excludesResultIndependentWork"},
+    {"id":"direct-source-call","status":"supported","contract":"StaticDecisionAnalyzerTest.followsDirectCallsAcrossDomains"},
+    {"id":"generic-polymorphic-dispatch","status":"supported","contract":"StaticDecisionAnalyzerTest.representsDynamicDispatchWithoutGuessing"},
+    {"id":"typed-result","status":"supported","contract":"ApiModelTest.builtInsRoundTrip"},
+    {"id":"switch-forms","status":"supported","contract":"StaticDecisionAnalyzerTest.usesOneBusinessStartAndStopWithExplicitReturns"},
+    {"id":"ternary-expression","status":"supported","contract":"StaticDecisionAnalyzerTest.supportedConstructsAcrossDomains"},
+    {"id":"loops-and-collection-mutation","status":"supported","contract":"StaticDecisionAnalyzerTest.followsStrategiesThatMutateReturnedCollectionsInsideLambdas"},
+    {"id":"records-and-equality","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsCollectionFactsAndRecordEquality"},
+    {"id":"lambdas-and-streams","status":"supported","contract":"StaticDecisionAnalyzerTest.streamPredicatesStayBusinessFacing"},
+    {"id":"try-synchronized-exception-flow","status":"explicit-gap","contract":"StaticDecisionAnalyzerTest.exposesRelevantCoverageGaps"},
+    {"id":"source-unavailable-call","status":"explicit-gap","contract":"StaticDecisionAnalyzerTest.sourceUnavailableDecisionLogicIsNeverReportedComplete"},
+    {"id":"reflection-service-loader-proxy","status":"runtime-validated-only","contract":"RuntimeCollectorTest.resolvesAssignableTargetsAndReportsBoundedMismatches"},
+    {"id":"async-boundary","status":"explicit-gap","contract":"RuntimeCollectorTest.propagatesAndClearsExplicitAsyncContext"},
+    {"id":"java17-java21-projects","status":"supported","contract":"StaticDecisionAnalyzerTest.isolatesDuplicateTypesAndCompilerModelsByProject"}
+  ]
+}
