@@ -89,3 +89,13 @@ Completed one bugfix task. Maven source discovery omits module descriptors from 
 while Maven still compiles each descriptor and enforces JPMS boundaries. A valid two-module JPMS
 fixture generates one current-module graph with both sibling candidates, and the full verifier
 passes.
+
+### generic-application-readiness (feature) — 2026-07-31
+
+Completed all 11 readiness tasks. Fachtracing now has project-aware source boundaries, safe exact
+external source inputs, multi-origin developer provenance, one aggregate reactor goal, isolated
+compiler contexts, bounded runtime diagnostics, explicit async context propagation, a verified Java
+capability matrix, deterministic V1 record envelopes, bounded asynchronous delivery, and a
+vendor-neutral JDBC adapter. Release candidate `0.1.0-rc.1` passed an isolated external-project build
+and the pinned Mega conformance suite. The clean-clone release gate completed 600,000 persisted
+decisions at 1,000 RPS with 0.108% p95 overhead and zero correctness, loss, or contamination errors.

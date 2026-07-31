@@ -76,9 +76,9 @@
   {
     "id": "generic-application-readiness",
     "type": "feature",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-07-31T10:44:46Z"
+    "updated": "2026-07-31T11:42:37Z"
   }
 ]

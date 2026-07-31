@@ -33,10 +33,10 @@ fresh-clone integrity gate.
 
 **Acceptance Criteria:**
 
-- [ ] All required conformance and specification files are tracked.
-- [ ] No initiative or dependency points to a missing spec.
-- [ ] No completed task points to a missing required artifact.
-- [ ] Mega conformance runs without stash or workspace-only files.
+- [x] All required conformance and specification files are tracked.
+- [x] No initiative or dependency points to a missing spec.
+- [x] No completed task points to a missing required artifact.
+- [x] Mega conformance runs without stash or workspace-only files.
 
 **Files to Modify:**
 
@@ -50,8 +50,8 @@ fresh-clone integrity gate.
 
 **Tests Required:**
 
-- [ ] Fresh-clone repository integrity test.
-- [ ] Pinned Mega conformance test.
+- [x] Fresh-clone repository integrity test.
+- [x] Pinned Mega conformance test.
 
 ---
 
@@ -77,10 +77,10 @@ the engine independent of Maven.
 
 **Acceptance Criteria:**
 
-- [ ] Current callers remain source and binary compatible where promised.
-- [ ] Entry and resolution-only source roles are explicit.
-- [ ] Project identity survives indexing without entering business output.
-- [ ] Boundary ambiguity fails before graph completion.
+- [x] Current callers remain source and binary compatible where promised.
+- [x] Entry and resolution-only source roles are explicit.
+- [x] Project identity survives indexing without entering business output.
+- [x] Boundary ambiguity fails before graph completion.
 
 **Files to Modify:**
 
@@ -91,9 +91,9 @@ the engine independent of Maven.
 
 **Tests Required:**
 
-- [ ] Compatibility-constructor contract.
-- [ ] Project-aware root and resolution contract.
-- [ ] Duplicate and ambiguous symbol contract.
+- [x] Compatibility-constructor contract.
+- [x] Project-aware root and resolution contract.
+- [x] Duplicate and ambiguous symbol contract.
 
 ---
 
@@ -119,12 +119,12 @@ Add resolution-only local source roots and exact Maven source dependencies with 
 
 **Acceptance Criteria:**
 
-- [ ] Local and exact artifact sources resolve a previously incomplete dispatch.
-- [ ] Dependency sources never create entries unless explicitly configured.
-- [ ] No unnamed source artifact is downloaded.
-- [ ] Offline and malicious-archive failures are deterministic and safe.
-- [ ] Missing source keeps the graph incomplete with an actionable diagnostic.
-- [ ] External and generated sources never receive a false Git commit URL.
+- [x] Local and exact artifact sources resolve a previously incomplete dispatch.
+- [x] Dependency sources never create entries unless explicitly configured.
+- [x] No unnamed source artifact is downloaded.
+- [x] Offline and malicious-archive failures are deterministic and safe.
+- [x] Missing source keeps the graph incomplete with an actionable diagnostic.
+- [x] External and generated sources never receive a false Git commit URL.
 
 **Files to Modify:**
 
@@ -136,10 +136,10 @@ Add resolution-only local source roots and exact Maven source dependencies with 
 
 **Tests Required:**
 
-- [ ] Additional root and entry-root matrix.
-- [ ] Exact source dependency and offline matrix.
-- [ ] Traversal, link, duplicate, and archive-size rejection matrix.
-- [ ] Developer provenance V1 compatibility and V2 multi-origin matrix.
+- [x] Additional root and entry-root matrix.
+- [x] Exact source dependency and offline matrix.
+- [x] Traversal, link, duplicate, and archive-size rejection matrix.
+- [x] Developer provenance V1 compatibility and V2 multi-origin matrix.
 
 ---
 
@@ -164,10 +164,10 @@ Run project-aware analysis once for the effective reactor and create determinist
 
 **Acceptance Criteria:**
 
-- [ ] The aggregate goal invokes analysis once per reactor command.
-- [ ] `-pl`, `-am`, exclusions, and explicit boundary controls select expected candidates.
-- [ ] Duplicate labels cannot replace files.
-- [ ] Existing one-off and lifecycle module behavior passes unchanged.
+- [x] The aggregate goal invokes analysis once per reactor command.
+- [x] `-pl`, `-am`, exclusions, and explicit boundary controls select expected candidates.
+- [x] Duplicate labels cannot replace files.
+- [x] Existing one-off and lifecycle module behavior passes unchanged.
 
 **Files to Modify:**
 
@@ -179,9 +179,9 @@ Run project-aware analysis once for the effective reactor and create determinist
 
 **Tests Required:**
 
-- [ ] Direct aggregate-goal black-box test.
-- [ ] Reactor-selection and output-collision matrix.
-- [ ] Per-module compatibility suite.
+- [x] Direct aggregate-goal black-box test.
+- [x] Reactor-selection and output-collision matrix.
+- [x] Per-module compatibility suite.
 
 ---
 
@@ -206,10 +206,10 @@ Replace flat union attribution with per-project compiler contexts and validated 
 
 **Acceptance Criteria:**
 
-- [ ] Multiple JPMS modules analyze without discarding their module identity.
-- [ ] Duplicate fully qualified names in isolated projects do not collide.
-- [ ] Cross-project calls follow declared dependencies.
-- [ ] Unsupported model differences give a diagnostic before extraction.
+- [x] Multiple JPMS modules analyze without discarding their module identity.
+- [x] Duplicate fully qualified names in isolated projects do not collide.
+- [x] Cross-project calls follow declared dependencies.
+- [x] Unsupported model differences give a diagnostic before extraction.
 
 **Files to Modify:**
 
@@ -220,8 +220,8 @@ Replace flat union attribution with per-project compiler contexts and validated 
 
 **Tests Required:**
 
-- [ ] JPMS, duplicate-name, generated-source, encoding, and release matrix.
-- [ ] Cross-project dependency-direction contract.
+- [x] JPMS, duplicate-name, generated-source, encoding, and release matrix.
+- [x] Cross-project dependency-direction contract.
 
 ---
 
@@ -249,13 +249,13 @@ across explicit in-JVM asynchronous boundaries without changing business records
 
 **Acceptance Criteria:**
 
-- [ ] Known targets keep exact opaque edge behavior.
-- [ ] Unknown and ambiguous targets emit one deduplicated diagnostic per key.
-- [ ] Diagnostic memory use is bounded.
-- [ ] Business outputs contain no technical runtime target data.
-- [ ] Several graph manifests remain active without replacement or cross-correlation.
-- [ ] Supported asynchronous continuations preserve context and always clear restored state.
-- [ ] Unsupported boundaries produce incomplete evidence, not false correlation.
+- [x] Known targets keep exact opaque edge behavior.
+- [x] Unknown and ambiguous targets emit one deduplicated diagnostic per key.
+- [x] Diagnostic memory use is bounded.
+- [x] Business outputs contain no technical runtime target data.
+- [x] Several graph manifests remain active without replacement or cross-correlation.
+- [x] Supported asynchronous continuations preserve context and always clear restored state.
+- [x] Unsupported boundaries produce incomplete evidence, not false correlation.
 
 **Files to Modify:**
 
@@ -267,9 +267,9 @@ across explicit in-JVM asynchronous boundaries without changing business records
 
 **Tests Required:**
 
-- [ ] Exact, proxy, unknown, ambiguous, deduplication, overflow, multi-graph, and privacy matrix.
-- [ ] Executor, completion-stage, SPI, cleanup, and unsupported-boundary matrix.
-- [ ] Concurrent 1,000-RPS diagnostic and propagation pressure test.
+- [x] Exact, proxy, unknown, ambiguous, deduplication, overflow, multi-graph, and privacy matrix.
+- [x] Executor, completion-stage, SPI, cleanup, and unsupported-boundary matrix.
+- [x] Concurrent 1,000-RPS diagnostic and propagation pressure test.
 
 ---
 
@@ -295,10 +295,10 @@ declared Java 21 baseline.
 
 **Acceptance Criteria:**
 
-- [ ] Every published support claim has an executable contract.
-- [ ] Every unsupported relevant construct produces a located gap.
-- [ ] Dynamic mechanisms have explicit static and runtime semantics.
-- [ ] Documentation and machine-readable capability data cannot drift.
+- [x] Every published support claim has an executable contract.
+- [x] Every unsupported relevant construct produces a located gap.
+- [x] Dynamic mechanisms have explicit static and runtime semantics.
+- [x] Documentation and machine-readable capability data cannot drift.
 
 **Files to Modify:**
 
@@ -311,9 +311,9 @@ declared Java 21 baseline.
 
 **Tests Required:**
 
-- [ ] Complete Java 21 capability matrix.
-- [ ] Documentation drift check.
-- [ ] Unsupported-construct completeness checks.
+- [x] Complete Java 21 capability matrix.
+- [x] Documentation drift check.
+- [x] Unsupported-construct completeness checks.
 
 ---
 
@@ -338,10 +338,10 @@ Add a versioned record envelope and bounded asynchronous delivery without applic
 
 **Acceptance Criteria:**
 
-- [ ] V1 records round-trip deterministically and preserve typed values and path order.
-- [ ] The application thread performs no repository I/O.
-- [ ] Queue and retry policies are bounded and observable.
-- [ ] Existing in-memory callers remain compatible.
+- [x] V1 records round-trip deterministically and preserve typed values and path order.
+- [x] The application thread performs no repository I/O.
+- [x] Queue and retry policies are bounded and observable.
+- [x] Existing in-memory callers remain compatible.
 
 **Files to Modify:**
 
@@ -353,8 +353,8 @@ Add a versioned record envelope and bounded asynchronous delivery without applic
 
 **Tests Required:**
 
-- [ ] V1 round-trip and backward-reader tests.
-- [ ] Queue capacity, retry, shutdown, privacy, and recovery matrix.
+- [x] V1 round-trip and backward-reader tests.
+- [x] Queue capacity, retry, shutdown, privacy, and recovery matrix.
 
 ---
 
@@ -380,11 +380,11 @@ fault-injection tests.
 
 **Acceptance Criteria:**
 
-- [ ] A saved record is retrievable by execution ID.
-- [ ] Redacted correlation and time-range queries use indexes.
-- [ ] Migrations are repeatable or fail safely according to their documented contract.
-- [ ] Outage and recovery do not change application decisions.
-- [ ] Retention deletes only eligible records.
+- [x] A saved record is retrievable by execution ID.
+- [x] Redacted correlation and time-range queries use indexes.
+- [x] Migrations are repeatable or fail safely according to their documented contract.
+- [x] Outage and recovery do not change application decisions.
+- [x] Retention deletes only eligible records.
 
 **Files to Modify:**
 
@@ -395,8 +395,8 @@ fault-injection tests.
 
 **Tests Required:**
 
-- [ ] Migration, save, idempotency, lookup, query, retention, outage, and recovery suite.
-- [ ] Dependency and license audit for the test/reference database.
+- [x] Migration, save, idempotency, lookup, query, retention, outage, and recovery suite.
+- [x] Dependency and license audit for the test/reference database.
 
 ---
 
@@ -422,10 +422,10 @@ installation of Fachtracing.
 
 **Acceptance Criteria:**
 
-- [ ] External coordinates resolve without `mvn install` in this repository.
-- [ ] One annotation and the documented Maven command generate the complete static bundle.
-- [ ] The documented `-javaagent` setup produces and persists one retrievable explanation.
-- [ ] Upgrade and rollback compatibility tests pass.
+- [x] External coordinates resolve without `mvn install` in this repository.
+- [x] One annotation and the documented Maven command generate the complete static bundle.
+- [x] The documented `-javaagent` setup produces and persists one retrievable explanation.
+- [x] Upgrade and rollback compatibility tests pass.
 
 **Files to Modify:**
 
@@ -437,15 +437,15 @@ installation of Fachtracing.
 
 **Tests Required:**
 
-- [ ] Isolated artifact-repository resolution test.
-- [ ] Static-to-persisted external fixture test.
-- [ ] Upgrade and rollback matrix.
+- [x] Isolated artifact-repository resolution test.
+- [x] Static-to-persisted external fixture test.
+- [x] Upgrade and rollback matrix.
 
 ---
 
 ### Task 11: Run the final generic release gate
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 1 through 10
 **Priority:** High
@@ -466,12 +466,12 @@ Run one clean, reproducible release gate that proves every requirement and preve
 
 **Acceptance Criteria:**
 
-- [ ] Every requirement checklist item has executable evidence.
-- [ ] All tests pass from a fresh clone without stash or unpublished inputs.
-- [ ] The long gate has zero trace-caused errors, result mismatches, contamination, and silently lost
+- [x] Every requirement checklist item has executable evidence.
+- [x] All tests pass from a fresh clone without stash or unpublished inputs.
+- [x] The long gate has zero trace-caused errors, result mismatches, contamination, and silently lost
   accepted records, with p95 overhead below 10%.
-- [ ] Mega and non-Mega exact semantic checks pass with the same artifacts.
-- [ ] The specification remains non-completed until this task passes.
+- [x] Mega and non-Mega exact semantic checks pass with the same artifacts.
+- [x] The specification remains non-completed until this task passes.
 
 **Files to Modify:**
 
@@ -482,7 +482,7 @@ Run one clean, reproducible release gate that proves every requirement and preve
 
 **Tests Required:**
 
-- [ ] Complete fresh-clone release gate.
+- [x] Complete fresh-clone release gate.
 
 ## Implementation Order
 
@@ -497,7 +497,7 @@ Run one clean, reproducible release gate that proves every requirement and preve
 ## Progress Tracking
 
 - Total Tasks: 11
-- Completed: 10
-- In Progress: 1
+- Completed: 11
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

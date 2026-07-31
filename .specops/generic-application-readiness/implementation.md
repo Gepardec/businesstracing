@@ -135,3 +135,16 @@
 - 2026-07-31: Started Task 11.
 - 2026-07-31: Added the clean-clone release gate and persistence-enabled fault-window workload.
   Task 11 remains in progress until the 600-second gate passes.
+- 2026-07-31: Task 11 completed. The clean clone used an empty Maven repository and passed generic,
+  capability, Maven, agent, JDBC, external RC, and pinned Mega checks. The long persistence-enabled
+  run completed 600,000 decisions at 1,000 RPS with 0.108% p95 overhead, zero errors, zero result
+  mismatches, zero drops, zero contamination, and no accepted-but-unsaved records.
+
+## Completion Summary
+
+- Completed tasks: 11 of 11
+- Release candidate: `0.1.0-rc.1`
+- Release gate commit: `862653e4b17da7005ea3d2b99f4370ffff480f3a`
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Final load: 600,000 completed records at 1,000 RPS; 0.108% p95 overhead
+- Integrity counters: 0 errors, mismatches, drops, contamination, or silent accepted-record loss
