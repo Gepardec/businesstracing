@@ -19,7 +19,7 @@ fachtracing/
   fachtracing-api/
     src/main/java/at/gepardec/fachtracing/api/
   fachtracing-engine/
-    src/main/java/at/gepardec/fachtracing/{analysis,diagram,explain,mermaid,model,plantuml,runtime,store}/
+    src/main/java/at/gepardec/fachtracing/{analysis,developer,diagram,explain,mermaid,model,plantuml,runtime,store}/
     src/test/java/at/gepardec/fachtracing/
     src/test/resources/{fixtures,snapshots}/
   fachtracing-agent/
@@ -82,6 +82,8 @@ fachtracing/
   - `public final class PlantUmlRenderer`
 - `src/main/java/at/gepardec/fachtracing/diagram/ExecutionPathResolver.java`
   - shared observed-path edge resolution
+- `src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java`
+  - `public final class DeveloperGraphExporter`
 - `src/main/java/at/gepardec/fachtracing/mermaid/MermaidRenderer.java`
   - `public final class MermaidRenderer`
 - `src/main/java/at/gepardec/fachtracing/runtime/InvocationContext.java`
@@ -139,6 +141,7 @@ fachtracing/
 
 #### root
 
+- `AGENTS.md`
 - `README.md`
 - `pom.xml`
 - `scripts/verify.sh`

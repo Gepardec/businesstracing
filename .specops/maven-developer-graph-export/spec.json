@@ -1,0 +1,60 @@
+{
+  "id": "maven-developer-graph-export",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-07-31T09:24:03Z",
+  "updated": "2026-07-31T09:36:45Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "developer-graph-json-export",
+      "reason": "The Maven output reuses its JSON and strict Git provenance contract.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "developer-graph-json-export"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 8,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-07-31T09:24:03Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 9,
+        "codeQuality": 8,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-07-31T09:36:45Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 5839,
+    "filesChanged": 21,
+    "linesAdded": 1156,
+    "linesRemoved": 28,
+    "tasksCompleted": 4,
+    "acceptanceCriteriaVerified": 27,
+    "specDurationMinutes": 13
+  }
+}

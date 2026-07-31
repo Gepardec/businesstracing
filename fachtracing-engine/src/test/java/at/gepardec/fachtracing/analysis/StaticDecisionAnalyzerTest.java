@@ -1,8 +1,13 @@
 package at.gepardec.fachtracing.analysis;
 
+import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 
 /** Executable dependency-free contract tests for the static analyzer. */
@@ -28,6 +33,9 @@ public final class StaticDecisionAnalyzerTest {
         streamPredicatesStayBusinessFacing();
         usesOneBusinessStartAndStopWithExplicitReturns();
         removesIdentifierAndNullImplementationVocabulary();
+        exportsDeveloperGraphWithRevisionPinnedSourceLinks();
+        capturesOnlyCleanGitRevisions();
+        rejectsSourceMissingFromCapturedCommit();
     }
 
     private static void supportedConstructsAcrossDomains() {
@@ -232,6 +240,196 @@ public final class StaticDecisionAnalyzerTest {
         assert !businessText.matches("(?is).*\\bnull\\b.*") : businessText;
         assert businessText.contains("creator exists") : businessText;
         assert businessText.contains("employee") : businessText;
+    }
+
+    private static void exportsDeveloperGraphWithRevisionPinnedSourceLinks() {
+        Path repository = null;
+        try {
+            repository = Files.createTempDirectory("fachtracing-export-source-");
+            Path source = repository.resolve("src/Policy.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class Policy {
+                        @FachTracing boolean decide(int age) { return age >= 18; }
+                    }
+                    """, StandardCharsets.UTF_8);
+            initializeGitRepository(repository);
+            var result = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            var revision = DeveloperGraphExporter.SourceRevision.captureGit(
+                    repository,
+                    "https://example.invalid/rules",
+                    "https://example.invalid/rules/blob/{commit}/{path}#L{line}");
+            var exporter = new DeveloperGraphExporter();
+            String json = exporter.export(result, revision);
+
+            assert json.equals(exporter.export(result, revision)) : "developer export must be deterministic";
+            assert json.contains("\"schema\":\"fachtracing-developer-graph/v1\"") : json;
+            assert json.contains("\"commit\":\"" + revision.commit() + "\"") : json;
+            assert json.contains("src/Policy.java") : json;
+            assert json.contains("/blob/" + revision.commit() + "/src/Policy.java#L") : json;
+            assert json.contains("\"sha256\":") : json;
+            assert !json.contains(repository.toString()) : "absolute workspace path leaked into export";
+            result.graph().nodes().forEach(node -> {
+                assert json.contains("\"id\":\"" + node.nodeId() + "\"") : node;
+            });
+            result.graph().edges().forEach(edge -> {
+                assert json.contains("\"id\":\"" + edge.edgeId() + "\"") : edge;
+            });
+
+            var escapedGraph = new BusinessDecisionGraph(
+                    "escape-graph", 1, "quoted \"decision\"\nnext", "synthetic",
+                    List.of(new BusinessDecisionGraph.DecisionNode(
+                            "synthetic", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                            "line\n\"quoted\"", java.util.Map.of("key", "slash\\value"))),
+                    List.of(), BusinessDecisionGraph.Completeness.COMPLETE, List.of());
+            var escapedManifest = new AnalysisManifest(
+                    "escape-graph", 1, java.util.Map.of(), List.of(), List.of(), java.util.Map.of());
+            String escaped = exporter.export(
+                    new AnalysisManifest.AnalysisResult(escapedGraph, escapedManifest, List.of()), revision);
+            assert escaped.contains("quoted \\\"decision\\\"\\nnext") : escaped;
+            assert escaped.contains("line\\n\\\"quoted\\\"") : escaped;
+            assert !escaped.contains("\"source\"") : "synthetic node received fabricated source";
+
+            try {
+                exporter.export(analyze("eligibility/EligibilityPolicy.java"), revision);
+                throw new AssertionError("out-of-root source path was exported");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("outside") : expected;
+            }
+
+            var staleManifest = new AnalysisManifest(
+                    result.manifest().graphId(), result.manifest().graphVersion(),
+                    result.manifest().sourceMappings(), result.manifest().probeSites(),
+                    result.manifest().dispatchTargets(), java.util.Map.of(source.toString(), "0".repeat(64)));
+            try {
+                exporter.export(new AnalysisManifest.AnalysisResult(
+                        result.graph(), staleManifest, result.diagnostics()), revision);
+                throw new AssertionError("stale source fingerprint was accepted");
+            } catch (IllegalStateException expected) {
+                assert expected.getMessage().contains("does not match") : expected;
+            }
+
+            try {
+                DeveloperGraphExporter.SourceRevision.captureGit(
+                        repository, "https://example.invalid/rules", "https://example.invalid/{path}");
+                throw new AssertionError("source template without commit was accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("{commit}") : expected;
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (repository != null) deleteTree(repository);
+        }
+    }
+
+    private static void capturesOnlyCleanGitRevisions() {
+        Path repository = null;
+        try {
+            repository = Files.createTempDirectory("fachtracing-export-git-");
+            Path source = repository.resolve("Policy.java");
+            Files.writeString(source, "final class Policy {}\n", StandardCharsets.UTF_8);
+            initializeGitRepository(repository);
+
+            var revision = DeveloperGraphExporter.SourceRevision.captureGit(
+                    repository,
+                    "https://example.invalid/rules",
+                    "https://example.invalid/rules/blob/{commit}/{path}#L{line}");
+            assert revision.commit().matches("[0-9a-f]{40,64}") : revision;
+            assert revision.committedAt().contains("T") : revision;
+            assert revision.relativePath(source).equals("Policy.java") : revision;
+
+            Files.writeString(source, "final class Policy { int changed; }\n", StandardCharsets.UTF_8);
+            try {
+                DeveloperGraphExporter.SourceRevision.captureGit(
+                        repository,
+                        "https://example.invalid/rules",
+                        "https://example.invalid/rules/blob/{commit}/{path}#L{line}");
+                throw new AssertionError("dirty Git revision was accepted");
+            } catch (IllegalStateException expected) {
+                assert expected.getMessage().contains("uncommitted") : expected;
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (repository != null) deleteTree(repository);
+        }
+    }
+
+    private static void rejectsSourceMissingFromCapturedCommit() {
+        Path repository = null;
+        try {
+            repository = Files.createTempDirectory("fachtracing-export-ignored-source-");
+            Files.writeString(repository.resolve(".gitignore"), "generated/\n", StandardCharsets.UTF_8);
+            Path source = repository.resolve("generated/Policy.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class Policy {
+                        @FachTracing boolean decide(int age) { return age >= 18; }
+                    }
+                    """, StandardCharsets.UTF_8);
+            initializeGitRepository(repository);
+            var result = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            var revision = DeveloperGraphExporter.SourceRevision.captureGit(
+                    repository,
+                    "https://example.invalid/rules",
+                    "https://example.invalid/rules/blob/{commit}/{path}#L{line}");
+
+            try {
+                new DeveloperGraphExporter().export(result, revision);
+                throw new AssertionError("source missing from commit was exported");
+            } catch (IllegalStateException expected) {
+                assert expected.getMessage().contains("not present") : expected;
+                assert expected.getMessage().contains("generated/Policy.java") : expected;
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (repository != null) deleteTree(repository);
+        }
+    }
+
+    private static void initializeGitRepository(Path repository) throws IOException {
+        git(repository, "init", "-q");
+        git(repository, "config", "user.name", "Fachtracing Test");
+        git(repository, "config", "user.email", "fachtracing@example.invalid");
+        git(repository, "config", "commit.gpgsign", "false");
+        git(repository, "add", ".");
+        git(repository, "commit", "-q", "-m", "fixture");
+    }
+
+    private static void git(Path repository, String... arguments) throws IOException {
+        var command = new java.util.ArrayList<String>();
+        command.add("git");
+        command.add("-C");
+        command.add(repository.toString());
+        command.addAll(List.of(arguments));
+        try {
+            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            if (process.waitFor() != 0) throw new IOException("git fixture command failed: " + output);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException("git fixture command interrupted", exception);
+        }
+    }
+
+    private static void deleteTree(Path root) {
+        try (var paths = Files.walk(root)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException exception) {
+                    throw new java.io.UncheckedIOException(exception);
+                }
+            });
+        } catch (IOException exception) {
+            throw new java.io.UncheckedIOException(exception);
+        }
     }
 
     private static AnalysisManifest.AnalysisResult analyze(String relativeFixture) {

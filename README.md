@@ -27,7 +27,8 @@ The module receives a Markdown index plus Mermaid and PlantUML diagrams under
 `target/fachtracing`. Maven supplies the source roots and complete compilation classpath; no
 analysis launcher, plugin block, or path assembly is required. See the copyable
 [Maven plugin setup](docs/maven-plugin.md), including automatic lifecycle and parent-POM usage for
-adding many modules.
+adding many modules. When repository and source-link settings are present, the same goal also writes
+revision-pinned developer JSON that another tool can visualize.
 
 ## Integration flow
 
@@ -43,6 +44,8 @@ adding many modules.
    `DecisionRecordRepository` for the application's database.
 6. Retrieve the immutable record to obtain the business explanation and structural/execution
    PlantUML and Mermaid source.
+7. For developer tooling, export the analysis result as versioned JSON with revision-pinned source
+   links. This artifact is separate from the source-free business record.
 
 No database or filesystem operation occurs in injected probes. Probe failures are suppressed
 from application control flow and exposed separately through `TraceRuntime.pollDiagnostic()`.
@@ -51,6 +54,39 @@ For Java 21 classes from `javac`, a complete Boolean branch binding records the 
 exception leaves an instrumented entry method, the collector creates one generic failed record
 and rethrows the same exception object. The failed record contains no exception type, message,
 or stack trace.
+
+## Visualization exports and source navigation
+
+PlantUML and Mermaid are formats for business diagrams. Developer tools can use the
+`fachtracing-developer-graph/v1` JSON data format. It contains `nodes`, `edges`, stable opaque IDs,
+coverage gaps, and developer source data.
+
+Capture Git source data from a clean working tree. Supply a source-browser URL template:
+
+```java
+import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+
+var revision = DeveloperGraphExporter.SourceRevision.captureGit(
+        repositoryRoot,
+        "https://github.com/acme/decision-rules",
+        "https://github.com/acme/decision-rules/blob/{commit}/{path}#L{line}");
+
+String json = new DeveloperGraphExporter().export(analysis, revision);
+```
+
+An external tool renders `graph.nodes` and `graph.edges`. When the user selects a node with a
+`source` object, it opens `source.url`; that URL contains the analyzed commit, repository-relative
+path, and line. `source.sha256` identifies the analyzed file content. Before export, Fachtracing
+compares each source file with this fingerprint. It stops if the file content changed. Synthetic
+nodes have no `source` object because Fachtracing does not make false code locations.
+
+`captureGit` rejects tracked or untracked working-tree changes. Commit the analyzed code before
+exporting so the source URL and line number refer to exactly the code represented by the graph.
+You can use the template with GitHub, GitLab, Bitbucket, or an internal browser. The template must
+contain `{commit}` and `{path}`. It can also contain `{line}` and `{column}`.
+
+Repository coordinates are developer data. They never enter `BusinessDecisionGraph`, decision
+explanations, persisted decision records, Mermaid, or PlantUML.
 
 ## Verification
 

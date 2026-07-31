@@ -11,4 +11,5 @@ module at.gepardec.fachtracing.engine {
     exports at.gepardec.fachtracing.explain;
     exports at.gepardec.fachtracing.plantuml;
     exports at.gepardec.fachtracing.mermaid;
+    exports at.gepardec.fachtracing.developer;
 }

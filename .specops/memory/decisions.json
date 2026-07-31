@@ -200,6 +200,36 @@
       "task": "Task 3",
       "date": "2026-07-31",
       "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "developer-graph-json-export",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Verify every analysis fingerprint before export",
+      "rationale": "A clean repository can move to another commit after analysis. The check proves that the exported commit still contains the analyzed source.",
+      "task": "Task 1",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T08:53:36Z"
+    },
+    {
+      "specId": "maven-developer-graph-export",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Use the complete Maven parameter pair as the JSON enablement signal",
+      "rationale": "Existing diagram builds stay Git-free, while configured builds cannot silently omit revision data.",
+      "task": "Task 1",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:36:45Z"
+    },
+    {
+      "specId": "maven-developer-graph-export",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Verify each source blob at the captured commit",
+      "rationale": "Clean Git status does not include ignored generated files, so blob verification is required for an exact source link.",
+      "task": "Task 4",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:36:45Z"
     }
   ]
 }
