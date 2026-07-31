@@ -1,0 +1,50 @@
+{
+  "id": "jpms-reactor-source-resolution",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-07-31T09:40:13Z",
+  "updated": "2026-07-31T09:44:56Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": ["reactor-wide-implementation-resolution"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-07-31T09:40:13Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-07-31T09:44:06Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 2783,
+    "filesChanged": 41,
+    "linesAdded": 1296,
+    "linesRemoved": 29,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 12,
+    "specDurationMinutes": 4
+  }
+}

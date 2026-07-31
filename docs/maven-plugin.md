@@ -37,6 +37,17 @@ Use this plugin block to generate the files during `process-classes`, `package`,
 
 A parent POM can put this block under `build/plugins` to run it for child modules. Modules without an annotated decision do not produce graph files.
 
+## Multi-module reactors
+
+For a reactor build, each plugin execution uses the current module's Java sources as decision-entry
+roots. It also uses Java sources and compile classpaths from the active reactor to resolve compatible
+interface and abstract-method implementations. Thus, an implementation in a sibling module can
+appear as a dispatch candidate without creating a graph for an annotation in that sibling module.
+
+The plugin ignores `module-info.java` during graph analysis. Maven still compiles each module
+descriptor and applies its JPMS rules. A module with no Java source skips analysis before the plugin
+resolves reactor classpaths, and it removes stale Fachtracing output.
+
 ## Developer JSON and source links
 
 Developer JSON is opt-in because source browsers need repository-specific URLs. Set both values:

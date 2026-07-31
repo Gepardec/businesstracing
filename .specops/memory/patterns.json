@@ -39,25 +39,58 @@
         "generic-tracing-walking-skeleton",
         "maven-project-analysis",
         "developer-graph-json-export",
-        "maven-developer-graph-export"
+        "maven-developer-graph-export",
+        "reactor-wide-implementation-resolution"
       ],
-      "count": 4
+      "count": 5
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
       "specs": [
         "generic-tracing-walking-skeleton",
         "developer-graph-json-export",
-        "maven-developer-graph-export"
+        "maven-developer-graph-export",
+        "reactor-wide-implementation-resolution"
+      ],
+      "count": 4
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
+      "specs": ["developer-graph-json-export", "maven-developer-graph-export"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java",
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
+      "count": 2
+    },
+    {
+      "file": "docs/supported-java-constructs.md",
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
+      "count": 2
+    },
+    {
+      "file": "docs/maven-plugin.md",
+      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java",
+      "specs": [
+        "maven-developer-graph-export",
+        "reactor-wide-implementation-resolution",
+        "jpms-reactor-source-resolution"
       ],
       "count": 3
     },
     {
-      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
-      "specs": [
-        "developer-graph-json-export",
-        "maven-developer-graph-export"
-      ],
+      "file": "scripts/verify.sh",
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution"],
       "count": 2
     }
   ]

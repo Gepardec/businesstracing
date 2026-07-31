@@ -24,6 +24,8 @@ public final class AnalyzeMojoTest {
         generatesBothFormatsAndIndexWithoutDeletingUnrelatedFiles();
         generatesParsedDeveloperJsonFromCleanRevision();
         validatesDeveloperOutputSettings();
+        resolvesReactorSourcesWithoutGeneratingSiblingEntries();
+        skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
         createsSafeDeterministicSlugs();
@@ -137,6 +139,32 @@ public final class AnalyzeMojoTest {
         assert result.skipped() && result.graphCount() == 0 : result;
         assert !Files.exists(output.resolve("old-structure.mmd"));
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
+    }
+
+    private static void resolvesReactorSourcesWithoutGeneratingSiblingEntries() throws Exception {
+        Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
+        List<Path> reactorSources = List.of(
+                entry,
+                FIXTURES.resolve("reactor/LocalDecisionRule.java"),
+                FIXTURES.resolve("reactor/RegionalDecisionRule.java"));
+        Path output = Files.createTempDirectory("fachtracing-plugin-reactor");
+        var result = new ProjectGraphGenerator().generate(
+                List.of(entry), reactorSources, CLASSPATH, StandardCharsets.UTF_8, output, false);
+        assert result.graphCount() == 1 && !result.skipped() : result;
+        String index = Files.readString(output.resolve("index.md"));
+        String diagram = Files.readString(output.resolve("reactor-approval-structure.mmd"));
+        assert index.contains("reactor approval") && !index.contains("sibling entry") : index;
+        assert diagram.contains("candidate 1") && diagram.contains("candidate 2") : diagram;
+    }
+
+    private static void skipsSourceEmptyModuleWithReactorSources() throws Exception {
+        Path output = Files.createTempDirectory("fachtracing-plugin-empty-reactor-module");
+        Files.writeString(output.resolve("old-structure.mmd"), "stale");
+        var result = new ProjectGraphGenerator().generate(
+                List.of(), List.of(FIXTURES.resolve("reactor/DecisionEntry.java")), CLASSPATH,
+                StandardCharsets.UTF_8, output, false);
+        assert result.skipped() && result.graphCount() == 0 : result;
+        assert !Files.exists(output.resolve("old-structure.mmd"));
     }
 
     private static void enforcesStrictIncompleteCoverageAfterWritingArtifacts() throws Exception {

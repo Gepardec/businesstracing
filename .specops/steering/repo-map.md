@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-31T09:39:13Z"
-_sourceHash: "a8cbd09b5fb1fff853e225863c2be641874c9b1f96f8409b010c36fd07296400"
+_generatedAt: "2026-07-31T09:52:57Z"
+_sourceHash: "0a74195714572f207b3d5c66f704fef5b37cd0809d00587d9be7279607193e6f"
 ---
 
 ## Project Structure Map
@@ -28,7 +28,7 @@ fachtracing/
   fachtracing-maven-plugin/
     src/main/java/at/gepardec/fachtracing/maven/
     src/test/java/at/gepardec/fachtracing/maven/
-    src/test/resources/it/basic/
+    src/test/resources/it/{basic,reactor}/
   conformance/mega-backend/
     annotation-overlay.patch
     src/test/java/at/gepardec/fachtracing/conformance/
@@ -52,7 +52,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (36 files)
+#### fachtracing-engine/ (39 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -97,7 +97,7 @@ fachtracing/
 - `src/main/java/at/gepardec/fachtracing/store/InMemoryDecisionRecordRepository.java`
   - `public final class InMemoryDecisionRecordRepository`
 - `src/test/java/` — 8 executable contract suites
-- `src/test/resources/fixtures/` — aggregation, authorization, calendar, eligibility, gap, pricing, strategy, and stream domains
+- `src/test/resources/fixtures/` — aggregation, authorization, calendar, eligibility, gap, pricing, reactor, strategy, and stream domains
 - `src/test/resources/snapshots/` — explanation, PlantUML, and Mermaid snapshots
 - `src/main/java/module-info.java`
 - `pom.xml`
@@ -111,13 +111,14 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (7 files)
+#### fachtracing-maven-plugin/ (15 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
 - `src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
 - `src/test/resources/it/basic/` — external-style one-off and lifecycle Maven fixtures
+- `src/test/resources/it/reactor/` — two-module JPMS implementation-resolution fixture
 - `pom.xml`
 
 #### docs/ (7 files)

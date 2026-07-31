@@ -24,6 +24,8 @@ public final class StaticDecisionAnalyzerTest {
         excludesResultIndependentWork();
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
+        resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
+        rejectsGraphRootsOutsideTheSourceUniverse();
         exposesRelevantCoverageGaps();
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
         analyzesEveryAnnotatedEntry();
@@ -129,6 +131,36 @@ public final class StaticDecisionAnalyzerTest {
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
                 .count();
         assert implementationPredicates == 2 : result.graph().nodes();
+    }
+
+    private static void resolvesImplementationsFromSourcesOutsideTheGraphRootScope() {
+        Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
+        List<Path> sourceUniverse = List.of(
+                entry,
+                FIXTURES.resolve("reactor/LocalDecisionRule.java"),
+                FIXTURES.resolve("reactor/RegionalDecisionRule.java"));
+        var results = new StaticDecisionAnalyzer().analyzeAll(
+                new AnalysisRequest(sourceUniverse, CLASSPATH, StandardCharsets.UTF_8, List.of(entry)));
+        assert results.size() == 1 : results;
+        var graph = results.getFirst().graph();
+        assert graph.decisionLabel().equals("reactor approval") : graph.decisionLabel();
+        long candidates = graph.edges().stream()
+                .filter(edge -> edge.outcome().startsWith("candidate ")).count();
+        assert candidates == 2 : graph.edges();
+        assert graph.nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE).count() == 2
+                : graph.nodes();
+    }
+
+    private static void rejectsGraphRootsOutsideTheSourceUniverse() {
+        Path source = FIXTURES.resolve("eligibility/EligibilityPolicy.java");
+        try {
+            new AnalysisRequest(List.of(source), CLASSPATH, StandardCharsets.UTF_8,
+                    List.of(FIXTURES.resolve("pricing/PricingPolicy.java")));
+            throw new AssertionError("request accepted a graph root outside its source universe");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("root source files") : expected.getMessage();
+        }
     }
 
     private static void exposesRelevantCoverageGaps() {

@@ -13,7 +13,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Local initialization and assignment | Retained only when it can influence a return |
 | Returned mutable collection | Retains result-affecting mutations through calls and lambda bodies |
 | Direct method call | Follows a source-available callee and includes its relevant slice |
-| Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates; runtime evidence selects the expected call site's opaque edge |
+| Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |
 | Boolean, number, category, string result | Encoded as a typed `DecisionValue` |
 | Custom result/evidence type | Requires an explicit `DecisionValueAdapter` |
 | Switch statement/expression | Creates a choice node with per-case/default topology and terminal throws |

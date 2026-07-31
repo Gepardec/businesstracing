@@ -113,7 +113,7 @@ public final class StaticDecisionAnalyzer {
             }
 
             Trees trees = Trees.instance(task);
-            SourceIndex index = SourceIndex.create(units, trees);
+            SourceIndex index = SourceIndex.create(units, trees, request.rootSourceFiles());
             List<MethodLocation> roots = index.annotatedMethods().stream()
                     .sorted(Comparator
                             .comparing((MethodLocation location) -> location.unit().getSourceFile().toUri().toString())
@@ -1060,12 +1060,20 @@ public final class StaticDecisionAnalyzer {
             List<MethodLocation> annotatedMethods,
             Map<ExecutableElement, MethodLocation> methods,
             List<TypeElement> types) {
-        private static SourceIndex create(List<CompilationUnitTree> units, Trees trees) {
+        private static SourceIndex create(
+                List<CompilationUnitTree> units,
+                Trees trees,
+                List<Path> rootSourceFiles) {
             var annotated = new ArrayList<MethodLocation>();
             var methods = new LinkedHashMap<ExecutableElement, MethodLocation>();
             var types = new ArrayList<TypeElement>();
+            Set<Path> rootSources = rootSourceFiles.stream()
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .collect(Collectors.toUnmodifiableSet());
             SourcePositions positions = trees.getSourcePositions();
             for (CompilationUnitTree unit : units) {
+                boolean graphRootSource = rootSources.contains(
+                        Path.of(unit.getSourceFile().toUri()).toAbsolutePath().normalize());
                 new TreePathScanner<Void, Void>() {
                     @Override public Void visitMethod(MethodTree node, Void unused) {
                         Element element = trees.getElement(getCurrentPath());
@@ -1073,7 +1081,7 @@ public final class StaticDecisionAnalyzer {
                             var location = new MethodLocation(unit, node, getCurrentPath(),
                                     positions.getStartPosition(unit, node));
                             methods.put(executable, location);
-                            if (hasFachTracing(node)) annotated.add(location);
+                            if (graphRootSource && hasFachTracing(node)) annotated.add(location);
                         }
                         return super.visitMethod(node, unused);
                     }

@@ -1,0 +1,50 @@
+{
+  "id": "reactor-wide-implementation-resolution",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-07-31T09:22:40Z",
+  "updated": "2026-07-31T10:00:24Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 1,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": ["maven-project-analysis"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 8,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-07-31T09:22:40Z"
+    },
+    "implementation": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 10,
+        "designFidelity": 10,
+        "codeQuality": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-07-31T10:00:24Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3762,
+    "filesChanged": 42,
+    "linesAdded": 1440,
+    "linesRemoved": 33,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 17,
+    "specDurationMinutes": 9
+  }
+}

@@ -74,3 +74,18 @@ edge completed the full predicate. Flat conjunctions and disjunctions record one
 ambiguous compound forms use legacy observations. Registered graph edges are pre-indexed for
 constant-time validation. Full verification passed at 1,000 requests per second with 0.150% p95
 overhead and zero errors, mismatches, drops, or contamination.
+
+### reactor-wide-implementation-resolution (feature) — 2026-07-31
+
+Completed 3 of 3 tasks. The analyzer separates current-module graph roots from the full attributed
+source universe, and the Maven plugin supplies stable reactor-wide source and classpath inputs.
+Publication review moved the source-empty skip before reactor classpath resolution and added
+inherited parent-POM verification. Focused contracts, single-module integration, a two-module JPMS
+reactor build, and the full repository verifier pass with zero correctness or isolation failures.
+
+### jpms-reactor-source-resolution (bugfix) — 2026-07-31
+
+Completed one bugfix task. Maven source discovery omits module descriptors from the analyzer input,
+while Maven still compiles each descriptor and enforces JPMS boundaries. A valid two-module JPMS
+fixture generates one current-module graph with both sibling candidates, and the full verifier
+passes.
