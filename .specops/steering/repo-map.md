@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-31T08:38:50Z"
-_sourceHash: "45595ed95bfc4e59a7e1f9ff09dab2bb2b92c964225632d90df1ca3e0e95c5ec"
+_generatedAt: "2026-07-31T08:48:04Z"
+_sourceHash: "cd7ab5d89e88ea9b41157d225f3fc524b1ca54bb8bd961fa0777c6796ee8d438"
 ---
 
 ## Project Structure Map
@@ -18,7 +18,7 @@ fachtracing/
   fachtracing-api/
     src/main/java/at/gepardec/fachtracing/api/
   fachtracing-engine/
-    src/main/java/at/gepardec/fachtracing/{analysis,diagram,explain,mermaid,model,plantuml,runtime,store}/
+    src/main/java/at/gepardec/fachtracing/{analysis,developer,diagram,explain,mermaid,model,plantuml,runtime,store}/
     src/test/java/at/gepardec/fachtracing/
     src/test/resources/{fixtures,snapshots}/
   fachtracing-agent/
@@ -51,7 +51,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (35 files)
+#### fachtracing-engine/ (36 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -81,6 +81,8 @@ fachtracing/
   - `public final class PlantUmlRenderer`
 - `src/main/java/at/gepardec/fachtracing/diagram/ExecutionPathResolver.java`
   - shared observed-path edge resolution
+- `src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java`
+  - `public final class DeveloperGraphExporter`
 - `src/main/java/at/gepardec/fachtracing/mermaid/MermaidRenderer.java`
   - `public final class MermaidRenderer`
 - `src/main/java/at/gepardec/fachtracing/runtime/InvocationContext.java`
@@ -138,6 +140,7 @@ fachtracing/
 
 #### root
 
+- `AGENTS.md`
 - `README.md`
 - `pom.xml`
 - `scripts/verify.sh`

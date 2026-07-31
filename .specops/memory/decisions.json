@@ -110,6 +110,16 @@
       "task": "Task 2",
       "date": "2026-07-31",
       "completedAt": "2026-07-31T08:38:50Z"
+    },
+    {
+      "specId": "developer-graph-json-export",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Verify every analysis fingerprint before export",
+      "rationale": "A clean repository can move to another commit after analysis. The check proves that the exported commit still contains the analyzed source.",
+      "task": "Task 1",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T08:53:36Z"
     }
   ]
 }
