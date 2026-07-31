@@ -31,5 +31,14 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-07-31T08:38:50Z"
+  },
+  {
+    "id": "runtime-decision-path-capture",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-31T09:39:13Z",
+    "partOf": "generic-java-fachtracing"
   }
 ]

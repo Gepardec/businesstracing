@@ -110,6 +110,96 @@
       "task": "Task 2",
       "date": "2026-07-31",
       "completedAt": "2026-07-31T08:38:50Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Create exact branch metadata only for complete Boolean topology",
+      "rationale": "Incomplete or ambiguous graph data must use the safe legacy probe.",
+      "task": "Task 2",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Emit exact edges from branch trampolines",
+      "rationale": "The branch site knows which precomputed graph continuation the application selected.",
+      "task": "Task 2",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Complete failures at one entry-boundary handler",
+      "rationale": "One catch-all handler records explicit and propagated failures once and rethrows the same object.",
+      "task": "Task 2",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 4,
+      "decision": "Accept explicit diagram edges only from the observed node",
+      "rationale": "Invalid evidence must not select or infer a business route.",
+      "task": "Task 2",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 5,
+      "decision": "Bind short-circuit jumps by method occurrence and completion mode",
+      "rationale": "A runtime edge is emitted only when an atomic jump determines the full predicate result.",
+      "task": "Task 3",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 6,
+      "decision": "Require all-or-none exact plans",
+      "rationale": "Partial compound metadata must not mix exact and inferred evidence.",
+      "task": "Task 3",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 7,
+      "decision": "Pre-index registered graph edges",
+      "rationale": "Application-thread edge validation must remain constant-time as static graphs grow.",
+      "task": "Task 3",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 8,
+      "decision": "Use source lines only to anchor the first predicate-group jump",
+      "rationale": "Java 21 javac can assign the group line or operand line to continuation jumps.",
+      "task": "Task 3",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "specType": "feature",
+      "number": 9,
+      "decision": "Use legacy probes for ambiguous predicate forms",
+      "rationale": "Mixed, nested, ternary, switch-expression, and ambiguous lambda bytecode must not be presented as exact evidence.",
+      "task": "Task 3",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T09:39:13Z"
     }
   ]
 }

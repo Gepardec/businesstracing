@@ -46,6 +46,11 @@ adding many modules.
 
 No database or filesystem operation occurs in injected probes. Probe failures are suppressed
 from application control flow and exposed separately through `TraceRuntime.pollDiagnostic()`.
+For Java 21 classes from `javac`, a complete Boolean branch binding records the exact opaque
+`true` or `false` graph edge. An incomplete binding keeps the safe evaluated-node probe. If an
+exception leaves an instrumented entry method, the collector creates one generic failed record
+and rethrows the same exception object. The failed record contains no exception type, message,
+or stack trace.
 
 ## Verification
 

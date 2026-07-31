@@ -47,3 +47,13 @@ optionally bind the goal to `process-classes`, making normal `mvn process-classe
 Maven source roots and resolved classpaths are discovered automatically; empty reactor modules skip,
 strict incomplete coverage is configurable, and stale generated graphs are safely removed. Generic
 and pinned Mega conformance remain green.
+
+### runtime-decision-path-capture
+
+Completed on 2026-07-31. Runtime executions now store validated opaque branch edges, generic failed
+terminal state, and invocation-local nested dispatch expectations. Java 21 `javac` predicates use
+compile-time occurrence and completion metadata, so runtime probes only record which precomputed
+edge completed the full predicate. Flat conjunctions and disjunctions record one exact edge;
+ambiguous compound forms use legacy observations. Registered graph edges are pre-indexed for
+constant-time validation. Full verification passed at 1,000 requests per second with 0.150% p95
+overhead and zero errors, mismatches, drops, or contamination.

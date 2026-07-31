@@ -21,6 +21,7 @@ public final class DecisionGraphBuilder {
     private final Map<String, AnalysisManifest.SourceMapping> mappings = new LinkedHashMap<>();
     private final List<AnalysisManifest.ProbeSite> probes = new ArrayList<>();
     private final List<AnalysisManifest.DispatchTarget> dispatchTargets = new ArrayList<>();
+    private final Map<String, List<AnalysisManifest.BranchCompletion>> branchCompletions = new LinkedHashMap<>();
     private int nodeSequence;
     private int edgeSequence;
 
@@ -87,6 +88,12 @@ public final class DecisionGraphBuilder {
                 dispatchNodeId, edgeId, ownerHint, memberHint));
     }
 
+    /** Defines how the ordered bytecode jumps can complete one source predicate. */
+    public void setBranchCompletions(
+            String nodeId, List<AnalysisManifest.BranchCompletion> completions) {
+        branchCompletions.put(Objects.requireNonNull(nodeId, "nodeId"), List.copyOf(completions));
+    }
+
     /** Adds a visible completeness gap linked to its graph node. */
     public void addGap(String nodeId, String description) {
         gaps.add(new BusinessDecisionGraph.CoverageGap(nodeId, description));
@@ -102,8 +109,45 @@ public final class DecisionGraphBuilder {
                 : BusinessDecisionGraph.Completeness.INCOMPLETE;
         var graph = new BusinessDecisionGraph(
                 graphId, 1, decisionLabel, entryNodeId, nodes, edges, completeness, gaps);
-        var manifest = new AnalysisManifest(graphId, 1, mappings, probes, dispatchTargets, sourceFingerprints);
+        var manifest = new AnalysisManifest(
+                graphId, 1, mappings, probes, dispatchTargets, branchTargets(), sourceFingerprints);
         return new BuiltGraph(graph, manifest, List.copyOf(diagnostics));
+    }
+
+    private List<AnalysisManifest.BranchTarget> branchTargets() {
+        var targets = new ArrayList<AnalysisManifest.BranchTarget>();
+        var methodIndexes = new LinkedHashMap<String, Integer>();
+        var nodeIndexes = new LinkedHashMap<String, Integer>();
+        for (AnalysisManifest.ProbeSite probe : probes) {
+            if (probe.kind() != AnalysisManifest.ProbeKind.PREDICATE) continue;
+            String methodKey = probe.ownerHint() + "\u0000" + probe.memberHint();
+            int predicateIndex = methodIndexes.getOrDefault(methodKey, 0);
+            methodIndexes.put(methodKey, predicateIndex + 1);
+            if (probe.memberHint().endsWith("#lambda")) continue;
+            int nodeIndex = nodeIndexes.getOrDefault(probe.nodeId(), 0);
+            nodeIndexes.put(probe.nodeId(), nodeIndex + 1);
+            List<AnalysisManifest.BranchCompletion> completions = branchCompletions.get(probe.nodeId());
+            if (completions == null || nodeIndex >= completions.size()) continue;
+            List<BusinessDecisionGraph.DecisionEdge> trueEdges = edges.stream()
+                    .filter(edge -> edge.fromNodeId().equals(probe.nodeId()))
+                    .filter(edge -> booleanOutcome(edge.outcome(), "true"))
+                    .toList();
+            List<BusinessDecisionGraph.DecisionEdge> falseEdges = edges.stream()
+                    .filter(edge -> edge.fromNodeId().equals(probe.nodeId()))
+                    .filter(edge -> booleanOutcome(edge.outcome(), "false"))
+                    .toList();
+            if (trueEdges.size() == 1 && falseEdges.size() == 1) {
+                targets.add(new AnalysisManifest.BranchTarget(
+                        probe.nodeId(), trueEdges.getFirst().edgeId(), falseEdges.getFirst().edgeId(),
+                        probe.ownerHint(), probe.memberHint(), probe.sourceLine(), predicateIndex,
+                        completions.get(nodeIndex)));
+            }
+        }
+        return List.copyOf(targets);
+    }
+
+    private static boolean booleanOutcome(String outcome, String value) {
+        return outcome.equals(value) || outcome.startsWith(value + ";");
     }
 
     /** Static graph plus its developer-only artifacts. */

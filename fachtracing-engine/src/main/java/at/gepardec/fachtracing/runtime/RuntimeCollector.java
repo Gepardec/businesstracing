@@ -18,7 +18,6 @@ public class RuntimeCollector {
     private final Clock clock;
     private final ThreadLocal<ArrayDeque<InvocationContext>> contexts =
             ThreadLocal.withInitial(ArrayDeque::new);
-    private final ThreadLocal<String> expectedDispatch = new ThreadLocal<>();
     private final Map<String, Definition> definitions = new ConcurrentHashMap<>();
     private final Map<DispatchKey, String> dispatchEdges = new ConcurrentHashMap<>();
     private final ConcurrentLinkedQueue<DecisionExecution> completed = new ConcurrentLinkedQueue<>();
@@ -32,7 +31,11 @@ public class RuntimeCollector {
 
     /** Registers static graph metadata and the value boundary used by future invocations. */
     public void register(BusinessDecisionGraph graph, DecisionExecution.DecisionValueCodec codec) {
-        definitions.put(graph.graphId(), new Definition(graph, codec));
+        Map<EdgeKey, BusinessDecisionGraph.DecisionEdge> edges = graph.edges().stream()
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(
+                        edge -> new EdgeKey(edge.fromNodeId(), edge.edgeId()), edge -> edge,
+                        (first, ignored) -> first));
+        definitions.put(graph.graphId(), new Definition(graph, codec, edges));
     }
 
     /** Maps a technical target type to an opaque candidate edge outside business records. */
@@ -59,6 +62,14 @@ public class RuntimeCollector {
         context.observe(nodeId, outcome, evidence, null);
     }
 
+    /** Appends one exact edge when it leaves the named node in the active graph. */
+    public void edge(String nodeId, String edgeId) {
+        InvocationContext context = current();
+        if (context == null) return;
+        BusinessDecisionGraph.DecisionEdge edge = definition(context).edges().get(new EdgeKey(nodeId, edgeId));
+        if (edge != null) context.observeEdge(edge);
+    }
+
     /** Records which opaque static dispatch edge was selected for the target object. */
     public void dispatch(String nodeId, Object target) {
         InvocationContext context = current();
@@ -69,19 +80,19 @@ public class RuntimeCollector {
 
     /** Marks the dispatch node whose implementation entry is expected next on this thread. */
     public void expectDispatch(String nodeId) {
-        if (current() != null) expectedDispatch.set(nodeId);
+        InvocationContext context = current();
+        if (context != null) context.expectDispatch(nodeId);
     }
 
     /** Records a target edge directly from an instrumented implementation entry. */
     public void selectedEdge(String nodeId, String edgeId) {
         InvocationContext context = current();
         if (context == null) return;
-        if (!nodeId.equals(expectedDispatch.get())) return;
-        boolean belongsToActiveGraph = context.graph().edges().stream()
-                .anyMatch(edge -> edge.edgeId().equals(edgeId) && edge.fromNodeId().equals(nodeId));
+        if (!context.matchesExpectedDispatch(nodeId)) return;
+        boolean belongsToActiveGraph = definition(context).edges().containsKey(new EdgeKey(nodeId, edgeId));
         if (belongsToActiveGraph) {
             context.observe(nodeId, "selected", Map.of(), edgeId);
-            expectedDispatch.remove();
+            context.consumeExpectedDispatch();
         }
     }
 
@@ -97,17 +108,21 @@ public class RuntimeCollector {
             completed.add(context.finish(clock.instant(), encoded));
         } finally {
             stack.pop();
-            expectedDispatch.remove();
             if (stack.isEmpty()) contexts.remove();
         }
     }
 
-    /** Abandons the current trace while leaving the application exception untouched. */
+    /** Completes one generic failed execution without storing exception details. */
     public void fail(Throwable ignored) {
         ArrayDeque<InvocationContext> stack = contexts.get();
-        if (!stack.isEmpty()) stack.pop();
-        expectedDispatch.remove();
-        if (stack.isEmpty()) contexts.remove();
+        InvocationContext context = stack.peek();
+        if (context == null) return;
+        try {
+            completed.add(context.fail(clock.instant()));
+        } finally {
+            stack.pop();
+            if (stack.isEmpty()) contexts.remove();
+        }
     }
 
     /** Returns and removes the next completed in-memory record. */
@@ -125,6 +140,10 @@ public class RuntimeCollector {
         return Objects.requireNonNull(definitions.get(context.graph().graphId()), "active graph definition");
     }
 
-    private record Definition(BusinessDecisionGraph graph, DecisionExecution.DecisionValueCodec codec) { }
+    private record Definition(
+            BusinessDecisionGraph graph,
+            DecisionExecution.DecisionValueCodec codec,
+            Map<EdgeKey, BusinessDecisionGraph.DecisionEdge> edges) { }
+    private record EdgeKey(String nodeId, String edgeId) { }
     private record DispatchKey(String nodeId, Class<?> targetType) { }
 }

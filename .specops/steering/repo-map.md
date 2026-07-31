@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-31T08:38:50Z"
-_sourceHash: "45595ed95bfc4e59a7e1f9ff09dab2bb2b92c964225632d90df1ca3e0e95c5ec"
+_generatedAt: "2026-07-31T09:39:13Z"
+_sourceHash: "a8cbd09b5fb1fff853e225863c2be641874c9b1f96f8409b010c36fd07296400"
 ---
 
 ## Project Structure Map
@@ -15,6 +15,7 @@ _sourceHash: "45595ed95bfc4e59a7e1f9ff09dab2bb2b92c964225632d90df1ca3e0e95c5ec"
 
 ```text
 fachtracing/
+  AGENTS.md
   fachtracing-api/
     src/main/java/at/gepardec/fachtracing/api/
   fachtracing-engine/
@@ -51,7 +52,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (35 files)
+#### fachtracing-engine/ (36 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -93,7 +94,7 @@ fachtracing/
   - `public interface DecisionRecordRepository`
 - `src/main/java/at/gepardec/fachtracing/store/InMemoryDecisionRecordRepository.java`
   - `public final class InMemoryDecisionRecordRepository`
-- `src/test/java/` — 7 executable contract suites
+- `src/test/java/` — 8 executable contract suites
 - `src/test/resources/fixtures/` — aggregation, authorization, calendar, eligibility, gap, pricing, strategy, and stream domains
 - `src/test/resources/snapshots/` — explanation, PlantUML, and Mermaid snapshots
 - `src/main/java/module-info.java`

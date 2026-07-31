@@ -1,0 +1,65 @@
+{
+  "id": "runtime-decision-path-capture",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-07-31T08:44:26Z",
+  "updated": "2026-07-31T09:39:13Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [
+    {
+      "specId": "generic-tracing-walking-skeleton",
+      "reason": "It defines the runtime, graph, agent, and record contracts that this feature extends.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "static-business-logic-extractor",
+    "decision-protocol-and-scale",
+    "generality-conformance-suite",
+    "business-graph-terminal-semantics",
+    "mermaid-diagram-rendering"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-07-31T09:20:33Z"
+    },
+    "implementation": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "requirementsSatisfaction": 9,
+        "correctnessAndEdgeCases": 9,
+        "testQuality": 9,
+        "codeQualityAndMaintainability": 8
+      },
+      "evaluatedAt": "2026-07-31T09:39:13Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 11049,
+    "filesChanged": 35,
+    "linesAdded": 1826,
+    "linesRemoved": 55,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 11,
+    "specDurationMinutes": 55
+  }
+}

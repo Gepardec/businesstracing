@@ -23,11 +23,16 @@ public final class ExecutionPathResolver {
                 .sorted(java.util.Comparator.comparingLong(DecisionExecution.NodeObservation::sequence)).toList()) {
             if (previous != null) visited.addAll(shortestPath(graph, previous, observation.nodeId()));
             if (observation.selectedEdgeId() != null) {
-                visited.add(observation.selectedEdgeId());
-                previous = graph.edges().stream()
+                var selected = graph.edges().stream()
                         .filter(edge -> edge.edgeId().equals(observation.selectedEdgeId()))
-                        .map(BusinessDecisionGraph.DecisionEdge::toNodeId)
-                        .findFirst().orElse(observation.nodeId());
+                        .filter(edge -> edge.fromNodeId().equals(observation.nodeId()))
+                        .findFirst();
+                if (selected.isPresent()) {
+                    visited.add(selected.get().edgeId());
+                    previous = selected.get().toNodeId();
+                } else {
+                    previous = observation.nodeId();
+                }
             } else {
                 previous = observation.nodeId();
             }

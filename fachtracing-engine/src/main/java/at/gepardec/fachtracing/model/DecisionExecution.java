@@ -20,7 +20,9 @@ public record DecisionExecution(
         Instant startedAt,
         Instant completedAt,
         List<NodeObservation> observations,
+        TerminalStatus terminalStatus,
         DecisionValue finalResult,
+        FailureData failure,
         BusinessDecisionGraph.Completeness completeness,
         List<String> coverageGaps) {
 
@@ -33,9 +35,48 @@ public record DecisionExecution(
         completedAt = Objects.requireNonNull(completedAt, "completedAt");
         if (completedAt.isBefore(startedAt)) throw new IllegalArgumentException("completion precedes start");
         observations = List.copyOf(observations);
-        finalResult = Objects.requireNonNull(finalResult, "finalResult");
+        terminalStatus = Objects.requireNonNull(terminalStatus, "terminalStatus");
+        if (terminalStatus == TerminalStatus.SUCCEEDED) {
+            Objects.requireNonNull(finalResult, "finalResult");
+            if (failure != null) throw new IllegalArgumentException("successful execution must not have failure data");
+        } else {
+            if (finalResult != null) throw new IllegalArgumentException("failed execution must not have a final result");
+            Objects.requireNonNull(failure, "failure");
+        }
         completeness = Objects.requireNonNull(completeness, "completeness");
         coverageGaps = List.copyOf(coverageGaps);
+    }
+
+    /** Creates a successful execution with the original constructor contract. */
+    public DecisionExecution(
+            String executionId,
+            String graphId,
+            long graphVersion,
+            Instant startedAt,
+            Instant completedAt,
+            List<NodeObservation> observations,
+            DecisionValue finalResult,
+            BusinessDecisionGraph.Completeness completeness,
+            List<String> coverageGaps) {
+        this(executionId, graphId, graphVersion, startedAt, completedAt, observations,
+                TerminalStatus.SUCCEEDED, finalResult, null, completeness, coverageGaps);
+    }
+
+    /** Terminal state for one completed invocation. */
+    public enum TerminalStatus { SUCCEEDED, FAILED }
+
+    /** Generic business-safe failure data with no technical exception details. */
+    public record FailureData(String canonicalValue, String displayValue) {
+        /** Creates validated failure data. */
+        public FailureData {
+            canonicalValue = requireText(canonicalValue, "canonicalValue");
+            displayValue = requireText(displayValue, "displayValue");
+        }
+
+        /** Returns the standard failed-invocation value. */
+        public static FailureData genericFailure() {
+            return new FailureData("FAILED", "Decision failed");
+        }
     }
 
     /** One ordered visit to a graph node. */

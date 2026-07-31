@@ -7,7 +7,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Construct | Walking-skeleton behavior |
 | --- | --- |
 | `@FachTracing` method | Discovers every decision entry in deterministic source order and its optional business label |
-| `if / else` and comparison | Produces result-relevant predicate nodes |
+| `if / else` and comparison | Produces result-relevant predicate nodes; a complete Java 21 `javac` Boolean binding records the exact `true` or `false` edge |
 | `value == null`, `value != null` | Preserves result-relevant optionality as “is absent” or “exists”; Java `null` is never business output |
 | `&&`, `||`, `!` | Retains compound business conditions and correlates evaluated short-circuit operands |
 | Local initialization and assignment | Retained only when it can influence a return |
@@ -30,6 +30,13 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 
 - Unsupported relevant logic is never reported as complete.
 - A source/class fingerprint mismatch prevents transformation.
+- Incomplete branch metadata uses an evaluated-node probe and does not claim an exact edge.
+- Flat homogeneous `&&` and `||` predicates use occurrence-aware exact bindings. Mixed, nested,
+  negated-compound, ternary, switch-expression, and ambiguous synthetic-method forms use
+  evaluated-node probes.
+- An exception that leaves an instrumented entry creates one generic failed execution. The agent
+  then rethrows the same exception object.
+- A failed business record contains no Java exception class, raw message, or stack trace.
 - A probe or codec failure never changes the application's return value or exception and is
   available as a developer diagnostic.
 - Redaction is mandatory at the value-codec boundary, before evidence enters a decision record.

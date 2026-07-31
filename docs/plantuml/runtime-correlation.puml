@@ -6,13 +6,19 @@ participant "In-memory collector" as Collector
 participant "Asynchronous record consumer" as Consumer
 App -> Probe : begin decision
 Probe -> Collector : open isolated invocation
-loop evaluated reasons
-  App -> Probe : observed graph node
-  Probe -> Collector : append opaque observation
+loop selected reasons
+  App -> Probe : take Boolean branch
+  Probe -> Collector : append exact opaque edge
 end
 App -> Probe : selected decision rule
 Probe -> Collector : append selected opaque edge
-App -> Probe : typed final result
-Probe -> Collector : complete in-memory record
+alt normal return
+  App -> Probe : typed final result
+  Probe -> Collector : complete successful record
+else exception leaves entry
+  App -> Probe : original Throwable
+  Probe -> Collector : complete generic failed record
+  Probe --> App : rethrow same Throwable
+end
 Consumer -> Collector : drain completed record
 @enduml

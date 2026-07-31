@@ -52,7 +52,12 @@ public final class DecisionExplanationProjector {
                 && gaps.isEmpty()
                 ? BusinessDecisionGraph.Completeness.COMPLETE
                 : BusinessDecisionGraph.Completeness.INCOMPLETE;
-        return new DecisionExplanation(graph.decisionLabel(), execution.finalResult(), steps,
+        DecisionExecution.DecisionValue finalDecision = execution.terminalStatus()
+                == DecisionExecution.TerminalStatus.SUCCEEDED
+                ? execution.finalResult()
+                : new DecisionExecution.DecisionValue("failure", execution.failure().canonicalValue(),
+                        execution.failure().displayValue());
+        return new DecisionExplanation(graph.decisionLabel(), finalDecision, steps,
                 completeness, List.copyOf(gaps));
     }
 

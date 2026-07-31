@@ -24,6 +24,10 @@ public final class TraceRuntime {
         safely("observe", () -> collector.observe(nodeId, outcome, value));
     }
 
+    public static void edge(String nodeId, String edgeId) {
+        safely("edge", () -> collector.edge(nodeId, edgeId));
+    }
+
     public static void dispatch(String nodeId, Object target) {
         safely("dispatch", () -> collector.dispatch(nodeId, target));
     }

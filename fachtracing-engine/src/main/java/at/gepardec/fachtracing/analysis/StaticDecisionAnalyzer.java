@@ -828,13 +828,14 @@ public final class StaticDecisionAnalyzer {
             }
 
             private String addPredicate(Tree condition) {
+                List<Tree> atomicPredicates = atomicPredicates(condition);
                 String id = add(BusinessDecisionGraph.NodeKind.PREDICATE,
                         expression(condition), condition, AnalysisManifest.ProbeKind.PREDICATE);
-                int additionalProbes = atomicPredicateCount(condition) - 1;
-                for (int index = 0; index < additionalProbes; index++) {
+                for (int index = 1; index < atomicPredicates.size(); index++) {
                     builder.addProbe(id, AnalysisManifest.ProbeKind.PREDICATE,
                             ownerHint(location.path()), runtimeMemberHint(condition));
                 }
+                builder.setBranchCompletions(id, exactBranchCompletions(condition));
                 return id;
             }
 
@@ -1190,17 +1191,89 @@ public final class StaticDecisionAnalyzer {
         return renderExpression(subject) + (absent ? " is absent" : " exists");
     }
 
-    private static int atomicPredicateCount(Tree tree) {
-        Tree unwrapped = tree instanceof ParenthesizedTree parenthesized ? parenthesized.getExpression() : tree;
+    private static List<Tree> atomicPredicates(Tree tree) {
+        Tree unwrapped = unwrapParentheses(tree);
         if (unwrapped instanceof UnaryTree unary && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT) {
-            return atomicPredicateCount(unary.getExpression());
+            return atomicPredicates(unary.getExpression());
         }
         if (unwrapped instanceof BinaryTree binary
                 && (binary.getKind() == Tree.Kind.CONDITIONAL_AND
                 || binary.getKind() == Tree.Kind.CONDITIONAL_OR)) {
-            return atomicPredicateCount(binary.getLeftOperand()) + atomicPredicateCount(binary.getRightOperand());
+            var predicates = new ArrayList<Tree>();
+            predicates.addAll(atomicPredicates(binary.getLeftOperand()));
+            predicates.addAll(atomicPredicates(binary.getRightOperand()));
+            return List.copyOf(predicates);
         }
-        return 1;
+        return List.of(unwrapped);
+    }
+
+    private static List<AnalysisManifest.BranchCompletion> exactBranchCompletions(Tree tree) {
+        Tree unwrapped = unwrapParentheses(tree);
+        if (unwrapped instanceof UnaryTree unary && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT) {
+            return containsShortCircuit(unary.getExpression())
+                    || containsUnsupportedBranching(unary.getExpression())
+                    ? List.of()
+                    : List.of(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
+        }
+        if (!(unwrapped instanceof BinaryTree binary)
+                || (binary.getKind() != Tree.Kind.CONDITIONAL_AND
+                && binary.getKind() != Tree.Kind.CONDITIONAL_OR)) {
+            return containsUnsupportedBranching(unwrapped)
+                    ? List.of()
+                    : List.of(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
+        }
+        var operands = new ArrayList<Tree>();
+        flattenShortCircuit(unwrapped, binary.getKind(), operands);
+        if (operands.stream().anyMatch(operand -> containsShortCircuit(operand)
+                || containsUnsupportedBranching(operand))) return List.of();
+        var completions = new ArrayList<AnalysisManifest.BranchCompletion>();
+        AnalysisManifest.BranchCompletion shortCircuit = binary.getKind() == Tree.Kind.CONDITIONAL_AND
+                ? AnalysisManifest.BranchCompletion.JUMP_FALSE
+                : AnalysisManifest.BranchCompletion.JUMP_TRUE;
+        for (int index = 1; index < operands.size(); index++) completions.add(shortCircuit);
+        completions.add(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
+        return List.copyOf(completions);
+    }
+
+    private static void flattenShortCircuit(Tree tree, Tree.Kind kind, List<Tree> operands) {
+        Tree unwrapped = unwrapParentheses(tree);
+        if (unwrapped instanceof BinaryTree binary && binary.getKind() == kind) {
+            flattenShortCircuit(binary.getLeftOperand(), kind, operands);
+            flattenShortCircuit(binary.getRightOperand(), kind, operands);
+        } else {
+            operands.add(unwrapped);
+        }
+    }
+
+    private static boolean containsShortCircuit(Tree tree) {
+        Tree unwrapped = unwrapParentheses(tree);
+        if (unwrapped instanceof BinaryTree binary
+                && (binary.getKind() == Tree.Kind.CONDITIONAL_AND
+                || binary.getKind() == Tree.Kind.CONDITIONAL_OR)) return true;
+        if (unwrapped instanceof UnaryTree unary && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT) {
+            return containsShortCircuit(unary.getExpression());
+        }
+        return false;
+    }
+
+    private static boolean containsUnsupportedBranching(Tree tree) {
+        final boolean[] found = { false };
+        new TreeScanner<Void, Void>() {
+            @Override public Void scan(Tree candidate, Void unused) {
+                if (candidate != null && (candidate.getKind() == Tree.Kind.CONDITIONAL_EXPRESSION
+                        || candidate.getKind() == Tree.Kind.SWITCH_EXPRESSION)) {
+                    found[0] = true;
+                }
+                return found[0] ? null : super.scan(candidate, unused);
+            }
+        }.scan(tree, null);
+        return found[0];
+    }
+
+    private static Tree unwrapParentheses(Tree tree) {
+        Tree current = tree;
+        while (current instanceof ParenthesizedTree parenthesized) current = parenthesized.getExpression();
+        return current;
     }
 
     private static boolean containsImplementationSyntax(Tree tree) {
