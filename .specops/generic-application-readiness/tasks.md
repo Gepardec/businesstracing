@@ -402,7 +402,7 @@ fault-injection tests.
 
 ### Task 10: Prove released external-project integration
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 4, 7, 8, and 9
 **Priority:** High
@@ -445,7 +445,7 @@ installation of Fachtracing.
 
 ### Task 11: Run the final generic release gate
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Tasks 1 through 10
 **Priority:** High

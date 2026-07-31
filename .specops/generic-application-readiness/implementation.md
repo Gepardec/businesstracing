@@ -47,6 +47,7 @@
 | 11 | Bind each published Java capability to an executable contract name | A release check can detect documentation claims that have no matching contract method. | 7 | 2026-07-31 |
 | 12 | Keep protocol envelopes already redacted before queue admission | Neither delivery nor persistence needs access to raw business identifiers or values. | 8 | 2026-07-31 |
 | 13 | Keep the production JDBC adapter vendor-neutral and H2 test-only | Applications provide a standard `DataSource`; the reference database does not become a runtime dependency. | 9 | 2026-07-31 |
+| 14 | Verify the RC through a temporary remote-style file repository and empty local repository | This proves published-coordinate use without relying on artifacts installed by the source checkout. | 10 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -127,3 +128,8 @@
   and SQL-state retry classification. H2 2.4.240 is test scope only. Its reference contract covers
   migration, idempotency, lookup, query, and retention.
 - 2026-07-31: Started Task 10.
+- 2026-07-31: Task 10 completed. Set the non-snapshot version to `0.1.0-rc.1` and added an isolated
+  external-project gate. It deploys to a temporary file repository, uses an empty Maven local
+  repository, generates both diagram formats from one annotation, starts with the released agent,
+  and persists and retrieves a V1 envelope through the released JDBC adapter.
+- 2026-07-31: Started Task 11.

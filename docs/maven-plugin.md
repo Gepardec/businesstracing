@@ -7,7 +7,7 @@ The Fachtracing Maven plugin finds annotated decisions from Maven source roots a
 Add `fachtracing-api` to the project, annotate a decision method, and run:
 
 ```sh
-mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze
+mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 ```
 
 This command needs no plugin block. It writes these files for each decision:
@@ -24,7 +24,7 @@ Use this plugin block to generate the files during `process-classes`, `package`,
 <plugin>
   <groupId>at.gepardec.fachtracing</groupId>
   <artifactId>fachtracing-maven-plugin</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0-rc.1</version>
   <executions>
     <execution>
       <goals>
@@ -54,7 +54,7 @@ Run the aggregator after compilation when you want one result directory for the 
 selection:
 
 ```sh
-mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze-reactor
+mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
 ```
 
 The goal runs once. It uses the projects that Maven selected, including the effect of `-pl` and
@@ -128,7 +128,7 @@ For one-off use, pass the same settings as properties:
 mvn compile \
   -Dfachtracing.repositoryUrl=https://github.com/acme/decision-rules \
   '-Dfachtracing.sourceUrlTemplate=https://github.com/acme/decision-rules/blob/{commit}/{path}#L{line}' \
-  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 ```
 
 The Git worktree must be clean. The plugin records the full `HEAD` commit and verifies each Git source

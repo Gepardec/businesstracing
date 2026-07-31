@@ -25,7 +25,7 @@ JDBC_CP="$CP:fachtracing-storage-jdbc/target/classes:fachtracing-storage-jdbc/ta
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$JDBC_CP" at.gepardec.fachtracing.storage.jdbc.JdbcDecisionRecordRepositoryTest
 FIXTURE="fachtracing-maven-plugin/src/test/resources/it/basic"
 mvn -q -f "$FIXTURE/pom-command.xml" clean compile \
-  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 test -f "$FIXTURE/target/fachtracing/approve-application-structure.mmd"
 test -f "$FIXTURE/target/fachtracing/approve-application-structure.puml"
 test -f "$FIXTURE/target/fachtracing/index.md"
@@ -46,10 +46,11 @@ rg -q 'candidate 1' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/reactor-
 rg -q 'candidate 2' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/reactor-approval-structure.mmd"
 rg -q 'reactor approval' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/index.md"
 mvn -q -f "$REACTOR_FIXTURE/pom.xml" clean compile \
-  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze-reactor
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
 test -f "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.mmd"
 test -f "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.puml"
 test -f "$REACTOR_FIXTURE/target/fachtracing/index.md"
 test -f "$REACTOR_FIXTURE/target/fachtracing/activation.json"
 rg -q '"schema":"fachtracing-activation/v1"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
 rg -q '"graphCount":1' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
+./scripts/verify-external-release.sh

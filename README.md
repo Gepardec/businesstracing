@@ -20,7 +20,7 @@ omitted.
 For static business diagrams, add `fachtracing-api`, annotate decision methods, and run:
 
 ```sh
-mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze
+mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 ```
 
 The module receives a Markdown index plus Mermaid and PlantUML diagrams under
@@ -32,6 +32,9 @@ launcher, plugin block, or path assembly is required. See the copyable
 [Maven plugin setup](docs/maven-plugin.md), including automatic lifecycle and parent-POM usage for
 many modules. When repository and source-link settings are present, the same goal also writes
 revision-pinned developer JSON that another tool can visualize.
+
+See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
+delivery, JDBC, upgrade, and rollback flow.
 
 ## Integration flow
 
