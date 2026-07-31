@@ -26,6 +26,7 @@ public final class StaticDecisionAnalyzerTest {
         representsDynamicDispatchWithoutGuessing();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
+        reportsTheSearchedBoundaryWhenImplementationsAreMissing();
         rejectsInvalidApplicationBoundaries();
         rejectsGraphRootsOutsideTheSourceUniverse();
         exposesRelevantCoverageGaps();
@@ -38,6 +39,7 @@ public final class StaticDecisionAnalyzerTest {
         usesOneBusinessStartAndStopWithExplicitReturns();
         removesIdentifierAndNullImplementationVocabulary();
         exportsDeveloperGraphWithRevisionPinnedSourceLinks();
+        exportsMultiOriginDeveloperProvenanceWithoutFalseGitLinks();
         capturesOnlyCleanGitRevisions();
         rejectsSourceMissingFromCapturedCommit();
     }
@@ -176,6 +178,19 @@ public final class StaticDecisionAnalyzerTest {
         assert boundary.resolutionSourceFiles().size() == 3 : boundary.resolutionSourceFiles();
         assert boundary.fingerprint().length() == 64 : boundary.fingerprint();
         assert boundary.fingerprint().equals(boundary.fingerprint());
+    }
+
+    private static void reportsTheSearchedBoundaryWhenImplementationsAreMissing() {
+        Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
+        var boundary = new ApplicationSourceBoundary(List.of(
+                new ApplicationSourceBoundary.ProjectSources(
+                        "entry", List.of(entry), List.of(entry), CLASSPATH,
+                        ApplicationSourceBoundary.CompilerModel.java21(), List.of())), List.of());
+        var result = new StaticDecisionAnalyzer().analyze(boundary);
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result.graph();
+        assert result.diagnostics().stream().anyMatch(diagnostic ->
+                diagnostic.message().contains("searched projects [entry]")
+                        && diagnostic.message().contains(boundary.fingerprint())) : result.diagnostics();
     }
 
     private static void rejectsInvalidApplicationBoundaries() {
@@ -438,6 +453,60 @@ public final class StaticDecisionAnalyzerTest {
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {
+            if (repository != null) deleteTree(repository);
+        }
+    }
+
+    private static void exportsMultiOriginDeveloperProvenanceWithoutFalseGitLinks() {
+        Path repository = null;
+        Path external = null;
+        try {
+            repository = Files.createTempDirectory("fachtracing-export-origin-git-");
+            external = Files.createTempDirectory("fachtracing-export-origin-maven-");
+            Path entry = repository.resolve("example/Policy.java");
+            Path implementation = external.resolve("example/AdultRule.java");
+            Files.createDirectories(entry.getParent());
+            Files.createDirectories(implementation.getParent());
+            Files.writeString(entry, """
+                    package example;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    interface Rule { boolean decide(int age); }
+                    final class Policy {
+                        @FachTracing("origin decision")
+                        boolean decide(Rule rule, int age) { return rule.decide(age); }
+                    }
+                    """, StandardCharsets.UTF_8);
+            Files.writeString(implementation, """
+                    package example;
+                    final class AdultRule implements Rule {
+                        public boolean decide(int age) { return age >= 18; }
+                    }
+                    """, StandardCharsets.UTF_8);
+            initializeGitRepository(repository);
+            var analysis = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(entry, implementation), CLASSPATH));
+            var revision = DeveloperGraphExporter.SourceRevision.captureGit(
+                    repository, "https://example.invalid/rules",
+                    "https://example.invalid/rules/blob/{commit}/{path}#L{line}");
+            var catalog = new DeveloperGraphExporter.SourceCatalog(List.of(
+                    DeveloperGraphExporter.SourceOrigin.git("git", revision),
+                    DeveloperGraphExporter.SourceOrigin.external(
+                            "rules-source", DeveloperGraphExporter.OriginKind.MAVEN_SOURCE,
+                            external, "example:rules:1.0", "archive-sha256")));
+
+            String json = new DeveloperGraphExporter().export(analysis, catalog);
+            assert json.contains("\"schema\":\"fachtracing-developer-graph/v2\"") : json;
+            assert json.contains("\"kind\":\"MAVEN_SOURCE\"") : json;
+            assert json.contains("\"identity\":\"example:rules:1.0\"") : json;
+            int urls = json.split("\\\"url\\\"", -1).length - 1;
+            Path gitRoot = repository;
+            long gitMappedNodes = analysis.manifest().sourceMappings().values().stream()
+                    .filter(mapping -> mapping.source().toAbsolutePath().normalize().startsWith(gitRoot)).count();
+            assert urls == gitMappedNodes : "external source received a Git URL: " + json;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (external != null) deleteTree(external);
             if (repository != null) deleteTree(repository);
         }
     }

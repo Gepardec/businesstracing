@@ -40,6 +40,7 @@
 | 4 | Define Java support through a capability matrix | A verified boundary is testable; “all Java” without a boundary is not. | 7 | 2026-07-31 |
 | 5 | Keep persistence off the decision thread | Runtime performance and application behavior must not depend on repository latency. | 8 | 2026-07-31 |
 | 6 | Add a separate project-aware boundary API and adapt compatible boundaries to `AnalysisRequest` | The existing record constructors remain unchanged while new Maven and compiler work gets explicit project, role, compiler, dependency, and origin data. | 2 | 2026-07-31 |
+| 7 | Use developer graph V2 only when analysis has non-Git origins | V1 remains compatible for one clean Git revision, while V2 can identify Maven, generated, and local sources without false Git URLs. | 3 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -86,3 +87,8 @@
   and reject incompatible compiler models on the flat compatibility path. The full verifier passed
   with 5,000 correct traces at 1,000 RPS and 0.177% p95 overhead.
 - 2026-07-31: Started Task 3.
+- 2026-07-31: Task 3 completed. Added explicit resolution-only and entry source roots, exact Maven
+  source coordinates, content-addressed bounded archive extraction, searched-boundary diagnostics,
+  and multi-origin developer graph V2. V1 remains unchanged for one Git origin. The full verifier
+  passed with 5,000 correct traces at 1,000 RPS and 0.383% p95 overhead.
+- 2026-07-31: Started Task 4.

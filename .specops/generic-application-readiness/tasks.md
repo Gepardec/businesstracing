@@ -99,7 +99,7 @@ the engine independent of Maven.
 
 ### Task 3: Add safe external source inputs
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 2
 **Priority:** High
@@ -145,7 +145,7 @@ Add resolution-only local source roots and exact Maven source dependencies with 
 
 ### Task 4: Add one aggregate Maven analysis goal
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Tasks 2 and 3
 **Priority:** High

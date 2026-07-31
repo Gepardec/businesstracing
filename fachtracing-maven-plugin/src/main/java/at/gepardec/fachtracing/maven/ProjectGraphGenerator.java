@@ -82,6 +82,9 @@ final class ProjectGraphGenerator {
 
         DeveloperGraphExporter.SourceRevision revision = developerOutput
                 .map(DeveloperOutput::capture).orElse(null);
+        DeveloperGraphExporter.SourceCatalog sourceCatalog = developerOutput
+                .filter(output -> !output.externalOrigins().isEmpty())
+                .map(output -> output.catalog(revision)).orElse(null);
 
         Files.createDirectories(outputDirectory);
         removePriorArtifacts(outputDirectory);
@@ -107,7 +110,10 @@ final class ProjectGraphGenerator {
                     .append("[PlantUML](").append(plantUmlName).append(')');
             if (revision != null) {
                 Files.writeString(outputDirectory.resolve(developerJsonName),
-                        developerJson.export(analysis, revision), StandardCharsets.UTF_8);
+                        sourceCatalog == null
+                                ? developerJson.export(analysis, revision)
+                                : developerJson.export(analysis, sourceCatalog),
+                        StandardCharsets.UTF_8);
                 index.append(" · [Developer JSON](").append(developerJsonName).append(')');
             }
             index.append('\n');
@@ -162,16 +168,32 @@ final class ProjectGraphGenerator {
 
     record GenerationResult(int graphCount, int incompleteCount, boolean skipped) { }
 
-    record DeveloperOutput(Path repositoryRoot, String repositoryUrl, String sourceUrlTemplate) {
+    record DeveloperOutput(
+            Path repositoryRoot,
+            String repositoryUrl,
+            String sourceUrlTemplate,
+            List<DeveloperGraphExporter.SourceOrigin> externalOrigins) {
+        DeveloperOutput(Path repositoryRoot, String repositoryUrl, String sourceUrlTemplate) {
+            this(repositoryRoot, repositoryUrl, sourceUrlTemplate, List.of());
+        }
+
         DeveloperOutput {
             Objects.requireNonNull(repositoryRoot, "repositoryRoot");
             requireText(repositoryUrl, "repositoryUrl");
             requireText(sourceUrlTemplate, "sourceUrlTemplate");
+            externalOrigins = List.copyOf(Objects.requireNonNull(externalOrigins, "externalOrigins"));
         }
 
         DeveloperGraphExporter.SourceRevision capture() {
             return DeveloperGraphExporter.SourceRevision.captureGit(
                     repositoryRoot, repositoryUrl, sourceUrlTemplate);
+        }
+
+        DeveloperGraphExporter.SourceCatalog catalog(DeveloperGraphExporter.SourceRevision revision) {
+            var origins = new ArrayList<DeveloperGraphExporter.SourceOrigin>();
+            origins.add(DeveloperGraphExporter.SourceOrigin.git("git", revision));
+            origins.addAll(externalOrigins);
+            return new DeveloperGraphExporter.SourceCatalog(origins);
         }
 
         private static void requireText(String value, String name) {

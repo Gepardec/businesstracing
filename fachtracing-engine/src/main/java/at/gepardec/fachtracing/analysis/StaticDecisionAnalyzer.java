@@ -76,13 +76,36 @@ import java.util.stream.Collectors;
 public final class StaticDecisionAnalyzer {
     /** Analyzes the first graph entry from a project-aware application boundary. */
     public AnalysisManifest.AnalysisResult analyze(ApplicationSourceBoundary boundary) {
-        return analyze(boundary.toAnalysisRequest());
+        List<AnalysisManifest.AnalysisResult> results = analyzeAll(boundary);
+        if (results.isEmpty()) throw new IllegalArgumentException("No @FachTracing method found");
+        return results.getFirst();
     }
 
     /** Analyzes every graph entry from a compatible project-aware application boundary. */
     public List<AnalysisManifest.AnalysisResult> analyzeAll(ApplicationSourceBoundary boundary) {
         Objects.requireNonNull(boundary, "boundary");
-        return analyzeAll(boundary.toAnalysisRequest());
+        String searchedBoundary = "searched projects " + boundary.projects().stream()
+                .map(ApplicationSourceBoundary.ProjectSources::projectId).sorted().toList()
+                + ", external sources " + boundary.externalResolutionSources().stream()
+                .map(source -> source.origin().kind() + ":" + source.origin().identity())
+                .sorted().toList() + ", boundary " + boundary.fingerprint();
+        return analyzeAll(boundary.toAnalysisRequest()).stream()
+                .map(result -> withSearchedBoundary(result, searchedBoundary))
+                .toList();
+    }
+
+    private static AnalysisManifest.AnalysisResult withSearchedBoundary(
+            AnalysisManifest.AnalysisResult result,
+            String searchedBoundary) {
+        List<AnalysisManifest.AnalysisDiagnostic> diagnostics = result.diagnostics().stream()
+                .map(diagnostic -> {
+                    if (!diagnostic.message().contains("unavailable")) return diagnostic;
+                    return new AnalysisManifest.AnalysisDiagnostic(
+                            diagnostic.severity(), diagnostic.source(), diagnostic.line(),
+                            diagnostic.column(), diagnostic.constructKind(),
+                            diagnostic.message() + "; " + searchedBoundary);
+                }).toList();
+        return new AnalysisManifest.AnalysisResult(result.graph(), result.manifest(), diagnostics);
     }
 
     /** Parses and attributes sources, then analyzes the first annotated method in source order. */

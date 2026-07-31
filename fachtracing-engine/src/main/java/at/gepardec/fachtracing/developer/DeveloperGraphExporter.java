@@ -26,6 +26,9 @@ public final class DeveloperGraphExporter {
     /** Identifies the current JSON format. */
     public static final String SCHEMA = "fachtracing-developer-graph/v1";
 
+    /** Identifies the multi-origin JSON format. */
+    public static final String SCHEMA_V2 = "fachtracing-developer-graph/v2";
+
     /** Produces one deterministic developer graph document. */
     public String export(AnalysisManifest.AnalysisResult analysis, SourceRevision revision) {
         Objects.requireNonNull(analysis, "analysis");
@@ -45,6 +48,153 @@ public final class DeveloperGraphExporter {
         output.append(',').append("\"sourceFiles\":");
         appendSourceFiles(output, analysis.manifest(), revision);
         return output.append('}').append('\n').toString();
+    }
+
+    /** Produces developer JSON when analyzed sources have more than one provenance origin. */
+    public String export(AnalysisManifest.AnalysisResult analysis, SourceCatalog catalog) {
+        Objects.requireNonNull(analysis, "analysis");
+        Objects.requireNonNull(catalog, "catalog");
+        if (!analysis.graph().graphId().equals(analysis.manifest().graphId())
+                || analysis.graph().version() != analysis.manifest().graphVersion()) {
+            throw new IllegalArgumentException("graph and developer manifest versions do not match");
+        }
+        Map<Path, ResolvedSource> sources = resolveAndVerify(analysis.manifest(), catalog);
+        var output = new StringBuilder(4096).append('{');
+        stringField(output, "schema", SCHEMA_V2).append(',');
+        output.append("\"graph\":");
+        appendGraphV2(output, analysis, sources);
+        output.append(',').append("\"sourceOrigins\":");
+        appendOrigins(output, catalog);
+        output.append(',').append("\"sourceFiles\":");
+        appendSourceFilesV2(output, sources);
+        return output.append('}').append('\n').toString();
+    }
+
+    private static void appendGraphV2(
+            StringBuilder output,
+            AnalysisManifest.AnalysisResult analysis,
+            Map<Path, ResolvedSource> sources) {
+        BusinessDecisionGraph graph = analysis.graph();
+        output.append('{');
+        stringField(output, "id", graph.graphId()).append(',');
+        numberField(output, "version", graph.version()).append(',');
+        stringField(output, "label", graph.decisionLabel()).append(',');
+        stringField(output, "entryNodeId", graph.entryNodeId()).append(',');
+        stringField(output, "completeness", graph.completeness().name()).append(',');
+        output.append("\"nodes\":[");
+        for (int index = 0; index < graph.nodes().size(); index++) {
+            if (index > 0) output.append(',');
+            BusinessDecisionGraph.DecisionNode node = graph.nodes().get(index);
+            output.append('{');
+            stringField(output, "id", node.nodeId()).append(',');
+            stringField(output, "kind", node.kind().name()).append(',');
+            stringField(output, "label", node.businessLabel()).append(',');
+            output.append("\"attributes\":");
+            appendStringMap(output, node.attributes());
+            AnalysisManifest.SourceMapping mapping = analysis.manifest().sourceMappings().get(node.nodeId());
+            if (mapping != null) {
+                output.append(',').append("\"source\":");
+                appendSourceV2(output, mapping, sources.get(canonical(mapping.source())));
+            }
+            output.append('}');
+        }
+        output.append("],\"edges\":[");
+        for (int index = 0; index < graph.edges().size(); index++) {
+            if (index > 0) output.append(',');
+            appendEdge(output, graph.edges().get(index));
+        }
+        output.append("],\"coverageGaps\":[");
+        for (int index = 0; index < graph.coverageGaps().size(); index++) {
+            if (index > 0) output.append(',');
+            var gap = graph.coverageGaps().get(index);
+            output.append('{');
+            stringField(output, "nodeId", gap.nodeId()).append(',');
+            stringField(output, "description", gap.description());
+            output.append('}');
+        }
+        output.append("]}");
+    }
+
+    private static void appendSourceV2(
+            StringBuilder output,
+            AnalysisManifest.SourceMapping mapping,
+            ResolvedSource source) {
+        if (source == null) throw new IllegalArgumentException("source has no provenance origin: " + mapping.source());
+        output.append('{');
+        stringField(output, "originId", source.origin().id()).append(',');
+        stringField(output, "path", source.relativePath()).append(',');
+        numberField(output, "line", mapping.line()).append(',');
+        numberField(output, "column", mapping.column()).append(',');
+        stringField(output, "syntaxKind", mapping.treeKind()).append(',');
+        stringField(output, "sha256", source.sha256());
+        if (source.origin().revision() != null) {
+            output.append(',');
+            stringField(output, "url", source.origin().revision()
+                    .sourceUrl(source.relativePath(), mapping.line(), mapping.column()));
+        }
+        output.append('}');
+    }
+
+    private static void appendOrigins(StringBuilder output, SourceCatalog catalog) {
+        output.append('[');
+        for (int index = 0; index < catalog.origins().size(); index++) {
+            if (index > 0) output.append(',');
+            SourceOrigin origin = catalog.origins().get(index);
+            output.append('{');
+            stringField(output, "id", origin.id()).append(',');
+            stringField(output, "kind", origin.kind().name()).append(',');
+            stringField(output, "identity", origin.identity()).append(',');
+            stringField(output, "checksum", origin.checksum());
+            if (origin.revision() != null) {
+                output.append(',').append("\"revision\":");
+                appendRevision(output, origin.revision());
+            }
+            output.append('}');
+        }
+        output.append(']');
+    }
+
+    private static void appendSourceFilesV2(StringBuilder output, Map<Path, ResolvedSource> sources) {
+        List<ResolvedSource> files = sources.values().stream()
+                .sorted(Comparator.comparing(item -> item.origin().id() + ':' + item.relativePath()))
+                .toList();
+        output.append('[');
+        for (int index = 0; index < files.size(); index++) {
+            if (index > 0) output.append(',');
+            ResolvedSource source = files.get(index);
+            output.append('{');
+            stringField(output, "originId", source.origin().id()).append(',');
+            stringField(output, "path", source.relativePath()).append(',');
+            stringField(output, "sha256", source.sha256());
+            output.append('}');
+        }
+        output.append(']');
+    }
+
+    private static Map<Path, ResolvedSource> resolveAndVerify(
+            AnalysisManifest manifest,
+            SourceCatalog catalog) {
+        var result = new java.util.LinkedHashMap<Path, ResolvedSource>();
+        manifest.sourceFingerprints().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    Path source = canonical(Path.of(entry.getKey()));
+                    SourceOrigin origin = catalog.originFor(source);
+                    String relative = origin.relativePath(source);
+                    try {
+                        String actual = sha256(Files.readAllBytes(source));
+                        if (!actual.equals(entry.getValue())) {
+                            throw new IllegalStateException("source file does not match the analyzed content: " + relative);
+                        }
+                        if (origin.revision() != null) {
+                            origin.revision().verifyCommittedSource(source, entry.getValue());
+                        }
+                    } catch (IOException exception) {
+                        throw new IllegalStateException("cannot verify analyzed source file: " + relative, exception);
+                    }
+                    result.put(source, new ResolvedSource(origin, relative, entry.getValue()));
+                });
+        return Map.copyOf(result);
     }
 
     private static void appendGraph(
@@ -193,6 +343,14 @@ public final class DeveloperGraphExporter {
         }
     }
 
+    private static Path canonical(Path path) {
+        try {
+            return path.toRealPath();
+        } catch (IOException ignored) {
+            return path.toAbsolutePath().normalize();
+        }
+    }
+
     private static void appendStringMap(StringBuilder output, Map<String, String> values) {
         output.append('{');
         List<Map.Entry<String, String>> entries = values.entrySet().stream()
@@ -241,6 +399,100 @@ public final class DeveloperGraphExporter {
     }
 
     private record SourceFile(String path, String sha256) { }
+
+    private record ResolvedSource(SourceOrigin origin, String relativePath, String sha256) { }
+
+    /** Supported developer source origins. */
+    public enum OriginKind { GIT, MAVEN_SOURCE, GENERATED, LOCAL }
+
+    /** One provenance origin that contains analyzed source files. */
+    public record SourceOrigin(
+            String id,
+            OriginKind kind,
+            Path root,
+            String identity,
+            String checksum,
+            SourceRevision revision) {
+        /** Creates a normalized source origin. */
+        public SourceOrigin {
+            id = requireOriginText(id, "id");
+            kind = Objects.requireNonNull(kind, "kind");
+            root = canonical(Objects.requireNonNull(root, "root"));
+            identity = requireOriginText(identity, "identity");
+            checksum = Objects.requireNonNullElse(checksum, "");
+            if ((kind == OriginKind.GIT) != (revision != null)) {
+                throw new IllegalArgumentException("only Git origins can contain a source revision");
+            }
+            if (revision != null && !revision.repositoryRoot().equals(root)) {
+                throw new IllegalArgumentException("Git origin root must match its source revision");
+            }
+        }
+
+        /** Creates a Git origin with commit-pinned browser URLs. */
+        public static SourceOrigin git(String id, SourceRevision revision) {
+            Objects.requireNonNull(revision, "revision");
+            return new SourceOrigin(id, OriginKind.GIT, revision.repositoryRoot(),
+                    revision.repository(), revision.commit(), revision);
+        }
+
+        /** Creates an origin without a source browser URL. */
+        public static SourceOrigin external(
+                String id, OriginKind kind, Path root, String identity, String checksum) {
+            if (kind == OriginKind.GIT) {
+                throw new IllegalArgumentException("use SourceOrigin.git for Git origins");
+            }
+            return new SourceOrigin(id, kind, root, identity, checksum, null);
+        }
+
+        private String relativePath(Path source) {
+            Path value = canonical(source);
+            if (!value.startsWith(root)) {
+                throw new IllegalArgumentException("source is outside its provenance root: " + source);
+            }
+            String relative = root.relativize(value).toString().replace('\\', '/');
+            if (relative.isBlank()) throw new IllegalArgumentException("source origin must contain a file");
+            return relative;
+        }
+    }
+
+    /** Resolves every analyzed source to the most specific declared origin root. */
+    public record SourceCatalog(List<SourceOrigin> origins) {
+        /** Creates a deterministic catalog and rejects ambiguous origin roots. */
+        public SourceCatalog {
+            Objects.requireNonNull(origins, "origins");
+            var ids = new java.util.HashSet<String>();
+            var roots = new java.util.HashSet<Path>();
+            for (SourceOrigin origin : origins) {
+                if (!ids.add(origin.id())) throw new IllegalArgumentException("duplicate source origin id: " + origin.id());
+                if (!roots.add(origin.root())) {
+                    throw new IllegalArgumentException("duplicate source origin root: " + origin.root());
+                }
+            }
+            origins = origins.stream().sorted(Comparator.comparing(SourceOrigin::id)).toList();
+            if (origins.isEmpty()) throw new IllegalArgumentException("at least one source origin is required");
+        }
+
+        private SourceOrigin originFor(Path source) {
+            List<SourceOrigin> candidates = origins.stream()
+                    .filter(origin -> source.startsWith(origin.root()))
+                    .sorted(Comparator.comparingInt((SourceOrigin origin) -> origin.root().getNameCount()).reversed())
+                    .toList();
+            if (candidates.isEmpty()) {
+                throw new IllegalArgumentException("source has no provenance origin: " + source);
+            }
+            if (candidates.size() > 1
+                    && candidates.get(0).root().getNameCount() == candidates.get(1).root().getNameCount()) {
+                throw new IllegalArgumentException("source has ambiguous provenance origins: " + source);
+            }
+            return candidates.getFirst();
+        }
+    }
+
+    private static String requireOriginText(String value, String name) {
+        Objects.requireNonNull(value, name);
+        if (value.isBlank()) throw new IllegalArgumentException(name + " must not be blank");
+        return value;
+    }
 
     /**
      * A clean source-control revision and a URL template for any source browser.

@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /** Dependency-free executable contracts for project graph generation. */
 public final class AnalyzeMojoTest {
@@ -25,6 +27,7 @@ public final class AnalyzeMojoTest {
         generatesParsedDeveloperJsonFromCleanRevision();
         validatesDeveloperOutputSettings();
         resolvesReactorSourcesWithoutGeneratingSiblingEntries();
+        extractsBoundedSourceArtifactsSafely();
         skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
@@ -165,6 +168,51 @@ public final class AnalyzeMojoTest {
                 StandardCharsets.UTF_8, output, false);
         assert result.skipped() && result.graphCount() == 0 : result;
         assert !Files.exists(output.resolve("old-structure.mmd"));
+    }
+
+    private static void extractsBoundedSourceArtifactsSafely() throws Exception {
+        var limits = new SourceInputResolver.ArchiveLimits(4, 128, 256);
+        Path safeArchive = sourceArchive(Map.of(
+                "example/Policy.java", "package example; final class Policy {}",
+                "META-INF/notice.txt", "notice"));
+        Path safeOutput = Files.createTempDirectory("fachtracing-safe-source-archive");
+        List<Path> sources = SourceInputResolver.extract(safeArchive, safeOutput, limits);
+        assert sources.size() == 1 : sources;
+        assert sources.getFirst().startsWith(safeOutput) : sources;
+        assert Files.readString(sources.getFirst()).contains("class Policy");
+
+        for (String unsafe : List.of("../escape.java", "/absolute.java", "folder\\escape.java")) {
+            Path archive = sourceArchive(Map.of(unsafe, "final class Escape {}"));
+            try {
+                SourceInputResolver.extract(archive,
+                        Files.createTempDirectory("fachtracing-unsafe-source-archive"), limits);
+                throw new AssertionError("unsafe archive entry was accepted: " + unsafe);
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("archive entry") : expected.getMessage();
+            }
+        }
+
+        Path tooLarge = sourceArchive(Map.of("Large.java", "x".repeat(129)));
+        try {
+            SourceInputResolver.extract(tooLarge,
+                    Files.createTempDirectory("fachtracing-large-source-archive"), limits);
+            throw new AssertionError("oversized archive entry was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("too large")
+                    || expected.getMessage().contains("configured size") : expected.getMessage();
+        }
+    }
+
+    private static Path sourceArchive(Map<String, String> entries) throws IOException {
+        Path archive = Files.createTempFile("fachtracing-source-input", ".jar");
+        try (var output = new ZipOutputStream(Files.newOutputStream(archive))) {
+            for (Map.Entry<String, String> entry : entries.entrySet()) {
+                output.putNextEntry(new ZipEntry(entry.getKey()));
+                output.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
+                output.closeEntry();
+            }
+        }
+        return archive;
     }
 
     private static void enforcesStrictIncompleteCoverageAfterWritingArtifacts() throws Exception {

@@ -7,8 +7,13 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.repository.RepositorySystem;
+
+import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +24,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
 
@@ -31,6 +38,12 @@ public final class AnalyzeMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${reactorProjects}", readonly = true)
     private List<MavenProject> reactorProjects;
+
+    @Parameter(defaultValue = "${session}", readonly = true, required = true)
+    private MavenSession session;
+
+    @Component
+    private RepositorySystem repositorySystem;
 
     @Parameter(defaultValue = "${project.build.directory}/fachtracing",
             property = "fachtracing.outputDirectory", required = true)
@@ -53,6 +66,31 @@ public final class AnalyzeMojo extends AbstractMojo {
     @Parameter(property = "fachtracing.sourceUrlTemplate")
     private String sourceUrlTemplate;
 
+    /** Local Java source directories used only to resolve reachable calls and implementations. */
+    @Parameter
+    private List<File> additionalSourceRoots;
+
+    /** Local Java source directories that can also contain annotated graph entries. */
+    @Parameter
+    private List<File> additionalEntrySourceRoots;
+
+    /** Exact groupId:artifactId:version coordinates whose sources classifiers are resolution-only. */
+    @Parameter
+    private List<String> sourceDependencies;
+
+    @Parameter(defaultValue = "${project.build.directory}/fachtracing-source-dependencies",
+            property = "fachtracing.sourceExtractionDirectory")
+    private File sourceExtractionDirectory;
+
+    @Parameter(defaultValue = "10000", property = "fachtracing.sourceArchiveMaxEntries")
+    private int sourceArchiveMaxEntries;
+
+    @Parameter(defaultValue = "4194304", property = "fachtracing.sourceArchiveMaxEntryBytes")
+    private long sourceArchiveMaxEntryBytes;
+
+    @Parameter(defaultValue = "134217728", property = "fachtracing.sourceArchiveMaxTotalBytes")
+    private long sourceArchiveMaxTotalBytes;
+
     @Override public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
             getLog().info("Fachtracing analysis skipped");
@@ -60,7 +98,8 @@ public final class AnalyzeMojo extends AbstractMojo {
         }
         String module = project.getArtifactId() == null ? "current module" : project.getArtifactId();
         try {
-            List<Path> rootSources = sourceFiles(project.getCompileSourceRoots());
+            List<Path> rootSources = sourceFiles(concat(
+                    project.getCompileSourceRoots(), paths(additionalEntrySourceRoots)));
             Charset charset = encoding == null || encoding.isBlank()
                     ? StandardCharsets.UTF_8 : Charset.forName(encoding);
             var generator = new ProjectGraphGenerator();
@@ -68,15 +107,20 @@ public final class AnalyzeMojo extends AbstractMojo {
             if (rootSources.isEmpty()) {
                 result = generator.generate(
                         rootSources, rootSources, List.of(), charset, outputDirectory.toPath(),
-                        failOnIncomplete, developerOutput());
+                        failOnIncomplete, developerOutput(List.of()));
             } else {
                 List<MavenProject> analysisProjects = analysisProjects();
-                List<Path> sources = sourceFiles(analysisProjects.stream()
+                var sourceRoots = new ArrayList<String>(analysisProjects.stream()
                         .flatMap(candidate -> candidate.getCompileSourceRoots().stream()).toList());
+                sourceRoots.addAll(paths(additionalSourceRoots));
+                sourceRoots.addAll(paths(additionalEntrySourceRoots));
+                var artifacts = resolveSourceDependencies();
+                artifacts.stream().map(item -> item.root().toString()).forEach(sourceRoots::add);
+                List<Path> sources = sourceFiles(sourceRoots);
                 List<Path> classpath = compileClasspath(analysisProjects);
                 result = generator.generate(
                         rootSources, sources, classpath, charset, outputDirectory.toPath(),
-                        failOnIncomplete, developerOutput());
+                        failOnIncomplete, developerOutput(sourceOrigins(artifacts)));
             }
             if (result.skipped()) {
                 getLog().info("No @FachTracing decision found in " + module + "; skipping");
@@ -100,9 +144,71 @@ public final class AnalyzeMojo extends AbstractMojo {
         }
     }
 
-    private Optional<ProjectGraphGenerator.DeveloperOutput> developerOutput() {
-        return ProjectGraphGenerator.developerOutput(
+    private Optional<ProjectGraphGenerator.DeveloperOutput> developerOutput(
+            List<DeveloperGraphExporter.SourceOrigin> origins) {
+        Optional<ProjectGraphGenerator.DeveloperOutput> configured = ProjectGraphGenerator.developerOutput(
                 project.getBasedir().toPath(), repositoryUrl, sourceUrlTemplate);
+        return configured.map(output -> new ProjectGraphGenerator.DeveloperOutput(
+                output.repositoryRoot(), output.repositoryUrl(), output.sourceUrlTemplate(), origins));
+    }
+
+    private List<DeveloperGraphExporter.SourceOrigin> sourceOrigins(
+            List<SourceInputResolver.ResolvedSourceArtifact> artifacts) {
+        var byRoot = new LinkedHashMap<Path, DeveloperGraphExporter.SourceOrigin>();
+        int index = 0;
+        for (File root : safeFiles(additionalSourceRoots)) {
+            Path path = root.toPath().toAbsolutePath().normalize();
+            byRoot.putIfAbsent(path, DeveloperGraphExporter.SourceOrigin.external(
+                    "local-" + (++index), DeveloperGraphExporter.OriginKind.LOCAL,
+                    path, "configured local resolution source", ""));
+        }
+        for (File root : safeFiles(additionalEntrySourceRoots)) {
+            Path path = root.toPath().toAbsolutePath().normalize();
+            byRoot.putIfAbsent(path, DeveloperGraphExporter.SourceOrigin.external(
+                    "entry-" + (++index), DeveloperGraphExporter.OriginKind.LOCAL,
+                    path, "configured local entry source", ""));
+        }
+        for (SourceInputResolver.ResolvedSourceArtifact artifact : artifacts) {
+            byRoot.put(artifact.root(), DeveloperGraphExporter.SourceOrigin.external(
+                    "maven-" + (++index), DeveloperGraphExporter.OriginKind.MAVEN_SOURCE,
+                    artifact.root(), artifact.coordinate(), artifact.checksum()));
+        }
+        Path build = Path.of(project.getBuild().getDirectory()).toAbsolutePath().normalize();
+        for (String root : project.getCompileSourceRoots()) {
+            Path path = Path.of(root).toAbsolutePath().normalize();
+            if (path.startsWith(build) && Files.isDirectory(path)) {
+                byRoot.putIfAbsent(path, DeveloperGraphExporter.SourceOrigin.external(
+                        "generated-" + (++index), DeveloperGraphExporter.OriginKind.GENERATED,
+                        path, project.getGroupId() + ':' + project.getArtifactId(), ""));
+            }
+        }
+        return List.copyOf(byRoot.values());
+    }
+
+    private static List<File> safeFiles(List<File> roots) {
+        return roots == null ? List.of() : roots.stream().filter(Objects::nonNull).toList();
+    }
+
+    private List<SourceInputResolver.ResolvedSourceArtifact> resolveSourceDependencies() throws IOException {
+        if (sourceDependencies == null || sourceDependencies.isEmpty()) return List.of();
+        if (repositorySystem == null || session == null) {
+            throw new IllegalStateException("Maven source artifact resolver is unavailable");
+        }
+        var limits = new SourceInputResolver.ArchiveLimits(
+                sourceArchiveMaxEntries, sourceArchiveMaxEntryBytes, sourceArchiveMaxTotalBytes);
+        return new SourceInputResolver(repositorySystem, session, project,
+                sourceExtractionDirectory.toPath(), limits).resolve(sourceDependencies);
+    }
+
+    private static List<String> paths(List<File> roots) {
+        if (roots == null) return List.of();
+        return roots.stream().filter(Objects::nonNull).map(File::getPath).toList();
+    }
+
+    private static List<String> concat(List<String> first, List<String> second) {
+        var result = new ArrayList<String>(first);
+        result.addAll(second);
+        return List.copyOf(result);
     }
 
     private static List<Path> sourceFiles(List<String> roots) throws IOException {
