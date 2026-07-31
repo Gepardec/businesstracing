@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
+./scripts/verify-repository-integrity.sh
 mvn -q install
 CP="fachtracing-api/target/classes:fachtracing-engine/target/classes:fachtracing-engine/target/test-classes"
 JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"

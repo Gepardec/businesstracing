@@ -1,0 +1,164 @@
+decision: determine journey warnings
+completeness: COMPLETE
+node 1: ENTRY | Start
+node 2: COMPUTATION | initialize warnings
+node 3: DISPATCH | select applicable decision rule
+node 4: COMPUTATION | invalid journey rule
+node 5: COMPUTATION | evaluate is journey
+node 6: PREDICATE | task equals reisen
+node 7: PREDICATE | task is journey entry task
+node 8: COMPUTATION | derive grouped project time entries
+node 9: COMPUTATION | initialize warnings
+node 10: COMPUTATION | initialize journey direction validator
+node 11: COMPUTATION | derive i as 0
+node 12: CHOICE | repeat while index is below grouped project time entries size
+node 13: COMPUTATION | derive cur entry as grouped project time entries item index
+node 14: COMPUTATION | evaluate try to get next journey direction
+node 15: PREDICATE | index plus 1 is below journey time entries size
+node 16: COMPUTATION | use journey time entries item index plus 1 journey direction
+node 17: COMPUTATION | use absent
+node 18: COMPUTATION | derive next direction as try to get next journey direction grouped project time entries and index
+node 19: COMPUTATION | evaluate validate
+node 20: CHOICE | choose by current direction
+node 21: PREDICATE | either former direction equals to or former direction equals further
+node 22: COMPUTATION | set warning to back missing
+node 23: COMPUTATION | set former direction to current direction
+node 24: PREDICATE | either former direction is absent or former direction equals back
+node 25: COMPUTATION | set warning to to missing
+node 26: PREDICATE | former direction exists
+node 27: COMPUTATION | set former direction to current direction
+node 28: COMPUTATION | decision cannot continue
+node 29: COMPUTATION | evaluate is finished
+node 30: PREDICATE | former direction exists and former direction equals back
+node 31: COMPUTATION | evaluate is starting new journey
+node 32: PREDICATE | all of warning is absent and not is finished and either next direction is absent or is starting new journey next direction
+node 33: COMPUTATION | set former direction to absent
+node 34: COMPUTATION | derive warning as journey direction validator validate cur entry journey direction and next direction
+node 35: PREDICATE | warning exists
+node 36: COMPUTATION | evaluate create journey warning with enum type
+node 37: COMPUTATION | initialize new journey warning
+node 38: COMPUTATION | evaluate set date
+node 39: COMPUTATION | invalid working location in journey rule
+node 40: COMPUTATION | derive sorted project entries
+node 41: COMPUTATION | initialize warnings
+node 42: COMPUTATION | evaluate has journey entries
+node 43: COMPUTATION | evaluate is task
+node 44: COMPUTATION | evaluate is journey
+node 45: PREDICATE | task equals reisen
+node 46: PREDICATE | not is journey task
+node 47: PREDICATE | task is task entry task
+node 48: PREDICATE | not has journey entries sorted project entries
+node 49: CHOICE | for each project entry in sorted project entries
+node 50: COMPUTATION | evaluate is journey
+node 51: PREDICATE | task equals reisen
+node 52: PREDICATE | task is journey project entry task
+node 53: COMPUTATION | derive journey direction
+node 54: PREDICATE | journey direction equals back
+node 55: COMPUTATION | set working location to main
+node 56: PREDICATE | either journey direction equals to or journey direction equals further
+node 57: COMPUTATION | set working location to project entry working location
+node 58: PREDICATE | not project entry working location equals working location
+node 59: COMPUTATION | evaluate create journey warning with enum type
+node 60: COMPUTATION | initialize new journey warning
+node 61: COMPUTATION | evaluate set date
+node 62: COMPUTATION | location relevant set journey rule
+node 63: COMPUTATION | initialize warnings
+node 64: CHOICE | for each project entry in project entries
+node 65: PREDICATE | item date equals project entry date
+node 66: PREDICATE | all of project entry work location is project relevant and none of warnings match item date equals project entry date
+node 67: COMPUTATION | evaluate create journey warning
+node 68: COMPUTATION | initialize new journey warning
+node 69: COMPUTATION | evaluate set date
+node 70: COMPUTATION | derive calculated warnings as calculator calculate project time list
+node 71: COMPUTATION | evaluate add to journey warnings
+node 72: OUTCOME | Stop
+edge 1 -> 2 | next
+edge 2 -> 3 | next
+edge 3 -> 4 | candidate 1
+edge 4 -> 5 | next
+edge 5 -> 6 | next
+edge 6 -> 7 | result
+edge 7 -> 8 | next
+edge 8 -> 9 | next
+edge 9 -> 10 | next
+edge 10 -> 11 | next
+edge 11 -> 12 | next
+edge 12 -> 13 | item
+edge 13 -> 14 | next
+edge 14 -> 15 | next
+edge 15 -> 16 | true
+edge 15 -> 17 | false
+edge 16 -> 18 | result
+edge 17 -> 18 | result
+edge 18 -> 19 | next
+edge 19 -> 20 | next
+edge 20 -> 21 | to
+edge 21 -> 22 | true
+edge 22 -> 23 | next
+edge 21 -> 23 | false
+edge 20 -> 24 | further or back
+edge 24 -> 25 | true
+edge 25 -> 26 | next
+edge 24 -> 26 | false
+edge 26 -> 27 | true
+edge 20 -> 28 | default
+edge 23 -> 29 | next
+edge 27 -> 29 | next
+edge 26 -> 29 | false
+edge 29 -> 30 | next
+edge 30 -> 31 | result
+edge 31 -> 32 | result
+edge 32 -> 33 | true
+edge 33 -> 34 | result
+edge 32 -> 34 | false
+edge 34 -> 35 | next
+edge 35 -> 36 | true
+edge 36 -> 37 | next
+edge 37 -> 38 | next
+edge 38 -> 12 | next item
+edge 35 -> 12 | next item
+edge 3 -> 39 | candidate 2
+edge 39 -> 40 | next
+edge 40 -> 41 | next
+edge 41 -> 42 | next
+edge 42 -> 43 | next
+edge 43 -> 44 | next
+edge 44 -> 45 | next
+edge 45 -> 46 | result
+edge 46 -> 47 | result
+edge 47 -> 48 | result
+edge 48 -> 49 | false
+edge 49 -> 50 | item
+edge 50 -> 51 | next
+edge 51 -> 52 | result
+edge 52 -> 53 | true
+edge 53 -> 54 | next
+edge 54 -> 55 | true
+edge 55 -> 56 | next
+edge 54 -> 56 | false
+edge 56 -> 57 | true
+edge 57 -> 58 | next
+edge 56 -> 58 | false
+edge 52 -> 58 | false
+edge 58 -> 59 | true
+edge 59 -> 60 | next
+edge 60 -> 61 | next
+edge 61 -> 49 | next item
+edge 58 -> 49 | next item
+edge 3 -> 62 | candidate 3
+edge 62 -> 63 | next
+edge 63 -> 64 | next
+edge 64 -> 65 | item
+edge 65 -> 66 | next
+edge 66 -> 67 | true
+edge 67 -> 68 | next
+edge 68 -> 69 | next
+edge 69 -> 64 | next item
+edge 66 -> 64 | next item
+edge 12 -> 70 | done
+edge 48 -> 70 | true
+edge 49 -> 70 | done
+edge 64 -> 70 | done
+edge 70 -> 71 | next
+edge 28 -> 72 | fails
+edge 71 -> 72 | returns warnings

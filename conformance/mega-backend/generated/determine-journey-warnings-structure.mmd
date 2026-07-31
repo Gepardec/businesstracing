@@ -1,0 +1,163 @@
+flowchart LR
+    n1(["Start"])
+    n2["initialize warnings"]
+    n3{"select applicable decision rule"}
+    n4["invalid journey rule"]
+    n5["evaluate is journey"]
+    n6{"task equals reisen"}
+    n7{"task is journey entry task"}
+    n8["derive grouped project time entries"]
+    n9["initialize warnings"]
+    n10["initialize journey direction validator"]
+    n11["derive i as 0"]
+    n12{"repeat while index is below grouped project time entries size"}
+    n13["derive cur entry as grouped project time entries item index"]
+    n14["evaluate try to get next journey direction"]
+    n15{"index plus 1 is below journey time entries size"}
+    n16["use journey time entries item index plus 1 journey direction"]
+    n17["use absent"]
+    n18["derive next direction as try to get next journey direction grouped project time entries and index"]
+    n19["evaluate validate"]
+    n20{"choose by current direction"}
+    n21{"either former direction equals to or former direction equals further"}
+    n22["set warning to back missing"]
+    n23["set former direction to current direction"]
+    n24{"either former direction is absent or former direction equals back"}
+    n25["set warning to to missing"]
+    n26{"former direction exists"}
+    n27["set former direction to current direction"]
+    n28["decision cannot continue"]
+    n29["evaluate is finished"]
+    n30{"former direction exists and former direction equals back"}
+    n31["evaluate is starting new journey"]
+    n32{"all of warning is absent and not is finished and either next direction is absent or is starting new journey next direction"}
+    n33["set former direction to absent"]
+    n34["derive warning as journey direction validator validate cur entry journey direction and next direction"]
+    n35{"warning exists"}
+    n36["evaluate create journey warning with enum type"]
+    n37["initialize new journey warning"]
+    n38["evaluate set date"]
+    n39["invalid working location in journey rule"]
+    n40["derive sorted project entries"]
+    n41["initialize warnings"]
+    n42["evaluate has journey entries"]
+    n43["evaluate is task"]
+    n44["evaluate is journey"]
+    n45{"task equals reisen"}
+    n46{"not is journey task"}
+    n47{"task is task entry task"}
+    n48{"not has journey entries sorted project entries"}
+    n49{"for each project entry in sorted project entries"}
+    n50["evaluate is journey"]
+    n51{"task equals reisen"}
+    n52{"task is journey project entry task"}
+    n53["derive journey direction"]
+    n54{"journey direction equals back"}
+    n55["set working location to main"]
+    n56{"either journey direction equals to or journey direction equals further"}
+    n57["set working location to project entry working location"]
+    n58{"not project entry working location equals working location"}
+    n59["evaluate create journey warning with enum type"]
+    n60["initialize new journey warning"]
+    n61["evaluate set date"]
+    n62["location relevant set journey rule"]
+    n63["initialize warnings"]
+    n64{"for each project entry in project entries"}
+    n65{"item date equals project entry date"}
+    n66{"all of project entry work location is project relevant and none of warnings match item date equals project entry date"}
+    n67["evaluate create journey warning"]
+    n68["initialize new journey warning"]
+    n69["evaluate set date"]
+    n70["derive calculated warnings as calculator calculate project time list"]
+    n71["evaluate add to journey warnings"]
+    n72(["Stop"])
+    n1 -->|"next"| n2
+    n2 -->|"next"| n3
+    n3 -->|"candidate 1"| n4
+    n4 -->|"next"| n5
+    n5 -->|"next"| n6
+    n6 -->|"result"| n7
+    n7 -->|"next"| n8
+    n8 -->|"next"| n9
+    n9 -->|"next"| n10
+    n10 -->|"next"| n11
+    n11 -->|"next"| n12
+    n12 -->|"item"| n13
+    n13 -->|"next"| n14
+    n14 -->|"next"| n15
+    n15 -->|"true"| n16
+    n15 -->|"false"| n17
+    n16 -->|"result"| n18
+    n17 -->|"result"| n18
+    n18 -->|"next"| n19
+    n19 -->|"next"| n20
+    n20 -->|"to"| n21
+    n21 -->|"true"| n22
+    n22 -->|"next"| n23
+    n21 -->|"false"| n23
+    n20 -->|"further or back"| n24
+    n24 -->|"true"| n25
+    n25 -->|"next"| n26
+    n24 -->|"false"| n26
+    n26 -->|"true"| n27
+    n20 -->|"default"| n28
+    n23 -->|"next"| n29
+    n27 -->|"next"| n29
+    n26 -->|"false"| n29
+    n29 -->|"next"| n30
+    n30 -->|"result"| n31
+    n31 -->|"result"| n32
+    n32 -->|"true"| n33
+    n33 -->|"result"| n34
+    n32 -->|"false"| n34
+    n34 -->|"next"| n35
+    n35 -->|"true"| n36
+    n36 -->|"next"| n37
+    n37 -->|"next"| n38
+    n38 -->|"next item"| n12
+    n35 -->|"next item"| n12
+    n3 -->|"candidate 2"| n39
+    n39 -->|"next"| n40
+    n40 -->|"next"| n41
+    n41 -->|"next"| n42
+    n42 -->|"next"| n43
+    n43 -->|"next"| n44
+    n44 -->|"next"| n45
+    n45 -->|"result"| n46
+    n46 -->|"result"| n47
+    n47 -->|"result"| n48
+    n48 -->|"false"| n49
+    n49 -->|"item"| n50
+    n50 -->|"next"| n51
+    n51 -->|"result"| n52
+    n52 -->|"true"| n53
+    n53 -->|"next"| n54
+    n54 -->|"true"| n55
+    n55 -->|"next"| n56
+    n54 -->|"false"| n56
+    n56 -->|"true"| n57
+    n57 -->|"next"| n58
+    n56 -->|"false"| n58
+    n52 -->|"false"| n58
+    n58 -->|"true"| n59
+    n59 -->|"next"| n60
+    n60 -->|"next"| n61
+    n61 -->|"next item"| n49
+    n58 -->|"next item"| n49
+    n3 -->|"candidate 3"| n62
+    n62 -->|"next"| n63
+    n63 -->|"next"| n64
+    n64 -->|"item"| n65
+    n65 -->|"next"| n66
+    n66 -->|"true"| n67
+    n67 -->|"next"| n68
+    n68 -->|"next"| n69
+    n69 -->|"next item"| n64
+    n66 -->|"next item"| n64
+    n12 -->|"done"| n70
+    n48 -->|"true"| n70
+    n49 -->|"done"| n70
+    n64 -->|"done"| n70
+    n70 -->|"next"| n71
+    n28 -->|"fails"| n72
+    n71 -->|"returns warnings"| n72

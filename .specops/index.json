@@ -25,6 +25,14 @@
     "updated": "2026-07-24T11:32:48Z"
   },
   {
+    "id": "maven-project-analysis",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-31T08:38:50Z"
+  },
+  {
     "id": "developer-graph-json-export",
     "type": "feature",
     "status": "completed",
@@ -68,9 +76,9 @@
   {
     "id": "generic-application-readiness",
     "type": "feature",
-    "status": "draft",
+    "status": "implementing",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-07-31T10:21:59Z"
+    "updated": "2026-07-31T10:44:46Z"
   }
 ]

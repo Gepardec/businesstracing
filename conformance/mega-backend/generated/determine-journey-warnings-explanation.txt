@@ -1,0 +1,8 @@
+Decision: determine journey warnings
+Result: [] [collection]
+Reasons:
+- invalid journey rule was selected
+- invalid working location in journey rule was selected
+- not has journey entries sorted project entries — true
+- location relevant set journey rule was selected
+Coverage: complete

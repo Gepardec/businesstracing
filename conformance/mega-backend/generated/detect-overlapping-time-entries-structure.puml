@@ -1,0 +1,12 @@
+@startuml
+title detect overlapping time entries
+left to right direction
+usecase "Start" as n1
+diamond "either entry one to time equals entry two from time or entry one from time equals entry two to time" as n2
+usecase "Stop" as n3
+diamond "neither entry one to time is before entry two from time nor entry one from time is after entry two to time" as n4
+n1 --> n2 : next
+n2 --> n3 : true; returns false
+n2 --> n4 : false
+n4 --> n3 : returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time
+@enduml

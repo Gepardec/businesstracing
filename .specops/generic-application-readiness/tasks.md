@@ -13,7 +13,7 @@
 
 ### Task 1: Restore repository and specification integrity
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** M
 **Dependencies:** None
 **Priority:** High
@@ -498,6 +498,6 @@ Run one clean, reproducible release gate that proves every requirement and preve
 
 - Total Tasks: 11
 - Completed: 0
-- In Progress: 0
+- In Progress: 1
 - Blocked: 0
-- Pending: 11
+- Pending: 10

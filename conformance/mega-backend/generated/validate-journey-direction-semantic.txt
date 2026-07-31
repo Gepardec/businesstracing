@@ -1,0 +1,39 @@
+decision: validate journey direction
+completeness: COMPLETE
+node 1: ENTRY | Start
+node 2: CHOICE | choose by current direction
+node 3: PREDICATE | either former direction equals to or former direction equals further
+node 4: COMPUTATION | set warning to back missing
+node 5: COMPUTATION | set former direction to current direction
+node 6: PREDICATE | either former direction is absent or former direction equals back
+node 7: COMPUTATION | set warning to to missing
+node 8: PREDICATE | former direction exists
+node 9: COMPUTATION | set former direction to current direction
+node 10: COMPUTATION | decision cannot continue
+node 11: OUTCOME | Stop
+node 12: COMPUTATION | evaluate is finished
+node 13: PREDICATE | former direction exists and former direction equals back
+node 14: COMPUTATION | evaluate is starting new journey
+node 15: PREDICATE | all of warning is absent and not is finished and either next direction is absent or is starting new journey next direction
+node 16: COMPUTATION | set former direction to absent
+edge 1 -> 2 | next
+edge 2 -> 3 | to
+edge 3 -> 4 | true
+edge 4 -> 5 | next
+edge 3 -> 5 | false
+edge 2 -> 6 | further or back
+edge 6 -> 7 | true
+edge 7 -> 8 | next
+edge 6 -> 8 | false
+edge 8 -> 9 | true
+edge 2 -> 10 | default
+edge 10 -> 11 | fails
+edge 5 -> 12 | next
+edge 9 -> 12 | next
+edge 8 -> 12 | false
+edge 12 -> 13 | next
+edge 13 -> 14 | result
+edge 14 -> 15 | result
+edge 15 -> 16 | true
+edge 16 -> 11 | returns back missing
+edge 15 -> 11 | false; returns warning

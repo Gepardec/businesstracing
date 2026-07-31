@@ -1,0 +1,23 @@
+flowchart LR
+    n1(["Start"])
+    n2{"user equals created by"}
+    n3["evaluate is open"]
+    n4{"status equals open"}
+    n5{"is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user"}
+    n6(["Stop"])
+    n7["evaluate is open"]
+    n8{"status equals open"}
+    n9["evaluate is involved"]
+    n10{"eligible project lead contains actor or all of subject employee exists and subject employee equals actor"}
+    n11{"is open and is involved actor and not actor equals created by"}
+    n1 -->|"next"| n2
+    n2 -->|"true"| n3
+    n3 -->|"next"| n4
+    n4 -->|"result"| n5
+    n5 -->|"returns whether is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user"| n6
+    n2 -->|"false"| n7
+    n7 -->|"next"| n8
+    n8 -->|"result"| n9
+    n9 -->|"next"| n10
+    n10 -->|"result"| n11
+    n11 -->|"returns whether is open and is involved actor and not actor equals created by"| n6

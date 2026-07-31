@@ -1,0 +1,24 @@
+decision: authorize clarification resolution
+completeness: COMPLETE
+node 1: ENTRY | Start
+node 2: PREDICATE | user equals created by
+node 3: COMPUTATION | evaluate is open
+node 4: PREDICATE | status equals open
+node 5: PREDICATE | is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user
+node 6: OUTCOME | Stop
+node 7: COMPUTATION | evaluate is open
+node 8: PREDICATE | status equals open
+node 9: COMPUTATION | evaluate is involved
+node 10: PREDICATE | eligible project lead contains actor or all of subject employee exists and subject employee equals actor
+node 11: PREDICATE | is open and is involved actor and not actor equals created by
+edge 1 -> 2 | next
+edge 2 -> 3 | true
+edge 3 -> 4 | next
+edge 4 -> 5 | result
+edge 5 -> 6 | returns whether is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user
+edge 2 -> 7 | false
+edge 7 -> 8 | next
+edge 8 -> 9 | result
+edge 9 -> 10 | next
+edge 10 -> 11 | result
+edge 11 -> 6 | returns whether is open and is involved actor and not actor equals created by

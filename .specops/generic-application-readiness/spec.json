@@ -1,10 +1,10 @@
 {
   "id": "generic-application-readiness",
   "type": "feature",
-  "status": "draft",
+  "status": "implementing",
   "version": 1,
   "created": "2026-07-31T10:14:44Z",
-  "updated": "2026-07-31T10:21:59Z",
+  "updated": "2026-07-31T10:44:46Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -14,6 +14,7 @@
   "reviewRounds": 0,
   "approvals": 0,
   "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
   "specDependencies": [
     {
       "specId": "generic-tracing-walking-skeleton",

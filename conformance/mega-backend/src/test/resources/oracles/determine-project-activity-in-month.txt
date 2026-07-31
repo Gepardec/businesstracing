@@ -1,0 +1,15 @@
+decision: determine project activity in month
+completeness: COMPLETE
+node 1: ENTRY | Start
+node 2: COMPUTATION | derive month start as month at day 1
+node 3: COMPUTATION | derive month end as month at end of month
+node 4: COMPUTATION | derive starts before month ends as not start date is after month end
+node 5: COMPUTATION | derive ends after month starts as end date is absent or not end date is before month start
+node 6: PREDICATE | starts before month ends and ends after month starts
+node 7: OUTCOME | Stop
+edge 1 -> 2 | next
+edge 2 -> 3 | next
+edge 3 -> 4 | next
+edge 4 -> 5 | next
+edge 5 -> 6 | next
+edge 6 -> 7 | returns whether starts before month ends and ends after month starts

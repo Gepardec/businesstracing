@@ -1,0 +1,9 @@
+flowchart LR
+    n1(["Start"])
+    n2{"either entry one to time equals entry two from time or entry one from time equals entry two to time"}
+    n3(["Stop"])
+    n4{"neither entry one to time is before entry two from time nor entry one from time is after entry two to time"}
+    n1 -->|"next"| n2
+    n2 -->|"true; returns false"| n3
+    n2 -->|"false"| n4
+    n4 -->|"returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time"| n3

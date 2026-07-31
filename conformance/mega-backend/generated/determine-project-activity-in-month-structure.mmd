@@ -1,0 +1,14 @@
+flowchart LR
+    n1(["Start"])
+    n2["derive month start as month at day 1"]
+    n3["derive month end as month at end of month"]
+    n4["derive starts before month ends as not start date is after month end"]
+    n5["derive ends after month starts as end date is absent or not end date is before month start"]
+    n6{"starts before month ends and ends after month starts"}
+    n7(["Stop"])
+    n1 -->|"next"| n2
+    n2 -->|"next"| n3
+    n3 -->|"next"| n4
+    n4 -->|"next"| n5
+    n5 -->|"next"| n6
+    n6 -->|"returns whether starts before month ends and ends after month starts"| n7
