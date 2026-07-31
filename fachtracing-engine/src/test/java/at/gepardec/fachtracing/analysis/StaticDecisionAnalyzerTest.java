@@ -20,6 +20,7 @@ public final class StaticDecisionAnalyzerTest {
 
     public static void main(String[] args) {
         supportedConstructsAcrossDomains();
+        bindsCompleteBooleanPredicatesToExactEdges();
         excludesResultIndependentWork();
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
@@ -44,6 +45,21 @@ public final class StaticDecisionAnalyzerTest {
             assert hasKind(graph, BusinessDecisionGraph.NodeKind.ENTRY) : fixture;
             assert hasKind(graph, BusinessDecisionGraph.NodeKind.PREDICATE) : fixture;
             assert hasKind(graph, BusinessDecisionGraph.NodeKind.OUTCOME) : fixture;
+        }
+    }
+
+    private static void bindsCompleteBooleanPredicatesToExactEdges() {
+        var result = analyze("eligibility/EligibilityPolicy.java");
+        assert !result.manifest().branchTargets().isEmpty() : result.manifest();
+        for (AnalysisManifest.BranchTarget target : result.manifest().branchTargets()) {
+            var trueEdge = result.graph().edges().stream()
+                    .filter(edge -> edge.edgeId().equals(target.trueEdgeId())).findFirst().orElseThrow();
+            var falseEdge = result.graph().edges().stream()
+                    .filter(edge -> edge.edgeId().equals(target.falseEdgeId())).findFirst().orElseThrow();
+            assert trueEdge.fromNodeId().equals(target.nodeId()) : target;
+            assert falseEdge.fromNodeId().equals(target.nodeId()) : target;
+            assert trueEdge.outcome().equals("true") || trueEdge.outcome().startsWith("true;") : trueEdge;
+            assert falseEdge.outcome().equals("false") || falseEdge.outcome().startsWith("false;") : falseEdge;
         }
     }
 

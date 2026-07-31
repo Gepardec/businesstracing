@@ -8,8 +8,8 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 1,
-      "pattern": "Use opaque graph IDs plus developer-only source provenance to correlate lightweight probes without leaking Java details."
+      "count": 2,
+      "pattern": "Precompute opaque graph topology and developer-only probe plans, then let runtime capture record only validated selected edges without Java details."
     },
     {
       "category": "multi-format-projection",

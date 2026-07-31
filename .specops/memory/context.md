@@ -64,3 +64,13 @@ one clean revision and proves that every analyzed source matches the exact blob 
 ignored generated files cannot create false source links. A separate test parser verifies the full
 artifact and non-empty coverage gaps. The missing Maven guide now documents the workflow. Full
 verification passed with 0.146% p95 overhead and zero errors, mismatches, drops, or contamination.
+
+### runtime-decision-path-capture
+
+Completed on 2026-07-31. Runtime executions now store validated opaque branch edges, generic failed
+terminal state, and invocation-local nested dispatch expectations. Java 21 `javac` predicates use
+compile-time occurrence and completion metadata, so runtime probes only record which precomputed
+edge completed the full predicate. Flat conjunctions and disjunctions record one exact edge;
+ambiguous compound forms use legacy observations. Registered graph edges are pre-indexed for
+constant-time validation. Full verification passed at 1,000 requests per second with 0.150% p95
+overhead and zero errors, mismatches, drops, or contamination.

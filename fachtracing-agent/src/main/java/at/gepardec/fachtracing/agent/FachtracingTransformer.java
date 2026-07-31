@@ -14,6 +14,8 @@ import java.security.MessageDigest;
 import java.security.ProtectionDomain;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Injects compact, non-throwing runtime calls only into manifest-selected methods.
@@ -46,7 +48,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
 
     private boolean isSelectedClass(String className) {
         return manifest.probeSites().stream().anyMatch(site -> ownerMatches(className, site.ownerHint()))
-                || manifest.dispatchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()));
+                || manifest.dispatchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
+                || manifest.branchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()));
     }
 
     boolean selects(String binaryClassName) {
@@ -77,8 +80,12 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                     .filter(target -> ownerMatches(className, target.ownerHint()))
                     .filter(target -> target.memberHint().equals(name))
                     .toList();
-            return sites.isEmpty() && targets.isEmpty() ? delegate
-                    : new ProbeMethodVisitor(delegate, access, descriptor, sites, targets);
+            List<AnalysisManifest.BranchTarget> branches = manifest.branchTargets().stream()
+                    .filter(target -> ownerMatches(className, target.ownerHint()))
+                    .filter(target -> memberMatches(name, target.memberHint()))
+                    .toList();
+            return sites.isEmpty() && targets.isEmpty() && branches.isEmpty() ? delegate
+                    : new ProbeMethodVisitor(delegate, access, descriptor, sites, targets, branches);
         }
 
         private boolean memberMatches(String bytecodeName, String memberHint) {
@@ -98,6 +105,10 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         private final List<AnalysisManifest.ProbeSite> outcomes;
         private final List<AnalysisManifest.ProbeSite> dispatches;
         private final List<AnalysisManifest.DispatchTarget> targets;
+        private final List<AnalysisManifest.BranchTarget> branches;
+        private final Label failureStart = new Label();
+        private final Label failureEnd = new Label();
+        private final Label failureHandler = new Label();
         private int predicateIndex;
         private int dispatchIndex;
         private int outcomeIndex;
@@ -105,7 +116,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
 
         private ProbeMethodVisitor(MethodVisitor delegate, int access, String descriptor,
                                    List<AnalysisManifest.ProbeSite> sites,
-                                   List<AnalysisManifest.DispatchTarget> targets) {
+                                   List<AnalysisManifest.DispatchTarget> targets,
+                                   List<AnalysisManifest.BranchTarget> branches) {
             super(Opcodes.ASM9, delegate);
             returnType = Type.getReturnType(descriptor);
             argumentTypes = Type.getArgumentTypes(descriptor);
@@ -115,6 +127,28 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             outcomes = sites.stream().filter(site -> site.kind() == AnalysisManifest.ProbeKind.OUTCOME).toList();
             dispatches = sites.stream().filter(site -> site.kind() == AnalysisManifest.ProbeKind.DISPATCH).toList();
             this.targets = targets;
+            this.branches = completeBranchGroups(branches);
+        }
+
+        private List<AnalysisManifest.BranchTarget> completeBranchGroups(
+                List<AnalysisManifest.BranchTarget> candidates) {
+            Map<String, Set<Integer>> expectedIndexes = new java.util.LinkedHashMap<>();
+            for (int index = 0; index < predicates.size(); index++) {
+                expectedIndexes.computeIfAbsent(predicates.get(index).nodeId(), ignored -> new java.util.LinkedHashSet<>())
+                        .add(index);
+            }
+            Map<String, Set<Integer>> actualIndexes = candidates.stream().collect(Collectors.groupingBy(
+                    AnalysisManifest.BranchTarget::nodeId,
+                    java.util.LinkedHashMap::new,
+                    Collectors.mapping(AnalysisManifest.BranchTarget::predicateIndex, Collectors.toSet())));
+            Map<String, Long> actualCounts = candidates.stream().collect(Collectors.groupingBy(
+                    AnalysisManifest.BranchTarget::nodeId, Collectors.counting()));
+            Set<String> completeNodes = expectedIndexes.entrySet().stream()
+                    .filter(entry -> entry.getValue().equals(actualIndexes.get(entry.getKey())))
+                    .filter(entry -> actualCounts.getOrDefault(entry.getKey(), 0L) == entry.getValue().size())
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
+            return candidates.stream().filter(candidate -> completeNodes.contains(candidate.nodeId())).toList();
         }
 
         @Override
@@ -125,6 +159,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 mv.visitLdcInsn(manifest.graphVersion());
                 invoke("begin", "(Ljava/lang/String;J)V");
                 captureArguments();
+                super.visitTryCatchBlock(failureStart, failureEnd, failureHandler, "java/lang/Throwable");
+                super.visitLabel(failureStart);
             }
             for (AnalysisManifest.DispatchTarget target : targets) {
                 push(target.dispatchNodeId());
@@ -170,18 +206,74 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         @Override
         public void visitJumpInsn(int opcode, org.objectweb.asm.Label label) {
             if (opcode != Opcodes.GOTO && opcode != Opcodes.JSR && predicateIndex < predicates.size()
-                    && matchesSourceLine(predicates.get(predicateIndex))) {
+                    && matchesPredicateSite()) {
                 AnalysisManifest.ProbeSite predicate = predicates.get(predicateIndex++);
-                push(predicate.nodeId());
-                push("evaluated");
-                mv.visitInsn(Opcodes.ACONST_NULL);
-                invoke("observe", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
+                int currentPredicateIndex = predicateIndex - 1;
+                AnalysisManifest.BranchTarget branch = branches.stream()
+                        .filter(target -> target.nodeId().equals(predicate.nodeId()))
+                        .filter(target -> target.predicateIndex() == currentPredicateIndex)
+                        .findFirst().orElse(null);
+                if (branch != null) {
+                    emitBranch(opcode, label, branch);
+                    return;
+                }
+                emitLegacyPredicate(predicate);
             }
             super.visitJumpInsn(opcode, label);
         }
 
+        private void emitBranch(int opcode, Label originalTarget, AnalysisManifest.BranchTarget branch) {
+            if (branch.completion() == AnalysisManifest.BranchCompletion.BOTH_OUTCOMES) {
+                emitExactBranch(opcode, originalTarget, branch);
+                return;
+            }
+            String edgeId = branch.completion() == AnalysisManifest.BranchCompletion.JUMP_TRUE
+                    ? branch.trueEdgeId() : branch.falseEdgeId();
+            Label edgeProbe = new Label();
+            Label fallThrough = new Label();
+            super.visitJumpInsn(opcode, edgeProbe);
+            super.visitJumpInsn(Opcodes.GOTO, fallThrough);
+            super.visitLabel(edgeProbe);
+            emitEdge(branch.nodeId(), edgeId);
+            super.visitJumpInsn(Opcodes.GOTO, originalTarget);
+            super.visitLabel(fallThrough);
+        }
+
+        private void emitExactBranch(
+                int opcode, Label originalTarget, AnalysisManifest.BranchTarget branch) {
+            Label falseProbe = new Label();
+            Label fallThrough = new Label();
+            super.visitJumpInsn(opcode, falseProbe);
+            emitEdge(branch.nodeId(), branch.trueEdgeId());
+            super.visitJumpInsn(Opcodes.GOTO, fallThrough);
+            super.visitLabel(falseProbe);
+            emitEdge(branch.nodeId(), branch.falseEdgeId());
+            super.visitJumpInsn(Opcodes.GOTO, originalTarget);
+            super.visitLabel(fallThrough);
+        }
+
+        private void emitEdge(String nodeId, String edgeId) {
+            push(nodeId);
+            push(edgeId);
+            invoke("edge", "(Ljava/lang/String;Ljava/lang/String;)V");
+        }
+
+        private void emitLegacyPredicate(AnalysisManifest.ProbeSite predicate) {
+            push(predicate.nodeId());
+            push("evaluated");
+            mv.visitInsn(Opcodes.ACONST_NULL);
+            invoke("observe", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
+        }
+
         private boolean matchesSourceLine(AnalysisManifest.ProbeSite site) {
             return site.sourceLine() < 0 || site.sourceLine() == sourceLine;
+        }
+
+        private boolean matchesPredicateSite() {
+            AnalysisManifest.ProbeSite site = predicates.get(predicateIndex);
+            if (matchesSourceLine(site)) return true;
+            return predicateIndex > 0
+                    && site.nodeId().equals(predicates.get(predicateIndex - 1).nodeId());
         }
 
         @Override
@@ -212,11 +304,20 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 duplicateAndBox(opcode);
                 pushUnderResult(outcome.nodeId());
                 invoke("complete", "(Ljava/lang/String;Ljava/lang/Object;)V");
-            } else if (opcode == Opcodes.ATHROW) {
-                mv.visitInsn(Opcodes.DUP);
-                invoke("fail", "(Ljava/lang/Throwable;)V");
             }
             super.visitInsn(opcode);
+        }
+
+        @Override
+        public void visitMaxs(int maxStack, int maxLocals) {
+            if (entry != null) {
+                super.visitLabel(failureEnd);
+                super.visitLabel(failureHandler);
+                mv.visitInsn(Opcodes.DUP);
+                invoke("fail", "(Ljava/lang/Throwable;)V");
+                mv.visitInsn(Opcodes.ATHROW);
+            }
+            super.visitMaxs(maxStack, maxLocals);
         }
 
         private void duplicateAndBox(int opcode) {

@@ -17,6 +17,7 @@ public final class DecisionExplanationProjectorTest {
     public static void main(String[] args) throws Exception {
         explanationMatchesBusinessSnapshot();
         supportsEveryBuiltInFinalValueKind();
+        rendersFailedExecutionWithoutTechnicalData();
         preservesRedactionAndRejectsMissingAdapters();
         unknownEvidenceMakesCoverageExplicit();
     }
@@ -41,6 +42,18 @@ public final class DecisionExplanationProjectorTest {
             assert projected.finalDecision().equals(value);
             assert projector.text(projected).contains("[" + value.type() + "]");
         }
+    }
+
+    private static void rendersFailedExecutionWithoutTechnicalData() {
+        var execution = new DecisionExecution("failed-execution", "eligibility-graph", 1,
+                Instant.parse("2026-07-24T08:00:00Z"), Instant.parse("2026-07-24T08:00:01Z"),
+                List.of(), DecisionExecution.TerminalStatus.FAILED, null,
+                DecisionExecution.FailureData.genericFailure(),
+                BusinessDecisionGraph.Completeness.COMPLETE, List.of());
+        String text = new DecisionExplanationProjector().text(
+                new DecisionExplanationProjector().project(graph(), execution));
+        assert text.contains("Result: Decision failed [failure]") : text;
+        assertNoTechnicalLanguage(text);
     }
 
     private static void preservesRedactionAndRejectsMissingAdapters() {

@@ -15,10 +15,67 @@ public final class RuntimeCollectorTest {
     private RuntimeCollectorTest() { }
 
     public static void main(String[] args) throws Exception {
+        recordsOnlyValidExactEdges();
+        queuesGenericFailedExecutions();
+        failedChildKeepsParentDispatchState();
         recordsOpaquePolymorphicEdges();
         implementationEdgesRequireTheExpectedDispatch();
+        matchesNestedDispatchExpectationsInStackOrder();
         isolatesThirtyTwoConcurrentInvocations();
         tracingFailuresDoNotEscape();
+    }
+
+    private static void recordsOnlyValidExactEdges() {
+        RuntimeCollector collector = collector();
+        collector.begin("graph", 1);
+        collector.edge("predicate", "edge-true");
+        collector.edge("predicate", "edge-missing");
+        collector.edge("dispatch", "edge-true");
+        collector.complete("outcome", true);
+
+        var execution = collector.pollCompleted().orElseThrow();
+        var exactEdges = execution.observations().stream()
+                .filter(observation -> observation.selectedEdgeId() != null)
+                .toList();
+        assert exactEdges.size() == 1 : exactEdges;
+        assert exactEdges.getFirst().nodeId().equals("predicate");
+        assert exactEdges.getFirst().selectedEdgeId().equals("edge-true");
+        assert exactEdges.getFirst().outcome().equals("qualified");
+    }
+
+    private static void queuesGenericFailedExecutions() {
+        RuntimeCollector collector = collector();
+        collector.begin("graph", 1);
+        collector.observe("predicate", "evaluated", true);
+        var applicationFailure = new IllegalStateException("private technical message");
+        collector.fail(applicationFailure);
+
+        var execution = collector.pollCompleted().orElseThrow();
+        assert execution.terminalStatus() == DecisionExecution.TerminalStatus.FAILED;
+        assert execution.finalResult() == null;
+        assert execution.failure().equals(DecisionExecution.FailureData.genericFailure());
+        assert !execution.toString().contains(applicationFailure.getClass().getName());
+        assert !execution.toString().contains(applicationFailure.getMessage());
+        assert collector.completedCount() == 0;
+    }
+
+    private static void failedChildKeepsParentDispatchState() {
+        RuntimeCollector collector = collector();
+        collector.begin("graph", 1);
+        collector.expectDispatch("dispatch");
+        collector.begin("graph", 1);
+        collector.expectDispatch("nested-dispatch");
+        collector.fail(new IllegalArgumentException("child failure"));
+        collector.selectedEdge("dispatch", "edge-dispatch");
+        collector.complete("outcome", true);
+
+        var child = collector.pollCompleted().orElseThrow();
+        var parent = collector.pollCompleted().orElseThrow();
+        assert child.terminalStatus() == DecisionExecution.TerminalStatus.FAILED;
+        assert parent.terminalStatus() == DecisionExecution.TerminalStatus.SUCCEEDED;
+        assert parent.observations().stream()
+                .anyMatch(observation -> "edge-dispatch".equals(observation.selectedEdgeId()))
+                : parent.observations();
     }
 
     private static void recordsOpaquePolymorphicEdges() {
@@ -63,6 +120,35 @@ public final class RuntimeCollectorTest {
         var execution = collector.pollCompleted().orElseThrow();
         assert execution.observations().stream().filter(item -> item.selectedEdgeId() != null).count() == 1
                 : execution.observations();
+    }
+
+    private static void matchesNestedDispatchExpectationsInStackOrder() {
+        RuntimeCollector collector = collector();
+        collector.begin("graph", 1);
+        collector.expectDispatch("dispatch");
+
+        collector.begin("graph", 1);
+        collector.expectDispatch("dispatch");
+        collector.expectDispatch("nested-dispatch");
+        collector.selectedEdge("dispatch", "edge-dispatch");
+        collector.selectedEdge("nested-dispatch", "edge-nested");
+        collector.selectedEdge("dispatch", "edge-dispatch");
+        collector.complete("outcome", true);
+
+        collector.selectedEdge("dispatch", "edge-dispatch");
+        collector.complete("outcome", true);
+
+        var child = collector.pollCompleted().orElseThrow();
+        var parent = collector.pollCompleted().orElseThrow();
+        var childEdges = child.observations().stream()
+                .filter(observation -> observation.selectedEdgeId() != null)
+                .map(DecisionExecution.NodeObservation::selectedEdgeId)
+                .toList();
+        assert childEdges.equals(List.of("edge-nested", "edge-dispatch")) : childEdges;
+        assert parent.observations().stream()
+                .filter(observation -> observation.selectedEdgeId() != null)
+                .map(DecisionExecution.NodeObservation::selectedEdgeId)
+                .toList().equals(List.of("edge-dispatch")) : parent.observations();
     }
 
     private static void isolatesThirtyTwoConcurrentInvocations() throws Exception {
@@ -131,9 +217,18 @@ public final class RuntimeCollectorTest {
                         "customer qualifies", Map.of()),
                 new BusinessDecisionGraph.DecisionNode("dispatch", BusinessDecisionGraph.NodeKind.DISPATCH,
                         "select applicable decision rule", Map.of()),
+                new BusinessDecisionGraph.DecisionNode("nested-dispatch", BusinessDecisionGraph.NodeKind.DISPATCH,
+                        "select nested decision rule", Map.of()),
                 new BusinessDecisionGraph.DecisionNode("outcome", BusinessDecisionGraph.NodeKind.OUTCOME,
                         "final decision", Map.of()));
-        return new BusinessDecisionGraph("graph", 1, "eligibility", "entry", nodes, List.of(),
+        var edges = List.of(
+                new BusinessDecisionGraph.DecisionEdge(
+                        "edge-true", "predicate", "outcome", "qualified"),
+                new BusinessDecisionGraph.DecisionEdge(
+                        "edge-dispatch", "dispatch", "outcome", "candidate selected"),
+                new BusinessDecisionGraph.DecisionEdge(
+                        "edge-nested", "nested-dispatch", "outcome", "nested candidate selected"));
+        return new BusinessDecisionGraph("graph", 1, "eligibility", "entry", nodes, edges,
                 BusinessDecisionGraph.Completeness.COMPLETE, List.of());
     }
 
