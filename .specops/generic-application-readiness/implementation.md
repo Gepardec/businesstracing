@@ -45,6 +45,7 @@
 | 9 | Analyze each connected project component in the entry project's compiler context | This preserves compiler settings and duplicate-type isolation while allowing declared implementation modules to supply dispatch candidates. | 5 | 2026-07-31 |
 | 10 | Propagate runtime context only through explicit tokens and wrappers | Explicit capture and scoped restoration prevent accidental cross-trace inheritance. | 6 | 2026-07-31 |
 | 11 | Bind each published Java capability to an executable contract name | A release check can detect documentation claims that have no matching contract method. | 7 | 2026-07-31 |
+| 12 | Keep protocol envelopes already redacted before queue admission | Neither delivery nor persistence needs access to raw business identifiers or values. | 8 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -115,3 +116,8 @@
   gap, and runtime-only statuses, and a drift verifier that requires every capability to name an
   existing executable contract and a documented ID.
 - 2026-07-31: Started Task 8.
+- 2026-07-31: Task 8 completed. Added deterministic forward-readable V1 JSON, typed ordered
+  evidence, redacted correlation query types, compatible repository extensions, and bounded async
+  delivery with retry, shutdown, admission policies, and counters. Contracts verify round-trip,
+  unknown-field reading, lookup, retention, retry recovery, and that repository I/O uses the worker.
+- 2026-07-31: Started Task 9.

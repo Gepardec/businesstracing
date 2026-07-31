@@ -319,7 +319,7 @@ declared Java 21 baseline.
 
 ### Task 8: Define the durable decision-record protocol
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 6
 **Priority:** High
@@ -360,7 +360,7 @@ Add a versioned record envelope and bounded asynchronous delivery without applic
 
 ### Task 9: Add a JDBC persistence and retrieval adapter
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Task 8
 **Priority:** High

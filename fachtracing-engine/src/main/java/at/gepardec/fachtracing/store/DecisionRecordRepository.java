@@ -3,7 +3,10 @@ package at.gepardec.fachtracing.store;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
 import at.gepardec.fachtracing.model.DecisionExplanation;
+import at.gepardec.fachtracing.model.DecisionRecordEnvelope;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,6 +17,35 @@ public interface DecisionRecordRepository {
 
     /** Finds a record by opaque ID without exposing storage implementation details. */
     Optional<DecisionRecord> findById(DecisionRecordId id);
+
+    /** Saves one V1 protocol envelope; legacy repositories can opt in without breaking callers. */
+    default void saveEnvelope(DecisionRecordEnvelope envelope) {
+        throw new UnsupportedOperationException("decision envelope storage is not supported");
+    }
+
+    /** Finds a protocol envelope by its application execution ID. */
+    default Optional<DecisionRecordEnvelope> findByExecutionId(String executionId) { return Optional.empty(); }
+
+    /** Finds envelopes by one redacted correlation value and inclusive completion-time range. */
+    default List<DecisionRecordEnvelope> findByCorrelation(DecisionRecordQuery query) { return List.of(); }
+
+    /** Deletes records completed strictly before the retention boundary. */
+    default long deleteCompletedBefore(Instant boundary) { return 0; }
+
+    /** Storage-neutral query over already-redacted indexed values. */
+    record DecisionRecordQuery(
+            String correlationKey,
+            String redactedCanonicalValue,
+            Instant completedFrom,
+            Instant completedTo) {
+        public DecisionRecordQuery {
+            Objects.requireNonNull(correlationKey, "correlationKey");
+            Objects.requireNonNull(redactedCanonicalValue, "redactedCanonicalValue");
+            Objects.requireNonNull(completedFrom, "completedFrom");
+            Objects.requireNonNull(completedTo, "completedTo");
+            if (completedTo.isBefore(completedFrom)) throw new IllegalArgumentException("invalid time range");
+        }
+    }
 
     /** Opaque record identifier. */
     record DecisionRecordId(String value) {
