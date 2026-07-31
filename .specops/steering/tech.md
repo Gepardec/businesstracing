@@ -14,7 +14,9 @@ inclusion: always
 
 ## Development Tools
 
-- Build system and dependency choices are not yet selected.
+- Maven 3.9.x coordinates the Java 21 multi-module build.
+- `fachtracing-maven-plugin` adapts Maven compile source roots and its resolved classpath into the
+  generic analyzer, producing diagrams under each module's build directory.
 - PlantUML source diagrams document the library architecture; generated decision records provide both PlantUML and Mermaid business graphs.
 
 ## Quality & Testing

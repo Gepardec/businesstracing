@@ -37,3 +37,13 @@ callees, converge on Stop. Standalone id/ids vocabulary is stripped generically.
 null comparisons remain meaningful as absent/exists while raw Java null never reaches business
 artifacts. Generic and pinned Mega verification pass; the journey-warning graph is 72 nodes and
 90 edges after its nested validator failure was connected to Stop.
+
+### maven-project-analysis
+
+Completed on 2026-07-31. Maven projects can add `fachtracing-api`, annotate decisions, and run a
+fully qualified `fachtracing-maven-plugin:analyze` goal without plugin configuration. Projects can
+optionally bind the goal to `process-classes`, making normal `mvn process-classes`, `package`, or
+`verify` generate per-module Mermaid, PlantUML, and `index.md` output under `target/fachtracing`.
+Maven source roots and resolved classpaths are discovered automatically; empty reactor modules skip,
+strict incomplete coverage is configurable, and stale generated graphs are safely removed. Generic
+and pinned Mega conformance remain green.

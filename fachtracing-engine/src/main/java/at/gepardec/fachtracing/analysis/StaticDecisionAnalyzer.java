@@ -76,7 +76,9 @@ import java.util.stream.Collectors;
 public final class StaticDecisionAnalyzer {
     /** Parses and attributes sources, then analyzes the first annotated method in source order. */
     public AnalysisManifest.AnalysisResult analyze(AnalysisRequest request) {
-        return analyzeAll(request).getFirst();
+        List<AnalysisManifest.AnalysisResult> results = analyzeAll(request);
+        if (results.isEmpty()) throw new IllegalArgumentException("No @FachTracing method found");
+        return results.getFirst();
     }
 
     /** Parses and attributes sources, then analyzes every annotated method in deterministic source order. */
@@ -117,7 +119,7 @@ public final class StaticDecisionAnalyzer {
                             .comparing((MethodLocation location) -> location.unit().getSourceFile().toUri().toString())
                             .thenComparingLong(MethodLocation::startPosition))
                     .toList();
-            if (roots.isEmpty()) throw new IllegalArgumentException("No @FachTracing method found");
+            if (roots.isEmpty()) return List.of();
 
             Map<String, String> sourceFingerprints = fingerprints(request);
             var results = new ArrayList<AnalysisManifest.AnalysisResult>();

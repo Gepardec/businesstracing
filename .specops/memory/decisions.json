@@ -90,6 +90,26 @@
       "task": "Task 1",
       "date": "2026-07-24",
       "completedAt": "2026-07-24T11:32:48Z"
+    },
+    {
+      "specId": "maven-project-analysis",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Use Maven as the source and classpath adapter",
+      "rationale": "The build already owns accurate module source roots and dependency resolution, eliminating manual launcher setup.",
+      "task": "Task 1",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T08:38:50Z"
+    },
+    {
+      "specId": "maven-project-analysis",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Offer one-off and lifecycle Maven invocation modes",
+      "rationale": "Full coordinates minimize first-use configuration while a plugin execution supports concise repeat builds.",
+      "task": "Task 2",
+      "date": "2026-07-31",
+      "completedAt": "2026-07-31T08:38:50Z"
     }
   ]
 }

@@ -8,15 +8,20 @@ _generatedAt: "2026-07-10T13:56:48Z"
 
 ## Detected Dependencies
 
-No dependency ecosystem or dependency manifest exists yet.
+- Maven multi-module Java 21 build.
+- ASM 9.10.1 in the Java agent.
+- Maven Plugin API/Core 3.9.16 as provided plugin contracts.
+- Maven Plugin Tools 3.15.2 for annotation-based descriptor generation.
 
 ## Runtime & Framework Status
 
-The Java runtime baseline has not been selected.
+Java 21 is the application/plugin baseline. Maven 3.9.x is the supported build baseline.
 
 ## Approved Versions
 
-[Team-maintained: list approved dependency versions and ranges]
+- ASM 9.10.1
+- Maven Plugin API/Core 3.9.16 (provided)
+- Maven Plugin Tools annotations/plugin 3.15.2 (provided/build)
 
 ## Banned Libraries
 

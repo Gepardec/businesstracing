@@ -15,10 +15,25 @@ analyzer rules. It does not yet claim complete Java-language coverage; unsupport
 result-relevant constructs are retained as visible coverage gaps instead of being silently
 omitted.
 
+## Maven quick start
+
+For static business diagrams, add `fachtracing-api`, annotate decision methods, and run:
+
+```sh
+mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze
+```
+
+The module receives a Markdown index plus Mermaid and PlantUML diagrams under
+`target/fachtracing`. Maven supplies the source roots and complete compilation classpath; no
+analysis launcher, plugin block, or path assembly is required. See the copyable
+[Maven plugin setup](docs/maven-plugin.md), including automatic lifecycle and parent-POM usage for
+adding many modules.
+
 ## Integration flow
 
 1. Add `fachtracing-api` and annotate a decision entry method with `@FachTracing`.
-2. At build time, pass its source boundary and compilation classpath to `FachtracingEngine.analyze`.
+2. Generate static diagrams with the Maven plugin, or call `FachtracingEngine.analyze` directly for
+   custom build-tool integration.
 3. Start the JVM with `fachtracing-agent` on `-javaagent`, then configure it early in application
    startup with the returned developer-only manifest and matching compiled-class fingerprints.
    Already loaded selected classes are retransformed when the JVM permits it.

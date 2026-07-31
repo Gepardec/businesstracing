@@ -20,6 +20,11 @@
       "category": "business-vocabulary-normalization",
       "count": 1,
       "pattern": "Preserve result-relevant optionality as absent/exists while stripping language- and persistence-specific vocabulary from business projections."
+    },
+    {
+      "category": "build-tool-adapter",
+      "count": 1,
+      "pattern": "Let the build tool provide source roots and resolved classpaths, while keeping generation independent and domain-neutral."
     }
   ],
   "fileOverlaps": []

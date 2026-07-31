@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-24T11:32:48Z"
-_sourceHash: "manual-sha256-ddbafe40f56df9ff4544df5bbb4104378151699f16b1c909556617f6a7d498e2"
+_generatedAt: "2026-07-31T08:38:50Z"
+_sourceHash: "45595ed95bfc4e59a7e1f9ff09dab2bb2b92c964225632d90df1ca3e0e95c5ec"
 ---
 
 ## Project Structure Map
@@ -24,6 +24,10 @@ fachtracing/
   fachtracing-agent/
     src/main/java/at/gepardec/fachtracing/agent/
     src/test/java/
+  fachtracing-maven-plugin/
+    src/main/java/at/gepardec/fachtracing/maven/
+    src/test/java/at/gepardec/fachtracing/maven/
+    src/test/resources/it/basic/
   conformance/mega-backend/
     annotation-overlay.patch
     src/test/java/at/gepardec/fachtracing/conformance/
@@ -104,9 +108,19 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### docs/ (6 files)
+#### fachtracing-maven-plugin/ (7 files)
+
+- `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
+  - `public final class AnalyzeMojo`
+- `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
+- `src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
+- `src/test/resources/it/basic/` — external-style one-off and lifecycle Maven fixtures
+- `pom.xml`
+
+#### docs/ (7 files)
 
 - `performance-results.md`
+- `maven-plugin.md`
 - `supported-java-constructs.md`
 - `plantuml/decision-record-model.puml`
 - `plantuml/explanation-flow.puml`
