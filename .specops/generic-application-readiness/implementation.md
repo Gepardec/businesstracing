@@ -133,3 +133,5 @@
   repository, generates both diagram formats from one annotation, starts with the released agent,
   and persists and retrieves a V1 envelope through the released JDBC adapter.
 - 2026-07-31: Started Task 11.
+- 2026-07-31: Added the clean-clone release gate and persistence-enabled fault-window workload.
+  Task 11 remains in progress until the 600-second gate passes.

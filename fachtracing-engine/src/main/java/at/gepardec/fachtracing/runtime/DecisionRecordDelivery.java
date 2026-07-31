@@ -83,7 +83,6 @@ public final class DecisionRecordDelivery implements AutoCloseable {
 
     @Override public void close() {
         running.set(false);
-        worker.interrupt();
         try { worker.join(10_000); }
         catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
         while (!queue.isEmpty()) { queue.poll(); counters.dropped.incrementAndGet(); }
