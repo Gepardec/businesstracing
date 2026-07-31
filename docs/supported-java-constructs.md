@@ -56,6 +56,11 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 - Redaction is mandatory at the value-codec boundary, before evidence enters a decision record.
 - Business graphs, explanations, PlantUML, and Mermaid contain opaque IDs and business labels only;
   source paths, Java owners, members, and fingerprints remain in the developer manifest.
+- Runtime dispatch first uses an exact registered target, then one unique most-specific assignable
+  target. Unknown and ambiguous targets create bounded, deduplicated developer diagnostics.
+- `TraceContextCarrier`, executor wrappers, and completion-stage function/consumer wrappers provide
+  explicit in-JVM context propagation. An unsupported async boundary makes runtime evidence
+  incomplete and does not join unrelated observations.
 
 This boundary is intentionally conservative. Full Java support—including exception-flow
 slicing, reflection, libraries without source, and precise atomic short-circuit

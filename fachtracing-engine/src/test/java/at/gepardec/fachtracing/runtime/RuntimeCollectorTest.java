@@ -19,6 +19,9 @@ public final class RuntimeCollectorTest {
         queuesGenericFailedExecutions();
         failedChildKeepsParentDispatchState();
         recordsOpaquePolymorphicEdges();
+        resolvesAssignableTargetsAndReportsBoundedMismatches();
+        keepsGraphVersionsAndDispatchMappingsSeparate();
+        propagatesAndClearsExplicitAsyncContext();
         implementationEdgesRequireTheExpectedDispatch();
         matchesNestedDispatchExpectationsInStackOrder();
         isolatesThirtyTwoConcurrentInvocations();
@@ -95,6 +98,78 @@ public final class RuntimeCollectorTest {
         assert first.observations().getFirst().selectedEdgeId().equals("edge-local");
         assert second.observations().getFirst().selectedEdgeId().equals("edge-regional");
         assert first.observations().stream().noneMatch(observation -> observation.toString().contains("LocalRule"));
+    }
+
+    private static void resolvesAssignableTargetsAndReportsBoundedMismatches() {
+        RuntimeCollector collector = new RuntimeCollector(java.time.Clock.systemUTC(), 2);
+        collector.register(graph(), new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
+        collector.registerDispatch("graph", 1, "dispatch", BaseRule.class, "edge-dispatch");
+        collector.begin("graph", 1);
+        collector.dispatch("dispatch", new GeneratedRuleProxy());
+        collector.dispatch("dispatch", new UnknownRule());
+        collector.dispatch("dispatch", new UnknownRule());
+        collector.complete("outcome", true);
+        var execution = collector.pollCompleted().orElseThrow();
+        assert execution.observations().stream()
+                .anyMatch(item -> "edge-dispatch".equals(item.selectedEdgeId())) : execution.observations();
+        var diagnostic = collector.pollDiagnostic().orElseThrow();
+        assert diagnostic.reason() == RuntimeCollector.DiagnosticReason.UNKNOWN_TARGET : diagnostic;
+        assert diagnostic.runtimeTarget().contains("UnknownRule") : diagnostic;
+        assert collector.pollDiagnostic().isEmpty() : "duplicate diagnostic was not suppressed";
+
+        collector.registerDispatch("graph", 1, "dispatch", LeftRule.class, "edge-dispatch");
+        collector.registerDispatch("graph", 1, "dispatch", RightRule.class, "edge-dispatch");
+        collector.begin("graph", 1);
+        collector.dispatch("dispatch", new AmbiguousRule());
+        collector.dispatch("other", new UnknownRule());
+        collector.complete("outcome", true);
+        assert collector.pollDiagnostic().orElseThrow().reason()
+                == RuntimeCollector.DiagnosticReason.AMBIGUOUS_TARGET;
+        assert collector.diagnosticOverflowCount() == 1 : collector.diagnosticOverflowCount();
+    }
+
+    private static void keepsGraphVersionsAndDispatchMappingsSeparate() {
+        RuntimeCollector collector = new RuntimeCollector();
+        var codec = new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none());
+        BusinessDecisionGraph first = graph("multi", 1, "edge-one");
+        BusinessDecisionGraph second = graph("multi", 2, "edge-two");
+        collector.register(first, codec, "class-one");
+        collector.register(second, codec, "class-two");
+        collector.registerDispatch("multi", 1, "dispatch", LocalRule.class, "edge-one");
+        collector.registerDispatch("multi", 2, "dispatch", LocalRule.class, "edge-two");
+        collector.begin("multi", 1);
+        collector.dispatch("dispatch", new LocalRule());
+        collector.complete("outcome", true);
+        collector.begin("multi", 2);
+        collector.dispatch("dispatch", new LocalRule());
+        collector.complete("outcome", true);
+        assert collector.pollCompleted().orElseThrow().observations().getFirst().selectedEdgeId().equals("edge-one");
+        assert collector.pollCompleted().orElseThrow().observations().getFirst().selectedEdgeId().equals("edge-two");
+    }
+
+    private static void propagatesAndClearsExplicitAsyncContext() throws Exception {
+        RuntimeCollector collector = collector();
+        collector.begin("graph", 1);
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            executor.submit(collector.wrap(() -> collector.observe("predicate", "async", 42))).get();
+            executor.submit(() -> collector.observe("predicate", "leaked", 99)).get();
+            TraceRuntime.configure(collector);
+            java.util.concurrent.CompletableFuture.completedFuture("stage")
+                    .thenApplyAsync(TraceRuntime.wrapFunction(value -> {
+                        collector.observe("predicate", "stage", value);
+                        return value;
+                    }), executor).get();
+        }
+        collector.unsupportedAsyncBoundary("reactive-publisher");
+        collector.complete("outcome", true);
+        var execution = collector.pollCompleted().orElseThrow();
+        assert execution.observations().stream().anyMatch(item -> item.outcome().equals("async"));
+        assert execution.observations().stream().anyMatch(item -> item.outcome().equals("stage"));
+        assert execution.observations().stream().noneMatch(item -> item.outcome().equals("leaked"));
+        assert execution.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
+        assert execution.coverageGaps().contains("execution crossed an unsupported asynchronous boundary");
+        assert collector.pollDiagnostic().orElseThrow().reason()
+                == RuntimeCollector.DiagnosticReason.UNSUPPORTED_ASYNC_BOUNDARY;
     }
 
     private static void implementationEdgesRequireTheExpectedDispatch() {
@@ -232,6 +307,21 @@ public final class RuntimeCollectorTest {
                 BusinessDecisionGraph.Completeness.COMPLETE, List.of());
     }
 
+    private static BusinessDecisionGraph graph(String id, long version, String dispatchEdge) {
+        var base = graph();
+        var edges = base.edges().stream().map(edge -> edge.fromNodeId().equals("dispatch")
+                ? new BusinessDecisionGraph.DecisionEdge(dispatchEdge, edge.fromNodeId(), edge.toNodeId(), edge.outcome())
+                : edge).toList();
+        return new BusinessDecisionGraph(id, version, base.decisionLabel(), base.entryNodeId(),
+                base.nodes(), edges, base.completeness(), base.coverageGaps());
+    }
+
     private static final class LocalRule { }
     private static final class RegionalRule { }
+    private static class BaseRule { }
+    private static final class GeneratedRuleProxy extends BaseRule { }
+    private static final class UnknownRule { }
+    private interface LeftRule { }
+    private interface RightRule { }
+    private static final class AmbiguousRule implements LeftRule, RightRule { }
 }

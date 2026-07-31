@@ -15,6 +15,7 @@ public final class InvocationContext {
     private final BusinessDecisionGraph graph;
     private final Instant startedAt;
     private final List<DecisionExecution.NodeObservation> observations = new ArrayList<>();
+    private final List<String> runtimeCoverageGaps = new ArrayList<>();
     private final ArrayDeque<String> expectedDispatches = new ArrayDeque<>();
     private long sequence;
 
@@ -24,47 +25,60 @@ public final class InvocationContext {
         this.startedAt = Objects.requireNonNull(startedAt, "startedAt");
     }
 
-    void observe(String nodeId, String outcome, java.util.Map<String, DecisionExecution.DecisionValue> evidence,
+    synchronized void observe(String nodeId, String outcome, java.util.Map<String, DecisionExecution.DecisionValue> evidence,
                  String selectedEdgeId) {
         observations.add(new DecisionExecution.NodeObservation(
                 sequence++, nodeId, Objects.requireNonNullElse(outcome, ""), evidence, selectedEdgeId));
     }
 
-    void observeEdge(BusinessDecisionGraph.DecisionEdge edge) {
+    synchronized void observeEdge(BusinessDecisionGraph.DecisionEdge edge) {
         Objects.requireNonNull(edge, "edge");
         observe(edge.fromNodeId(), edge.outcome(), java.util.Map.of(), edge.edgeId());
     }
 
-    DecisionExecution finish(Instant completedAt, DecisionExecution.DecisionValue result) {
+    synchronized DecisionExecution finish(Instant completedAt, DecisionExecution.DecisionValue result) {
         return new DecisionExecution(executionId, graph.graphId(), graph.version(), startedAt, completedAt,
-                observations, result, graph.completeness(),
-                graph.coverageGaps().stream().map(BusinessDecisionGraph.CoverageGap::description).toList());
+                observations, result, completeness(), coverageGaps());
     }
 
-    DecisionExecution fail(Instant completedAt) {
+    synchronized DecisionExecution fail(Instant completedAt) {
         return new DecisionExecution(executionId, graph.graphId(), graph.version(), startedAt, completedAt,
                 observations, DecisionExecution.TerminalStatus.FAILED, null,
-                DecisionExecution.FailureData.genericFailure(), graph.completeness(),
-                graph.coverageGaps().stream().map(BusinessDecisionGraph.CoverageGap::description).toList());
+                DecisionExecution.FailureData.genericFailure(), completeness(), coverageGaps());
     }
 
-    void expectDispatch(String nodeId) {
+    synchronized void expectDispatch(String nodeId) {
         expectedDispatches.push(Objects.requireNonNull(nodeId, "nodeId"));
     }
 
-    boolean matchesExpectedDispatch(String nodeId) {
+    synchronized boolean matchesExpectedDispatch(String nodeId) {
         return Objects.equals(expectedDispatches.peek(), nodeId);
     }
 
-    void consumeExpectedDispatch() {
+    synchronized void consumeExpectedDispatch() {
         expectedDispatches.pop();
+    }
+
+    synchronized void addRuntimeCoverageGap(String description) {
+        if (!runtimeCoverageGaps.contains(description)) runtimeCoverageGaps.add(description);
+    }
+
+    private BusinessDecisionGraph.Completeness completeness() {
+        return runtimeCoverageGaps.isEmpty() ? graph.completeness() : BusinessDecisionGraph.Completeness.INCOMPLETE;
+    }
+
+    private List<String> coverageGaps() {
+        var gaps = new ArrayList<>(graph.coverageGaps().stream()
+                .map(BusinessDecisionGraph.CoverageGap::description).toList());
+        gaps.addAll(runtimeCoverageGaps);
+        return List.copyOf(gaps);
     }
 
     /** Opaque invocation identifier. */
     public String executionId() { return executionId; }
 
     /** Immutable view of observations captured so far. */
-    public List<DecisionExecution.NodeObservation> observations() { return List.copyOf(observations); }
+    public synchronized List<DecisionExecution.NodeObservation> observations() { return List.copyOf(observations); }
 
     BusinessDecisionGraph graph() { return graph; }
 }

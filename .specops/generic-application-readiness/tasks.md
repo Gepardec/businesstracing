@@ -227,7 +227,7 @@ Replace flat union attribution with per-project compiler contexts and validated 
 
 ### Task 6: Add bounded runtime dispatch diagnostics and context propagation
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 2
 **Priority:** High
@@ -275,7 +275,7 @@ across explicit in-JVM asynchronous boundaries without changing business records
 
 ### Task 7: Create the verified Java capability contract
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Tasks 2, 5, and 6
 **Priority:** High
