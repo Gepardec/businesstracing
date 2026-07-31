@@ -89,9 +89,46 @@ public final class StaticDecisionAnalyzer {
                 + ", external sources " + boundary.externalResolutionSources().stream()
                 .map(source -> source.origin().kind() + ":" + source.origin().identity())
                 .sorted().toList() + ", boundary " + boundary.fingerprint();
-        return analyzeAll(boundary.toAnalysisRequest()).stream()
+        var results = new ArrayList<AnalysisManifest.AnalysisResult>();
+        for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
+            if (project.entrySourceFiles().isEmpty()) continue;
+            List<ApplicationSourceBoundary.ProjectSources> closure = projectClosure(boundary, project);
+            List<Path> sources = java.util.stream.Stream.concat(
+                            closure.stream().flatMap(item -> item.resolutionSourceFiles().stream()),
+                            boundary.externalResolutionSources().stream()
+                                    .map(ApplicationSourceBoundary.ResolutionSource::path))
+                    .distinct().sorted(Comparator.comparing(Path::toString)).toList();
+            List<Path> classpath = closure.stream()
+                    .flatMap(item -> item.compilationClasspath().stream()).distinct()
+                    .sorted(Comparator.comparing(Path::toString)).toList();
+            var request = new AnalysisRequest(
+                    sources, classpath, project.compilerModel().charset(), project.entrySourceFiles());
+            results.addAll(analyzeAll(request, project.compilerModel()));
+        }
+        return results.stream()
                 .map(result -> withSearchedBoundary(result, searchedBoundary))
                 .toList();
+    }
+
+    private static List<ApplicationSourceBoundary.ProjectSources> projectClosure(
+            ApplicationSourceBoundary boundary,
+            ApplicationSourceBoundary.ProjectSources root) {
+        Map<String, ApplicationSourceBoundary.ProjectSources> projects = boundary.projects().stream()
+                .collect(Collectors.toMap(ApplicationSourceBoundary.ProjectSources::projectId,
+                        project -> project, (left, right) -> left, LinkedHashMap::new));
+        var pending = new java.util.ArrayDeque<String>();
+        var selected = new LinkedHashSet<String>();
+        pending.add(root.projectId());
+        while (!pending.isEmpty()) {
+            String id = pending.removeFirst();
+            if (!selected.add(id)) continue;
+            pending.addAll(projects.get(id).projectDependencies());
+            projects.values().stream()
+                    .filter(candidate -> candidate.projectDependencies().contains(id))
+                    .map(ApplicationSourceBoundary.ProjectSources::projectId)
+                    .forEach(pending::addLast);
+        }
+        return selected.stream().map(projects::get).toList();
     }
 
     private static AnalysisManifest.AnalysisResult withSearchedBoundary(
@@ -117,6 +154,12 @@ public final class StaticDecisionAnalyzer {
 
     /** Parses and attributes sources, then analyzes every annotated method in deterministic source order. */
     public List<AnalysisManifest.AnalysisResult> analyzeAll(AnalysisRequest request) {
+        return analyzeAll(request, ApplicationSourceBoundary.CompilerModel.java21());
+    }
+
+    private List<AnalysisManifest.AnalysisResult> analyzeAll(
+            AnalysisRequest request,
+            ApplicationSourceBoundary.CompilerModel compilerModel) {
         Objects.requireNonNull(request, "request");
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) throw new IllegalStateException("A full JDK is required for source analysis");
@@ -125,7 +168,9 @@ public final class StaticDecisionAnalyzer {
         try (StandardJavaFileManager files = compiler.getStandardFileManager(
                 compilerDiagnostics, Locale.ROOT, request.charset())) {
             Iterable<? extends JavaFileObject> sources = files.getJavaFileObjectsFromPaths(request.sourceFiles());
-            List<String> options = new ArrayList<>(List.of("-proc:none", "--release", "21"));
+            List<String> options = new ArrayList<>(List.of(
+                    "-proc:none", "--release", compilerModel.release()));
+            options.addAll(compilerModel.compilerArguments());
             if (!request.compilationClasspath().isEmpty()) {
                 options.add("-classpath");
                 options.add(request.compilationClasspath().stream()

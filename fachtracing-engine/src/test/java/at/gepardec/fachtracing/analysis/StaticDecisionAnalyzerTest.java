@@ -26,6 +26,7 @@ public final class StaticDecisionAnalyzerTest {
         representsDynamicDispatchWithoutGuessing();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
+        isolatesDuplicateTypesAndCompilerModelsByProject();
         reportsTheSearchedBoundaryWhenImplementationsAreMissing();
         rejectsInvalidApplicationBoundaries();
         rejectsGraphRootsOutsideTheSourceUniverse();
@@ -191,6 +192,54 @@ public final class StaticDecisionAnalyzerTest {
         assert result.diagnostics().stream().anyMatch(diagnostic ->
                 diagnostic.message().contains("searched projects [entry]")
                         && diagnostic.message().contains(boundary.fingerprint())) : result.diagnostics();
+    }
+
+    private static void isolatesDuplicateTypesAndCompilerModelsByProject() {
+        Path firstRoot = null;
+        Path secondRoot = null;
+        try {
+            firstRoot = Files.createTempDirectory("fachtracing-project-java17-");
+            secondRoot = Files.createTempDirectory("fachtracing-project-java21-");
+            Path first = firstRoot.resolve("same/Policy.java");
+            Path second = secondRoot.resolve("same/Policy.java");
+            Files.createDirectories(first.getParent());
+            Files.createDirectories(second.getParent());
+            Files.writeString(first, """
+                    package same;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class Policy {
+                        @FachTracing("java 17 decision") boolean decide(int age) { return age >= 17; }
+                    }
+                    """);
+            Files.writeString(second, """
+                    package same;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class Policy {
+                        @FachTracing("java 21 decision") boolean decide(int age) { return age >= 21; }
+                    }
+                    """);
+            Path moduleDescriptor = secondRoot.resolve("module-info.java");
+            Files.writeString(moduleDescriptor, "module same.policy { }");
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "java17", List.of(first), List.of(first), CLASSPATH,
+                            new ApplicationSourceBoundary.CompilerModel(
+                                    StandardCharsets.UTF_8, "17", List.of()), List.of()),
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "java21", List.of(second), List.of(second), CLASSPATH,
+                            ApplicationSourceBoundary.CompilerModel.java21(), List.of(),
+                            java.util.Optional.of(moduleDescriptor))), List.of());
+            var results = new StaticDecisionAnalyzer().analyzeAll(boundary);
+            assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
+                    .equals(List.of("java 17 decision", "java 21 decision")) : results;
+            assert boundary.projects().get(1).moduleDescriptor().orElseThrow().equals(
+                    moduleDescriptor.toAbsolutePath().normalize());
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (secondRoot != null) deleteTree(secondRoot);
+            if (firstRoot != null) deleteTree(firstRoot);
+        }
     }
 
     private static void rejectsInvalidApplicationBoundaries() {

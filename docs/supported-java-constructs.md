@@ -22,6 +22,20 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Relevant `try` or synchronized block | Produces an explicit coverage gap and an incomplete graph |
 | Source-unavailable call or reflection | Remains outside the complete subset and must be surfaced by the broader extractor |
 
+## Project and compiler boundary
+
+Aggregate analysis creates one compiler context for each project that contains an entry. It does
+not put unrelated projects or duplicate fully qualified class names into one `javac` task. A context
+uses the project's source encoding, Java release, compile classpath, generated compile roots, JPMS
+descriptor identity, and declared reactor dependency links. Connected implementation projects can
+supply polymorphic candidates. Unconnected projects cannot affect the graph.
+
+The engine keeps the module descriptor as project metadata. Maven compiles and validates the JPMS
+descriptor before aggregate analysis; Fachtracing does not combine several descriptors into a
+synthetic module compilation. Different releases and encodings use separate compiler tasks. Invalid
+or unsupported compiler settings fail source attribution before graph extraction. Generated sources
+keep generated provenance in developer graph V2.
+
 Every annotated decision has one `Start` and one `Stop`. Return paths state the returned business
 expression on their edge to Stop. Relevant throws in the entry or an expanded source method use a
 `fails` edge to the same Stop and do not rejoin normal continuation.

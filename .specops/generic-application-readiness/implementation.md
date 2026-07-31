@@ -42,6 +42,7 @@
 | 6 | Add a separate project-aware boundary API and adapt compatible boundaries to `AnalysisRequest` | The existing record constructors remain unchanged while new Maven and compiler work gets explicit project, role, compiler, dependency, and origin data. | 2 | 2026-07-31 |
 | 7 | Use developer graph V2 only when analysis has non-Git origins | V1 remains compatible for one clean Git revision, while V2 can identify Maven, generated, and local sources without false Git URLs. | 3 | 2026-07-31 |
 | 8 | Make `analyze-reactor` a direct aggregator over Maven's effective project list | Maven already applies `-pl` and `-am`; a second independent selector would disagree with the build. | 4 | 2026-07-31 |
+| 9 | Analyze each connected project component in the entry project's compiler context | This preserves compiler settings and duplicate-type isolation while allowing declared implementation modules to supply dispatch candidates. | 5 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -98,3 +99,8 @@
   per-module goal remains unchanged. The full verifier passed the direct reactor goal and 5,000
   correct traces at 1,000 RPS with 0.142% p95 overhead.
 - 2026-07-31: Started Task 5.
+- 2026-07-31: Task 5 completed. Project-aware analysis now creates separate compiler tasks with each
+  entry project's release, encoding, classpath, declared dependency component, and JPMS descriptor
+  metadata. Tests prove that isolated projects can contain the same fully qualified class under Java
+  17 and Java 21. The Maven reactor contract remains complete.
+- 2026-07-31: Started Task 6.

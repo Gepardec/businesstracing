@@ -187,7 +187,7 @@ Run project-aware analysis once for the effective reactor and create determinist
 
 ### Task 5: Make compiler and JPMS analysis project-safe
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 2 and 4
 **Priority:** High
@@ -227,7 +227,7 @@ Replace flat union attribution with per-project compiler contexts and validated 
 
 ### Task 6: Add bounded runtime dispatch diagnostics and context propagation
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** M
 **Dependencies:** Task 2
 **Priority:** High

@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Immutable application boundary for project-aware source analysis.
@@ -106,6 +107,7 @@ public record ApplicationSourceBoundary(
                     .append(project.compilerModel().release()).append('\n');
             project.compilerModel().compilerArguments().forEach(item -> value.append("option:").append(item).append('\n'));
             project.projectDependencies().forEach(item -> value.append("dependency:").append(item).append('\n'));
+            project.moduleDescriptor().ifPresent(item -> value.append("module:").append(item).append('\n'));
             project.entrySourceFiles().forEach(item -> value.append("entry:").append(item).append('\n'));
             project.resolutionSourceFiles().forEach(item -> value.append("resolution:").append(item).append('\n'));
             project.compilationClasspath().forEach(item -> value.append("classpath:").append(item).append('\n'));
@@ -124,7 +126,20 @@ public record ApplicationSourceBoundary(
             List<Path> resolutionSourceFiles,
             List<Path> compilationClasspath,
             CompilerModel compilerModel,
-            List<String> projectDependencies) {
+            List<String> projectDependencies,
+            Optional<Path> moduleDescriptor) {
+        /** Compatibility constructor for callers that do not supply JPMS metadata. */
+        public ProjectSources(
+                String projectId,
+                List<Path> entrySourceFiles,
+                List<Path> resolutionSourceFiles,
+                List<Path> compilationClasspath,
+                CompilerModel compilerModel,
+                List<String> projectDependencies) {
+            this(projectId, entrySourceFiles, resolutionSourceFiles, compilationClasspath,
+                    compilerModel, projectDependencies, Optional.empty());
+        }
+
         /** Creates a normalized project model. */
         public ProjectSources {
             projectId = requireText(projectId, "projectId");
@@ -133,6 +148,13 @@ public record ApplicationSourceBoundary(
             compilationClasspath = normalizedPaths(compilationClasspath, "compilationClasspath");
             compilerModel = Objects.requireNonNull(compilerModel, "compilerModel");
             projectDependencies = List.copyOf(Objects.requireNonNull(projectDependencies, "projectDependencies"));
+            moduleDescriptor = Objects.requireNonNull(moduleDescriptor, "moduleDescriptor")
+                    .map(ApplicationSourceBoundary::normalize);
+            moduleDescriptor.ifPresent(path -> {
+                if (!path.getFileName().toString().equals("module-info.java")) {
+                    throw new IllegalArgumentException("module descriptor must be named module-info.java");
+                }
+            });
             var resolutionKeys = new LinkedHashSet<>(resolutionSourceFiles);
             if (!resolutionKeys.containsAll(entrySourceFiles)) {
                 throw new IllegalArgumentException("all entry sources must also be resolution sources");

@@ -1,5 +1,6 @@
 package at.gepardec.fachtracing.maven;
 
+import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -59,15 +60,12 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
         }
         try {
             List<MavenProject> projects = selectedProjects();
-            List<String> roots = projects.stream()
-                    .flatMap(candidate -> candidate.getCompileSourceRoots().stream()).toList();
-            List<Path> sources = AnalyzeMojo.sourceFiles(roots);
             Charset charset = encoding == null || encoding.isBlank()
                     ? StandardCharsets.UTF_8 : Charset.forName(encoding);
+            ApplicationSourceBoundary boundary = boundary(projects);
             var result = new ProjectGraphGenerator().generate(
-                    sources, sources, AnalyzeMojo.compileClasspath(projects), charset,
-                    outputDirectory.toPath(), failOnIncomplete);
-            writeActivationBundle(projects, sources, result);
+                    boundary, charset, outputDirectory.toPath(), failOnIncomplete);
+            writeActivationBundle(projects, boundary.resolutionSourceFiles(), result);
             getLog().info("Generated " + result.graphCount()
                     + " aggregate Fachtracing decision graph(s) from " + projects.size() + " project(s)");
         } catch (ProjectGraphGenerator.IncompleteGraphException error) {
@@ -80,6 +78,36 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
         } catch (IOException error) {
             throw new MojoExecutionException("Could not write aggregate Fachtracing output", error);
         }
+    }
+
+    private static ApplicationSourceBoundary boundary(List<MavenProject> projects)
+            throws IOException, DependencyResolutionRequiredException {
+        var selectedIds = projects.stream().map(AnalyzeReactorMojo::coordinate)
+                .collect(java.util.stream.Collectors.toSet());
+        var models = new java.util.ArrayList<ApplicationSourceBoundary.ProjectSources>();
+        for (MavenProject candidate : projects) {
+            List<Path> sources = AnalyzeMojo.sourceFiles(candidate.getCompileSourceRoots());
+            List<Path> classpath = candidate.getCompileClasspathElements().stream()
+                    .map(Path::of).map(path -> path.toAbsolutePath().normalize()).toList();
+            String configuredEncoding = candidate.getProperties().getProperty(
+                    "project.build.sourceEncoding", "UTF-8");
+            String release = candidate.getProperties().getProperty("maven.compiler.release", "21");
+            List<String> dependencies = candidate.getDependencies().stream()
+                    .map(dependency -> dependency.getGroupId() + ':' + dependency.getArtifactId())
+                    .filter(selectedIds::contains).distinct().sorted().toList();
+            models.add(new ApplicationSourceBoundary.ProjectSources(
+                    coordinate(candidate), sources, sources, classpath,
+                    new ApplicationSourceBoundary.CompilerModel(
+                            Charset.forName(configuredEncoding), release, List.of()),
+                    dependencies, moduleDescriptor(candidate.getCompileSourceRoots())));
+        }
+        return new ApplicationSourceBoundary(models, List.of());
+    }
+
+    private static java.util.Optional<Path> moduleDescriptor(List<String> roots) {
+        return roots.stream().map(root -> Path.of(root).resolve("module-info.java"))
+                .filter(Files::isRegularFile).map(path -> path.toAbsolutePath().normalize())
+                .findFirst();
     }
 
     private List<MavenProject> selectedProjects() {

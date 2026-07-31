@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.AnalysisRequest;
+import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
@@ -75,6 +76,29 @@ final class ProjectGraphGenerator {
 
         var analyses = analyzer.analyzeAll(
                 new AnalysisRequest(sourceFiles, classpath, charset, rootSourceFiles));
+        return write(analyses, charset, outputDirectory, failOnIncomplete, developerOutput);
+    }
+
+    GenerationResult generate(
+            ApplicationSourceBoundary boundary,
+            Charset outputCharset,
+            Path outputDirectory,
+            boolean failOnIncomplete) throws IOException, IncompleteGraphException {
+        Objects.requireNonNull(boundary, "boundary");
+        if (boundary.entrySourceFiles().isEmpty()) {
+            removePriorArtifacts(outputDirectory);
+            return new GenerationResult(0, 0, true);
+        }
+        return write(analyzer.analyzeAll(boundary), outputCharset, outputDirectory,
+                failOnIncomplete, Optional.empty());
+    }
+
+    private GenerationResult write(
+            List<at.gepardec.fachtracing.analysis.AnalysisManifest.AnalysisResult> analyses,
+            Charset charset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
         if (analyses.isEmpty()) {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true);
