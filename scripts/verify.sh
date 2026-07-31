@@ -21,6 +21,8 @@ AGENT_CP="$CP:fachtracing-agent/target/classes:fachtracing-agent/target/test-cla
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$AGENT_CP" at.gepardec.fachtracing.agent.FachtracingTransformerTest
 PLUGIN_CP="$CP:fachtracing-maven-plugin/target/classes:fachtracing-maven-plugin/target/test-classes"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$PLUGIN_CP" at.gepardec.fachtracing.maven.AnalyzeMojoTest
+JDBC_CP="$CP:fachtracing-storage-jdbc/target/classes:fachtracing-storage-jdbc/target/test-classes:$HOME/.m2/repository/com/h2database/h2/2.4.240/h2-2.4.240.jar"
+"$JAVA21" -ea --add-modules jdk.compiler -cp "$JDBC_CP" at.gepardec.fachtracing.storage.jdbc.JdbcDecisionRecordRepositoryTest
 FIXTURE="fachtracing-maven-plugin/src/test/resources/it/basic"
 mvn -q -f "$FIXTURE/pom-command.xml" clean compile \
   at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze

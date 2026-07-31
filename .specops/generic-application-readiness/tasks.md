@@ -360,7 +360,7 @@ Add a versioned record envelope and bounded asynchronous delivery without applic
 
 ### Task 9: Add a JDBC persistence and retrieval adapter
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 8
 **Priority:** High
@@ -402,7 +402,7 @@ fault-injection tests.
 
 ### Task 10: Prove released external-project integration
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** L
 **Dependencies:** Tasks 4, 7, 8, and 9
 **Priority:** High

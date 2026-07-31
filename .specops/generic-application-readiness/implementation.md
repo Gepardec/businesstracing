@@ -46,6 +46,7 @@
 | 10 | Propagate runtime context only through explicit tokens and wrappers | Explicit capture and scoped restoration prevent accidental cross-trace inheritance. | 6 | 2026-07-31 |
 | 11 | Bind each published Java capability to an executable contract name | A release check can detect documentation claims that have no matching contract method. | 7 | 2026-07-31 |
 | 12 | Keep protocol envelopes already redacted before queue admission | Neither delivery nor persistence needs access to raw business identifiers or values. | 8 | 2026-07-31 |
+| 13 | Keep the production JDBC adapter vendor-neutral and H2 test-only | Applications provide a standard `DataSource`; the reference database does not become a runtime dependency. | 9 | 2026-07-31 |
 
 ## Deviations from Design
 
@@ -121,3 +122,8 @@
   delivery with retry, shutdown, admission policies, and counters. Contracts verify round-trip,
   unknown-field reading, lookup, retention, retry recovery, and that repository I/O uses the worker.
 - 2026-07-31: Started Task 9.
+- 2026-07-31: Task 9 completed. Added a separate standard-JDBC module with a repeatable V1 schema,
+  transactional idempotent save, execution lookup, indexed redacted-correlation queries, retention,
+  and SQL-state retry classification. H2 2.4.240 is test scope only. Its reference contract covers
+  migration, idempotency, lookup, query, and retention.
+- 2026-07-31: Started Task 10.
