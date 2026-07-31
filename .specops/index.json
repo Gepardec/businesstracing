@@ -48,5 +48,21 @@
     "author": "lucostus",
     "updated": "2026-07-31T09:39:13Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "reactor-wide-implementation-resolution",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-31T10:00:24Z"
+  },
+  {
+    "id": "jpms-reactor-source-resolution",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-31T09:44:56Z"
   }
 ]

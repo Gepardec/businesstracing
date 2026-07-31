@@ -3,7 +3,7 @@ name: "Dependency Safety"
 description: "Project dependencies, known issues, approved versions, and migration timelines"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-10T13:56:48Z"
+_generatedAt: "2026-07-31T09:22:40Z"
 ---
 
 ## Detected Dependencies

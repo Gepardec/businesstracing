@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeSet;
 
 /** Generates static decision graphs and optional developer JSON for the current Maven module. */
 @Mojo(name = "analyze", defaultPhase = LifecyclePhase.PROCESS_CLASSES,
@@ -27,6 +28,9 @@ import java.util.Optional;
 public final class AnalyzeMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
+
+    @Parameter(defaultValue = "${reactorProjects}", readonly = true)
+    private List<MavenProject> reactorProjects;
 
     @Parameter(defaultValue = "${project.build.directory}/fachtracing",
             property = "fachtracing.outputDirectory", required = true)
@@ -56,13 +60,24 @@ public final class AnalyzeMojo extends AbstractMojo {
         }
         String module = project.getArtifactId() == null ? "current module" : project.getArtifactId();
         try {
-            List<Path> sources = sourceFiles(project.getCompileSourceRoots());
-            List<Path> classpath = project.getCompileClasspathElements().stream().map(Path::of).toList();
+            List<Path> rootSources = sourceFiles(project.getCompileSourceRoots());
             Charset charset = encoding == null || encoding.isBlank()
                     ? StandardCharsets.UTF_8 : Charset.forName(encoding);
-            var result = new ProjectGraphGenerator().generate(
-                    sources, classpath, charset, outputDirectory.toPath(), failOnIncomplete,
-                    developerOutput());
+            var generator = new ProjectGraphGenerator();
+            ProjectGraphGenerator.GenerationResult result;
+            if (rootSources.isEmpty()) {
+                result = generator.generate(
+                        rootSources, rootSources, List.of(), charset, outputDirectory.toPath(),
+                        failOnIncomplete, developerOutput());
+            } else {
+                List<MavenProject> analysisProjects = analysisProjects();
+                List<Path> sources = sourceFiles(analysisProjects.stream()
+                        .flatMap(candidate -> candidate.getCompileSourceRoots().stream()).toList());
+                List<Path> classpath = compileClasspath(analysisProjects);
+                result = generator.generate(
+                        rootSources, sources, classpath, charset, outputDirectory.toPath(),
+                        failOnIncomplete, developerOutput());
+            }
             if (result.skipped()) {
                 getLog().info("No @FachTracing decision found in " + module + "; skipping");
                 return;
@@ -91,17 +106,38 @@ public final class AnalyzeMojo extends AbstractMojo {
     }
 
     private static List<Path> sourceFiles(List<String> roots) throws IOException {
-        var sources = new ArrayList<Path>();
+        var sources = new TreeSet<Path>(Comparator.comparing(Path::toString));
         for (String root : roots) {
             Path directory = Path.of(root);
             if (!Files.isDirectory(directory)) continue;
             try (var files = Files.walk(directory)) {
                 files.filter(Files::isRegularFile)
                         .filter(path -> path.toString().endsWith(".java"))
+                        .filter(path -> !path.getFileName().toString().equals("module-info.java"))
+                        .map(path -> path.toAbsolutePath().normalize())
                         .forEach(sources::add);
             }
         }
-        sources.sort(Comparator.comparing(path -> path.toAbsolutePath().normalize().toString()));
         return List.copyOf(sources);
+    }
+
+    private List<MavenProject> analysisProjects() {
+        if (reactorProjects == null || reactorProjects.isEmpty()) return List.of(project);
+        if (reactorProjects.contains(project)) return List.copyOf(reactorProjects);
+        var projects = new ArrayList<>(reactorProjects);
+        projects.add(project);
+        return List.copyOf(projects);
+    }
+
+    private static List<Path> compileClasspath(List<MavenProject> projects)
+            throws DependencyResolutionRequiredException {
+        var classpath = new TreeSet<Path>(Comparator.comparing(Path::toString));
+        for (MavenProject candidate : projects) {
+            candidate.getCompileClasspathElements().stream()
+                    .map(Path::of)
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .forEach(classpath::add);
+        }
+        return List.copyOf(classpath);
     }
 }

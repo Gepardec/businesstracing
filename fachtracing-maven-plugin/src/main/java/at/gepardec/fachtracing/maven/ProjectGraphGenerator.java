@@ -35,13 +35,46 @@ final class ProjectGraphGenerator {
             Path outputDirectory,
             boolean failOnIncomplete,
             Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
+        return generate(sourceFiles, sourceFiles, classpath, charset, outputDirectory,
+                failOnIncomplete, developerOutput);
+    }
+
+    GenerationResult generate(
+            List<Path> sourceFiles,
+            List<Path> classpath,
+            Charset charset,
+            Path outputDirectory,
+            boolean failOnIncomplete) throws IOException, IncompleteGraphException {
+        return generate(sourceFiles, sourceFiles, classpath, charset, outputDirectory, failOnIncomplete);
+    }
+
+    GenerationResult generate(
+            List<Path> rootSourceFiles,
+            List<Path> sourceFiles,
+            List<Path> classpath,
+            Charset charset,
+            Path outputDirectory,
+            boolean failOnIncomplete) throws IOException, IncompleteGraphException {
+        return generate(rootSourceFiles, sourceFiles, classpath, charset, outputDirectory,
+                failOnIncomplete, Optional.empty());
+    }
+
+    GenerationResult generate(
+            List<Path> rootSourceFiles,
+            List<Path> sourceFiles,
+            List<Path> classpath,
+            Charset charset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
         Objects.requireNonNull(developerOutput, "developerOutput");
-        if (sourceFiles.isEmpty()) {
+        if (rootSourceFiles.isEmpty() || sourceFiles.isEmpty()) {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true);
         }
 
-        var analyses = analyzer.analyzeAll(new AnalysisRequest(sourceFiles, classpath, charset));
+        var analyses = analyzer.analyzeAll(
+                new AnalysisRequest(sourceFiles, classpath, charset, rootSourceFiles));
         if (analyses.isEmpty()) {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true);

@@ -24,10 +24,13 @@ mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:anal
 ```
 
 The module receives a Markdown index plus Mermaid and PlantUML diagrams under
-`target/fachtracing`. Maven supplies the source roots and complete compilation classpath; no
-analysis launcher, plugin block, or path assembly is required. See the copyable
+`target/fachtracing`. Maven supplies the current module's decision-entry roots plus the active
+reactor's source and compile-classpath union. Interface implementations in sibling reactor modules
+are therefore available for dispatch resolution, but sibling annotations do not create duplicate
+diagrams in the current module. A single-module build uses the same behavior as before. No analysis
+launcher, plugin block, or path assembly is required. See the copyable
 [Maven plugin setup](docs/maven-plugin.md), including automatic lifecycle and parent-POM usage for
-adding many modules. When repository and source-link settings are present, the same goal also writes
+many modules. When repository and source-link settings are present, the same goal also writes
 revision-pinned developer JSON that another tool can visualize.
 
 ## Integration flow
