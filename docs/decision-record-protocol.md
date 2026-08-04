@@ -18,12 +18,15 @@ redacted canonical value. Retention deletes records completed strictly before th
 
 `DecisionRecordDelivery` uses a bounded queue and one daemon storage worker. `offer` performs no
 repository I/O. The default integration policy should be `FAIL_OPEN`; a full queue preserves the
-application decision, rejects no application call, and increments `dropped`. `REJECT_NEW_TRACE`
+application decision, rejects no application call, and increments `admissionDropped`.
+`REJECT_NEW_TRACE`
 returns false and increments `rejected`. `BLOCK` is opt-in for deployments that accept application
 backpressure.
 
 Repository failures retry only on the worker with a configured retry count and delay. Counters report
-accepted, saved, retried, rejected, and dropped records. Shutdown drains accepted work for up to ten
-seconds and counts any remainder as dropped. Production deployments must alert on rejected, dropped,
-and repeated retry counts. Redaction, retention, deletion authorization, and backup deletion remain
-deployment responsibilities.
+accepted, saved, retried, rejected, admission-dropped, and accepted-but-dropped records. After
+`close()` returns, the worker is stopped and `accepted = saved + dropped`. An interrupted retry counts
+the accepted record as dropped. `close()` waits for an in-flight repository call, so repository
+implementations must support interruption or use bounded I/O timeouts. Production deployments must
+alert on rejected, admission-dropped, accepted-but-dropped, and repeated retry counts. Redaction,
+retention, deletion authorization, and backup deletion remain deployment responsibilities.

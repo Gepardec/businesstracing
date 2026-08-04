@@ -44,9 +44,9 @@ roots. It also uses Java sources and compile classpaths from the active reactor 
 interface and abstract-method implementations. Thus, an implementation in a sibling module can
 appear as a dispatch candidate without creating a graph for an annotation in that sibling module.
 
-The plugin ignores `module-info.java` during graph analysis. Maven still compiles each module
-descriptor and applies its JPMS rules. A module with no Java source skips analysis before the plugin
-resolves reactor classpaths, and it removes stale Fachtracing output.
+The plugin keeps each `module-info.java` file and validates each modular project with its effective
+module path before graph extraction. It does not put multiple module descriptors in one synthetic
+module. A module with no Java source skips graph generation and removes stale Fachtracing output.
 
 ### One aggregate reactor result
 
@@ -66,6 +66,11 @@ cannot replace another.
 Optional `includeProjects` and `excludeProjects` lists use exact `groupId:artifactId` values. They
 filter Maven's effective selection. An include value that is not in that selection causes a failure.
 The existing `analyze` goal remains available for per-module output.
+
+The aggregate goal supports the same `additionalSourceRoots`, `additionalEntrySourceRoots`, and
+`sourceDependencies` settings as the module goal. You can also set these lists with the matching
+`fachtracing.*` command-line properties. In a reactor with a POM execution root, an additional entry
+root uses the first selected non-POM project's compiler context.
 
 ## Explicit external source inputs
 
@@ -91,6 +96,13 @@ Each source dependency must use the exact `groupId:artifactId:version` form. The
 the named `sources` classifier. It does not scan dependencies and does not infer source artifacts.
 Maven repository mirrors, credentials, and offline mode apply. In offline mode, the exact source JAR
 must already be in the local repository. A missing artifact causes a deterministic failure.
+
+The analyzer reads the effective `maven-compiler-plugin` configuration for each project. It keeps
+the encoding, release or equal source/target level, `compilerArgs`, preview and parameter flags,
+generated source root, module descriptor, and module path. It rejects different source and target
+levels, forked compiler executables, legacy free-form compiler arguments, and configured annotation
+processors before graph extraction. Run analysis after compilation so generated processor output is
+in the registered compile source roots.
 
 The plugin extracts source JARs below
 `target/fachtracing-source-dependencies/<archive-sha256>`. It rejects absolute paths, traversal,

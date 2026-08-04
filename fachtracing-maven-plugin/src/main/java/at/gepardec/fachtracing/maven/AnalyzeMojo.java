@@ -1,5 +1,6 @@
 package at.gepardec.fachtracing.maven;
 
+import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -67,15 +68,15 @@ public final class AnalyzeMojo extends AbstractMojo {
     private String sourceUrlTemplate;
 
     /** Local Java source directories used only to resolve reachable calls and implementations. */
-    @Parameter
+    @Parameter(property = "fachtracing.additionalSourceRoots")
     private List<File> additionalSourceRoots;
 
     /** Local Java source directories that can also contain annotated graph entries. */
-    @Parameter
+    @Parameter(property = "fachtracing.additionalEntrySourceRoots")
     private List<File> additionalEntrySourceRoots;
 
     /** Exact groupId:artifactId:version coordinates whose sources classifiers are resolution-only. */
-    @Parameter
+    @Parameter(property = "fachtracing.sourceDependencies")
     private List<String> sourceDependencies;
 
     @Parameter(defaultValue = "${project.build.directory}/fachtracing-source-dependencies",
@@ -98,30 +99,15 @@ public final class AnalyzeMojo extends AbstractMojo {
         }
         String module = project.getArtifactId() == null ? "current module" : project.getArtifactId();
         try {
-            List<Path> rootSources = sourceFiles(concat(
-                    project.getCompileSourceRoots(), paths(additionalEntrySourceRoots)));
             Charset charset = encoding == null || encoding.isBlank()
                     ? StandardCharsets.UTF_8 : Charset.forName(encoding);
             var generator = new ProjectGraphGenerator();
             ProjectGraphGenerator.GenerationResult result;
-            if (rootSources.isEmpty()) {
-                result = generator.generate(
-                        rootSources, rootSources, List.of(), charset, outputDirectory.toPath(),
-                        failOnIncomplete, developerOutput(List.of()));
-            } else {
-                List<MavenProject> analysisProjects = analysisProjects();
-                var sourceRoots = new ArrayList<String>(analysisProjects.stream()
-                        .flatMap(candidate -> candidate.getCompileSourceRoots().stream()).toList());
-                sourceRoots.addAll(paths(additionalSourceRoots));
-                sourceRoots.addAll(paths(additionalEntrySourceRoots));
-                var artifacts = resolveSourceDependencies();
-                artifacts.stream().map(item -> item.root().toString()).forEach(sourceRoots::add);
-                List<Path> sources = sourceFiles(sourceRoots);
-                List<Path> classpath = compileClasspath(analysisProjects);
-                result = generator.generate(
-                        rootSources, sources, classpath, charset, outputDirectory.toPath(),
-                        failOnIncomplete, developerOutput(sourceOrigins(artifacts)));
-            }
+            List<MavenProject> analysisProjects = analysisProjects();
+            var artifacts = resolveSourceDependencies();
+            ApplicationSourceBoundary boundary = boundary(analysisProjects, artifacts);
+            result = generator.generate(boundary, charset, outputDirectory.toPath(),
+                    failOnIncomplete, developerOutput(sourceOrigins(artifacts)));
             if (result.skipped()) {
                 getLog().info("No @FachTracing decision found in " + module + "; skipping");
                 return;
@@ -142,6 +128,61 @@ public final class AnalyzeMojo extends AbstractMojo {
         } catch (IOException error) {
             throw new MojoExecutionException("Could not write Fachtracing output for " + module, error);
         }
+    }
+
+    private ApplicationSourceBoundary boundary(
+            List<MavenProject> projects,
+            List<SourceInputResolver.ResolvedSourceArtifact> artifacts)
+            throws IOException, DependencyResolutionRequiredException {
+        var selectedIds = projects.stream().map(AnalyzeMojo::coordinate)
+                .collect(java.util.stream.Collectors.toSet());
+        var models = new ArrayList<ApplicationSourceBoundary.ProjectSources>();
+        for (MavenProject candidate : projects) {
+            List<Path> classpath = candidate.getCompileClasspathElements().stream()
+                    .map(Path::of).map(path -> path.toAbsolutePath().normalize()).toList();
+            Optional<Path> module = candidate == project
+                    ? moduleDescriptor(candidate.getCompileSourceRoots()) : Optional.empty();
+            var compiler = MavenCompilerModelResolver.resolve(candidate, classpath, module.isPresent());
+            List<Path> sources = sourceFiles(compiler.compileSourceRoots());
+            List<Path> entries = candidate == project ? new ArrayList<>(sources) : new ArrayList<>();
+            if (candidate == project) {
+                List<Path> configuredEntries = sourceFiles(paths(additionalEntrySourceRoots));
+                entries.addAll(configuredEntries);
+                sources = java.util.stream.Stream.concat(sources.stream(), configuredEntries.stream())
+                        .distinct().sorted(Comparator.comparing(Path::toString)).toList();
+            }
+            List<String> dependencies = candidate.getDependencies().stream()
+                    .map(dependency -> dependency.getGroupId() + ':' + dependency.getArtifactId())
+                    .filter(selectedIds::contains).distinct().sorted().toList();
+            models.add(new ApplicationSourceBoundary.ProjectSources(
+                    coordinate(candidate), entries, sources, classpath,
+                    compiler.compilerModel(), dependencies, module));
+        }
+        var external = new ArrayList<ApplicationSourceBoundary.ResolutionSource>();
+        int index = 0;
+        for (File root : safeFiles(additionalSourceRoots)) {
+            var origin = new ApplicationSourceBoundary.SourceOrigin(
+                    ApplicationSourceBoundary.OriginKind.LOCAL, "local-" + (++index), "");
+            sourceFiles(List.of(root.getPath())).forEach(path ->
+                    external.add(new ApplicationSourceBoundary.ResolutionSource(path, origin)));
+        }
+        for (SourceInputResolver.ResolvedSourceArtifact artifact : artifacts) {
+            var origin = new ApplicationSourceBoundary.SourceOrigin(
+                    ApplicationSourceBoundary.OriginKind.MAVEN_SOURCE,
+                    artifact.coordinate(), artifact.checksum());
+            artifact.sourceFiles().forEach(path ->
+                    external.add(new ApplicationSourceBoundary.ResolutionSource(path, origin)));
+        }
+        return new ApplicationSourceBoundary(models, external);
+    }
+
+    private static Optional<Path> moduleDescriptor(List<String> roots) {
+        return roots.stream().map(root -> Path.of(root).resolve("module-info.java"))
+                .filter(Files::isRegularFile).map(path -> path.toAbsolutePath().normalize()).findFirst();
+    }
+
+    private static String coordinate(MavenProject project) {
+        return project.getGroupId() + ':' + project.getArtifactId();
     }
 
     private Optional<ProjectGraphGenerator.DeveloperOutput> developerOutput(

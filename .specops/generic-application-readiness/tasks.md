@@ -494,10 +494,93 @@ Run one clean, reproducible release gate that proves every requirement and preve
 6. Task 10 proves external installation.
 7. Task 11 is the only completion gate.
 
+### Task 12: Prove real external runtime tracing
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Task 10
+**Priority:** High
+**IssueID:** None
+
+**Acceptance Criteria:**
+
+- [x] The external fixture invokes `ExternalDecision.approve` under a configured transformer.
+- [x] The persisted execution contains injected input, predicate-edge, and result observations.
+- [x] Retrieval produces a business explanation from the actual execution.
+
+### Task 13: Complete aggregate source-boundary inputs
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Tasks 3 and 4
+**Priority:** High
+**IssueID:** None
+
+**Acceptance Criteria:**
+
+- [x] Aggregate local resolution and entry roots have distinct entry behavior.
+- [x] Exact source artifacts are resolution-only and work in offline mode from local cache.
+- [x] Aggregate multi-origin developer provenance remains accurate.
+
+### Task 14: Preserve the effective Maven compiler model
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Task 5
+**Priority:** High
+**IssueID:** None
+
+**Acceptance Criteria:**
+
+- [x] Effective release or source/target, encoding, arguments, generated roots, module path, and
+  processor path are represented or rejected before extraction.
+- [x] JPMS analysis uses a valid per-project compiler context and does not silently remove module
+  descriptors.
+
+### Task 15: Enforce strict concurrent diagnostic capacity
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 6
+**Priority:** High
+**IssueID:** None
+
+**Acceptance Criteria:**
+
+- [x] Concurrent unique mismatch publication never retains more than the configured capacity.
+- [x] Overflow and deduplication counters remain correct under pressure.
+
+### Task 16: Make delivery shutdown loss-accountable
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 8
+**Priority:** High
+**IssueID:** None
+
+**Acceptance Criteria:**
+
+- [x] `close()` does not return while the worker remains active.
+- [x] Each accepted record is saved or counted as dropped after shutdown.
+- [x] Interrupted and timed-out retry paths have deterministic counter contracts.
+
+### Task 17: Rerun corrected release evidence
+
+**Status:** In Progress
+**Estimated Effort:** L
+**Dependencies:** Tasks 12 through 16
+**Priority:** High
+**IssueID:** None
+
+**Acceptance Criteria:**
+
+- [x] Main verification and pinned Mega conformance pass.
+- [ ] The full clean-clone 600-second release gate passes with corrected runtime evidence.
+
 ## Progress Tracking
 
-- Total Tasks: 11
-- Completed: 11
-- In Progress: 0
+- Total Tasks: 17
+- Completed: 16
+- In Progress: 1
 - Blocked: 0
 - Pending: 0

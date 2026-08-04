@@ -29,5 +29,7 @@ the V1 database schema; V1 records remain readable. Do not activate a manifest w
 version or class fingerprint does not match the running class.
 
 `scripts/verify-external-release.sh` publishes the RC to a temporary isolated file repository,
-uses an empty Maven local repository, generates Mermaid and PlantUML from one annotation, starts a
-JVM with the released agent, persists through the released JDBC adapter, and retrieves the record.
+uses an empty Maven local repository, resolves an exact external source artifact, and repeats that
+source analysis offline from cache. It generates Mermaid and PlantUML, starts a JVM with the released
+agent, configures the transformer, invokes the annotated method, verifies the captured path and
+business explanation, persists the actual execution through JDBC, and retrieves and explains it.

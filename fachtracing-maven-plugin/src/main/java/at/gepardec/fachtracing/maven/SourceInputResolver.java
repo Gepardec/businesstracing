@@ -106,8 +106,9 @@ final class SourceInputResolver {
                 } catch (InvalidPathException invalid) {
                     throw new IllegalArgumentException("invalid source archive entry: " + name, invalid);
                 }
+                String canonicalName = entry.isDirectory() ? relative + "/" : relative.toString();
                 if (relative.isAbsolute() || relative.getNameCount() == 0
-                        || relative.startsWith("..") || !relative.toString().equals(name)) {
+                        || relative.startsWith("..") || !canonicalName.equals(name)) {
                     throw new IllegalArgumentException("unsafe source archive entry: " + name);
                 }
                 Path destination = staging.resolve(relative).normalize();

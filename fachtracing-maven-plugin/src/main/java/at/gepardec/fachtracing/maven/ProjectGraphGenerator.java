@@ -84,13 +84,23 @@ final class ProjectGraphGenerator {
             Charset outputCharset,
             Path outputDirectory,
             boolean failOnIncomplete) throws IOException, IncompleteGraphException {
+        return generate(boundary, outputCharset, outputDirectory, failOnIncomplete, Optional.empty());
+    }
+
+    GenerationResult generate(
+            ApplicationSourceBoundary boundary,
+            Charset outputCharset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
         Objects.requireNonNull(boundary, "boundary");
+        Objects.requireNonNull(developerOutput, "developerOutput");
         if (boundary.entrySourceFiles().isEmpty()) {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true);
         }
         return write(analyzer.analyzeAll(boundary), outputCharset, outputDirectory,
-                failOnIncomplete, Optional.empty());
+                failOnIncomplete, developerOutput);
     }
 
     private GenerationResult write(

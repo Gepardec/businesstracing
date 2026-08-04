@@ -148,3 +148,21 @@
 - Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
 - Final load: 600,000 completed records at 1,000 RPS; 0.108% p95 overhead
 - Integrity counters: 0 errors, mismatches, drops, contamination, or silent accepted-record loss
+
+## Remediation Iteration 2
+
+- Trigger: PR 5 changes requested on 2026-08-04.
+- Status: reopened because five P1 findings invalidate runtime-integration, aggregate-boundary,
+  compiler-model, bounded-memory, and shutdown-accounting completion claims.
+- Scope: Tasks 12 through 17 only. Earlier verified behavior remains a mandatory regression gate.
+- Review evidence: the external fixture manually constructed its execution; aggregate analysis did
+  not accept external sources; compiler settings were partial; concurrent diagnostic admission was
+  not atomic; and shutdown did not account for an interrupted in-flight retry.
+- 2026-08-04: Tasks 12 through 16 completed. The external release fixture now invokes the annotated
+  method through the released agent and verifies its stored explanation. Aggregate analysis accepts
+  local entry and resolution roots plus exact cached source artifacts. Effective compiler models and
+  JPMS contexts are validated. Diagnostic admission is atomic. Shutdown terminates the delivery
+  worker and accounts for interrupted or exhausted retries.
+- 2026-08-04: Started Task 17. `scripts/verify.sh` passed, including the corrected external release
+  fixture. Pinned Mega conformance passed with five complete graphs from 420 source files. The clean
+  600-second release gate remains pending.

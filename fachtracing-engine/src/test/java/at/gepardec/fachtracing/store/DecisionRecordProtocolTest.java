@@ -20,6 +20,8 @@ public final class DecisionRecordProtocolTest {
         roundTripsDeterministicallyAndIgnoresUnknownFields();
         queriesOnlyRedactedCorrelationValuesAndRetainsBoundaries();
         retriesOutsideTheApplicationThreadWithCounters();
+        timedOutRetriesAreAccountedAsDropped();
+        shutdownAccountsForInterruptedInFlightRetry();
     }
 
     private static void roundTripsDeterministicallyAndIgnoresUnknownFields() {
@@ -77,5 +79,45 @@ public final class DecisionRecordProtocolTest {
         return new DecisionRecordEnvelope(recordId, execution, "boundary-sha256",
                 Map.of("case", new DecisionExecution.DecisionValue("string", "hash-123", "REDACTED")),
                 "policy-v1");
+    }
+
+    private static void timedOutRetriesAreAccountedAsDropped() throws Exception {
+        var repository = new DecisionRecordRepository() {
+            @Override public DecisionRecordId save(DecisionRecord record) { return record.id(); }
+            @Override public Optional<DecisionRecord> findById(DecisionRecordId id) { return Optional.empty(); }
+            @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
+                throw new java.io.UncheckedIOException(new java.net.SocketTimeoutException("storage timeout"));
+            }
+        };
+        try (var delivery = new DecisionRecordDelivery(repository, 2,
+                DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN, 1, Duration.ZERO)) {
+            assert delivery.offer(envelope("timeout-record", "timeout-execution", Instant.now()));
+            long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+            while (delivery.counters().dropped() == 0 && System.nanoTime() < deadline) Thread.sleep(1);
+            var counters = delivery.counters();
+            assert counters.accepted() == 1 && counters.retried() == 1 && counters.dropped() == 1 : counters;
+            assert counters.unresolvedAccepted() == 0 : counters;
+        }
+    }
+
+    private static void shutdownAccountsForInterruptedInFlightRetry() throws Exception {
+        var attempted = new java.util.concurrent.CountDownLatch(1);
+        var repository = new DecisionRecordRepository() {
+            @Override public DecisionRecordId save(DecisionRecord record) { return record.id(); }
+            @Override public Optional<DecisionRecord> findById(DecisionRecordId id) { return Optional.empty(); }
+            @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
+                attempted.countDown();
+                throw new IllegalStateException("outage");
+            }
+        };
+        var delivery = new DecisionRecordDelivery(repository, 2,
+                DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN, 100, Duration.ofHours(1));
+        assert delivery.offer(envelope("shutdown-record", "shutdown-execution", Instant.now()));
+        assert attempted.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        delivery.close();
+        var counters = delivery.counters();
+        assert !delivery.workerAlive();
+        assert counters.accepted() == 1 && counters.saved() == 0 && counters.dropped() == 1 : counters;
+        assert counters.unresolvedAccepted() == 0 : counters;
     }
 }

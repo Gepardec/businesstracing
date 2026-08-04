@@ -84,6 +84,7 @@ public final class StaticDecisionAnalyzer {
     /** Analyzes every graph entry from a compatible project-aware application boundary. */
     public List<AnalysisManifest.AnalysisResult> analyzeAll(ApplicationSourceBoundary boundary) {
         Objects.requireNonNull(boundary, "boundary");
+        validateCompilerContexts(boundary);
         String searchedBoundary = "searched projects " + boundary.projects().stream()
                 .map(ApplicationSourceBoundary.ProjectSources::projectId).sorted().toList()
                 + ", external sources " + boundary.externalResolutionSources().stream()
@@ -221,6 +222,57 @@ public final class StaticDecisionAnalyzer {
         } catch (IOException error) {
             throw new IllegalStateException("Could not analyze Java sources", error);
         }
+    }
+
+    private static void validateCompilerContexts(ApplicationSourceBoundary boundary) {
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if (compiler == null) throw new IllegalStateException("A full JDK is required for source analysis");
+        for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
+            if (project.resolutionSourceFiles().isEmpty() || project.moduleDescriptor().isEmpty()) continue;
+            var sourcePaths = new ArrayList<>(project.resolutionSourceFiles());
+            project.moduleDescriptor().ifPresent(sourcePaths::add);
+            var diagnostics = new DiagnosticCollector<JavaFileObject>();
+            try (StandardJavaFileManager files = compiler.getStandardFileManager(
+                    diagnostics, Locale.ROOT, project.compilerModel().charset())) {
+                List<String> options = compilerOptions(project);
+                JavacTask task = (JavacTask) compiler.getTask(null, files, diagnostics, options, null,
+                        files.getJavaFileObjectsFromPaths(sourcePaths));
+                task.parse();
+                task.analyze();
+            } catch (IOException error) {
+                throw new IllegalStateException("Could not close the compiler for " + project.projectId(), error);
+            }
+            List<String> errors = diagnostics.getDiagnostics().stream()
+                    .filter(diagnostic -> diagnostic.getKind() == javax.tools.Diagnostic.Kind.ERROR)
+                    .map(Object::toString).toList();
+            if (!errors.isEmpty()) {
+                throw new IllegalArgumentException("Effective compiler context failed for "
+                        + project.projectId() + ": " + String.join(" | ", errors));
+            }
+        }
+    }
+
+    private static List<String> compilerOptions(ApplicationSourceBoundary.ProjectSources project) {
+        var model = project.compilerModel();
+        var options = new ArrayList<>(List.of("-proc:none", "--release", model.release()));
+        options.addAll(model.compilerArguments());
+        if (!model.modulePath().isEmpty()) {
+            options.add("--module-path");
+            options.add(joinPaths(model.modulePath()));
+        }
+        var modulePath = new HashSet<>(model.modulePath());
+        List<Path> classpath = project.compilationClasspath().stream()
+                .filter(path -> !modulePath.contains(path)).toList();
+        if (!classpath.isEmpty()) {
+            options.add("-classpath");
+            options.add(joinPaths(classpath));
+        }
+        return options;
+    }
+
+    private static String joinPaths(List<Path> paths) {
+        return paths.stream().map(Path::toString)
+                .collect(Collectors.joining(System.getProperty("path.separator")));
     }
 
     private static final class Extractor {

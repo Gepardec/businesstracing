@@ -27,6 +27,7 @@ public final class StaticDecisionAnalyzerTest {
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
+        rejectsInvalidJpmsContextBeforeGraphExtraction();
         reportsTheSearchedBoundaryWhenImplementationsAreMissing();
         rejectsInvalidApplicationBoundaries();
         rejectsGraphRootsOutsideTheSourceUniverse();
@@ -219,7 +220,8 @@ public final class StaticDecisionAnalyzerTest {
                     }
                     """);
             Path moduleDescriptor = secondRoot.resolve("module-info.java");
-            Files.writeString(moduleDescriptor, "module same.policy { }");
+            Files.writeString(moduleDescriptor, "module same.policy { requires at.gepardec.fachtracing.api; }");
+            Path apiModule = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
             var boundary = new ApplicationSourceBoundary(List.of(
                     new ApplicationSourceBoundary.ProjectSources(
                             "java17", List.of(first), List.of(first), CLASSPATH,
@@ -227,7 +229,8 @@ public final class StaticDecisionAnalyzerTest {
                                     StandardCharsets.UTF_8, "17", List.of()), List.of()),
                     new ApplicationSourceBoundary.ProjectSources(
                             "java21", List.of(second), List.of(second), CLASSPATH,
-                            ApplicationSourceBoundary.CompilerModel.java21(), List.of(),
+                            new ApplicationSourceBoundary.CompilerModel(
+                                    StandardCharsets.UTF_8, "21", List.of(), List.of(apiModule)), List.of(),
                             java.util.Optional.of(moduleDescriptor))), List.of());
             var results = new StaticDecisionAnalyzer().analyzeAll(boundary);
             assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
@@ -265,6 +268,41 @@ public final class StaticDecisionAnalyzerTest {
             throw new AssertionError("flat analysis accepted incompatible compiler models");
         } catch (IllegalArgumentException expected) {
             assert expected.getMessage().contains("compiler models differ") : expected.getMessage();
+        }
+    }
+
+    private static void rejectsInvalidJpmsContextBeforeGraphExtraction() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-invalid-jpms-");
+            Path source = root.resolve("example/Policy.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package example;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class Policy {
+                        @FachTracing("invalid module decision") boolean decide() { return true; }
+                    }
+                    """);
+            Path descriptor = root.resolve("module-info.java");
+            Files.writeString(descriptor, "module invalid.policy { requires missing.business.rules; }");
+            var model = new ApplicationSourceBoundary.CompilerModel(
+                    StandardCharsets.UTF_8, "21", List.of(), CLASSPATH);
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "invalid", List.of(source), List.of(source), CLASSPATH,
+                            model, List.of(), java.util.Optional.of(descriptor))), List.of());
+            try {
+                new StaticDecisionAnalyzer().analyzeAll(boundary);
+                throw new AssertionError("invalid JPMS context was accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("Effective compiler context failed") : expected;
+                assert expected.getMessage().contains("module not found") : expected;
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
         }
     }
 

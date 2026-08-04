@@ -257,6 +257,22 @@ hints. `Gepardec/mega-backend` remains one black-box conformance corpus.
 
 ## Non-Functional Requirements
 
+## PR 5 Remediation Requirements
+
+- WHEN the isolated external release fixture runs with `-javaagent` THE SYSTEM SHALL configure the
+  agent with the generated manifest and class fingerprint, invoke the annotated method, collect its
+  actual execution, persist it, retrieve it, and project its business explanation.
+- WHEN `analyze-reactor` receives additional resolution roots, additional entry roots, or exact
+  source dependencies THE SYSTEM SHALL add them to the aggregate application boundary with the same
+  entry and provenance rules as the module goal.
+- WHEN Maven supplies an effective compiler model THE SYSTEM SHALL preserve its encoding, release or
+  source/target level, compiler arguments, generated roots, module descriptor, module path, and
+  processor path, or SHALL reject an unsupported setting before graph extraction.
+- WHILE concurrent runtime mismatches exceed diagnostic capacity THE SYSTEM SHALL keep the retained
+  diagnostic-key count at or below the configured capacity.
+- WHEN delivery shutdown returns THE SYSTEM SHALL have terminated its worker and SHALL account for
+  each accepted record as saved or dropped, including an interrupted or timed-out in-flight retry.
+
 - **Performance:** Static aggregate analysis SHALL parse each effective project source model no more
   than once per reactor run. Runtime tracing and asynchronous delivery SHALL stay within 10% p95
   application latency overhead at 1,000 completed decisions per second for ten minutes.

@@ -13,6 +13,13 @@ import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.maven.model.Build;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+
 /** Dependency-free executable contracts for project graph generation. */
 public final class AnalyzeMojoTest {
     private static final Path FIXTURES = Path.of("fachtracing-engine/src/test/resources/fixtures");
@@ -29,10 +36,97 @@ public final class AnalyzeMojoTest {
         resolvesReactorSourcesWithoutGeneratingSiblingEntries();
         preventsAggregateOutputCollisions();
         extractsBoundedSourceArtifactsSafely();
+        readsEffectiveCompilerPluginConfiguration();
+        rejectsUnsupportedCompilerPluginConfiguration();
         skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
         createsSafeDeterministicSlugs();
+    }
+
+    private static void readsEffectiveCompilerPluginConfiguration() throws Exception {
+        MavenProject project = compilerProject();
+        Path generated = project.getBasedir().toPath().resolve("target/generated/rules");
+        Xpp3Dom shared = configuration();
+        add(shared, "encoding", "UTF-8");
+        add(shared, "release", "${java.release}");
+        add(shared, "parameters", "true");
+        add(shared, "generatedSourcesDirectory", generated.toString());
+        Xpp3Dom arguments = add(shared, "compilerArgs", null);
+        add(arguments, "arg", "-Xlint:none");
+        Plugin plugin = compilerPlugin(shared);
+        PluginExecution execution = new PluginExecution();
+        execution.setId("default-compile");
+        Xpp3Dom executionConfiguration = configuration();
+        add(executionConfiguration, "enablePreview", "true");
+        execution.setConfiguration(executionConfiguration);
+        execution.addGoal("compile");
+        plugin.addExecution(execution);
+        project.getBuild().addPlugin(plugin);
+
+        Path dependency = Files.createTempDirectory("fachtracing-module-dependency");
+        var effective = MavenCompilerModelResolver.resolve(project, List.of(
+                Path.of(project.getBuild().getOutputDirectory()), dependency), true);
+
+        assert effective.compilerModel().release().equals("21") : effective;
+        assert effective.compilerModel().charset().equals(StandardCharsets.UTF_8) : effective;
+        assert effective.compilerModel().compilerArguments()
+                .equals(List.of("-Xlint:none", "--enable-preview", "-parameters")) : effective;
+        assert effective.compilerModel().modulePath().equals(List.of(dependency.toAbsolutePath().normalize()))
+                : effective;
+        assert effective.compileSourceRoots().contains(generated.toString()) : effective;
+    }
+
+    private static void rejectsUnsupportedCompilerPluginConfiguration() throws Exception {
+        MavenProject project = compilerProject();
+        Xpp3Dom configuration = configuration();
+        Xpp3Dom processors = add(configuration, "annotationProcessorPaths", null);
+        add(processors, "path", "example");
+        project.getBuild().addPlugin(compilerPlugin(configuration));
+        try {
+            MavenCompilerModelResolver.resolve(project, List.of(), false);
+            throw new AssertionError("annotation processor configuration was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("annotation processor settings") : expected;
+            assert expected.getMessage().contains("example:compiler-fixture") : expected;
+        }
+    }
+
+    private static MavenProject compilerProject() throws Exception {
+        Path base = Files.createTempDirectory("fachtracing-compiler-model");
+        Model model = new Model();
+        model.setModelVersion("4.0.0");
+        model.setGroupId("example");
+        model.setArtifactId("compiler-fixture");
+        model.setVersion("1.0.0");
+        Build build = new Build();
+        build.setDirectory(base.resolve("target").toString());
+        build.setOutputDirectory(base.resolve("target/classes").toString());
+        model.setBuild(build);
+        MavenProject project = new MavenProject(model);
+        project.setFile(base.resolve("pom.xml").toFile());
+        project.getProperties().setProperty("java.release", "21");
+        project.addCompileSourceRoot(base.resolve("src/main/java").toString());
+        return project;
+    }
+
+    private static Plugin compilerPlugin(Xpp3Dom configuration) {
+        Plugin plugin = new Plugin();
+        plugin.setGroupId("org.apache.maven.plugins");
+        plugin.setArtifactId("maven-compiler-plugin");
+        plugin.setConfiguration(configuration);
+        return plugin;
+    }
+
+    private static Xpp3Dom configuration() {
+        return new Xpp3Dom("configuration");
+    }
+
+    private static Xpp3Dom add(Xpp3Dom parent, String name, String value) {
+        Xpp3Dom child = new Xpp3Dom(name);
+        child.setValue(value);
+        parent.addChild(child);
+        return child;
     }
 
     private static void generatesBothFormatsAndIndexWithoutDeletingUnrelatedFiles() throws Exception {

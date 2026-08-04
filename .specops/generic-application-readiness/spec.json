@@ -1,10 +1,10 @@
 {
   "id": "generic-application-readiness",
   "type": "feature",
-  "status": "completed",
-  "version": 1,
+  "status": "implementing",
+  "version": 2,
   "created": "2026-07-31T10:14:44Z",
-  "updated": "2026-07-31T11:42:37Z",
+  "updated": "2026-08-04T12:07:20Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -46,7 +46,7 @@
   "evaluation": {
     "spec": {
       "iterations": 1,
-      "passed": true,
+      "passed": false,
       "scores": {
         "criteriaTestability": 9,
         "criteriaCompleteness": 9,
@@ -57,14 +57,14 @@
     },
     "implementation": {
       "iterations": 1,
-      "passed": true,
+      "passed": false,
       "scores": {
         "functionality": 9,
         "codeQuality": 8,
         "testCoverage": 9,
         "specCompliance": 9
       },
-      "evaluatedAt": "2026-07-31T11:42:37Z"
+      "evaluatedAt": "2026-08-04T12:07:20Z"
     }
   },
   "metrics": {
@@ -72,8 +72,8 @@
     "filesChanged": 50,
     "linesAdded": 3023,
     "linesRemoved": 67,
-    "tasksCompleted": 11,
-    "acceptanceCriteriaVerified": 79,
+    "tasksCompleted": 16,
+    "acceptanceCriteriaVerified": 93,
     "specDurationMinutes": 88
   }
 }

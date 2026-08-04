@@ -20,6 +20,7 @@ public final class RuntimeCollectorTest {
         failedChildKeepsParentDispatchState();
         recordsOpaquePolymorphicEdges();
         resolvesAssignableTargetsAndReportsBoundedMismatches();
+        boundsConcurrentUniqueDiagnosticsStrictly();
         keepsGraphVersionsAndDispatchMappingsSeparate();
         propagatesAndClearsExplicitAsyncContext();
         implementationEdgesRequireTheExpectedDispatch();
@@ -145,6 +146,35 @@ public final class RuntimeCollectorTest {
         collector.complete("outcome", true);
         assert collector.pollCompleted().orElseThrow().observations().getFirst().selectedEdgeId().equals("edge-one");
         assert collector.pollCompleted().orElseThrow().observations().getFirst().selectedEdgeId().equals("edge-two");
+    }
+
+    private static void boundsConcurrentUniqueDiagnosticsStrictly() throws Exception {
+        int capacity = 17;
+        int publishers = 128;
+        RuntimeCollector collector = new RuntimeCollector(java.time.Clock.systemUTC(), capacity);
+        collector.register(graph(), new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(32)) {
+            for (int index = 0; index < publishers; index++) {
+                int item = index;
+                executor.submit(() -> {
+                    start.await();
+                    collector.begin("graph", 1);
+                    collector.dispatch("missing-" + item, new UnknownRule());
+                    collector.complete("outcome", true);
+                    return null;
+                });
+            }
+            start.countDown();
+            executor.shutdown();
+            assert executor.awaitTermination(10, TimeUnit.SECONDS);
+        }
+        assert collector.retainedDiagnosticCount() == capacity : collector.retainedDiagnosticCount();
+        assert collector.diagnosticOverflowCount() == publishers - capacity
+                : collector.diagnosticOverflowCount();
+        int retained = 0;
+        while (collector.pollDiagnostic().isPresent()) retained++;
+        assert retained == capacity : retained;
     }
 
     private static void propagatesAndClearsExplicitAsyncContext() throws Exception {

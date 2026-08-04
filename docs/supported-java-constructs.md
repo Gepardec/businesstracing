@@ -35,16 +35,17 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 
 ## Project and compiler boundary
 
-Aggregate analysis creates one compiler context for each project that contains an entry. It does
-not put unrelated projects or duplicate fully qualified class names into one `javac` task. A context
-uses the project's source encoding, Java release, compile classpath, generated compile roots, JPMS
-descriptor identity, and declared reactor dependency links. Connected implementation projects can
-supply polymorphic candidates. Unconnected projects cannot affect the graph.
+Aggregate analysis creates one compiler context for each modular project and one extraction context
+for each project that contains an entry. It does not put module descriptors or duplicate fully
+qualified class names into one `javac` task. A context uses the project's source encoding, Java
+release, compiler arguments, compile classpath, generated compile roots, JPMS descriptor, module
+path, and declared reactor dependency links. Connected implementation projects can supply
+polymorphic candidates. Unconnected projects cannot affect the graph.
 
-The engine keeps the module descriptor as project metadata. Maven compiles and validates the JPMS
-descriptor before aggregate analysis; Fachtracing does not combine several descriptors into a
-synthetic module compilation. Different releases and encodings use separate compiler tasks. Invalid
-or unsupported compiler settings fail source attribution before graph extraction. Generated sources
+Fachtracing parses and attributes each module descriptor with that project's sources and effective
+module path before graph extraction. It does not depend only on Maven's earlier compilation.
+Different releases, encodings, and arguments use separate compiler tasks. Unsupported forked
+compilers and annotation-processor configurations fail before graph extraction. Generated sources
 keep generated provenance in developer graph V2.
 
 Every annotated decision has one `Start` and one `Stop`. Return paths state the returned business

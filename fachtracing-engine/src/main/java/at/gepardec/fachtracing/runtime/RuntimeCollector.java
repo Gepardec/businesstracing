@@ -173,6 +173,11 @@ public class RuntimeCollector implements TraceContextCarrier {
     /** Number of unique diagnostics rejected after the fixed capacity was reached. */
     public long diagnosticOverflowCount() { return diagnosticOverflow.get(); }
 
+    /** Number of retained unique diagnostic keys. */
+    public int retainedDiagnosticCount() {
+        synchronized (diagnosticKeys) { return diagnosticKeys.size(); }
+    }
+
     /** Marks an unsupported asynchronous boundary without joining later unrelated work. */
     public void unsupportedAsyncBoundary(String boundaryKind) {
         InvocationContext context = current();
@@ -241,13 +246,16 @@ public class RuntimeCollector implements TraceContextCarrier {
             InvocationContext context, String nodeId, String runtimeTarget, DiagnosticReason reason) {
         var key = new DiagnosticKey(context.graph().graphId(), context.graph().version(),
                 nodeId, runtimeTarget, reason);
-        if (diagnosticKeys.contains(key)) return;
-        if (diagnosticKeys.size() >= diagnosticCapacity) {
-            diagnosticOverflow.incrementAndGet();
-            return;
+        synchronized (diagnosticKeys) {
+            if (diagnosticKeys.contains(key)) return;
+            if (diagnosticKeys.size() >= diagnosticCapacity) {
+                diagnosticOverflow.incrementAndGet();
+                return;
+            }
+            diagnosticKeys.add(key);
+            diagnostics.add(new RuntimeDiagnostic(
+                    key.graphId(), key.graphVersion(), nodeId, runtimeTarget, reason));
         }
-        if (diagnosticKeys.add(key)) diagnostics.add(new RuntimeDiagnostic(
-                key.graphId(), key.graphVersion(), nodeId, runtimeTarget, reason));
     }
 
     private InvocationContext current() {

@@ -91,7 +91,8 @@ public record ApplicationSourceBoundary(
         if (!compatible) {
             throw new IllegalArgumentException("project compiler models differ; project-aware attribution is required");
         }
-        if (!first.release().equals("21") || !first.compilerArguments().isEmpty()) {
+        if (!first.release().equals("21") || !first.compilerArguments().isEmpty()
+                || !first.modulePath().isEmpty()) {
             throw new IllegalArgumentException("flat analysis supports only the Java 21 default compiler model");
         }
         return new AnalysisRequest(
@@ -106,6 +107,7 @@ public record ApplicationSourceBoundary(
                     .append(project.compilerModel().charset().name()).append('\n')
                     .append(project.compilerModel().release()).append('\n');
             project.compilerModel().compilerArguments().forEach(item -> value.append("option:").append(item).append('\n'));
+            project.compilerModel().modulePath().forEach(item -> value.append("module-path:").append(item).append('\n'));
             project.projectDependencies().forEach(item -> value.append("dependency:").append(item).append('\n'));
             project.moduleDescriptor().ifPresent(item -> value.append("module:").append(item).append('\n'));
             project.entrySourceFiles().forEach(item -> value.append("entry:").append(item).append('\n'));
@@ -170,12 +172,22 @@ public record ApplicationSourceBoundary(
     }
 
     /** Effective source compiler settings for one project. */
-    public record CompilerModel(Charset charset, String release, List<String> compilerArguments) {
+    public record CompilerModel(
+            Charset charset,
+            String release,
+            List<String> compilerArguments,
+            List<Path> modulePath) {
+        /** Compatibility constructor for a non-modular compiler model. */
+        public CompilerModel(Charset charset, String release, List<String> compilerArguments) {
+            this(charset, release, compilerArguments, List.of());
+        }
+
         /** Creates a defensive compiler model. */
         public CompilerModel {
             charset = Objects.requireNonNull(charset, "charset");
             release = requireText(release, "release");
             compilerArguments = List.copyOf(Objects.requireNonNull(compilerArguments, "compilerArguments"));
+            modulePath = normalizedPaths(modulePath, "modulePath");
         }
 
         /** Java 21 UTF-8 compiler defaults. */
