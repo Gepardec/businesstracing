@@ -566,7 +566,7 @@ Run one clean, reproducible release gate that proves every requirement and preve
 
 ### Task 17: Rerun corrected release evidence
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 12 through 16
 **Priority:** High
@@ -575,12 +575,12 @@ Run one clean, reproducible release gate that proves every requirement and preve
 **Acceptance Criteria:**
 
 - [x] Main verification and pinned Mega conformance pass.
-- [ ] The full clean-clone 600-second release gate passes with corrected runtime evidence.
+- [x] The full clean-clone 600-second release gate passes with corrected runtime evidence.
 
 ## Progress Tracking
 
 - Total Tasks: 17
-- Completed: 16
-- In Progress: 1
+- Completed: 17
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

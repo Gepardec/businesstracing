@@ -2,7 +2,7 @@
   {
     "id": "generic-tracing-walking-skeleton",
     "type": "feature",
-    "status": "implementing",
+    "status": "completed",
     "version": 2,
     "author": "lucostus",
     "updated": "2026-07-24T10:30:55Z",
@@ -79,6 +79,6 @@
     "status": "implementing",
     "version": 2,
     "author": "lucostus",
-    "updated": "2026-08-04T12:07:20Z"
+    "updated": "2026-08-04T12:22:39Z"
   }
 ]

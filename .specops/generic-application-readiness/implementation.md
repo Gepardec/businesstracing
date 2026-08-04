@@ -166,3 +166,15 @@
 - 2026-08-04: Started Task 17. `scripts/verify.sh` passed, including the corrected external release
   fixture. Pinned Mega conformance passed with five complete graphs from 420 source files. The clean
   600-second release gate remains pending.
+- 2026-08-04: Task 17 completed. The clean clone passed all corrected gates at commit
+  `6b52e86ab25d06494b176057bfaa486ddf754cb2`. The long run completed 600,000 decisions at
+  1,000 RPS with 0.071% p95 overhead, zero errors, zero result mismatches, zero drops, zero
+  contamination, and no unresolved accepted records.
+
+## Remediation Completion Summary
+
+- Completed tasks: 17 of 17
+- Corrected release gate commit: `6b52e86ab25d06494b176057bfaa486ddf754cb2`
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Final load: 600,000 completed records at 1,000 RPS; 0.071% p95 overhead
+- Integrity counters: 0 errors, mismatches, drops, contamination, or silent accepted-record loss

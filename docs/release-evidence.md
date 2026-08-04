@@ -26,14 +26,14 @@ Run:
 The specification can be marked complete only after this command prints `RELEASE_GATE_OK` and its
 evidence file contains successful generic, external, Mega, and long-load results.
 
-## RC 1 result
+## RC 1 corrected result
 
-- Release gate commit: `862653e4b17da7005ea3d2b99f4370ffff480f3a`
+- Release gate commit: `6b52e86ab25d06494b176057bfaa486ddf754cb2`
 - Java: OpenJDK 21.0.2
 - Maven: 3.9.16
 - Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
 - Capability matrix SHA-256: `406ecc89f2ffbcbd9ef924fa86f53acc86ee6ceba379f7622b72f910acd96fc4`
 - Long run: 60-second baseline and 600 seconds enabled at 1,000 RPS
 - Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
-- Latency: 12,535.250 µs baseline p95; 12,548.791 µs enabled p95; 0.108% overhead
+- Latency: 12,530.000 µs baseline p95; 12,538.875 µs enabled p95; 0.071% overhead
 - Gate result: `RELEASE_GATE_OK`
