@@ -174,6 +174,18 @@
 - 2026-08-05: Main verification passed with source-free external activation. The short 1,000-RPS
   run completed 5,000 decisions with 0.136% p95 overhead and zero integrity errors. Pinned Mega
   conformance passed with five complete graphs from 420 source files. The clean long gate remains.
+- 2026-08-05: Task 22 completed. The clean-clone release gate passed at commit
+  `d63d37de8dcc6f794569ee6be1b30917f6a709aa`. It loaded activation V2 without runtime source,
+  repeated the five complete Mega graphs, and completed 600,000 persisted decisions at 1,000 RPS.
+  Measured p95 overhead was -1.817%, with zero errors, mismatches, drops, or contamination.
+
+## Remediation Iteration 3 Completion Summary
+
+- Completed tasks: 22 of 22
+- Release gate commit: `d63d37de8dcc6f794569ee6be1b30917f6a709aa`
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Final load: 600,000 completed records at 1,000 RPS; -1.817% p95 overhead
+- Integrity counters: 0 errors, mismatches, drops, contamination, or silent accepted-record loss
 
 ## Remediation Iteration 2
 

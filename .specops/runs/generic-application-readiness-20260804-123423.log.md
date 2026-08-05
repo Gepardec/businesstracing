@@ -1,8 +1,8 @@
 ---
 specId: "generic-application-readiness"
 startedAt: "2026-08-04T12:34:23Z"
-completedAt: null
-finalStatus: "implementing"
+completedAt: "2026-08-05T07:09:41Z"
+finalStatus: "completed"
 phases: [1, 2, 3]
 ---
 
@@ -42,3 +42,10 @@ phases: [1, 2, 3]
 - The short load completed 5,000 decisions at 1,000 RPS with 0.136% p95 overhead and zero errors,
   mismatches, drops, or contamination.
 - Pinned Mega Backend conformance produced five complete graphs from 420 source files.
+
+### [07:09:41] Complete Task 22 and specification
+
+- The clean non-local clone passed every gate at commit
+  `d63d37de8dcc6f794569ee6be1b30917f6a709aa`.
+- The long run completed 600,000 records at 1,000 RPS with -1.817% p95 overhead.
+- Errors, result mismatches, drops, contamination, and unresolved accepted records were all zero.
