@@ -73,8 +73,8 @@ The aggregate goal supports the same `additionalSourceRoots`, `additionalEntrySo
 `sourceDependencies` settings as the module goal. You can also set these lists with the matching
 `fachtracing.*` command-line properties. In a reactor with a POM execution root, an additional entry
 root uses the first selected non-POM project's compiler context.
-External sources in a JPMS closure must have explicit module ownership. Add them as reactor modules.
-The analyzer rejects an unowned external source in a modular closure.
+External sources in a JPMS closure must have explicit module ownership. The analyzer rejects an
+unowned external source in a modular closure.
 
 ## Explicit external source inputs
 
@@ -95,6 +95,38 @@ entry methods.
   </sourceDependencies>
 </configuration>
 ```
+
+For a named external source module, bind the ownership entry by source root or source identity:
+
+```xml
+<externalModuleOwnership>
+  <ownership>
+    <sourceRoot>${project.basedir}/../shared-rules/src/main/java</sourceRoot>
+    <kind>named</kind>
+    <moduleName>com.acme.shared.rules</moduleName>
+    <descriptor>${project.basedir}/../shared-rules/src/main/java/module-info.java</descriptor>
+  </ownership>
+</externalModuleOwnership>
+```
+
+For source that belongs to an automatic module, name the exact Maven-resolved binary that provides
+the module identity:
+
+```xml
+<externalModuleOwnership>
+  <ownership>
+    <identity>maven:com.acme:legacy-rules:2.4.1</identity>
+    <kind>automatic</kind>
+    <moduleName>com.acme.legacy.rules</moduleName>
+    <binaryPath>${settings.localRepository}/com/acme/legacy-rules/2.4.1/legacy-rules-2.4.1.jar</binaryPath>
+  </ownership>
+</externalModuleOwnership>
+```
+
+One ownership entry must match each modular external origin. Duplicate matches, unreadable
+descriptors, invalid module names, and a binary that is not on Maven's module path fail before
+graph extraction. Ownership and checksums are developer provenance. They do not enter diagrams or
+records.
 
 Each source dependency must use the exact `groupId:artifactId:version` form. The plugin resolves only
 the named `sources` classifier. It does not scan dependencies and does not infer source artifacts.

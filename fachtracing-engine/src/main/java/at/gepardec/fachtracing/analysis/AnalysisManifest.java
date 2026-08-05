@@ -15,6 +15,7 @@ public record AnalysisManifest(
         List<ProbeSite> probeSites,
         List<DispatchTarget> dispatchTargets,
         List<BranchTarget> branchTargets,
+        List<ControlTarget> controlTargets,
         Map<String, String> sourceFingerprints) {
     /** Compatibility constructor for manifests that have no exact branch bindings. */
     public AnalysisManifest(
@@ -24,7 +25,21 @@ public record AnalysisManifest(
             List<ProbeSite> probeSites,
             List<DispatchTarget> dispatchTargets,
             Map<String, String> sourceFingerprints) {
-        this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets, List.of(), sourceFingerprints);
+        this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
+                List.of(), List.of(), sourceFingerprints);
+    }
+
+    /** Compatibility constructor for manifests that have no exact control-path bindings. */
+    public AnalysisManifest(
+            String graphId,
+            long graphVersion,
+            Map<String, SourceMapping> sourceMappings,
+            List<ProbeSite> probeSites,
+            List<DispatchTarget> dispatchTargets,
+            List<BranchTarget> branchTargets,
+            Map<String, String> sourceFingerprints) {
+        this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
+                branchTargets, List.of(), sourceFingerprints);
     }
 
     /** Creates a defensive manifest snapshot. */
@@ -34,6 +49,7 @@ public record AnalysisManifest(
         probeSites = List.copyOf(probeSites);
         dispatchTargets = List.copyOf(dispatchTargets);
         branchTargets = List.copyOf(branchTargets);
+        controlTargets = List.copyOf(controlTargets);
         sourceFingerprints = Map.copyOf(sourceFingerprints);
     }
 
@@ -157,7 +173,42 @@ public record AnalysisManifest(
     }
 
     /** Defines which path of one bytecode jump completes the full source predicate. */
-    public enum BranchCompletion { BOTH_OUTCOMES, JUMP_TRUE, JUMP_FALSE }
+    public enum BranchCompletion { BOTH_OUTCOMES, BOTH_OUTCOMES_REVERSED, JUMP_TRUE, JUMP_FALSE }
+
+    /** Developer-only binding from one source control path to its exact graph edge. */
+    public record ControlTarget(
+            String nodeId,
+            String edgeId,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine,
+            ControlPoint point) {
+        /** Compatibility constructor for a source-line path binding. */
+        public ControlTarget(
+                String nodeId,
+                String edgeId,
+                String ownerHint,
+                String memberHint,
+                String descriptorHint,
+                long sourceLine) {
+            this(nodeId, edgeId, ownerHint, memberHint, descriptorHint, sourceLine, ControlPoint.LINE);
+        }
+
+        /** Creates a control-path binding kept outside the business record. */
+        public ControlTarget {
+            Objects.requireNonNull(nodeId, "nodeId");
+            Objects.requireNonNull(edgeId, "edgeId");
+            Objects.requireNonNull(ownerHint, "ownerHint");
+            Objects.requireNonNull(memberHint, "memberHint");
+            Objects.requireNonNull(descriptorHint, "descriptorHint");
+            if (sourceLine <= 0) throw new IllegalArgumentException("sourceLine must be positive");
+            Objects.requireNonNull(point, "point");
+        }
+    }
+
+    /** Bytecode point that proves a source control path was taken. */
+    public enum ControlPoint { LINE, RETURN, CASE_EXIT, PREDICATE_TRUE }
 
     /** Full static-analysis outcome. */
     public record AnalysisResult(

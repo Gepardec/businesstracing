@@ -60,6 +60,10 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
     @Parameter(property = "fachtracing.sourceDependencies")
     private List<String> sourceDependencies;
 
+    /** Explicit named or automatic module ownership for aggregate external source inputs. */
+    @Parameter
+    private List<ExternalModuleOwnershipConfiguration> externalModuleOwnership;
+
     @Parameter(defaultValue = "${session.executionRootDirectory}/target/fachtracing-source-dependencies",
             property = "fachtracing.sourceExtractionDirectory")
     private File sourceExtractionDirectory;
@@ -174,17 +178,33 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
         for (File root : safeFiles(additionalSourceRoots)) {
             var origin = new ApplicationSourceBoundary.SourceOrigin(
                     ApplicationSourceBoundary.OriginKind.LOCAL, "aggregate-local-" + (++local), "");
+            Path sourceRoot = root.toPath().toAbsolutePath().normalize();
             AnalyzeMojo.sourceFiles(List.of(root.getPath())).forEach(path ->
-                    result.add(new ApplicationSourceBoundary.ResolutionSource(path, origin)));
+                    result.add(new ApplicationSourceBoundary.ResolutionSource(
+                            path, origin, ownership(origin, sourceRoot))));
         }
         for (SourceInputResolver.ResolvedSourceArtifact artifact : artifacts) {
             var origin = new ApplicationSourceBoundary.SourceOrigin(
                     ApplicationSourceBoundary.OriginKind.MAVEN_SOURCE,
                     artifact.coordinate(), artifact.checksum());
             artifact.sourceFiles().forEach(path ->
-                    result.add(new ApplicationSourceBoundary.ResolutionSource(path, origin)));
+                    result.add(new ApplicationSourceBoundary.ResolutionSource(
+                            path, origin, ownership(origin, artifact.root()))));
         }
         return List.copyOf(result);
+    }
+
+    private ApplicationSourceBoundary.ModuleOwnership ownership(
+            ApplicationSourceBoundary.SourceOrigin origin, Path sourceRoot) {
+        List<ExternalModuleOwnershipConfiguration> matches = externalModuleOwnership == null
+                ? List.of() : externalModuleOwnership.stream()
+                        .filter(item -> item.matches(origin, sourceRoot)).toList();
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException("multiple external module ownership entries match "
+                    + origin.identity());
+        }
+        return matches.isEmpty() ? ApplicationSourceBoundary.ModuleOwnership.unnamed()
+                : matches.getFirst().ownership(sourceRoot);
     }
 
     private List<DeveloperGraphExporter.SourceOrigin> sourceOrigins(

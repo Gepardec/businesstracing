@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Self-contained build-time configuration for runtime tracing. */
+/** Self-contained Activation V3 configuration. The reader also accepts legacy Activation V2. */
 public record RuntimeActivationBundle(
         String boundaryFingerprint,
         String javaAgentOption,
@@ -50,7 +50,7 @@ public record RuntimeActivationBundle(
         return output.append("]}\n").toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    /** Reads and validates a V2 activation bundle. */
+    /** Reads and validates an activation V3 or legacy V2 bundle. */
     public static RuntimeActivationBundle fromJson(byte[] json) {
         Map<String, Object> root = object(new Parser(new String(
                 Objects.requireNonNull(json, "json"), StandardCharsets.UTF_8)).parse());
@@ -166,6 +166,18 @@ public record RuntimeActivationBundle(
             number(output, "predicateIndex", target.predicateIndex()).append(',');
             field(output, "completion", target.completion().name()); output.append('}');
         }
+        output.append("],\"controlTargets\":[");
+        for (int index = 0; index < manifest.controlTargets().size(); index++) {
+            if (index > 0) output.append(',');
+            var target = manifest.controlTargets().get(index);
+            output.append('{'); field(output, "nodeId", target.nodeId()).append(',');
+            field(output, "edgeId", target.edgeId()).append(',');
+            field(output, "ownerHint", target.ownerHint()).append(',');
+            field(output, "memberHint", target.memberHint()).append(',');
+            field(output, "descriptorHint", target.descriptorHint()).append(',');
+            number(output, "sourceLine", target.sourceLine()).append(',');
+            field(output, "point", target.point().name()); output.append('}');
+        }
         output.append("],\"sourceFingerprints\":"); strings(output, manifest.sourceFingerprints());
         output.append('}');
     }
@@ -232,8 +244,20 @@ public record RuntimeActivationBundle(
                     Math.toIntExact(number(item, "predicateIndex")),
                     AnalysisManifest.BranchCompletion.valueOf(string(item, "completion"))));
         }
+        var controls = new ArrayList<AnalysisManifest.ControlTarget>();
+        if (value.containsKey("controlTargets")) {
+            for (Object raw : array(value, "controlTargets")) {
+                Map<String, Object> item = object(raw);
+                controls.add(new AnalysisManifest.ControlTarget(
+                        string(item, "nodeId"), string(item, "edgeId"), string(item, "ownerHint"),
+                        string(item, "memberHint"), descriptor(item, legacy), number(item, "sourceLine"),
+                        item.containsKey("point")
+                                ? AnalysisManifest.ControlPoint.valueOf(string(item, "point"))
+                                : AnalysisManifest.ControlPoint.LINE));
+            }
+        }
         return new AnalysisManifest(string(value, "graphId"), number(value, "graphVersion"), mappings,
-                sites, dispatches, branches, stringMap(object(value.get("sourceFingerprints"))));
+                sites, dispatches, branches, controls, stringMap(object(value.get("sourceFingerprints"))));
     }
 
     private static StringBuilder field(StringBuilder output, String name, String value) {

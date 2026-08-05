@@ -7,6 +7,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 /** Non-throwing static bridge called from injected bytecode. */
 public final class TraceRuntime {
@@ -43,6 +46,14 @@ public final class TraceRuntime {
     public static void edgeFor(String graphId, long graphVersion, String nodeId, String edgeId) {
         safely("edge", () -> {
             if (collector.isActive(graphId, graphVersion)) collector.edge(nodeId, edgeId);
+        });
+    }
+
+    /** Records one exact atomic Boolean path with typed evidence for an active graph. */
+    public static void predicateFor(
+            String graphId, long graphVersion, String nodeId, String edgeId, boolean value) {
+        safely("predicate", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.predicate(nodeId, edgeId, value);
         });
     }
 
@@ -99,6 +110,13 @@ public final class TraceRuntime {
         safely("unsupported async boundary", () -> collector.unsupportedAsyncBoundary(boundaryKind));
     }
 
+    /** Marks an unavailable exact path only for its active graph. */
+    public static void exactPathUnavailableFor(String graphId, long graphVersion, String description) {
+        safely("exact path unavailable", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.exactPathUnavailable(description);
+        });
+    }
+
     /** Captures the current context for one executor task. */
     public static Runnable wrap(Runnable task) { return collector.wrap(task); }
 
@@ -113,20 +131,27 @@ public final class TraceRuntime {
 
     /** Captures context for a completion-stage function. */
     public static <T, R> Function<T, R> wrapFunction(Function<T, R> function) {
-        Objects.requireNonNull(function, "function");
-        var token = collector.captureContext();
-        return value -> {
-            try (var ignored = collector.restoreContext(token)) { return function.apply(value); }
-        };
+        return collector.wrap(function);
     }
 
     /** Captures context for a completion-stage consumer. */
     public static <T> Consumer<T> wrapConsumer(Consumer<T> consumer) {
-        Objects.requireNonNull(consumer, "consumer");
-        var token = collector.captureContext();
-        return value -> {
-            try (var ignored = collector.restoreContext(token)) { consumer.accept(value); }
-        };
+        return collector.wrap(consumer);
+    }
+
+    /** Captures context for a two-argument completion-stage function. */
+    public static <T, U, R> BiFunction<T, U, R> wrapBiFunction(BiFunction<T, U, R> function) {
+        return collector.wrap(function);
+    }
+
+    /** Captures context for a two-argument completion-stage consumer. */
+    public static <T, U> BiConsumer<T, U> wrapBiConsumer(BiConsumer<T, U> consumer) {
+        return collector.wrap(consumer);
+    }
+
+    /** Captures context for a completion-stage supplier. */
+    public static <T> Supplier<T> wrapSupplier(Supplier<T> supplier) {
+        return collector.wrap(supplier);
     }
 
     /** Returns and removes the next developer-facing capture diagnostic. */

@@ -1,5 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
+import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -38,10 +40,43 @@ public final class AnalyzeMojoTest {
         extractsBoundedSourceArtifactsSafely();
         readsEffectiveCompilerPluginConfiguration();
         rejectsUnsupportedCompilerPluginConfiguration();
+        mapsExternalModuleOwnershipConfiguration();
         skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
         createsSafeDeterministicSlugs();
+    }
+
+    private static void mapsExternalModuleOwnershipConfiguration() throws Exception {
+        Path root = Files.createTempDirectory("fachtracing-owned-source-config-");
+        Path descriptor = Files.writeString(root.resolve("module-info.java"), "module owned.rules { }");
+        Path binary = Files.write(root.resolve("owned.rules.jar"), new byte[]{1});
+        var origin = new ApplicationSourceBoundary.SourceOrigin(
+                ApplicationSourceBoundary.OriginKind.MAVEN_SOURCE,
+                "maven:example:owned-rules:1.0", "a".repeat(64));
+
+        var named = new ExternalModuleOwnershipConfiguration();
+        named.setIdentity(origin.identity());
+        named.setKind("named");
+        named.setModuleName("owned.rules");
+        named.setDescriptor(descriptor.toFile());
+        named.setSourceRoot(root.toFile());
+        assert named.matches(origin, root);
+        var namedOwnership = named.ownership(root);
+        assert namedOwnership.kind() == ApplicationSourceBoundary.ModuleOwnershipKind.NAMED : namedOwnership;
+        assert namedOwnership.descriptor().orElseThrow()
+                .equals(descriptor.toAbsolutePath().normalize()) : namedOwnership;
+
+        var automatic = new ExternalModuleOwnershipConfiguration();
+        automatic.setSourceRoot(root.toFile());
+        automatic.setKind("automatic");
+        automatic.setModuleName("owned.rules.auto");
+        automatic.setBinaryPath(binary.toFile());
+        var automaticOwnership = automatic.ownership(root);
+        assert automaticOwnership.kind() == ApplicationSourceBoundary.ModuleOwnershipKind.AUTOMATIC
+                : automaticOwnership;
+        assert automaticOwnership.binaryPath().orElseThrow()
+                .equals(binary.toAbsolutePath().normalize()) : automaticOwnership;
     }
 
     private static void readsEffectiveCompilerPluginConfiguration() throws Exception {

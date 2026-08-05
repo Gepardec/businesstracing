@@ -8,6 +8,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Mutable, thread-confined assembly state for one traced invocation. */
 public final class InvocationContext {
@@ -18,6 +19,12 @@ public final class InvocationContext {
     private final List<String> runtimeCoverageGaps = new ArrayList<>();
     private final ArrayDeque<String> expectedDispatches = new ArrayDeque<>();
     private long sequence;
+    private int asyncReservations;
+    private boolean terminalRequested;
+    private boolean failed;
+    private boolean published;
+    private Instant terminalAt;
+    private DecisionExecution.DecisionValue terminalResult;
 
     InvocationContext(String executionId, BusinessDecisionGraph graph, Instant startedAt) {
         this.executionId = Objects.requireNonNull(executionId, "executionId");
@@ -47,6 +54,39 @@ public final class InvocationContext {
                 DecisionExecution.FailureData.genericFailure(), completeness(), coverageGaps());
     }
 
+    synchronized boolean retainAsync() {
+        if (published) return false;
+        asyncReservations++;
+        return true;
+    }
+
+    synchronized Optional<DecisionExecution> completeWhenReady(
+            Instant completedAt, DecisionExecution.DecisionValue result) {
+        terminalRequested = true;
+        terminalAt = completedAt;
+        terminalResult = result;
+        return publishWhenReady();
+    }
+
+    synchronized Optional<DecisionExecution> failWhenReady(Instant completedAt) {
+        terminalRequested = true;
+        failed = true;
+        terminalAt = completedAt;
+        return publishWhenReady();
+    }
+
+    synchronized Optional<DecisionExecution> releaseAsync() {
+        if (asyncReservations <= 0) throw new IllegalStateException("asynchronous reservation underflow");
+        asyncReservations--;
+        return publishWhenReady();
+    }
+
+    private Optional<DecisionExecution> publishWhenReady() {
+        if (!terminalRequested || asyncReservations != 0 || published) return Optional.empty();
+        published = true;
+        return Optional.of(failed ? fail(terminalAt) : finish(terminalAt, terminalResult));
+    }
+
     synchronized void expectDispatch(String nodeId) {
         expectedDispatches.push(Objects.requireNonNull(nodeId, "nodeId"));
     }
@@ -57,6 +97,12 @@ public final class InvocationContext {
 
     synchronized void consumeExpectedDispatch() {
         expectedDispatches.pop();
+    }
+
+    synchronized List<String> consumeUnresolvedDispatches() {
+        var unresolved = List.copyOf(expectedDispatches);
+        expectedDispatches.clear();
+        return unresolved;
     }
 
     synchronized void addRuntimeCoverageGap(String description) {

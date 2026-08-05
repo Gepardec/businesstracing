@@ -24,7 +24,9 @@ public final class RuntimeCollectorTest {
         boundsConcurrentUniqueDiagnosticsStrictly();
         keepsGraphVersionsAndDispatchMappingsSeparate();
         propagatesAndClearsExplicitAsyncContext();
+        automaticWrappersAreIdentitySafeAndDelayPublication();
         implementationEdgesRequireTheExpectedDispatch();
+        unresolvedImplementationCreatesExecutionGap();
         matchesNestedDispatchExpectationsInStackOrder();
         isolatesThirtyTwoConcurrentInvocations();
         tracingFailuresDoNotEscape();
@@ -81,6 +83,21 @@ public final class RuntimeCollectorTest {
         assert exactEdges.getFirst().nodeId().equals("predicate");
         assert exactEdges.getFirst().selectedEdgeId().equals("edge-true");
         assert exactEdges.getFirst().outcome().equals("qualified");
+    }
+
+    private static void unresolvedImplementationCreatesExecutionGap() {
+        RuntimeCollector collector = collector();
+        collector.begin("graph", 1);
+        collector.expectDispatch("dispatch");
+        collector.complete("outcome", true);
+
+        var execution = collector.pollCompleted().orElseThrow();
+        assert execution.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : execution;
+        assert execution.coverageGaps().contains(
+                "runtime decision implementation did not match a proven candidate") : execution.coverageGaps();
+        var diagnostic = collector.pollDiagnostic().orElseThrow();
+        assert diagnostic.reason() == RuntimeCollector.DiagnosticReason.UNKNOWN_TARGET : diagnostic;
+        assert diagnostic.dispatchNodeId().equals("dispatch") : diagnostic;
     }
 
     private static void queuesGenericFailedExecutions() {
@@ -236,6 +253,25 @@ public final class RuntimeCollectorTest {
         assert execution.coverageGaps().contains("execution crossed an unsupported asynchronous boundary");
         assert collector.pollDiagnostic().orElseThrow().reason()
                 == RuntimeCollector.DiagnosticReason.UNSUPPORTED_ASYNC_BOUNDARY;
+    }
+
+    private static void automaticWrappersAreIdentitySafeAndDelayPublication() {
+        RuntimeCollector collector = collector();
+        Runnable inactive = () -> { };
+        assert collector.wrap(inactive) == inactive;
+        java.util.function.Function<Integer, Integer> inactiveFunction = value -> value;
+        assert collector.wrap(inactiveFunction) == inactiveFunction;
+
+        collector.begin("graph", 1);
+        Runnable wrapped = collector.wrap(() -> collector.observe("predicate", "late async", true));
+        assert collector.wrap(wrapped) == wrapped;
+        collector.complete("outcome", true);
+        assert collector.pollCompleted().isEmpty();
+        wrapped.run();
+        var execution = collector.pollCompleted().orElseThrow();
+        assert execution.observations().stream().anyMatch(item -> item.outcome().equals("late async"))
+                : execution.observations();
+        assert collector.pollCompleted().isEmpty();
     }
 
     private static void implementationEdgesRequireTheExpectedDispatch() {

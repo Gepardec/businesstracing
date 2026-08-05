@@ -117,7 +117,8 @@ public record ApplicationSourceBoundary(
         externalResolutionSources.stream()
                 .sorted(Comparator.comparing(source -> source.path().toString()))
                 .forEach(source -> value.append("external:").append(source.origin().kind()).append(':')
-                        .append(source.origin().identity()).append(':').append(source.path()).append('\n'));
+                        .append(source.origin().identity()).append(':').append(source.path()).append(':')
+                        .append(source.ownership().fingerprint()).append('\n'));
         return sha256(value.toString().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -197,14 +198,82 @@ public record ApplicationSourceBoundary(
     }
 
     /** One source that can resolve calls but cannot create an entry graph. */
-    public record ResolutionSource(Path path, SourceOrigin origin) {
+    public record ResolutionSource(Path path, SourceOrigin origin, ModuleOwnership ownership) {
+        /** Compatibility constructor for a non-modular external source. */
+        public ResolutionSource(Path path, SourceOrigin origin) {
+            this(path, origin, ModuleOwnership.unnamed());
+        }
+
         /** Creates a normalized resolution source. */
         public ResolutionSource {
             path = normalize(Objects.requireNonNull(path, "path"));
             if (!isJava(path)) throw new IllegalArgumentException("resolution source must end in .java");
             origin = Objects.requireNonNull(origin, "origin");
+            ownership = Objects.requireNonNull(ownership, "ownership");
+            if (ownership.sourceRoot().isPresent()
+                    && !path.startsWith(ownership.sourceRoot().orElseThrow())) {
+                throw new IllegalArgumentException("owned source is outside its source root: " + path);
+            }
         }
     }
+
+    /** Explicit JPMS ownership for one external source input. */
+    public record ModuleOwnership(
+            ModuleOwnershipKind kind,
+            String moduleName,
+            Optional<Path> descriptor,
+            Optional<Path> binaryPath,
+            Optional<Path> sourceRoot) {
+        /** Creates validated module ownership. */
+        public ModuleOwnership {
+            kind = Objects.requireNonNull(kind, "kind");
+            moduleName = Objects.requireNonNullElse(moduleName, "");
+            descriptor = normalizedOptional(descriptor, "descriptor");
+            binaryPath = normalizedOptional(binaryPath, "binaryPath");
+            sourceRoot = normalizedOptional(sourceRoot, "sourceRoot");
+            if (kind == ModuleOwnershipKind.UNNAMED) {
+                if (!moduleName.isBlank() || descriptor.isPresent() || binaryPath.isPresent()
+                        || sourceRoot.isPresent()) {
+                    throw new IllegalArgumentException("unnamed ownership cannot contain module metadata");
+                }
+            } else {
+                moduleName = requireText(moduleName, "moduleName");
+                if (sourceRoot.isEmpty()) throw new IllegalArgumentException("owned module needs a source root");
+                if (kind == ModuleOwnershipKind.NAMED && descriptor.isEmpty()) {
+                    throw new IllegalArgumentException("named module ownership needs a descriptor");
+                }
+                if (kind == ModuleOwnershipKind.AUTOMATIC && binaryPath.isEmpty()) {
+                    throw new IllegalArgumentException("automatic module ownership needs a binary path");
+                }
+            }
+        }
+
+        /** Creates ownership for a flat source input. */
+        public static ModuleOwnership unnamed() {
+            return new ModuleOwnership(ModuleOwnershipKind.UNNAMED, "",
+                    Optional.empty(), Optional.empty(), Optional.empty());
+        }
+
+        /** Creates ownership for a named source module. */
+        public static ModuleOwnership named(String moduleName, Path descriptor, Path sourceRoot) {
+            return new ModuleOwnership(ModuleOwnershipKind.NAMED, moduleName,
+                    Optional.of(descriptor), Optional.empty(), Optional.of(sourceRoot));
+        }
+
+        /** Creates ownership for sources paired with an automatic binary module. */
+        public static ModuleOwnership automatic(String moduleName, Path binaryPath, Path sourceRoot) {
+            return new ModuleOwnership(ModuleOwnershipKind.AUTOMATIC, moduleName,
+                    Optional.empty(), Optional.of(binaryPath), Optional.of(sourceRoot));
+        }
+
+        private String fingerprint() {
+            return kind + ":" + moduleName + ":" + descriptor.orElse(null) + ":"
+                    + binaryPath.orElse(null) + ":" + sourceRoot.orElse(null);
+        }
+    }
+
+    /** Supported external-source JPMS ownership kinds. */
+    public enum ModuleOwnershipKind { UNNAMED, NAMED, AUTOMATIC }
 
     /** Developer-only provenance for one source boundary input. */
     public record SourceOrigin(OriginKind kind, String identity, String checksum) {
@@ -224,8 +293,9 @@ public record ApplicationSourceBoundary(
         Map<Path, ResolutionSource> result = new LinkedHashMap<>();
         for (ResolutionSource source : sources) {
             ResolutionSource previous = result.putIfAbsent(source.path(), source);
-            if (previous != null && !previous.origin().equals(source.origin())) {
-                throw new IllegalArgumentException("conflicting origins for source: " + source.path());
+            if (previous != null && !previous.equals(source)) {
+                throw new IllegalArgumentException("conflicting origin or module ownership for source: "
+                        + source.path());
             }
         }
         return result.values().stream().sorted(Comparator.comparing(item -> item.path().toString())).toList();
@@ -237,6 +307,10 @@ public record ApplicationSourceBoundary(
         paths.stream().map(ApplicationSourceBoundary::normalize).distinct()
                 .sorted(Comparator.comparing(Path::toString)).forEach(result::add);
         return List.copyOf(result);
+    }
+
+    private static Optional<Path> normalizedOptional(Optional<Path> path, String name) {
+        return Objects.requireNonNull(path, name).map(ApplicationSourceBoundary::normalize);
     }
 
     private static Path normalize(Path path) {

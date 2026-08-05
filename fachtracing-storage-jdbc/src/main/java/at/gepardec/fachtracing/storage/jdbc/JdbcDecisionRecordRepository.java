@@ -59,8 +59,8 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                       completed_at timestamp with time zone not null,
                       status varchar(20) not null,
                       schema_id varchar(100) not null,
-                      payload blob not null)
-                    """);
+                      payload %s not null)
+                    """.formatted(payloadType(connection)));
             execute(connection, """
                     create index if not exists idx_fachtracing_graph_time
                     on fachtracing_decision_record(graph_id, completed_at)
@@ -203,6 +203,10 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
     }
     private void execute(Connection connection, String sql) throws SQLException {
         try (var statement = connection.createStatement()) { timeout(statement); statement.execute(sql); }
+    }
+    private static String payloadType(Connection connection) throws SQLException {
+        String product = connection.getMetaData().getDatabaseProductName().toLowerCase(java.util.Locale.ROOT);
+        return product.contains("postgresql") ? "bytea" : "blob";
     }
     private void timeout(java.sql.Statement statement) throws SQLException {
         statement.setQueryTimeout(statementTimeoutSeconds);

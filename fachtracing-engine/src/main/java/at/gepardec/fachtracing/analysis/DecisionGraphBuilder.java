@@ -21,6 +21,7 @@ public final class DecisionGraphBuilder {
     private final Map<String, AnalysisManifest.SourceMapping> mappings = new LinkedHashMap<>();
     private final List<AnalysisManifest.ProbeSite> probes = new ArrayList<>();
     private final List<AnalysisManifest.DispatchTarget> dispatchTargets = new ArrayList<>();
+    private final List<ControlBinding> controlBindings = new ArrayList<>();
     private final Map<String, List<AnalysisManifest.BranchCompletion>> branchCompletions = new LinkedHashMap<>();
     private int nodeSequence;
     private int edgeSequence;
@@ -130,6 +131,31 @@ public final class DecisionGraphBuilder {
         branchCompletions.put(Objects.requireNonNull(nodeId, "nodeId"), List.copyOf(completions));
     }
 
+    /** Binds one source control-path line to its outgoing business edge. */
+    public void addControlTarget(
+            String nodeId,
+            String outcome,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine) {
+        addControlTarget(nodeId, outcome, ownerHint, memberHint, descriptorHint,
+                sourceLine, AnalysisManifest.ControlPoint.LINE);
+    }
+
+    /** Binds one bytecode control point to its outgoing business edge. */
+    public void addControlTarget(
+            String nodeId,
+            String outcome,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine,
+            AnalysisManifest.ControlPoint point) {
+        controlBindings.add(new ControlBinding(
+                nodeId, outcome, ownerHint, memberHint, descriptorHint, sourceLine, point));
+    }
+
     /** Adds a visible completeness gap linked to its graph node. */
     public void addGap(String nodeId, String description) {
         gaps.add(new BusinessDecisionGraph.CoverageGap(nodeId, description));
@@ -146,7 +172,7 @@ public final class DecisionGraphBuilder {
         var graph = new BusinessDecisionGraph(
                 graphId, 1, decisionLabel, entryNodeId, nodes, edges, completeness, gaps);
         var manifest = new AnalysisManifest(
-                graphId, 1, mappings, probes, dispatchTargets, branchTargets(), sourceFingerprints);
+                graphId, 1, mappings, probes, dispatchTargets, branchTargets(), controlTargets(), sourceFingerprints);
         return new BuiltGraph(graph, manifest, List.copyOf(diagnostics));
     }
 
@@ -160,7 +186,6 @@ public final class DecisionGraphBuilder {
                     + "\u0000" + probe.descriptorHint();
             int predicateIndex = methodIndexes.getOrDefault(methodKey, 0);
             methodIndexes.put(methodKey, predicateIndex + 1);
-            if (probe.memberHint().endsWith("#lambda")) continue;
             int nodeIndex = nodeIndexes.getOrDefault(probe.nodeId(), 0);
             nodeIndexes.put(probe.nodeId(), nodeIndex + 1);
             List<AnalysisManifest.BranchCompletion> completions = branchCompletions.get(probe.nodeId());
@@ -183,6 +208,32 @@ public final class DecisionGraphBuilder {
         }
         return List.copyOf(targets);
     }
+
+    private List<AnalysisManifest.ControlTarget> controlTargets() {
+        var targets = new ArrayList<AnalysisManifest.ControlTarget>();
+        for (ControlBinding binding : controlBindings) {
+            List<BusinessDecisionGraph.DecisionEdge> matches = edges.stream()
+                    .filter(edge -> edge.fromNodeId().equals(binding.nodeId()))
+                    .filter(edge -> edge.outcome().equals(binding.outcome())
+                            || edge.outcome().startsWith(binding.outcome() + ";"))
+                    .toList();
+            if (matches.size() == 1) {
+                targets.add(new AnalysisManifest.ControlTarget(
+                        binding.nodeId(), matches.getFirst().edgeId(), binding.ownerHint(), binding.memberHint(),
+                        binding.descriptorHint(), binding.sourceLine(), binding.point()));
+            }
+        }
+        return List.copyOf(targets);
+    }
+
+    private record ControlBinding(
+            String nodeId,
+            String outcome,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine,
+            AnalysisManifest.ControlPoint point) { }
 
     private static boolean booleanOutcome(String outcome, String value) {
         return outcome.equals(value) || outcome.startsWith(value + ";");

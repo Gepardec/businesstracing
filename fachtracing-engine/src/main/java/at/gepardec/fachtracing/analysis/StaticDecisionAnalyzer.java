@@ -6,6 +6,7 @@ import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.CatchTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
@@ -72,6 +73,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -183,9 +185,11 @@ public final class StaticDecisionAnalyzer {
             AnalysisRequest request,
             List<ApplicationSourceBoundary.ProjectSources> closure,
             ApplicationSourceBoundary boundary) {
-        if (!boundary.externalResolutionSources().isEmpty()) {
-            throw new IllegalArgumentException("JPMS graph extraction cannot assign external sources to a module; "
-                    + "add the source artifact as a reactor module or use a non-modular boundary");
+        List<ApplicationSourceBoundary.ResolutionSource> external = boundary.externalResolutionSources();
+        if (external.stream().anyMatch(source -> source.ownership().kind()
+                == ApplicationSourceBoundary.ModuleOwnershipKind.UNNAMED)) {
+            throw new IllegalArgumentException("JPMS graph extraction cannot assign external sources without "
+                    + "explicit named or automatic module ownership");
         }
         if (closure.stream().anyMatch(project -> project.moduleDescriptor().isEmpty())) {
             throw new IllegalArgumentException("JPMS graph extraction requires a module descriptor for every "
@@ -202,10 +206,24 @@ public final class StaticDecisionAnalyzer {
 
         var sourceFiles = new LinkedHashSet<Path>(request.sourceFiles());
         closure.forEach(project -> sourceFiles.add(project.moduleDescriptor().orElseThrow()));
-        Set<String> sourceModuleNames = closure.stream()
+        external.stream().map(ApplicationSourceBoundary.ResolutionSource::ownership)
+                .filter(ownership -> ownership.kind() == ApplicationSourceBoundary.ModuleOwnershipKind.NAMED)
+                .map(ApplicationSourceBoundary.ModuleOwnership::descriptor)
+                .map(Optional::orElseThrow).forEach(sourceFiles::add);
+        Set<String> sourceModuleNames = java.util.stream.Stream.concat(closure.stream()
                 .map(project -> moduleName(project.moduleDescriptor().orElseThrow()))
+                , external.stream().map(ApplicationSourceBoundary.ResolutionSource::ownership)
+                        .filter(ownership -> ownership.kind()
+                                == ApplicationSourceBoundary.ModuleOwnershipKind.NAMED)
+                        .map(ApplicationSourceBoundary.ModuleOwnership::moduleName))
                 .collect(Collectors.toSet());
-        var modulePath = closure.stream().flatMap(project -> project.compilerModel().modulePath().stream())
+        var modulePath = java.util.stream.Stream.concat(
+                        closure.stream().flatMap(project -> project.compilerModel().modulePath().stream()),
+                        external.stream().map(ApplicationSourceBoundary.ResolutionSource::ownership)
+                                .filter(ownership -> ownership.kind()
+                                        == ApplicationSourceBoundary.ModuleOwnershipKind.AUTOMATIC)
+                                .map(ApplicationSourceBoundary.ModuleOwnership::binaryPath)
+                                .map(Optional::orElseThrow))
                 .distinct().filter(path -> !containsModule(path, sourceModuleNames))
                 .sorted(Comparator.comparing(Path::toString)).toList();
         var options = new ArrayList<>(List.of("-proc:none", "--release", first.release()));
@@ -226,6 +244,23 @@ public final class StaticDecisionAnalyzer {
             options.add(moduleName(project.moduleDescriptor().orElseThrow()) + "="
                     + joinPaths(sourceRoots(project)));
         }
+        external.stream().map(ApplicationSourceBoundary.ResolutionSource::ownership).distinct()
+                .filter(ownership -> ownership.kind() == ApplicationSourceBoundary.ModuleOwnershipKind.NAMED)
+                .forEach(ownership -> {
+                    String descriptorName = moduleName(ownership.descriptor().orElseThrow());
+                    if (!descriptorName.equals(ownership.moduleName())) {
+                        throw new IllegalArgumentException("external module ownership name "
+                                + ownership.moduleName() + " does not match descriptor " + descriptorName);
+                    }
+                    options.add("--module-source-path");
+                    options.add(ownership.moduleName() + "=" + ownership.sourceRoot().orElseThrow());
+                });
+        external.stream().map(ApplicationSourceBoundary.ResolutionSource::ownership).distinct()
+                .filter(ownership -> ownership.kind() == ApplicationSourceBoundary.ModuleOwnershipKind.AUTOMATIC)
+                .forEach(ownership -> {
+                    options.add("--patch-module");
+                    options.add(ownership.moduleName() + "=" + ownership.sourceRoot().orElseThrow());
+                });
         Path output;
         try {
             output = Files.createTempDirectory("fachtracing-jpms-");
@@ -296,7 +331,8 @@ public final class StaticDecisionAnalyzer {
                 var builder = new DecisionGraphBuilder(graphId, label);
                 var diagnostics = new ArrayList<AnalysisManifest.AnalysisDiagnostic>();
                 var extractor = new Extractor(
-                        trees, task.getTypes(), task.getElements(), index, builder, diagnostics);
+                        trees, task.getTypes(), task.getElements(), index, builder, diagnostics,
+                        request.compilationClasspath());
                 String entry = extractor.addEntry(root);
                 extractor.extract(root, entry, true, new HashSet<>());
                 var built = builder.build(entry, sourceFingerprints, diagnostics);
@@ -367,6 +403,7 @@ public final class StaticDecisionAnalyzer {
         private final SourceIndex index;
         private final DecisionGraphBuilder builder;
         private final List<AnalysisManifest.AnalysisDiagnostic> diagnostics;
+        private final List<Path> binaryClasspath;
         private final List<String> pendingFailureNodes = new ArrayList<>();
         private String rootStop;
 
@@ -376,13 +413,15 @@ public final class StaticDecisionAnalyzer {
                 Elements elements,
                 SourceIndex index,
                 DecisionGraphBuilder builder,
-                List<AnalysisManifest.AnalysisDiagnostic> diagnostics) {
+                List<AnalysisManifest.AnalysisDiagnostic> diagnostics,
+                List<Path> binaryClasspath) {
             this.trees = trees;
             this.types = types;
             this.elements = elements;
             this.index = index;
             this.builder = builder;
             this.diagnostics = diagnostics;
+            this.binaryClasspath = List.copyOf(binaryClasspath);
         }
 
         private String addEntry(MethodLocation method) {
@@ -677,7 +716,7 @@ public final class StaticDecisionAnalyzer {
                     var source = mapping(location, node);
                     diagnostics.add(new AnalysisManifest.AnalysisDiagnostic(
                             AnalysisManifest.Severity.WARNING, source.source(), source.line(), source.column(),
-                            source.treeKind(), description + " is outside the walking-skeleton analysis subset"));
+                            source.treeKind(), description + " is outside the supported generic analysis subset"));
                 }
 
                 private String add(
@@ -720,6 +759,10 @@ public final class StaticDecisionAnalyzer {
             private final List<Tail> exitNodes = new ArrayList<>();
             private List<Tail> frontier;
             private String lastNode;
+            private int catchingDepth;
+            private List<Tail> caughtTails = new ArrayList<>();
+            private int deferredReturnDepth;
+            private List<DeferredReturn> deferredReturns = new ArrayList<>();
 
             private FlowScanner(
                     MethodLocation location,
@@ -746,16 +789,17 @@ public final class StaticDecisionAnalyzer {
 
             @Override public Void visitIf(IfTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitIf(node, unused);
-                scan(node.getCondition(), unused);
-                String predicate = addPredicate(node.getCondition());
-                advance(predicate);
+                if (!(unwrapParentheses(node.getCondition()) instanceof ConditionalExpressionTree)) {
+                    scan(node.getCondition(), unused);
+                }
+                PredicatePlan predicate = addPredicatePlan(node.getCondition());
+                enter(predicate);
 
-                List<Tail> beforeBranch = List.of(new Tail(predicate, "true"));
-                frontier = beforeBranch;
+                frontier = predicate.trueTails();
                 scan(node.getThenStatement(), unused);
                 List<Tail> trueTails = List.copyOf(frontier);
 
-                frontier = List.of(new Tail(predicate, "false"));
+                frontier = predicate.falseTails();
                 if (node.getElseStatement() != null) scan(node.getElseStatement(), unused);
                 List<Tail> falseTails = List.copyOf(frontier);
 
@@ -770,17 +814,46 @@ public final class StaticDecisionAnalyzer {
                 if (!relevant(node, slice, dependencies)) return super.visitSwitch(node, unused);
                 scan(node.getExpression(), unused);
                 String choice = add(BusinessDecisionGraph.NodeKind.CHOICE,
-                        "choose by " + expression(node.getExpression()), node.getExpression(),
-                        AnalysisManifest.ProbeKind.PREDICATE);
+                        "choose by " + expression(node.getExpression()), node.getExpression(), null);
                 advance(choice);
                 var merged = new ArrayList<Tail>();
+                Map<Long, Long> lineCounts = controlLineCounts(node.getCases());
+                Tree ambiguous = null;
+                List<Tail> rejectedGuardTails = List.of();
+                int caseIndex = 0;
                 for (CaseTree branch : node.getCases()) {
-                    frontier = List.of(new Tail(choice, caseLabel(branch)));
+                    String outcome = caseLabel(branch, ++caseIndex);
+                    var inputs = new ArrayList<Tail>();
+                    inputs.add(new Tail(choice, outcome));
+                    inputs.addAll(rejectedGuardTails);
+                    frontier = List.copyOf(inputs);
+                    if (branch.getGuard() != null) {
+                        scan(branch.getGuard(), unused);
+                        PredicatePlan guard = addPredicatePlan(branch.getGuard(), isPatternCase(branch)
+                                ? AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED
+                                : AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
+                        enter(guard);
+                        frontier = guard.trueTails();
+                        rejectedGuardTails = guard.falseTails();
+                    } else {
+                        rejectedGuardTails = List.of();
+                    }
                     if (branch.getStatements() != null) scan(branch.getStatements(), unused);
                     else scan(branch.getBody(), unused);
+                    Tree target = controlTarget(branch);
+                    long line = target == null ? -1 : mapping(location, target).line();
+                    if (line > 0 && lineCounts.getOrDefault(line, 0L) == 1) {
+                        builder.addControlTarget(choice, outcome, ownerHint(location.path()),
+                                runtimeMemberHint(branch), methodDescriptor(location), line,
+                                controlPoint(branch));
+                    } else if (ambiguous == null) {
+                        ambiguous = branch;
+                    }
                     merged.addAll(frontier);
                 }
                 frontier = List.copyOf(merged);
+                if (ambiguous != null) addCoverageGap(
+                        ambiguous, "switch case path has no unique executable source line");
                 return null;
             }
 
@@ -788,17 +861,46 @@ public final class StaticDecisionAnalyzer {
                 if (!relevant(node, slice, dependencies)) return super.visitSwitchExpression(node, unused);
                 scan(node.getExpression(), unused);
                 String choice = add(BusinessDecisionGraph.NodeKind.CHOICE,
-                        "choose by " + expression(node.getExpression()), node.getExpression(),
-                        AnalysisManifest.ProbeKind.PREDICATE);
+                        "choose by " + expression(node.getExpression()), node.getExpression(), null);
                 advance(choice);
                 var merged = new ArrayList<Tail>();
+                Map<Long, Long> lineCounts = controlLineCounts(node.getCases());
+                Tree ambiguous = null;
+                List<Tail> rejectedGuardTails = List.of();
+                int caseIndex = 0;
                 for (CaseTree branch : node.getCases()) {
-                    frontier = List.of(new Tail(choice, caseLabel(branch)));
+                    String outcome = caseLabel(branch, ++caseIndex);
+                    var inputs = new ArrayList<Tail>();
+                    inputs.add(new Tail(choice, outcome));
+                    inputs.addAll(rejectedGuardTails);
+                    frontier = List.copyOf(inputs);
+                    if (branch.getGuard() != null) {
+                        scan(branch.getGuard(), unused);
+                        PredicatePlan guard = addPredicatePlan(branch.getGuard(), isPatternCase(branch)
+                                ? AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED
+                                : AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
+                        enter(guard);
+                        frontier = guard.trueTails();
+                        rejectedGuardTails = guard.falseTails();
+                    } else {
+                        rejectedGuardTails = List.of();
+                    }
                     if (branch.getStatements() != null) scan(branch.getStatements(), unused);
                     else scan(branch.getBody(), unused);
+                    Tree target = controlTarget(branch);
+                    long line = target == null ? -1 : mapping(location, target).line();
+                    if (line > 0 && lineCounts.getOrDefault(line, 0L) == 1) {
+                        builder.addControlTarget(choice, outcome, ownerHint(location.path()),
+                                runtimeMemberHint(branch), methodDescriptor(location), line,
+                                controlPoint(branch));
+                    } else if (ambiguous == null) {
+                        ambiguous = branch;
+                    }
                     merged.addAll(frontier);
                 }
                 frontier = List.copyOf(merged);
+                if (ambiguous != null) addCoverageGap(
+                        ambiguous, "switch case path has no unique executable source line");
                 return null;
             }
 
@@ -833,15 +935,15 @@ public final class StaticDecisionAnalyzer {
             @Override public Void visitConditionalExpression(ConditionalExpressionTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitConditionalExpression(node, unused);
                 scan(node.getCondition(), unused);
-                String predicate = addPredicate(node.getCondition());
-                advance(predicate);
-                frontier = List.of(new Tail(predicate, "true"));
+                PredicatePlan predicate = addPredicatePlan(node.getCondition());
+                enter(predicate);
+                frontier = predicate.trueTails();
                 scan(node.getTrueExpression(), unused);
                 String trueValue = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                         "use " + expression(node.getTrueExpression()), node.getTrueExpression(), null);
                 advance(trueValue);
                 List<Tail> trueTails = List.copyOf(frontier);
-                frontier = List.of(new Tail(predicate, "false"));
+                frontier = predicate.falseTails();
                 scan(node.getFalseExpression(), unused);
                 String falseValue = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                         "use " + expression(node.getFalseExpression()), node.getFalseExpression(), null);
@@ -856,6 +958,17 @@ public final class StaticDecisionAnalyzer {
                 if (!relevant(node, slice, dependencies)) return super.visitMethodInvocation(node, unused);
                 Element called = trees.getElement(getCurrentPath());
                 if (!(called instanceof ExecutableElement executable)) return super.visitMethodInvocation(node, unused);
+                ExecutableElement reflected = reflectedContract(node, executable);
+                if (reflected != null) {
+                    scan(node.getArguments(), unused);
+                    scanDynamicInvocation(node, reflected, (TypeElement) reflected.getEnclosingElement(),
+                            reflected.getEnclosingElement().asType());
+                    return null;
+                }
+                if (isReflectionInvoke(executable)) {
+                    addCoverageGap(node, "reflected decision target cannot be reconstructed from constants");
+                    return null;
+                }
                 if (isSupportedLibraryOperation(executable)) return super.visitMethodInvocation(node, unused);
 
                 scan(node.getMethodSelect(), unused);
@@ -866,38 +979,7 @@ public final class StaticDecisionAnalyzer {
                         || hasDecisionBearingOverrides(executable, owner);
                 if (dynamic) {
                     if (isDecisionFreeValueAccess(executable, owner)) return null;
-                    String dispatch = add(BusinessDecisionGraph.NodeKind.DISPATCH,
-                            "select applicable decision rule", node, AnalysisManifest.ProbeKind.DISPATCH);
-                    advance(dispatch);
-                    var resultTails = new ArrayList<Tail>();
-                    int candidate = 0;
-                    for (TypeElement implementation : index.types()) {
-                        if (!implementation.getKind().isClass()
-                                || implementation.getModifiers().contains(Modifier.ABSTRACT)
-                                || !isCompatibleDispatchTarget(implementation, owner, receiverType)) {
-                            continue;
-                        }
-                        String alternative = builder.addNode(
-                                BusinessDecisionGraph.NodeKind.COMPUTATION,
-                                businessRuleLabel(implementation),
-                                Map.of("candidate", Integer.toString(++candidate)), null, null, "", "");
-                        String candidateEdge = builder.addEdge(dispatch, alternative, "candidate " + candidate);
-                        MethodLocation implementationMethod = implementationOf(executable, implementation);
-                        if (implementationMethod == null) {
-                            resultTails.add(new Tail(alternative, "result"));
-                            continue;
-                        }
-                        builder.addDispatchTarget(dispatch, candidateEdge, implementation.toString(),
-                                implementationMethod.method().getName().toString(),
-                                methodDescriptor(implementationMethod));
-                        Extraction linked = extract(implementationMethod, alternative, false, activeMethods);
-                        resultTails.addAll(linked.exits());
-                    }
-                    if (candidate == 0) {
-                        addCoverageGap(node, "decision-rule implementations are unavailable");
-                    } else {
-                        frontier = List.copyOf(resultTails);
-                    }
+                    scanDynamicInvocation(node, executable, owner, receiverType);
                 } else {
                     MethodLocation callee = index.methods().get(executable);
                     if (callee != null && isDecisionFreeProjection(callee)) return null;
@@ -908,23 +990,114 @@ public final class StaticDecisionAnalyzer {
                         Extraction linked = extract(callee, call, false, activeMethods);
                         frontier = linked.exits();
                     } else if (callee == null) {
-                        addCoverageGap(node, "called decision logic is unavailable");
+                        BytecodeDecisionAnalyzer.Result fallback = new BytecodeDecisionAnalyzer().analyze(
+                                owner.getQualifiedName().toString(), executable.getSimpleName().toString(),
+                                methodDescriptor(executable), binaryClasspath);
+                        if (fallback instanceof BytecodeDecisionAnalyzer.Fragment fragment) {
+                            String call = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                    "evaluate binary decision rule", node, null);
+                            advance(call);
+                            String predicate = builder.addNode(
+                                    BusinessDecisionGraph.NodeKind.PREDICATE,
+                                    fragment.predicateLabel(), Map.of(), mapping(location, node),
+                                    null, "", "");
+                            builder.addProbe(predicate, AnalysisManifest.ProbeKind.PREDICATE,
+                                    fragment.ownerName().replace('/', '.'), fragment.methodName(),
+                                    fragment.descriptor(), null);
+                            advance(predicate);
+                            builder.setBranchCompletions(predicate,
+                                    List.of(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES));
+                            frontier = List.of(new Tail(predicate, "true"), new Tail(predicate, "false"));
+                        } else {
+                            addCoverageGap(node, ((BytecodeDecisionAnalyzer.Gap) fallback).reason());
+                        }
                     }
                 }
                 return null;
             }
 
+            private void scanDynamicInvocation(
+                    MethodInvocationTree node,
+                    ExecutableElement contract,
+                    TypeElement owner,
+                    TypeMirror receiverType) {
+                String dispatch = add(BusinessDecisionGraph.NodeKind.DISPATCH,
+                        "select applicable decision rule", node, AnalysisManifest.ProbeKind.DISPATCH);
+                advance(dispatch);
+                var resultTails = new ArrayList<Tail>();
+                int candidate = 0;
+                for (TypeElement implementation : index.types()) {
+                    if (!implementation.getKind().isClass()
+                            || implementation.getModifiers().contains(Modifier.ABSTRACT)
+                            || !isCompatibleDispatchTarget(implementation, owner, receiverType)) continue;
+                    String alternative = builder.addNode(
+                            BusinessDecisionGraph.NodeKind.COMPUTATION,
+                            businessRuleLabel(implementation),
+                            Map.of("candidate", Integer.toString(++candidate)), null, null, "", "");
+                    String candidateEdge = builder.addEdge(dispatch, alternative, "candidate " + candidate);
+                    MethodLocation implementationMethod = implementationOf(contract, implementation);
+                    if (implementationMethod == null) {
+                        resultTails.add(new Tail(alternative, "result"));
+                        continue;
+                    }
+                    builder.addDispatchTarget(dispatch, candidateEdge, implementation.toString(),
+                            implementationMethod.method().getName().toString(),
+                            methodDescriptor(implementationMethod));
+                    Extraction linked = extract(implementationMethod, alternative, false, activeMethods);
+                    resultTails.addAll(linked.exits());
+                }
+                if (candidate == 0) addCoverageGap(node, "decision-rule implementations are unavailable");
+                else frontier = List.copyOf(resultTails);
+            }
+
+            private ExecutableElement reflectedContract(
+                    MethodInvocationTree invocation, ExecutableElement called) {
+                if (!isReflectionInvoke(called)
+                        || !(invocation.getMethodSelect() instanceof MemberSelectTree invokeSelect)
+                        || !(invokeSelect.getExpression() instanceof IdentifierTree methodVariable)) return null;
+                Tree definition = dependencies.definitions().get(methodVariable.getName().toString());
+                if (!(definition instanceof MethodInvocationTree lookup)
+                        || lookup.getArguments().isEmpty()
+                        || !(lookup.getArguments().getFirst() instanceof LiteralTree methodName)
+                        || !(methodName.getValue() instanceof String name)
+                        || !(lookup.getMethodSelect() instanceof MemberSelectTree lookupSelect)
+                        || !(lookupSelect.getExpression() instanceof MemberSelectTree classLiteral)
+                        || !classLiteral.getIdentifier().contentEquals("class")) return null;
+                TreePath typePath = TreePath.getPath(location.unit(), classLiteral.getExpression());
+                Element type = typePath == null ? null : trees.getElement(typePath);
+                if (!(type instanceof TypeElement contractOwner)) return null;
+                int parameters = lookup.getArguments().size() - 1;
+                List<ExecutableElement> matches = elements.getAllMembers(contractOwner).stream()
+                        .filter(member -> member instanceof ExecutableElement)
+                        .map(member -> (ExecutableElement) member)
+                        .filter(method -> method.getSimpleName().contentEquals(name))
+                        .filter(method -> method.getParameters().size() == parameters)
+                        .toList();
+                return matches.size() == 1 ? matches.getFirst() : null;
+            }
+
+            private boolean isReflectionInvoke(ExecutableElement executable) {
+                return executable.getSimpleName().contentEquals("invoke")
+                        && executable.getEnclosingElement() instanceof TypeElement owner
+                        && owner.getQualifiedName().contentEquals("java.lang.reflect.Method");
+            }
+
             @Override public Void visitLambdaExpression(LambdaExpressionTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitLambdaExpression(node, unused);
                 Tree parent = dependencies.parents().get(node);
-                if (!(parent instanceof MethodInvocationTree invocation)
-                        || !isPredicateOperation(invocation)
-                        || !(node.getBody() instanceof Tree body)) {
+                if (!(node.getBody() instanceof Tree body)) {
                     return super.visitLambdaExpression(node, unused);
                 }
+                boolean predicateCallback = parent instanceof MethodInvocationTree invocation
+                        && isPredicateOperation(invocation);
+                if (!predicateCallback && !isPredicateExpression(body)) return super.visitLambdaExpression(node, unused);
                 scan(body, unused);
-                String predicate = addPredicate(body);
-                advance(predicate);
+                if (body.getKind() == Tree.Kind.BLOCK || !isPredicateExpression(body)) return null;
+                PredicatePlan predicate = addPredicatePlan(body);
+                enter(predicate);
+                var tails = new ArrayList<Tail>(predicate.trueTails());
+                tails.addAll(predicate.falseTails());
+                frontier = List.copyOf(tails);
                 return null;
             }
 
@@ -961,10 +1134,19 @@ public final class StaticDecisionAnalyzer {
                 if (!slice.contains(node)) return super.visitReturn(node, unused);
                 if (node.getExpression() != null) {
                     scan(node.getExpression(), unused);
-                    if (isPredicateExpression(node.getExpression())) {
-                        String predicate = addPredicate(node.getExpression());
-                        advance(predicate);
+                    if (isPredicateExpression(node.getExpression()) && frontier.stream()
+                            .noneMatch(tail -> tail.outcome().equals("true") || tail.outcome().equals("false"))) {
+                        PredicatePlan predicate = addPredicatePlan(node.getExpression());
+                        enter(predicate);
+                        var outcomes = new ArrayList<Tail>(predicate.trueTails());
+                        outcomes.addAll(predicate.falseTails());
+                        frontier = List.copyOf(outcomes);
                     }
+                }
+                if (deferredReturnDepth > 0) {
+                    deferredReturns.add(new DeferredReturn(List.copyOf(frontier), node, returnedLabel(node)));
+                    frontier = List.of();
+                    return null;
                 }
                 if (!root) {
                     frontier.forEach(tail -> {
@@ -978,10 +1160,7 @@ public final class StaticDecisionAnalyzer {
                 builder.addProbe(id, AnalysisManifest.ProbeKind.OUTCOME,
                         ownerHint(location.path()), runtimeMemberHint(node), methodDescriptor(location),
                         mapping(location, node));
-                String returned = "returns " + (node.getExpression() == null
-                        ? "no value"
-                        : (isPredicateExpression(node.getExpression()) ? "whether " : "")
-                                + expression(node.getExpression()));
+                String returned = returnedLabel(node);
                 for (Tail tail : frontier) {
                     String outcome = tail.outcome().equals("next")
                             ? returned : tail.outcome() + "; " + returned;
@@ -996,6 +1175,14 @@ public final class StaticDecisionAnalyzer {
             @Override public Void visitThrow(ThrowTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitThrow(node, unused);
                 scan(node.getExpression(), unused);
+                if (catchingDepth > 0) {
+                    String alternative = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                            "use alternative decision result", node, null);
+                    advance(alternative);
+                    caughtTails.addAll(frontier);
+                    frontier = List.of();
+                    return null;
+                }
                 String id = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                         "decision cannot continue", node, null);
                 advance(id);
@@ -1062,13 +1249,84 @@ public final class StaticDecisionAnalyzer {
             }
 
             @Override public Void visitTry(TryTree node, Void unused) {
-                if (relevant(node, slice, dependencies)) addCoverageGap(node, "try statement");
-                return super.visitTry(node, unused);
+                if (!relevant(node, slice, dependencies)) return null;
+                if (!resourcesAreDecisionSafe(node)) {
+                    addCoverageGap(node, "resource close logic can change the decision but is unavailable");
+                }
+                if (node.getCatches().isEmpty()) {
+                    if (node.getFinallyBlock() == null) {
+                        scan(node.getBlock(), unused);
+                        return null;
+                    }
+                    List<DeferredReturn> outerDeferred = deferredReturns;
+                    deferredReturns = new ArrayList<>();
+                    deferredReturnDepth++;
+                    scan(node.getBlock(), unused);
+                    deferredReturnDepth--;
+                    frontier = applyFinally(
+                            node.getFinallyBlock(), List.copyOf(frontier), deferredReturns, outerDeferred);
+                    deferredReturns = outerDeferred;
+                    return null;
+                }
+
+                String choice = add(BusinessDecisionGraph.NodeKind.CHOICE,
+                        "select decision result path", node, null);
+                advance(choice);
+                List<Tail> outerCaught = caughtTails;
+                caughtTails = new ArrayList<>();
+                List<DeferredReturn> outerDeferred = deferredReturns;
+                boolean ownsDeferredReturns = node.getFinallyBlock() != null;
+                if (ownsDeferredReturns) deferredReturns = new ArrayList<>();
+                if (node.getFinallyBlock() != null) deferredReturnDepth++;
+                frontier = List.of(new Tail(choice, "primary result"));
+                catchingDepth++;
+                scan(node.getBlock(), unused);
+                catchingDepth--;
+                List<Tail> normalTails = List.copyOf(frontier);
+                for (ReturnTree returned : returnsIn(node.getBlock())) {
+                    builder.addControlTarget(choice, "primary result", ownerHint(location.path()),
+                            runtimeMemberHint(returned), methodDescriptor(location),
+                            mapping(location, returned).line(), AnalysisManifest.ControlPoint.RETURN);
+                }
+
+                var merged = new ArrayList<Tail>(normalTails);
+                int alternativeIndex = 0;
+                for (CatchTree caught : node.getCatches()) {
+                    String outcome = "alternative result " + (++alternativeIndex);
+                    var inputs = new ArrayList<Tail>();
+                    inputs.add(new Tail(choice, outcome));
+                    if (alternativeIndex == 1) inputs.addAll(caughtTails);
+                    frontier = List.copyOf(inputs);
+                    scan(caught.getBlock(), unused);
+                    merged.addAll(frontier);
+                    Tree target = caught.getBlock().getStatements().isEmpty()
+                            ? null : caught.getBlock().getStatements().getFirst();
+                    if (target == null) {
+                        addCoverageGap(caught, "catch path has no executable source line");
+                    } else {
+                        builder.addControlTarget(choice, outcome, ownerHint(location.path()),
+                                runtimeMemberHint(caught), methodDescriptor(location), mapping(location, target).line());
+                    }
+                }
+                if (node.getFinallyBlock() != null) deferredReturnDepth--;
+                caughtTails = outerCaught;
+                frontier = List.copyOf(merged);
+                if (node.getFinallyBlock() != null) {
+                    frontier = applyFinally(
+                            node.getFinallyBlock(), List.copyOf(frontier), deferredReturns, outerDeferred);
+                }
+                if (ownsDeferredReturns) deferredReturns = outerDeferred;
+                if (hasUnavailableExceptionTrigger(node.getBlock())) {
+                    addCoverageGap(node.getBlock(),
+                            "exception-triggering decision logic is unavailable");
+                }
+                return null;
             }
 
             @Override public Void visitSynchronized(SynchronizedTree node, Void unused) {
-                if (relevant(node, slice, dependencies)) addCoverageGap(node, "synchronized statement");
-                return super.visitSynchronized(node, unused);
+                if (!relevant(node, slice, dependencies)) return null;
+                scan(node.getBlock(), unused);
+                return null;
             }
 
             private String add(
@@ -1080,18 +1338,76 @@ public final class StaticDecisionAnalyzer {
                         ownerHint(location.path()), runtimeMemberHint(tree), methodDescriptor(location));
             }
 
-            private String addPredicate(Tree condition) {
-                List<Tree> atomicPredicates = atomicPredicates(condition);
-                String id = add(BusinessDecisionGraph.NodeKind.PREDICATE,
-                        expression(condition), condition, AnalysisManifest.ProbeKind.PREDICATE);
-                for (int index = 1; index < atomicPredicates.size(); index++) {
-                    builder.addProbe(id, AnalysisManifest.ProbeKind.PREDICATE,
-                            ownerHint(location.path()), runtimeMemberHint(condition), methodDescriptor(location),
-                            mapping(location, condition));
-                }
-                builder.setBranchCompletions(id, exactBranchCompletions(condition));
-                return id;
+            private PredicatePlan addPredicatePlan(Tree condition) {
+                return addPredicatePlan(condition, AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
             }
+
+            private PredicatePlan addPredicatePlan(
+                    Tree condition, AnalysisManifest.BranchCompletion completion) {
+                Tree unwrapped = unwrapParentheses(condition);
+                if (unwrapped instanceof UnaryTree unary
+                        && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT
+                        && containsShortCircuit(unary.getExpression())) {
+                    PredicatePlan nested = addPredicatePlan(unary.getExpression(), reverse(completion));
+                    return new PredicatePlan(nested.entryNodeId(), nested.falseTails(), nested.trueTails());
+                }
+                if (unwrapped instanceof ConditionalExpressionTree conditional) {
+                    PredicatePlan selector = addPredicatePlan(
+                            conditional.getCondition(), AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
+                    PredicatePlan whenTrue = addPredicatePlan(conditional.getTrueExpression(), completion);
+                    PredicatePlan whenFalse = addPredicatePlan(conditional.getFalseExpression(), completion);
+                    connect(selector.trueTails(), whenTrue.entryNodeId());
+                    connect(selector.falseTails(), whenFalse.entryNodeId());
+                    var trueTails = new ArrayList<Tail>(whenTrue.trueTails());
+                    trueTails.addAll(whenFalse.trueTails());
+                    var falseTails = new ArrayList<Tail>(whenTrue.falseTails());
+                    falseTails.addAll(whenFalse.falseTails());
+                    return new PredicatePlan(selector.entryNodeId(), List.copyOf(trueTails), List.copyOf(falseTails));
+                }
+                if (unwrapped instanceof BinaryTree binary
+                        && binary.getKind() == Tree.Kind.CONDITIONAL_AND) {
+                    PredicatePlan left = addPredicatePlan(
+                            binary.getLeftOperand(), AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
+                    PredicatePlan right = addPredicatePlan(binary.getRightOperand(), completion);
+                    connect(left.trueTails(), right.entryNodeId());
+                    var falseTails = new ArrayList<Tail>(left.falseTails());
+                    falseTails.addAll(right.falseTails());
+                    return new PredicatePlan(left.entryNodeId(), right.trueTails(), List.copyOf(falseTails));
+                }
+                if (unwrapped instanceof BinaryTree binary
+                        && binary.getKind() == Tree.Kind.CONDITIONAL_OR) {
+                    PredicatePlan left = addPredicatePlan(
+                            binary.getLeftOperand(), AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED);
+                    PredicatePlan right = addPredicatePlan(binary.getRightOperand(), completion);
+                    connect(left.falseTails(), right.entryNodeId());
+                    var trueTails = new ArrayList<Tail>(left.trueTails());
+                    trueTails.addAll(right.trueTails());
+                    return new PredicatePlan(left.entryNodeId(), List.copyOf(trueTails), right.falseTails());
+                }
+                String id = add(BusinessDecisionGraph.NodeKind.PREDICATE,
+                        expression(unwrapped), unwrapped, AnalysisManifest.ProbeKind.PREDICATE);
+                builder.setBranchCompletions(id, List.of(completion));
+                return new PredicatePlan(id, List.of(new Tail(id, "true")), List.of(new Tail(id, "false")));
+            }
+
+            private void enter(PredicatePlan plan) {
+                connect(frontier, plan.entryNodeId());
+                lastNode = plan.entryNodeId();
+            }
+
+            private void connect(List<Tail> tails, String target) {
+                for (Tail tail : tails) builder.addEdge(tail.nodeId(), target, tail.outcome());
+            }
+
+            private AnalysisManifest.BranchCompletion reverse(AnalysisManifest.BranchCompletion completion) {
+                return completion == AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED
+                        ? AnalysisManifest.BranchCompletion.BOTH_OUTCOMES
+                        : AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED;
+            }
+
+            private record PredicatePlan(String entryNodeId, List<Tail> trueTails, List<Tail> falseTails) { }
+
+            private record DeferredReturn(List<Tail> tails, ReturnTree tree, String resultLabel) { }
 
             private void advance(String nodeId) {
                 for (Tail tail : frontier) builder.addEdge(tail.nodeId(), nodeId, tail.outcome());
@@ -1109,13 +1425,142 @@ public final class StaticDecisionAnalyzer {
                 var source = mapping(location, tree);
                 diagnostics.add(new AnalysisManifest.AnalysisDiagnostic(
                         AnalysisManifest.Severity.WARNING, source.source(), source.line(), source.column(),
-                        source.treeKind(), description + " is outside the walking-skeleton analysis subset"));
+                        source.treeKind(), description + " is outside the supported generic analysis subset"));
             }
 
-            private String caseLabel(CaseTree branch) {
-                if (branch.getExpressions().isEmpty()) return "default";
+            private String caseLabel(CaseTree branch, int caseIndex) {
+                if (branch.getExpressions().isEmpty()) {
+                    boolean fallback = branch.getLabels().stream()
+                            .anyMatch(label -> label.getKind() == Tree.Kind.DEFAULT_CASE_LABEL);
+                    return fallback ? "default" : "matching alternative " + caseIndex;
+                }
                 return branch.getExpressions().stream().map(StaticDecisionAnalyzer::expression)
                         .collect(Collectors.joining(" or "));
+            }
+
+            private Map<Long, Long> controlLineCounts(List<? extends CaseTree> cases) {
+                return cases.stream().map(this::controlTarget).filter(Objects::nonNull)
+                        .map(tree -> mapping(location, tree).line())
+                        .filter(line -> line > 0)
+                        .collect(Collectors.groupingBy(line -> line, LinkedHashMap::new, Collectors.counting()));
+            }
+
+            private Tree controlTarget(CaseTree branch) {
+                if (branch.getStatements() != null) {
+                    return branch.getStatements().isEmpty() ? null : branch.getStatements().getFirst();
+                }
+                return branch.getBody();
+            }
+
+            private AnalysisManifest.ControlPoint controlPoint(CaseTree branch) {
+                boolean pattern = isPatternCase(branch);
+                if (pattern && branch.getGuard() != null) return AnalysisManifest.ControlPoint.PREDICATE_TRUE;
+                if (pattern) return AnalysisManifest.ControlPoint.CASE_EXIT;
+                return AnalysisManifest.ControlPoint.LINE;
+            }
+
+            private boolean isPatternCase(CaseTree branch) {
+                return branch.getExpressions().isEmpty() && branch.getLabels().stream()
+                        .noneMatch(label -> label.getKind() == Tree.Kind.DEFAULT_CASE_LABEL);
+            }
+
+            private List<ReturnTree> returnsIn(Tree tree) {
+                var returns = new ArrayList<ReturnTree>();
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitReturn(ReturnTree node, Void unused) {
+                        returns.add(node);
+                        return null;
+                    }
+                }.scan(tree, null);
+                return List.copyOf(returns);
+            }
+
+            private List<Tail> applyFinally(
+                    BlockTree finallyBlock,
+                    List<Tail> normalTails,
+                    List<DeferredReturn> returns,
+                    List<DeferredReturn> outerReturns) {
+                var merged = new ArrayList<Tail>();
+                if (!normalTails.isEmpty()) {
+                    frontier = normalTails;
+                    scan(finallyBlock, null);
+                    merged.addAll(frontier);
+                }
+                for (DeferredReturn returned : returns) {
+                    frontier = returned.tails();
+                    scan(finallyBlock, null);
+                    if (frontier.isEmpty()) continue;
+                    if (deferredReturnDepth > 0) {
+                        outerReturns.add(new DeferredReturn(
+                                List.copyOf(frontier), returned.tree(), returned.resultLabel()));
+                        continue;
+                    }
+                    if (!root) {
+                        frontier.forEach(tail -> exitNodes.add(new Tail(tail.nodeId(),
+                                tail.outcome().equals("next") ? "result" : tail.outcome())));
+                        continue;
+                    }
+                    String terminal = stop(location, returned.tree());
+                    builder.addProbe(terminal, AnalysisManifest.ProbeKind.OUTCOME,
+                            ownerHint(location.path()), runtimeMemberHint(returned.tree()),
+                            methodDescriptor(location), mapping(location, returned.tree()));
+                    for (Tail tail : frontier) {
+                        String outcome = tail.outcome().equals("next")
+                                ? returned.resultLabel() : tail.outcome() + "; " + returned.resultLabel();
+                        builder.addEdge(tail.nodeId(), terminal, outcome);
+                    }
+                    lastNode = terminal;
+                    exitNodes.add(new Tail(terminal, "result"));
+                }
+                return List.copyOf(merged);
+            }
+
+            private String returnedLabel(ReturnTree node) {
+                if (node.getExpression() != null
+                        && unwrapParentheses(node.getExpression()) instanceof SwitchExpressionTree) {
+                    return "returns selected value";
+                }
+                return "returns " + (node.getExpression() == null
+                        ? "no value"
+                        : (isPredicateExpression(node.getExpression()) ? "whether " : "")
+                                + expression(node.getExpression()));
+            }
+
+            private boolean hasUnavailableExceptionTrigger(Tree tree) {
+                var unavailable = new boolean[1];
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitMethodInvocation(MethodInvocationTree node, Void unused) {
+                        if (!slice.contains(node)) return super.visitMethodInvocation(node, unused);
+                        TreePath path = TreePath.getPath(location.unit(), node);
+                        Element called = path == null ? null : trees.getElement(path);
+                        if (!(called instanceof ExecutableElement executable)
+                                || index.methods().get(executable) == null) unavailable[0] = true;
+                        return super.visitMethodInvocation(node, unused);
+                    }
+                }.scan(tree, null);
+                return unavailable[0];
+            }
+
+            private boolean resourcesAreDecisionSafe(TryTree tree) {
+                if (tree.getResources().isEmpty()) return true;
+                for (Tree resource : tree.getResources()) {
+                    Tree expression = resource instanceof VariableTree variable
+                            ? variable.getInitializer() : resource;
+                    TreePath path = TreePath.getPath(location.unit(), expression);
+                    TypeMirror type = path == null ? null : trees.getTypeMirror(path);
+                    Element resourceType = type == null ? null : types.asElement(type);
+                    if (!(resourceType instanceof TypeElement declared)) return false;
+                    ExecutableElement close = elements.getAllMembers(declared).stream()
+                            .filter(member -> member instanceof ExecutableElement)
+                            .map(member -> (ExecutableElement) member)
+                            .filter(method -> method.getSimpleName().contentEquals("close"))
+                            .filter(method -> method.getParameters().isEmpty())
+                            .findFirst().orElse(null);
+                    MethodLocation closeLocation = close == null ? null : index.methods().get(close);
+                    if (closeLocation == null || closeLocation.method().getBody() == null
+                            || !closeLocation.method().getBody().getStatements().isEmpty()) return false;
+                }
+                return true;
             }
 
             private String runtimeMemberHint(Tree tree) {
@@ -1265,6 +1710,12 @@ public final class StaticDecisionAnalyzer {
             if (!(element instanceof ExecutableElement executable)) {
                 throw new IllegalArgumentException("attributed method is unavailable for runtime binding");
             }
+            var descriptor = new StringBuilder("(");
+            executable.getParameters().forEach(parameter -> descriptor.append(typeDescriptor(parameter.asType())));
+            return descriptor.append(')').append(typeDescriptor(executable.getReturnType())).toString();
+        }
+
+        private String methodDescriptor(ExecutableElement executable) {
             var descriptor = new StringBuilder("(");
             executable.getParameters().forEach(parameter -> descriptor.append(typeDescriptor(parameter.asType())));
             return descriptor.append(')').append(typeDescriptor(executable.getReturnType())).toString();
@@ -1488,60 +1939,6 @@ public final class StaticDecisionAnalyzer {
         return renderExpression(subject) + (absent ? " is absent" : " exists");
     }
 
-    private static List<Tree> atomicPredicates(Tree tree) {
-        Tree unwrapped = unwrapParentheses(tree);
-        if (unwrapped instanceof UnaryTree unary && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT) {
-            return atomicPredicates(unary.getExpression());
-        }
-        if (unwrapped instanceof BinaryTree binary
-                && (binary.getKind() == Tree.Kind.CONDITIONAL_AND
-                || binary.getKind() == Tree.Kind.CONDITIONAL_OR)) {
-            var predicates = new ArrayList<Tree>();
-            predicates.addAll(atomicPredicates(binary.getLeftOperand()));
-            predicates.addAll(atomicPredicates(binary.getRightOperand()));
-            return List.copyOf(predicates);
-        }
-        return List.of(unwrapped);
-    }
-
-    private static List<AnalysisManifest.BranchCompletion> exactBranchCompletions(Tree tree) {
-        Tree unwrapped = unwrapParentheses(tree);
-        if (unwrapped instanceof UnaryTree unary && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT) {
-            return containsShortCircuit(unary.getExpression())
-                    || containsUnsupportedBranching(unary.getExpression())
-                    ? List.of()
-                    : List.of(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
-        }
-        if (!(unwrapped instanceof BinaryTree binary)
-                || (binary.getKind() != Tree.Kind.CONDITIONAL_AND
-                && binary.getKind() != Tree.Kind.CONDITIONAL_OR)) {
-            return containsUnsupportedBranching(unwrapped)
-                    ? List.of()
-                    : List.of(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
-        }
-        var operands = new ArrayList<Tree>();
-        flattenShortCircuit(unwrapped, binary.getKind(), operands);
-        if (operands.stream().anyMatch(operand -> containsShortCircuit(operand)
-                || containsUnsupportedBranching(operand))) return List.of();
-        var completions = new ArrayList<AnalysisManifest.BranchCompletion>();
-        AnalysisManifest.BranchCompletion shortCircuit = binary.getKind() == Tree.Kind.CONDITIONAL_AND
-                ? AnalysisManifest.BranchCompletion.JUMP_FALSE
-                : AnalysisManifest.BranchCompletion.JUMP_TRUE;
-        for (int index = 1; index < operands.size(); index++) completions.add(shortCircuit);
-        completions.add(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES);
-        return List.copyOf(completions);
-    }
-
-    private static void flattenShortCircuit(Tree tree, Tree.Kind kind, List<Tree> operands) {
-        Tree unwrapped = unwrapParentheses(tree);
-        if (unwrapped instanceof BinaryTree binary && binary.getKind() == kind) {
-            flattenShortCircuit(binary.getLeftOperand(), kind, operands);
-            flattenShortCircuit(binary.getRightOperand(), kind, operands);
-        } else {
-            operands.add(unwrapped);
-        }
-    }
-
     private static boolean containsShortCircuit(Tree tree) {
         Tree unwrapped = unwrapParentheses(tree);
         if (unwrapped instanceof BinaryTree binary
@@ -1551,20 +1948,6 @@ public final class StaticDecisionAnalyzer {
             return containsShortCircuit(unary.getExpression());
         }
         return false;
-    }
-
-    private static boolean containsUnsupportedBranching(Tree tree) {
-        final boolean[] found = { false };
-        new TreeScanner<Void, Void>() {
-            @Override public Void scan(Tree candidate, Void unused) {
-                if (candidate != null && (candidate.getKind() == Tree.Kind.CONDITIONAL_EXPRESSION
-                        || candidate.getKind() == Tree.Kind.SWITCH_EXPRESSION)) {
-                    found[0] = true;
-                }
-                return found[0] ? null : super.scan(candidate, unused);
-            }
-        }.scan(tree, null);
-        return found[0];
     }
 
     private static Tree unwrapParentheses(Tree tree) {

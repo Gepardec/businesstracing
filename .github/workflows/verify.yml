@@ -1,0 +1,57 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate:
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run standard, external, Mega Backend, and 1,000-RPS gates
+        run: ./scripts/verify-release.sh
+
+  postgres:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.4
+        env:
+          POSTGRES_DB: fachtracing
+          POSTGRES_USER: fachtracing
+          POSTGRES_PASSWORD: fachtracing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fachtracing -d fachtracing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run PostgreSQL storage contract
+        env:
+          FACHTRACING_POSTGRES_URL: jdbc:postgresql://localhost:5432/fachtracing
+          FACHTRACING_POSTGRES_USER: fachtracing
+          FACHTRACING_POSTGRES_PASSWORD: fachtracing
+        run: ./scripts/verify-postgres.sh

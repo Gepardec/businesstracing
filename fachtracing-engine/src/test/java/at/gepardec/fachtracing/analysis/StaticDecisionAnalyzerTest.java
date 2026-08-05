@@ -31,6 +31,8 @@ public final class StaticDecisionAnalyzerTest {
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
         supportsConnectedMixedModularAndNonModularProjects();
+        supportsOwnedExternalNamedModuleSources();
+        supportsOwnedExternalAutomaticModuleSources();
         rejectsInvalidJpmsContextBeforeGraphExtraction();
         rejectsIncompatibleOrUnownedJpmsSourcesBeforeExtraction();
         reportsTheSearchedBoundaryWhenImplementationsAreMissing();
@@ -38,6 +40,7 @@ public final class StaticDecisionAnalyzerTest {
         rejectsGraphRootsOutsideTheSourceUniverse();
         exposesRelevantCoverageGaps();
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
+        usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
         analyzesEveryAnnotatedEntry();
         treatsPlatformValueOperationsAsDecisionFacts();
         supportsCollectionFactsAndRecordEquality();
@@ -49,18 +52,42 @@ public final class StaticDecisionAnalyzerTest {
         exportsMultiOriginDeveloperProvenanceWithoutFalseGitLinks();
         capturesOnlyCleanGitRevisions();
         rejectsSourceMissingFromCapturedCommit();
-        exposesTryWithResourcesAsAnIndependentGap();
+        supportsTryWithResourcesIndependently();
+        reportsResultRelevantResourceFailureIndependently();
+        supportsBusinessLogicInsideSynchronizedBlocks();
         supportsPatternMatchingIndependently();
         supportsSealedTypesIndependently();
         supportsNestedClassesIndependently();
         supportsMethodReferencesIndependently();
     }
 
-    private static void exposesTryWithResourcesAsAnIndependentGap() {
+    private static void supportsTryWithResourcesIndependently() {
         var result = construct("try resource decision");
-        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result.graph();
-        assert result.diagnostics().stream().anyMatch(item -> item.constructKind().equals("TRY"))
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.graph();
+        assert result.graph().nodes().stream().noneMatch(node ->
+                node.businessLabel().contains("resource") || node.businessLabel().contains("close"))
+                : result.graph().nodes();
+    }
+
+    private static void reportsResultRelevantResourceFailureIndependently() {
+        var result = analyze("controlflow/ResourceFailurePolicy.java");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result;
+        assert result.graph().coverageGaps().stream().anyMatch(gap ->
+                gap.description().contains("close logic can change the decision")) : result.graph().coverageGaps();
+        assert result.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0) : result.diagnostics();
+    }
+
+    private static void supportsBusinessLogicInsideSynchronizedBlocks() {
+        var result = analyze("controlflow/SynchronizedPolicy.java");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                 : result.diagnostics();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().contains("age is below 24")) : result.graph().nodes();
+        String nodeLabels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert !nodeLabels.contains("monitor") : nodeLabels;
+        assert !hasKind(result.graph(), BusinessDecisionGraph.NodeKind.COVERAGE_GAP) : result.graph();
     }
 
     private static void supportsPatternMatchingIndependently() {
@@ -127,11 +154,11 @@ public final class StaticDecisionAnalyzerTest {
         assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE;
         assert hasKind(result.graph(), BusinessDecisionGraph.NodeKind.PREDICATE);
         assert hasKind(result.graph(), BusinessDecisionGraph.NodeKind.OUTCOME);
-        var predicate = result.graph().nodes().stream()
+        var predicateIds = result.graph().nodes().stream()
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
-                .findFirst().orElseThrow();
+                .map(BusinessDecisionGraph.DecisionNode::nodeId).toList();
         var branchOutcomes = result.graph().edges().stream()
-                .filter(edge -> edge.fromNodeId().equals(predicate.nodeId()))
+                .filter(edge -> predicateIds.contains(edge.fromNodeId()))
                 .map(BusinessDecisionGraph.DecisionEdge::outcome).toList();
         assert branchOutcomes.stream().anyMatch(value -> value.startsWith("true; returns "))
                 && branchOutcomes.stream().anyMatch(value -> value.startsWith("false; returns "))
@@ -368,21 +395,150 @@ public final class StaticDecisionAnalyzerTest {
             assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
                     .equals(List.of("mixed library decision", "mixed module decision",
                             "mixed unavailable source decision")) : results;
-            assert results.stream().filter(result -> !result.graph().decisionLabel()
-                            .equals("mixed unavailable source decision"))
-                    .allMatch(result -> result.graph().completeness()
-                            == BusinessDecisionGraph.Completeness.COMPLETE) : results;
+            assert results.stream().allMatch(result -> result.graph().completeness()
+                    == BusinessDecisionGraph.Completeness.COMPLETE) : results;
             var unavailable = results.stream().filter(result -> result.graph().decisionLabel()
                     .equals("mixed unavailable source decision")).findFirst().orElseThrow();
-            assert unavailable.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
-                    : unavailable;
-            assert unavailable.diagnostics().stream().anyMatch(diagnostic ->
-                    diagnostic.message().contains("unavailable")) : unavailable.diagnostics();
+            assert unavailable.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().contains("input 1 is below 24")) : unavailable;
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {
             if (root != null) deleteTree(root);
         }
+    }
+
+    private static void supportsOwnedExternalNamedModuleSources() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-owned-jpms-");
+            Path entryRoot = root.resolve("entry");
+            Path rulesRoot = root.resolve("rules");
+            Path entry = entryRoot.resolve("owned/entry/Policy.java");
+            Path rule = rulesRoot.resolve("owned/rules/AgeRule.java");
+            Files.createDirectories(entry.getParent());
+            Files.createDirectories(rule.getParent());
+            Files.writeString(entry, """
+                    package owned.entry;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import owned.rules.AgeRule;
+                    public final class Policy {
+                        @FachTracing("owned module decision")
+                        public boolean decide(int age) { return AgeRule.accepts(age); }
+                    }
+                    """);
+            Files.writeString(rule, """
+                    package owned.rules;
+                    public final class AgeRule {
+                        public static boolean accepts(int age) { return age >= 24; }
+                    }
+                    """);
+            Path entryModule = entryRoot.resolve("module-info.java");
+            Path rulesModule = rulesRoot.resolve("module-info.java");
+            Files.writeString(entryModule, """
+                    module owned.entry {
+                        requires at.gepardec.fachtracing.api;
+                        requires owned.rules;
+                    }
+                    """);
+            Files.writeString(rulesModule, "module owned.rules { exports owned.rules; }");
+            var compiler = new ApplicationSourceBoundary.CompilerModel(
+                    StandardCharsets.UTF_8, "21", List.of(), CLASSPATH);
+            var ownership = ApplicationSourceBoundary.ModuleOwnership.named(
+                    "owned.rules", rulesModule, rulesRoot);
+            var external = new ApplicationSourceBoundary.ResolutionSource(rule,
+                    new ApplicationSourceBoundary.SourceOrigin(
+                            ApplicationSourceBoundary.OriginKind.MAVEN_SOURCE,
+                            "example:owned-rules:1.0", "a".repeat(64)), ownership);
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "entry", List.of(entry), List.of(entry), CLASSPATH,
+                            compiler, List.of(), java.util.Optional.of(entryModule))), List.of(external));
+
+            var result = new StaticDecisionAnalyzer().analyze(boundary);
+            assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                    : result.diagnostics();
+            assert result.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().contains("age is at least 24"))
+                    : result.graph().nodes();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void supportsOwnedExternalAutomaticModuleSources() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-owned-auto-jpms-");
+            Path entryRoot = root.resolve("entry");
+            Path rulesRoot = root.resolve("rules-source");
+            Path entry = entryRoot.resolve("owned/entry/AutomaticPolicy.java");
+            Path rule = rulesRoot.resolve("owned/automatic/AmountRule.java");
+            Files.createDirectories(entry.getParent());
+            Files.createDirectories(rule.getParent());
+            Files.writeString(entry, """
+                    package owned.entry;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import owned.automatic.AmountRule;
+                    public final class AutomaticPolicy {
+                        @FachTracing("automatic module decision")
+                        public boolean decide(int amount) { return AmountRule.accepts(amount); }
+                    }
+                    """);
+            Files.writeString(rule, """
+                    package owned.automatic;
+                    public final class AmountRule {
+                        public static boolean accepts(int amount) { return amount >= 100; }
+                    }
+                    """);
+            Path binaryClasses = root.resolve("rules-classes");
+            Files.createDirectories(binaryClasses);
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", binaryClasses.toString(), rule.toString());
+            assert compilation == 0 : "could not compile the automatic-module test rule";
+            Path binary = root.resolve("owned.rules.auto.jar");
+            createJar(binaryClasses, binary);
+            Path entryModule = entryRoot.resolve("module-info.java");
+            Files.writeString(entryModule, """
+                    module owned.entry.auto {
+                        requires at.gepardec.fachtracing.api;
+                        requires owned.rules.auto;
+                    }
+                    """);
+            var modulePath = List.of(apiClasses(), binary);
+            var compiler = new ApplicationSourceBoundary.CompilerModel(
+                    StandardCharsets.UTF_8, "21", List.of(), modulePath);
+            var ownership = ApplicationSourceBoundary.ModuleOwnership.automatic(
+                    "owned.rules.auto", binary, rulesRoot);
+            var external = new ApplicationSourceBoundary.ResolutionSource(rule,
+                    new ApplicationSourceBoundary.SourceOrigin(
+                            ApplicationSourceBoundary.OriginKind.MAVEN_SOURCE,
+                            "example:owned-rules-auto:1.0", "b".repeat(64)), ownership);
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "entry", List.of(entry), List.of(entry), modulePath,
+                            compiler, List.of(), java.util.Optional.of(entryModule))), List.of(external));
+
+            var result = new StaticDecisionAnalyzer().analyze(boundary);
+            assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                    : result.diagnostics();
+            assert result.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().contains("amount is at least 100"))
+                    : result.graph().nodes();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static Path apiClasses() {
+        return Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
     }
 
     private static void createJar(Path classes, Path target) throws IOException {
@@ -544,6 +700,94 @@ public final class StaticDecisionAnalyzerTest {
         assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
         assert result.graph().coverageGaps().stream()
                 .anyMatch(gap -> gap.description().contains("implementations are unavailable"));
+    }
+
+    private static void usesControlledBytecodeFallbackAndRejectsUnsafeBinary() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-bytecode-fallback-");
+            Path binarySourceRoot = root.resolve("binary-source");
+            Path binaryClasses = root.resolve("binary-classes");
+            Path entryRoot = root.resolve("entry-source");
+            Path safeRule = binarySourceRoot.resolve("binaryrules/BinaryAgeRule.java");
+            Path calculatedRule = binarySourceRoot.resolve("binaryrules/CalculatedBinaryRule.java");
+            Path unsafeRule = binarySourceRoot.resolve("binaryrules/UnsafeBinaryRule.java");
+            Path entry = entryRoot.resolve("entry/BinaryPolicy.java");
+            Files.createDirectories(safeRule.getParent());
+            Files.createDirectories(entry.getParent());
+            Files.createDirectories(binaryClasses);
+            Files.writeString(safeRule, """
+                    package binaryrules;
+                    public final class BinaryAgeRule {
+                        public static boolean accepts(int age) { return age >= 24; }
+                    }
+                    """);
+            Files.writeString(unsafeRule, """
+                    package binaryrules;
+                    public final class UnsafeBinaryRule {
+                        public static boolean accepts(int age) { return Integer.toString(age).length() > 1; }
+                    }
+                    """);
+            Files.writeString(calculatedRule, """
+                    package binaryrules;
+                    public final class CalculatedBinaryRule {
+                        private final int threshold;
+                        public CalculatedBinaryRule() { threshold = 30; }
+                        public boolean accepts(int age, int credit) { return age + credit >= threshold; }
+                    }
+                    """);
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", binaryClasses.toString(),
+                    safeRule.toString(), calculatedRule.toString(), unsafeRule.toString());
+            assert compilation == 0 : "could not compile bytecode fallback rules";
+            Files.writeString(entry, """
+                    package entry;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import binaryrules.BinaryAgeRule;
+                    import binaryrules.CalculatedBinaryRule;
+                    import binaryrules.UnsafeBinaryRule;
+                    public final class BinaryPolicy {
+                        @FachTracing("safe binary decision")
+                        public boolean safe(int age) { return BinaryAgeRule.accepts(age); }
+                        @FachTracing("calculated binary decision")
+                        public boolean calculated(int age, int credit) {
+                            return new CalculatedBinaryRule().accepts(age, credit);
+                        }
+                        @FachTracing("unsafe binary decision")
+                        public boolean unsafe(int age) { return UnsafeBinaryRule.accepts(age); }
+                    }
+                    """);
+            var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                    List.of(entry), List.of(CLASSPATH.getFirst(), binaryClasses)));
+            var safe = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("safe binary decision")).findFirst().orElseThrow();
+            assert safe.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : safe;
+            assert safe.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("input 1 is at least 24")) : safe.graph().nodes();
+            assert safe.manifest().probeSites().stream().anyMatch(site ->
+                    site.ownerHint().equals("binaryrules.BinaryAgeRule")
+                            && site.descriptorHint().equals("(I)Z")) : safe.manifest();
+
+            var calculated = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("calculated binary decision")).findFirst().orElseThrow();
+            assert calculated.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : calculated;
+            assert calculated.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals(
+                            "input 1 plus input 2 is at least configured value 1"))
+                    : calculated.graph().nodes();
+
+            var unsafe = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("unsafe binary decision")).findFirst().orElseThrow();
+            assert unsafe.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unsafe;
+            assert unsafe.graph().coverageGaps().stream().anyMatch(gap ->
+                    gap.description().contains("unsupported call")) : unsafe.graph().coverageGaps();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
     }
 
     private static void analyzesEveryAnnotatedEntry() {

@@ -18,6 +18,8 @@ for contract in $contracts; do
       file="fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java" ;;
     RuntimeCollectorTest)
       file="fachtracing-engine/src/test/java/at/gepardec/fachtracing/runtime/RuntimeCollectorTest.java" ;;
+    FachtracingTransformerTest)
+      file="fachtracing-agent/src/test/java/at/gepardec/fachtracing/agent/FachtracingTransformerTest.java" ;;
     ApiModelTest)
       file="fachtracing-engine/src/test/java/at/gepardec/fachtracing/model/ApiModelTest.java" ;;
     *)

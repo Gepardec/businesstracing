@@ -17,6 +17,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /** In-memory, non-blocking collector used by injected probes on application threads. */
 public class RuntimeCollector implements TraceContextCarrier {
@@ -105,6 +110,18 @@ public class RuntimeCollector implements TraceContextCarrier {
         if (edge != null) context.observeEdge(edge);
     }
 
+    /** Appends one exact Boolean edge with typed evidence for its atomic predicate. */
+    public void predicate(String nodeId, String edgeId, boolean value) {
+        InvocationContext context = current();
+        if (context == null) return;
+        Definition definition = definition(context);
+        BusinessDecisionGraph.DecisionEdge edge = definition.edges().get(new EdgeKey(nodeId, edgeId));
+        if (edge == null) return;
+        var evidence = Map.of("value", definition.codec().encode(
+                value, definition.graph().decisionLabel(), "value"));
+        context.observe(nodeId, value ? "true" : "false", evidence, edgeId);
+    }
+
     /** Records which opaque static dispatch edge was selected for the target object. */
     public void dispatch(String nodeId, Object target) {
         InvocationContext context = current();
@@ -140,10 +157,11 @@ public class RuntimeCollector implements TraceContextCarrier {
         InvocationContext context = stack.peek();
         if (context == null) return;
         try {
+            markUnresolvedDispatches(context);
             Definition definition = definition(context);
             var encoded = definition.codec().encode(result, definition.graph().decisionLabel(), "final decision");
             context.observe(nodeId, "result", Map.of("result", encoded), null);
-            completed.add(context.finish(clock.instant(), encoded));
+            context.completeWhenReady(clock.instant(), encoded).ifPresent(completed::add);
         } finally {
             stack.pop();
             if (stack.isEmpty()) contexts.remove();
@@ -156,10 +174,18 @@ public class RuntimeCollector implements TraceContextCarrier {
         InvocationContext context = stack.peek();
         if (context == null) return;
         try {
-            completed.add(context.fail(clock.instant()));
+            markUnresolvedDispatches(context);
+            context.failWhenReady(clock.instant()).ifPresent(completed::add);
         } finally {
             stack.pop();
             if (stack.isEmpty()) contexts.remove();
+        }
+    }
+
+    private void markUnresolvedDispatches(InvocationContext context) {
+        for (String dispatchNodeId : context.consumeUnresolvedDispatches()) {
+            context.addRuntimeCoverageGap("runtime decision implementation did not match a proven candidate");
+            publish(context, dispatchNodeId, "", DiagnosticReason.UNKNOWN_TARGET);
         }
     }
 
@@ -198,6 +224,15 @@ public class RuntimeCollector implements TraceContextCarrier {
                 DiagnosticReason.UNSUPPORTED_ASYNC_BOUNDARY);
     }
 
+    /** Marks one runtime path whose exact static-to-bytecode correlation is unavailable. */
+    public void exactPathUnavailable(String description) {
+        InvocationContext context = current();
+        if (context == null) return;
+        String detail = Objects.requireNonNullElse(description, "exact path correlation is unavailable");
+        context.addRuntimeCoverageGap(detail);
+        publish(context, "", detail, DiagnosticReason.EXACT_PATH_UNAVAILABLE);
+    }
+
     @Override public ContextToken captureContext() {
         return new CapturedContext(current());
     }
@@ -223,15 +258,77 @@ public class RuntimeCollector implements TraceContextCarrier {
     /** Captures the current context and restores it only while the task runs. */
     public Runnable wrap(Runnable task) {
         Objects.requireNonNull(task, "task");
-        ContextToken token = captureContext();
-        return () -> { try (ContextScope ignored = restoreContext(token)) { task.run(); } };
+        InvocationContext context = current();
+        if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
+        return new WrappedRunnable(this, context, task);
     }
 
     /** Captures the current context and restores it only while the task runs. */
     public <T> Callable<T> wrap(Callable<T> task) {
         Objects.requireNonNull(task, "task");
-        ContextToken token = captureContext();
-        return () -> { try (ContextScope ignored = restoreContext(token)) { return task.call(); } };
+        InvocationContext context = current();
+        if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
+        return new WrappedCallable<>(this, context, task);
+    }
+
+    /** Captures context for one function callback. */
+    public <T, R> Function<T, R> wrap(Function<T, R> task) {
+        Objects.requireNonNull(task, "task");
+        InvocationContext context = current();
+        if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
+        return new WrappedFunction<>(this, context, task);
+    }
+
+    /** Captures context for one consumer callback. */
+    public <T> Consumer<T> wrap(Consumer<T> task) {
+        Objects.requireNonNull(task, "task");
+        InvocationContext context = current();
+        if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
+        return new WrappedConsumer<>(this, context, task);
+    }
+
+    /** Captures context for one two-argument function callback. */
+    public <T, U, R> BiFunction<T, U, R> wrap(BiFunction<T, U, R> task) {
+        Objects.requireNonNull(task, "task");
+        InvocationContext context = current();
+        if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
+        return new WrappedBiFunction<>(this, context, task);
+    }
+
+    /** Captures context for one two-argument consumer callback. */
+    public <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> task) {
+        Objects.requireNonNull(task, "task");
+        InvocationContext context = current();
+        if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
+        return new WrappedBiConsumer<>(this, context, task);
+    }
+
+    /** Captures context for one supplier callback. */
+    public <T> Supplier<T> wrap(Supplier<T> task) {
+        Objects.requireNonNull(task, "task");
+        InvocationContext context = current();
+        if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
+        return new WrappedSupplier<>(this, context, task);
+    }
+
+    private void releaseAsync(InvocationContext context) {
+        context.releaseAsync().ifPresent(completed::add);
+    }
+
+    private void runAsync(InvocationContext context, Runnable task) {
+        try (ContextScope ignored = restoreContext(new CapturedContext(context))) {
+            task.run();
+        } finally {
+            releaseAsync(context);
+        }
+    }
+
+    private <T> T callAsync(InvocationContext context, Callable<T> task) throws Exception {
+        try (ContextScope ignored = restoreContext(new CapturedContext(context))) {
+            return task.call();
+        } finally {
+            releaseAsync(context);
+        }
     }
 
     private String resolveDispatch(InvocationContext context, String nodeId, Class<?> runtimeType) {
@@ -279,6 +376,76 @@ public class RuntimeCollector implements TraceContextCarrier {
                 context.graph().graphId(), context.graph().version())), "active graph definition");
     }
 
+    private interface ContextWrapped { }
+
+    private record WrappedRunnable(
+            RuntimeCollector collector, InvocationContext context, Runnable delegate)
+            implements Runnable, ContextWrapped {
+        @Override public void run() { collector.runAsync(context, delegate); }
+    }
+
+    private record WrappedCallable<T>(
+            RuntimeCollector collector, InvocationContext context, Callable<T> delegate)
+            implements Callable<T>, ContextWrapped {
+        @Override public T call() throws Exception { return collector.callAsync(context, delegate); }
+    }
+
+    private record WrappedFunction<T, R>(
+            RuntimeCollector collector, InvocationContext context, Function<T, R> delegate)
+            implements Function<T, R>, ContextWrapped {
+        @Override public R apply(T value) {
+            try {
+                return collector.callAsync(context, () -> delegate.apply(value));
+            } catch (RuntimeException | Error failure) {
+                throw failure;
+            } catch (Exception impossible) {
+                throw new IllegalStateException(impossible);
+            }
+        }
+    }
+
+    private record WrappedConsumer<T>(
+            RuntimeCollector collector, InvocationContext context, Consumer<T> delegate)
+            implements Consumer<T>, ContextWrapped {
+        @Override public void accept(T value) { collector.runAsync(context, () -> delegate.accept(value)); }
+    }
+
+    private record WrappedBiFunction<T, U, R>(
+            RuntimeCollector collector, InvocationContext context, BiFunction<T, U, R> delegate)
+            implements BiFunction<T, U, R>, ContextWrapped {
+        @Override public R apply(T first, U second) {
+            try {
+                return collector.callAsync(context, () -> delegate.apply(first, second));
+            } catch (RuntimeException | Error failure) {
+                throw failure;
+            } catch (Exception impossible) {
+                throw new IllegalStateException(impossible);
+            }
+        }
+    }
+
+    private record WrappedBiConsumer<T, U>(
+            RuntimeCollector collector, InvocationContext context, BiConsumer<T, U> delegate)
+            implements BiConsumer<T, U>, ContextWrapped {
+        @Override public void accept(T first, U second) {
+            collector.runAsync(context, () -> delegate.accept(first, second));
+        }
+    }
+
+    private record WrappedSupplier<T>(
+            RuntimeCollector collector, InvocationContext context, Supplier<T> delegate)
+            implements Supplier<T>, ContextWrapped {
+        @Override public T get() {
+            try {
+                return collector.callAsync(context, delegate::get);
+            } catch (RuntimeException | Error failure) {
+                throw failure;
+            } catch (Exception impossible) {
+                throw new IllegalStateException(impossible);
+            }
+        }
+    }
+
     private record Definition(
             BusinessDecisionGraph graph,
             DecisionExecution.DecisionValueCodec codec,
@@ -299,7 +466,8 @@ public class RuntimeCollector implements TraceContextCarrier {
 
     /** Stable reason codes for developer-only runtime mismatch evidence. */
     public enum DiagnosticReason {
-        UNKNOWN_TARGET, AMBIGUOUS_TARGET, CONTEXT_SCOPE_MISMATCH, UNSUPPORTED_ASYNC_BOUNDARY
+        UNKNOWN_TARGET, AMBIGUOUS_TARGET, CONTEXT_SCOPE_MISMATCH, UNSUPPORTED_ASYNC_BOUNDARY,
+        EXACT_PATH_UNAVAILABLE
     }
 
     /** Technical runtime evidence that never enters business records or diagrams. */

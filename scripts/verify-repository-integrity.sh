@@ -21,6 +21,8 @@ require_tracked AGENTS.md
 require_tracked README.md
 require_tracked scripts/verify.sh
 require_tracked scripts/verify-mega-backend.sh
+require_tracked scripts/verify-postgres.sh
+require_tracked .github/workflows/verify.yml
 require_tracked conformance/mega-backend/README.md
 require_tracked conformance/mega-backend/selection.md
 require_tracked conformance/mega-backend/annotation-overlay.patch

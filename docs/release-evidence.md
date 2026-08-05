@@ -26,6 +26,10 @@ Run:
 The specification can be marked complete only after this command prints `RELEASE_GATE_OK` and its
 evidence file contains successful generic, external, Mega, and long-load results.
 
+Pull requests run the same clean-clone release gate on Java 21. A separate PostgreSQL 18.4 service
+runs `scripts/verify-postgres.sh`. The workflow has read-only repository permissions and no
+application database or Mega credentials. It also supports a manual dispatch.
+
 ## RC 1 corrected result
 
 - Release gate commit: `6b52e86ab25d06494b176057bfaa486ddf754cb2`

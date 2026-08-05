@@ -40,7 +40,7 @@ JAVA_HOME_21=$(/usr/libexec/java_home -v 21)
   "$ROOT/conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java" \
   "$ROOT/conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java"
 
-CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-agent/target/classes:$TEST_CLASSES:$HOME/.m2/repository/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-agent/target/classes:$TEST_CLASSES:$HOME/.m2/repository/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$HOME/.m2/repository/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -cp "$CP" \
   at.gepardec.fachtracing.conformance.ForbiddenReferenceTest "$ROOT"
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -Xmx3g -cp "$CP" \

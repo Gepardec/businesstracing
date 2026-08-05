@@ -4,7 +4,7 @@ set -eu
 ./scripts/verify-repository-integrity.sh
 ./scripts/verify-java-capabilities.sh
 mvn -q install
-CP="fachtracing-api/target/classes:fachtracing-engine/target/classes:fachtracing-engine/target/test-classes"
+CP="fachtracing-api/target/classes:fachtracing-engine/target/classes:fachtracing-engine/target/test-classes:$HOME/.m2/repository/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$HOME/.m2/repository/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
 JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.model.ApiModelTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.analysis.StaticDecisionAnalyzerTest
@@ -17,7 +17,7 @@ JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.FachtracingEngineIT
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.performance.FachtracingLoadTest \
   --baseline-seconds=5 --enabled-seconds=5 --rate=1000 --work-micros=10000
-AGENT_CP="$CP:fachtracing-agent/target/classes:fachtracing-agent/target/test-classes:$HOME/.m2/repository/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+AGENT_CP="$CP:fachtracing-agent/target/classes:fachtracing-agent/target/test-classes"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$AGENT_CP" at.gepardec.fachtracing.agent.FachtracingTransformerTest
 MAVEN_CP="$HOME/.m2/repository/org/apache/maven/maven-core/3.9.16/maven-core-3.9.16.jar:$HOME/.m2/repository/org/apache/maven/maven-model/3.9.16/maven-model-3.9.16.jar:$HOME/.m2/repository/org/apache/maven/maven-artifact/3.9.16/maven-artifact-3.9.16.jar:$HOME/.m2/repository/org/codehaus/plexus/plexus-utils/3.5.1/plexus-utils-3.5.1.jar:$HOME/.m2/repository/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar"
 PLUGIN_CP="$CP:fachtracing-maven-plugin/target/classes:fachtracing-maven-plugin/target/test-classes:$MAVEN_CP"
@@ -57,3 +57,8 @@ rg -q '"classFingerprints"' "$REACTOR_FIXTURE/target/fachtracing/activation.json
 rg -q '"decisions"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
 rg -q 'candidate 2' "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.mmd"
 ./scripts/verify-external-release.sh
+if [ -n "${FACHTRACING_POSTGRES_URL:-}" ]; then
+  ./scripts/verify-postgres.sh
+else
+  echo POSTGRES_JDBC_SKIPPED_NO_CONNECTION
+fi

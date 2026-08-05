@@ -33,6 +33,14 @@ Upgrade the plugin, engine, and agent together. Roll back those three artifacts 
 the V1 database schema; V1 records remain readable. Do not activate a manifest when its graph
 version or class fingerprint does not match the running class.
 
+The agent automatically carries an active trace through standard `Executor` and `ExecutorService`
+submission, `CompletionStage` callbacks, `CompletableFuture` suppliers, platform-thread builders,
+and virtual-thread builders. Application code uses the normal Java APIs and does not call a tracing
+wrapper. The carrier reserves the execution until the callback completes, restores the submitting
+context on the worker, and always clears it in `finally`. Calls made without an active trace retain
+the original callback object. An unsupported asynchronous boundary adds an execution coverage gap.
+The public manual wrapper APIs remain available for custom asynchronous frameworks.
+
 `scripts/verify-external-release.sh` publishes the RC to a temporary isolated file repository,
 uses an empty Maven local repository, resolves an exact external source artifact, and repeats that
 source analysis offline from cache. It generates Mermaid and PlantUML, starts a JVM with the released
