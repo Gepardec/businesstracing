@@ -16,8 +16,10 @@ Start the application with the matching agent artifact:
 java -javaagent:/path/to/fachtracing-agent-0.1.0-rc.1.jar -jar application.jar
 ```
 
-At startup, load the build-time manifest and matching class fingerprints, call
-`FachtracingAgent.configure`, and activate the graph with an application-owned redaction policy.
+At startup, read `target/fachtracing/activation.json` with
+`RuntimeActivationBundle.fromJson`, call `FachtracingAgent.configure(bundle)`, and register each
+bundle graph in `RuntimeCollector` with an application-owned redaction policy. The activation path
+does not need Java source or a compiler. The bundle's `javaAgentOption` gives the exact JVM option.
 Send completed `DecisionRecordEnvelope` values to `DecisionRecordDelivery`, backed by
 `JdbcDecisionRecordRepository`. Call `migrate()` during controlled startup. Retrieve a record with
 `findByExecutionId` and project its opaque path with the matching graph version.
@@ -31,5 +33,5 @@ version or class fingerprint does not match the running class.
 `scripts/verify-external-release.sh` publishes the RC to a temporary isolated file repository,
 uses an empty Maven local repository, resolves an exact external source artifact, and repeats that
 source analysis offline from cache. It generates Mermaid and PlantUML, starts a JVM with the released
-agent, configures the transformer, invokes the annotated method, verifies the captured path and
+agent, loads only the generated activation bundle, invokes the annotated method, verifies the captured path and
 business explanation, persists the actual execution through JDBC, and retrieves and explains it.

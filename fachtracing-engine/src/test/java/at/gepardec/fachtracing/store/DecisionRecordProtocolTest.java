@@ -22,6 +22,7 @@ public final class DecisionRecordProtocolTest {
         retriesOutsideTheApplicationThreadWithCounters();
         timedOutRetriesAreAccountedAsDropped();
         shutdownAccountsForInterruptedInFlightRetry();
+        shutdownIsBoundedWhenRepositoryIgnoresInterruption();
     }
 
     private static void roundTripsDeterministicallyAndIgnoresUnknownFields() {
@@ -118,6 +119,36 @@ public final class DecisionRecordProtocolTest {
         var counters = delivery.counters();
         assert !delivery.workerAlive();
         assert counters.accepted() == 1 && counters.saved() == 0 && counters.dropped() == 1 : counters;
+        assert counters.unresolvedAccepted() == 0 : counters;
+    }
+
+    private static void shutdownIsBoundedWhenRepositoryIgnoresInterruption() throws Exception {
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var repository = new DecisionRecordRepository() {
+            @Override public DecisionRecordId save(DecisionRecord record) { return record.id(); }
+            @Override public Optional<DecisionRecord> findById(DecisionRecordId id) { return Optional.empty(); }
+            @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
+                entered.countDown();
+                while (release.getCount() > 0) {
+                    try { release.await(); }
+                    catch (InterruptedException ignored) { /* Deliberately emulate a blocking driver. */ }
+                }
+            }
+        };
+        var delivery = new DecisionRecordDelivery(repository, 2,
+                DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN, 0, Duration.ZERO,
+                Duration.ofHours(1), Duration.ofMillis(500));
+        assert delivery.offer(envelope("blocked-record", "blocked-execution", Instant.now()));
+        assert entered.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        long started = System.nanoTime();
+        delivery.close();
+        long elapsed = System.nanoTime() - started;
+        release.countDown();
+        var counters = delivery.counters();
+        assert elapsed < Duration.ofSeconds(1).toNanos() : Duration.ofNanos(elapsed);
+        assert !delivery.workerAlive();
+        assert counters.accepted() == 1 && counters.dropped() == 1 : counters;
         assert counters.unresolvedAccepted() == 0 : counters;
     }
 }

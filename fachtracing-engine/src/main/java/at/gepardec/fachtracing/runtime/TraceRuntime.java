@@ -28,8 +28,22 @@ public final class TraceRuntime {
         safely("observe", () -> collector.observe(nodeId, outcome, value));
     }
 
+    /** Records evidence only when the named graph is active on this thread. */
+    public static void observeFor(String graphId, long graphVersion, String nodeId, String outcome, Object value) {
+        safely("observe", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.observe(nodeId, outcome, value);
+        });
+    }
+
     public static void edge(String nodeId, String edgeId) {
         safely("edge", () -> collector.edge(nodeId, edgeId));
+    }
+
+    /** Records an edge only when the named graph is active on this thread. */
+    public static void edgeFor(String graphId, long graphVersion, String nodeId, String edgeId) {
+        safely("edge", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.edge(nodeId, edgeId);
+        });
     }
 
     public static void dispatch(String nodeId, Object target) {
@@ -40,16 +54,44 @@ public final class TraceRuntime {
         safely("selected edge", () -> collector.selectedEdge(nodeId, edgeId));
     }
 
+    /** Records a selected dispatch edge only for its active graph. */
+    public static void selectedEdgeFor(String graphId, long graphVersion, String nodeId, String edgeId) {
+        safely("selected edge", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.selectedEdge(nodeId, edgeId);
+        });
+    }
+
     public static void expectDispatch(String nodeId) {
         safely("expect dispatch", () -> collector.expectDispatch(nodeId));
+    }
+
+    /** Expects dispatch only when the named graph is active on this thread. */
+    public static void expectDispatchFor(String graphId, long graphVersion, String nodeId) {
+        safely("expect dispatch", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.expectDispatch(nodeId);
+        });
     }
 
     public static void complete(String nodeId, Object result) {
         safely("complete", () -> collector.complete(nodeId, result));
     }
 
+    /** Completes only the named active graph. The result-first order simplifies bytecode injection. */
+    public static void completeFor(Object result, String graphId, long graphVersion, String nodeId) {
+        safely("complete", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.complete(nodeId, result);
+        });
+    }
+
     public static void fail(Throwable failure) {
         safely("fail", () -> collector.fail(failure));
+    }
+
+    /** Fails only the named active graph. */
+    public static void failFor(Throwable failure, String graphId, long graphVersion) {
+        safely("fail", () -> {
+            if (collector.isActive(graphId, graphVersion)) collector.fail(failure);
+        });
     }
 
     /** Reports an unsupported asynchronous boundary as incomplete runtime evidence. */

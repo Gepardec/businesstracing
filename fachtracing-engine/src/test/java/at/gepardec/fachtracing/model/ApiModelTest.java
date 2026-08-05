@@ -2,9 +2,13 @@ package at.gepardec.fachtracing.model;
 
 import at.gepardec.fachtracing.api.DecisionValueAdapter;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
+import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /** Plain-Java contract tests which avoid a framework dependency. */
 public final class ApiModelTest {
@@ -18,6 +22,7 @@ public final class ApiModelTest {
         customAdapterAndRedaction();
         collectionsPreserveTypedElementsWithoutArbitraryStringification();
         unknownValuesAreRejectedWithoutStringification();
+        activationBundleRoundTripsWithoutRuntimeSourceAnalysis();
     }
 
     private static void collectionsPreserveTypedElementsWithoutArbitraryStringification() {
@@ -67,5 +72,28 @@ public final class ApiModelTest {
         } catch (IllegalArgumentException expected) {
             assert !unknown.stringified;
         }
+    }
+
+    private static void activationBundleRoundTripsWithoutRuntimeSourceAnalysis() {
+        var graph = new BusinessDecisionGraph("graph", 1, "approval", "start",
+                List.of(
+                        new BusinessDecisionGraph.DecisionNode("start", BusinessDecisionGraph.NodeKind.ENTRY,
+                                "Start", Map.of()),
+                        new BusinessDecisionGraph.DecisionNode("stop", BusinessDecisionGraph.NodeKind.OUTCOME,
+                                "Stop", Map.of())),
+                List.of(new BusinessDecisionGraph.DecisionEdge("edge", "start", "stop", "returns approved")),
+                BusinessDecisionGraph.Completeness.COMPLETE, List.of());
+        var mapping = new AnalysisManifest.SourceMapping("start", Path.of("Policy.java"), 3, 5, "METHOD");
+        var manifest = new AnalysisManifest("graph", 1, Map.of("start", mapping),
+                List.of(new AnalysisManifest.ProbeSite("start", AnalysisManifest.ProbeKind.ENTRY,
+                        "example.Policy", "approve", 3)), List.of(), List.of(),
+                Map.of("Policy.java", "0".repeat(64)));
+        var bundle = new RuntimeActivationBundle("boundary", "-javaagent:/opt/fachtracing-agent.jar",
+                Map.of("example/Policy", "1".repeat(64)),
+                List.of(new RuntimeActivationBundle.DecisionDefinition(graph, manifest)));
+        byte[] encoded = bundle.toJson();
+        var decoded = RuntimeActivationBundle.fromJson(encoded);
+        assert decoded.equals(bundle) : new String(encoded, java.nio.charset.StandardCharsets.UTF_8);
+        assert java.util.Arrays.equals(encoded, decoded.toJson());
     }
 }

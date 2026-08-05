@@ -584,3 +584,77 @@ Run one clean, reproducible release gate that proves every requirement and preve
 - In Progress: 0
 - Blocked: 0
 - Pending: 0
+
+## PR 5 Remediation Tasks — Iteration 3
+
+### Task 18: Generate and consume a complete runtime activation bundle
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Tasks 10 and 12
+**Priority:** High
+
+**Acceptance Criteria:**
+
+- [x] The aggregate bundle round-trips graphs, manifests, boundary data, and class fingerprints.
+- [x] The agent supports all manifests in one bundle and verifies each original class once.
+- [x] The external release fixture traces and explains its decision without source or compiler use.
+
+### Task 19: Use the JPMS compiler context for extraction
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Task 14
+**Priority:** High
+
+**Acceptance Criteria:**
+
+- [x] Modular extraction includes all descriptors and the effective module path in its extraction task.
+- [x] The JPMS reactor graph still resolves both source implementations.
+- [x] Incompatible modular compiler models or external unnamed sources fail before extraction.
+
+### Task 20: Bound delivery shutdown and JDBC statements
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 16
+**Priority:** High
+
+**Acceptance Criteria:**
+
+- [x] A repository operation that ignores interruption cannot keep `close()` blocked.
+- [x] The delivery worker stops within the configured deadline and accounts for the in-flight record.
+- [x] JDBC statements use the configured timeout in save, query, migration, and retention paths.
+
+### Task 21: Add independent Java construct contracts
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 7
+**Priority:** High
+
+**Acceptance Criteria:**
+
+- [x] Try-with-resources, pattern matching, sealed types, nested classes, and method references each
+  have one matrix entry and one focused executable contract.
+- [x] Supported constructs assert topology; unsupported constructs assert an explicit gap.
+
+### Task 22: Rerun all corrected release evidence
+
+**Status:** In Progress
+**Estimated Effort:** L
+**Dependencies:** Tasks 18 through 21
+**Priority:** High
+
+**Acceptance Criteria:**
+
+- [ ] Main verification and pinned Mega conformance pass.
+- [ ] The clean-clone 600-second release gate passes with source-free activation and bounded shutdown.
+
+## Iteration 3 Progress Tracking
+
+- Total Tasks: 22
+- Completed: 21
+- In Progress: 1
+- Blocked: 0
+- Pending: 0

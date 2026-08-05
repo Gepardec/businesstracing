@@ -26,7 +26,9 @@ backpressure.
 Repository failures retry only on the worker with a configured retry count and delay. Counters report
 accepted, saved, retried, rejected, admission-dropped, and accepted-but-dropped records. After
 `close()` returns, the worker is stopped and `accepted = saved + dropped`. An interrupted retry counts
-the accepted record as dropped. `close()` waits for an in-flight repository call, so repository
-implementations must support interruption or use bounded I/O timeouts. Production deployments must
+the accepted record as dropped. Repository calls run in isolated virtual threads with a configured
+operation timeout. `close()` interrupts the delivery worker and returns within the configured
+shutdown timeout, even if a repository call ignores interruption. JDBC statements also have an
+independent query timeout. Production deployments must
 alert on rejected, admission-dropped, accepted-but-dropped, and repeated retry counts. Redaction,
 retention, deletion authorization, and backup deletion remain deployment responsibilities.

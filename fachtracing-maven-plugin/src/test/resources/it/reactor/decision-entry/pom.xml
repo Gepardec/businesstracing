@@ -16,5 +16,11 @@
       <artifactId>fachtracing-api</artifactId>
       <version>0.1.0-rc.1</version>
     </dependency>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId>
+      <artifactId>fachtracing-agent</artifactId>
+      <version>0.1.0-rc.1</version>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
 </project>

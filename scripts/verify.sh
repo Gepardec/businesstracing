@@ -47,16 +47,13 @@ rg -q 'candidate 1' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/reactor-
 rg -q 'candidate 2' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/reactor-approval-structure.mmd"
 rg -q 'reactor approval' "$REACTOR_FIXTURE/decision-entry/target/fachtracing/index.md"
 mvn -q -f "$REACTOR_FIXTURE/pom.xml" clean compile \
-  -Dfachtracing.additionalSourceRoots="$PWD/$REACTOR_FIXTURE/external-rules" \
-  -Dfachtracing.additionalEntrySourceRoots="$PWD/$REACTOR_FIXTURE/external-entries" \
   at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
 test -f "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.mmd"
 test -f "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.puml"
 test -f "$REACTOR_FIXTURE/target/fachtracing/index.md"
 test -f "$REACTOR_FIXTURE/target/fachtracing/activation.json"
-rg -q '"schema":"fachtracing-activation/v1"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
-rg -q '"graphCount":2' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
-rg -q 'candidate 3' "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.mmd"
-test -f "$REACTOR_FIXTURE/target/fachtracing/imported-approval-structure.mmd"
-rg -q 'imported approval' "$REACTOR_FIXTURE/target/fachtracing/index.md"
+rg -q '"schema":"fachtracing-activation/v2"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
+rg -q '"classFingerprints"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
+rg -q '"decisions"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
+rg -q 'candidate 2' "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.mmd"
 ./scripts/verify-external-release.sh

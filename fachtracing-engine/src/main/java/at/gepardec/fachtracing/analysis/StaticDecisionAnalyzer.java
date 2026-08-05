@@ -18,6 +18,7 @@ import com.sun.source.tree.InstanceOfTree;
 import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberSelectTree;
+import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ParenthesizedTree;
@@ -70,6 +71,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** Framework-neutral Java 21 source analyzer for {@code @FachTracing} entry points. */
@@ -84,7 +86,6 @@ public final class StaticDecisionAnalyzer {
     /** Analyzes every graph entry from a compatible project-aware application boundary. */
     public List<AnalysisManifest.AnalysisResult> analyzeAll(ApplicationSourceBoundary boundary) {
         Objects.requireNonNull(boundary, "boundary");
-        validateCompilerContexts(boundary);
         String searchedBoundary = "searched projects " + boundary.projects().stream()
                 .map(ApplicationSourceBoundary.ProjectSources::projectId).sorted().toList()
                 + ", external sources " + boundary.externalResolutionSources().stream()
@@ -104,7 +105,9 @@ public final class StaticDecisionAnalyzer {
                     .sorted(Comparator.comparing(Path::toString)).toList();
             var request = new AnalysisRequest(
                     sources, classpath, project.compilerModel().charset(), project.entrySourceFiles());
-            results.addAll(analyzeAll(request, project.compilerModel()));
+            boolean modular = closure.stream().anyMatch(item -> item.moduleDescriptor().isPresent());
+            if (modular) results.addAll(analyzeModular(request, closure, boundary));
+            else results.addAll(analyzeAll(request, project.compilerModel()));
         }
         return results.stream()
                 .map(result -> withSearchedBoundary(result, searchedBoundary))
@@ -161,6 +164,90 @@ public final class StaticDecisionAnalyzer {
     private List<AnalysisManifest.AnalysisResult> analyzeAll(
             AnalysisRequest request,
             ApplicationSourceBoundary.CompilerModel compilerModel) {
+        List<String> options = new ArrayList<>(List.of(
+                "-proc:none", "--release", compilerModel.release()));
+        options.addAll(compilerModel.compilerArguments());
+        if (!request.compilationClasspath().isEmpty()) {
+            options.add("-classpath");
+            options.add(joinPaths(request.compilationClasspath()));
+        }
+        return analyzeWithCompiler(request, request.sourceFiles(), options);
+    }
+
+    private List<AnalysisManifest.AnalysisResult> analyzeModular(
+            AnalysisRequest request,
+            List<ApplicationSourceBoundary.ProjectSources> closure,
+            ApplicationSourceBoundary boundary) {
+        if (!boundary.externalResolutionSources().isEmpty()) {
+            throw new IllegalArgumentException("JPMS graph extraction cannot assign external sources to a module; "
+                    + "add the source artifact as a reactor module or use a non-modular boundary");
+        }
+        if (closure.stream().anyMatch(project -> project.moduleDescriptor().isEmpty())) {
+            throw new IllegalArgumentException("JPMS graph extraction requires a module descriptor for every "
+                    + "connected source project");
+        }
+        var first = closure.getFirst().compilerModel();
+        boolean compatible = closure.stream().map(ApplicationSourceBoundary.ProjectSources::compilerModel)
+                .allMatch(model -> model.charset().equals(first.charset())
+                        && model.release().equals(first.release())
+                        && model.compilerArguments().equals(first.compilerArguments()));
+        if (!compatible) {
+            throw new IllegalArgumentException("connected JPMS projects use incompatible compiler settings");
+        }
+
+        var sourceFiles = new LinkedHashSet<Path>(request.sourceFiles());
+        closure.forEach(project -> sourceFiles.add(project.moduleDescriptor().orElseThrow()));
+        Set<String> sourceModuleNames = closure.stream()
+                .map(project -> moduleName(project.moduleDescriptor().orElseThrow()))
+                .collect(Collectors.toSet());
+        var modulePath = closure.stream().flatMap(project -> project.compilerModel().modulePath().stream())
+                .distinct().filter(path -> !containsModule(path, sourceModuleNames))
+                .sorted(Comparator.comparing(Path::toString)).toList();
+        var options = new ArrayList<>(List.of("-proc:none", "--release", first.release()));
+        options.addAll(first.compilerArguments());
+        if (!modulePath.isEmpty()) {
+            options.add("--module-path");
+            options.add(joinPaths(modulePath));
+        }
+        var modulePaths = new HashSet<>(modulePath);
+        List<Path> classpath = request.compilationClasspath().stream()
+                .filter(path -> !modulePaths.contains(path)).toList();
+        if (!classpath.isEmpty()) {
+            options.add("-classpath");
+            options.add(joinPaths(classpath));
+        }
+        for (var project : closure) {
+            options.add("--module-source-path");
+            options.add(moduleName(project.moduleDescriptor().orElseThrow()) + "="
+                    + joinPaths(sourceRoots(project)));
+        }
+        Path output;
+        try {
+            output = Files.createTempDirectory("fachtracing-jpms-");
+        } catch (IOException error) {
+            throw new IllegalStateException("Could not create the JPMS analysis output", error);
+        }
+        options.add("-d");
+        options.add(output.toString());
+        try {
+            return analyzeWithCompiler(request, List.copyOf(sourceFiles), options);
+        } finally {
+            deleteTree(output);
+        }
+    }
+
+    private static void deleteTree(Path root) {
+        try (var paths = Files.walk(root)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.deleteIfExists(path);
+        } catch (IOException error) {
+            throw new IllegalStateException("Could not remove the JPMS analysis output " + root, error);
+        }
+    }
+
+    private List<AnalysisManifest.AnalysisResult> analyzeWithCompiler(
+            AnalysisRequest request,
+            List<Path> compilerSources,
+            List<String> options) {
         Objects.requireNonNull(request, "request");
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) throw new IllegalStateException("A full JDK is required for source analysis");
@@ -168,16 +255,7 @@ public final class StaticDecisionAnalyzer {
         var compilerDiagnostics = new DiagnosticCollector<JavaFileObject>();
         try (StandardJavaFileManager files = compiler.getStandardFileManager(
                 compilerDiagnostics, Locale.ROOT, request.charset())) {
-            Iterable<? extends JavaFileObject> sources = files.getJavaFileObjectsFromPaths(request.sourceFiles());
-            List<String> options = new ArrayList<>(List.of(
-                    "-proc:none", "--release", compilerModel.release()));
-            options.addAll(compilerModel.compilerArguments());
-            if (!request.compilationClasspath().isEmpty()) {
-                options.add("-classpath");
-                options.add(request.compilationClasspath().stream()
-                        .map(Path::toString)
-                        .collect(Collectors.joining(System.getProperty("path.separator"))));
-            }
+            Iterable<? extends JavaFileObject> sources = files.getJavaFileObjectsFromPaths(compilerSources);
             JavacTask task = (JavacTask) compiler.getTask(
                     null, files, compilerDiagnostics, options, null, sources);
             List<CompilationUnitTree> units = new ArrayList<>();
@@ -189,7 +267,8 @@ public final class StaticDecisionAnalyzer {
                     .map(Object::toString)
                     .toList();
             if (!errors.isEmpty()) {
-                throw new IllegalArgumentException("Source attribution failed: " + String.join(" | ", errors));
+                throw new IllegalArgumentException("Effective compiler context failed during graph extraction: "
+                        + String.join(" | ", errors));
             }
 
             Trees trees = Trees.instance(task);
@@ -224,50 +303,50 @@ public final class StaticDecisionAnalyzer {
         }
     }
 
-    private static void validateCompilerContexts(ApplicationSourceBoundary boundary) {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        if (compiler == null) throw new IllegalStateException("A full JDK is required for source analysis");
-        for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
-            if (project.resolutionSourceFiles().isEmpty() || project.moduleDescriptor().isEmpty()) continue;
-            var sourcePaths = new ArrayList<>(project.resolutionSourceFiles());
-            project.moduleDescriptor().ifPresent(sourcePaths::add);
-            var diagnostics = new DiagnosticCollector<JavaFileObject>();
-            try (StandardJavaFileManager files = compiler.getStandardFileManager(
-                    diagnostics, Locale.ROOT, project.compilerModel().charset())) {
-                List<String> options = compilerOptions(project);
-                JavacTask task = (JavacTask) compiler.getTask(null, files, diagnostics, options, null,
-                        files.getJavaFileObjectsFromPaths(sourcePaths));
-                task.parse();
-                task.analyze();
-            } catch (IOException error) {
-                throw new IllegalStateException("Could not close the compiler for " + project.projectId(), error);
-            }
-            List<String> errors = diagnostics.getDiagnostics().stream()
-                    .filter(diagnostic -> diagnostic.getKind() == javax.tools.Diagnostic.Kind.ERROR)
-                    .map(Object::toString).toList();
-            if (!errors.isEmpty()) {
-                throw new IllegalArgumentException("Effective compiler context failed for "
-                        + project.projectId() + ": " + String.join(" | ", errors));
-            }
+    private static final Pattern MODULE_DECLARATION = Pattern.compile(
+            "(?m)\\b(?:open\\s+)?module\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s*\\{");
+    private static final Pattern PACKAGE_DECLARATION = Pattern.compile(
+            "(?m)\\bpackage\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s*;");
+
+    private static String moduleName(Path descriptor) {
+        try {
+            var matcher = MODULE_DECLARATION.matcher(Files.readString(descriptor));
+            if (!matcher.find()) throw new IllegalArgumentException("module declaration is unavailable in " + descriptor);
+            return matcher.group(1);
+        } catch (IOException error) {
+            throw new IllegalArgumentException("could not read module descriptor " + descriptor, error);
         }
     }
 
-    private static List<String> compilerOptions(ApplicationSourceBoundary.ProjectSources project) {
-        var model = project.compilerModel();
-        var options = new ArrayList<>(List.of("-proc:none", "--release", model.release()));
-        options.addAll(model.compilerArguments());
-        if (!model.modulePath().isEmpty()) {
-            options.add("--module-path");
-            options.add(joinPaths(model.modulePath()));
+    private static boolean containsModule(Path path, Set<String> moduleNames) {
+        if (!Files.exists(path)) return false;
+        try {
+            return java.lang.module.ModuleFinder.of(path).findAll().stream()
+                    .map(reference -> reference.descriptor().name()).anyMatch(moduleNames::contains);
+        } catch (java.lang.module.FindException ignored) {
+            return false;
         }
-        var modulePath = new HashSet<>(model.modulePath());
-        List<Path> classpath = project.compilationClasspath().stream()
-                .filter(path -> !modulePath.contains(path)).toList();
-        if (!classpath.isEmpty()) {
-            options.add("-classpath");
-            options.add(joinPaths(classpath));
+    }
+
+    private static List<Path> sourceRoots(ApplicationSourceBoundary.ProjectSources project) {
+        var roots = new LinkedHashSet<Path>();
+        roots.add(project.moduleDescriptor().orElseThrow().getParent());
+        for (Path source : project.resolutionSourceFiles()) {
+            try {
+                var matcher = PACKAGE_DECLARATION.matcher(Files.readString(source));
+                Path root = source.getParent();
+                if (matcher.find()) {
+                    for (String ignored : matcher.group(1).split("\\.")) {
+                        if (root == null) break;
+                        root = root.getParent();
+                    }
+                }
+                if (root != null) roots.add(root.toAbsolutePath().normalize());
+            } catch (IOException error) {
+                throw new IllegalArgumentException("could not read module source " + source, error);
+            }
         }
-        return options;
+        return roots.stream().sorted(Comparator.comparing(Path::toString)).toList();
     }
 
     private static String joinPaths(List<Path> paths) {
@@ -833,6 +912,35 @@ public final class StaticDecisionAnalyzer {
                 scan(body, unused);
                 String predicate = addPredicate(body);
                 advance(predicate);
+                return null;
+            }
+
+            @Override public Void visitMemberReference(MemberReferenceTree node, Void unused) {
+                if (!relevant(node, slice, dependencies)) return super.visitMemberReference(node, unused);
+                Element called = trees.getElement(getCurrentPath());
+                if (!(called instanceof ExecutableElement executable)) {
+                    addCoverageGap(node, "method-reference target is unavailable");
+                    return null;
+                }
+                TypeElement owner = (TypeElement) executable.getEnclosingElement();
+                if (isDecisionFreeValueAccess(executable, owner)) return null;
+                MethodLocation callee = index.methods().get(executable);
+                if (callee == null) {
+                    if (!isSupportedLibraryOperation(executable)) {
+                        addCoverageGap(node, "method-reference decision logic is unavailable");
+                    }
+                    return null;
+                }
+                if (callee.method().getBody() == null) {
+                    addCoverageGap(node, "method-reference decision logic has no source body");
+                    return null;
+                }
+                if (activeMethods.contains(executable)) return null;
+                String call = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                        "evaluate " + words(executable.getSimpleName().toString()), node, null);
+                advance(call);
+                Extraction linked = extract(callee, call, false, activeMethods);
+                frontier = linked.exits();
                 return null;
             }
 

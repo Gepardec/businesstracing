@@ -178,6 +178,13 @@ public class RuntimeCollector implements TraceContextCarrier {
         synchronized (diagnosticKeys) { return diagnosticKeys.size(); }
     }
 
+    /** Reports whether this thread currently executes the named graph version. */
+    public boolean isActive(String graphId, long graphVersion) {
+        InvocationContext context = current();
+        return context != null && context.graph().graphId().equals(graphId)
+                && context.graph().version() == graphVersion;
+    }
+
     /** Marks an unsupported asynchronous boundary without joining later unrelated work. */
     public void unsupportedAsyncBoundary(String boundaryKind) {
         InvocationContext context = current();

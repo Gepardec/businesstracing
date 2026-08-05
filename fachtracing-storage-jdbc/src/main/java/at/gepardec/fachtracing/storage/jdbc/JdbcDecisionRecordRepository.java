@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -18,9 +19,27 @@ import java.util.Optional;
 /** Transactional JDBC adapter with idempotent execution storage and indexed retrieval. */
 public final class JdbcDecisionRecordRepository implements DecisionRecordRepository {
     private final DataSource dataSource;
+    private final int statementTimeoutSeconds;
 
     public JdbcDecisionRecordRepository(DataSource dataSource) {
+        this(dataSource, Duration.ofSeconds(30));
+    }
+
+    /** Creates an adapter with a positive JDBC statement timeout. */
+    public JdbcDecisionRecordRepository(DataSource dataSource, Duration statementTimeout) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
+        Objects.requireNonNull(statementTimeout, "statementTimeout");
+        if (statementTimeout.isZero() || statementTimeout.isNegative()) {
+            throw new IllegalArgumentException("statementTimeout must be positive");
+        }
+        long millis;
+        try { millis = statementTimeout.toMillis(); }
+        catch (ArithmeticException tooLarge) {
+            throw new IllegalArgumentException("statementTimeout is too large", tooLarge);
+        }
+        long seconds = Math.max(1, Math.floorDiv(millis, 1000) + (millis % 1000 == 0 ? 0 : 1));
+        if (seconds > Integer.MAX_VALUE) throw new IllegalArgumentException("statementTimeout is too large");
+        this.statementTimeoutSeconds = (int) seconds;
     }
 
     /** Applies the repeatable V1 schema migration. */
@@ -61,6 +80,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                     """);
             try (var statement = connection.prepareStatement(
                     "insert into fachtracing_schema_version(version, applied_at) values(1, ?)")) {
+                timeout(statement);
                 statement.setTimestamp(1, Timestamp.from(Instant.now()));
                 try { statement.executeUpdate(); } catch (SQLException duplicate) {
                     if (!duplicateKey(duplicate)) throw duplicate;
@@ -84,6 +104,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                     (record_id, execution_id, graph_id, graph_version, started_at, completed_at, status, schema_id, payload)
                     values (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """)) {
+                timeout(statement);
                 statement.setString(1, envelope.recordId()); statement.setString(2, envelope.execution().executionId());
                 statement.setString(3, envelope.execution().graphId()); statement.setLong(4, envelope.execution().graphVersion());
                 statement.setTimestamp(5, Timestamp.from(envelope.execution().startedAt()));
@@ -98,6 +119,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                     insert into fachtracing_correlation
                     (record_id, correlation_name, correlation_value, completed_at) values (?, ?, ?, ?)
                     """)) {
+                timeout(statement);
                 for (var entry : envelope.correlationKeys().entrySet()) {
                     statement.setString(1, envelope.recordId()); statement.setString(2, entry.getKey());
                     statement.setString(3, entry.getValue().canonicalValue());
@@ -113,6 +135,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
         return transaction(connection -> {
             try (var statement = connection.prepareStatement(
                     "select payload from fachtracing_decision_record where execution_id = ?")) {
+                timeout(statement);
                 statement.setString(1, executionId);
                 try (ResultSet rows = statement.executeQuery()) {
                     return rows.next() ? Optional.of(read(rows)) : Optional.empty();
@@ -130,6 +153,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                     where c.correlation_name = ? and c.correlation_value = ?
                       and c.completed_at >= ? and c.completed_at <= ? order by c.completed_at, r.record_id
                     """)) {
+                timeout(statement);
                 statement.setString(1, query.correlationKey()); statement.setString(2, query.redactedCanonicalValue());
                 statement.setTimestamp(3, Timestamp.from(query.completedFrom()));
                 statement.setTimestamp(4, Timestamp.from(query.completedTo()));
@@ -143,6 +167,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
         return transaction(connection -> {
             try (var statement = connection.prepareStatement(
                     "delete from fachtracing_decision_record where completed_at < ?")) {
+                timeout(statement);
                 statement.setTimestamp(1, Timestamp.from(boundary)); return (long) statement.executeUpdate();
             }
         });
@@ -151,8 +176,11 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
     private static DecisionRecordEnvelope read(ResultSet rows) throws SQLException {
         return DecisionRecordEnvelope.fromJson(rows.getBytes(1));
     }
-    private static void execute(Connection connection, String sql) throws SQLException {
-        try (var statement = connection.createStatement()) { statement.execute(sql); }
+    private void execute(Connection connection, String sql) throws SQLException {
+        try (var statement = connection.createStatement()) { timeout(statement); statement.execute(sql); }
+    }
+    private void timeout(java.sql.Statement statement) throws SQLException {
+        statement.setQueryTimeout(statementTimeoutSeconds);
     }
     private <T> T transaction(SqlWork<T> work) {
         try (Connection connection = dataSource.getConnection()) {

@@ -140,8 +140,7 @@ public final class AnalyzeMojo extends AbstractMojo {
         for (MavenProject candidate : projects) {
             List<Path> classpath = candidate.getCompileClasspathElements().stream()
                     .map(Path::of).map(path -> path.toAbsolutePath().normalize()).toList();
-            Optional<Path> module = candidate == project
-                    ? moduleDescriptor(candidate.getCompileSourceRoots()) : Optional.empty();
+            Optional<Path> module = moduleDescriptor(candidate.getCompileSourceRoots());
             var compiler = MavenCompilerModelResolver.resolve(candidate, classpath, module.isPresent());
             List<Path> sources = sourceFiles(compiler.compileSourceRoots());
             List<Path> entries = candidate == project ? new ArrayList<>(sources) : new ArrayList<>();

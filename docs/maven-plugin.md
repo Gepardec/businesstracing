@@ -44,9 +44,10 @@ roots. It also uses Java sources and compile classpaths from the active reactor 
 interface and abstract-method implementations. Thus, an implementation in a sibling module can
 appear as a dispatch candidate without creating a graph for an annotation in that sibling module.
 
-The plugin keeps each `module-info.java` file and validates each modular project with its effective
-module path before graph extraction. It does not put multiple module descriptors in one synthetic
-module. A module with no Java source skips graph generation and removes stale Fachtracing output.
+For a connected JPMS closure, the plugin puts all module descriptors and sources in one valid
+multi-module compiler task. It uses the effective module paths and module source paths. Graph
+extraction uses this same attributed task. A module with no Java source skips graph generation and
+removes stale Fachtracing output.
 
 ### One aggregate reactor result
 
@@ -59,9 +60,10 @@ mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-
 
 The goal runs once. It uses the projects that Maven selected, including the effect of `-pl` and
 `-am`. It writes the diagrams, `index.md`, and `activation.json` under the execution root's
-`target/fachtracing` directory. The activation file contains stable project coordinates, analyzed
-source fingerprints, and graph counts. Duplicate decision labels get graph-ID suffixes, so one graph
-cannot replace another.
+`target/fachtracing` directory. The activation file contains each graph, its exact runtime probe
+manifest, original class fingerprints, the source-boundary fingerprint, and the exact Java-agent
+option. A runtime can load this file without Java source or a compiler. Duplicate decision labels
+get graph-ID suffixes, so one graph cannot replace another.
 
 Optional `includeProjects` and `excludeProjects` lists use exact `groupId:artifactId` values. They
 filter Maven's effective selection. An include value that is not in that selection causes a failure.
@@ -71,6 +73,8 @@ The aggregate goal supports the same `additionalSourceRoots`, `additionalEntrySo
 `sourceDependencies` settings as the module goal. You can also set these lists with the matching
 `fachtracing.*` command-line properties. In a reactor with a POM execution root, an additional entry
 root uses the first selected non-POM project's compiler context.
+External sources in a JPMS closure must have explicit module ownership. Add them as reactor modules.
+The analyzer rejects an unowned external source in a modular closure.
 
 ## Explicit external source inputs
 

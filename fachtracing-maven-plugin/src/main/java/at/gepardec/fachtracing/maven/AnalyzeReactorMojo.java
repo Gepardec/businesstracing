@@ -2,6 +2,7 @@ package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -109,7 +110,7 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
             var result = new ProjectGraphGenerator().generate(
                     boundary, charset, outputDirectory.toPath(), failOnIncomplete,
                     developerOutput(origins));
-            writeActivationBundle(projects, boundary.resolutionSourceFiles(), result);
+            writeActivationBundle(projects, boundary, result);
             getLog().info("Generated " + result.graphCount()
                     + " aggregate Fachtracing decision graph(s) from " + projects.size() + " project(s)");
         } catch (ProjectGraphGenerator.IncompleteGraphException error) {
@@ -277,17 +278,39 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
 
     private void writeActivationBundle(
             List<MavenProject> projects,
-            List<Path> sources,
+            ApplicationSourceBoundary boundary,
             ProjectGraphGenerator.GenerationResult result) throws IOException {
+        if (result.analyses().isEmpty()) return;
         Files.createDirectories(outputDirectory.toPath());
-        String projectJson = projects.stream().map(AnalyzeReactorMojo::coordinate)
-                .map(AnalyzeReactorMojo::json).reduce((left, right) -> left + "," + right).orElse("");
-        String sourceJson = sources.stream().map(AnalyzeReactorMojo::fingerprint).sorted()
-                .map(AnalyzeReactorMojo::json).reduce((left, right) -> left + "," + right).orElse("");
-        String content = "{\"schema\":\"fachtracing-activation/v1\",\"projects\":["
-                + projectJson + "],\"sourceFingerprints\":[" + sourceJson + "],\"graphCount\":"
-                + result.graphCount() + ",\"incompleteCount\":" + result.incompleteCount() + "}\n";
-        Files.writeString(outputDirectory.toPath().resolve("activation.json"), content, StandardCharsets.UTF_8);
+        var decisions = result.analyses().stream()
+                .map(analysis -> new RuntimeActivationBundle.DecisionDefinition(
+                        analysis.graph(), analysis.manifest()))
+                .toList();
+        var bundle = new RuntimeActivationBundle(
+                boundary.fingerprint(), javaAgentOption(projects),
+                ClassFingerprintResolver.resolve(projects, result.analyses()), decisions);
+        Files.write(outputDirectory.toPath().resolve("activation.json"), bundle.toJson());
+    }
+
+    private static String javaAgentOption(List<MavenProject> projects) {
+        for (MavenProject candidate : projects) {
+            for (var artifact : candidate.getArtifacts()) {
+                if ("at.gepardec.fachtracing".equals(artifact.getGroupId())
+                        && "fachtracing-agent".equals(artifact.getArtifactId())
+                        && artifact.getFile() != null && artifact.getFile().isFile()) {
+                    return "-javaagent:" + artifact.getFile().toPath().toAbsolutePath().normalize();
+                }
+            }
+        }
+        for (MavenProject candidate : projects) {
+            if (!"at.gepardec.fachtracing".equals(candidate.getGroupId())
+                    || !"fachtracing-agent".equals(candidate.getArtifactId())) continue;
+            Path jar = Path.of(candidate.getBuild().getDirectory(),
+                    candidate.getBuild().getFinalName() + ".jar").toAbsolutePath().normalize();
+            if (Files.isRegularFile(jar)) return "-javaagent:" + jar;
+        }
+        throw new IllegalArgumentException("fachtracing-agent runtime artifact is unavailable; "
+                + "add at.gepardec.fachtracing:fachtracing-agent as a runtime dependency");
     }
 
     private static String coordinate(MavenProject project) {
@@ -307,19 +330,4 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
         return java.util.Set.copyOf(result);
     }
 
-    private static String json(String value) {
-        return '"' + value.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
-    }
-
-    private static String fingerprint(Path source) {
-        try {
-            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
-                    .digest(Files.readAllBytes(source));
-            return java.util.HexFormat.of().formatHex(digest);
-        } catch (java.security.NoSuchAlgorithmException impossible) {
-            throw new IllegalStateException("SHA-256 unavailable", impossible);
-        } catch (IOException error) {
-            throw new IllegalStateException("could not fingerprint aggregate source", error);
-        }
-    }
 }

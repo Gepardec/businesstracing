@@ -31,6 +31,7 @@ public final class FachtracingTransformerTest {
         ternaryPredicateKeepsLegacyProbes();
         manifestWithoutBranchTargetsKeepsLegacyProbe();
         transformedTargetsRecordTheActualPolymorphicEdge();
+        activationTransformerInstallsMultipleDisjointGraphs();
     }
 
     private static void premainAcceptsApplicationConfigurationAfterStartup() {
@@ -86,6 +87,43 @@ public final class FachtracingTransformerTest {
         var regionalExecution = collector.pollCompleted().orElseThrow();
         assert selectedEdge(localExecution).equals("edge-local") : localExecution.observations();
         assert selectedEdge(regionalExecution).equals("edge-regional") : regionalExecution.observations();
+    }
+
+    private static void activationTransformerInstallsMultipleDisjointGraphs() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        var selected = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> item.graph().decisionLabel().equals("compound conjunction")
+                        || item.graph().decisionLabel().equals("compound disjunction"))
+                .toList();
+        assert selected.size() == 2 : selected;
+        byte[] original = fixtureBytes();
+        var transformer = new FachtracingTransformer(
+                selected.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
+                Map.of(CLASS_NAME, sha256(original)));
+        byte[] transformed = transformer.transform(null, null, CLASS_NAME, null, null, original);
+        assert transformed != null;
+
+        RuntimeCollector collector = new RuntimeCollector();
+        for (var result : selected) collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+        assert fixture.getMethod("decideAnd", boolean.class, boolean.class).invoke(instance, true, true).equals(true);
+        assert fixture.getMethod("decideOr", boolean.class, boolean.class).invoke(instance, false, true).equals(true);
+        var executions = List.of(collector.pollCompleted().orElseThrow(), collector.pollCompleted().orElseThrow());
+        var graphIds = executions.stream().map(DecisionExecution::graphId).toList();
+        assert graphIds.containsAll(selected.stream().map(item -> item.graph().graphId()).toList()) : graphIds;
+        for (var execution : executions) {
+            var graph = selected.stream().filter(item -> item.graph().graphId().equals(execution.graphId()))
+                    .findFirst().orElseThrow().graph();
+            var nodeIds = graph.nodes().stream().map(BusinessDecisionGraph.DecisionNode::nodeId).toList();
+            assert execution.observations().stream().allMatch(item -> nodeIds.contains(item.nodeId()))
+                    : execution.observations();
+        }
     }
 
     private static void rejectsFingerprintMismatch() throws Exception {

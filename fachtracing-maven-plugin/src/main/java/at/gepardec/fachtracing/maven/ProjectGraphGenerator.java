@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.AnalysisRequest;
+import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
@@ -71,7 +72,7 @@ final class ProjectGraphGenerator {
         Objects.requireNonNull(developerOutput, "developerOutput");
         if (rootSourceFiles.isEmpty() || sourceFiles.isEmpty()) {
             removePriorArtifacts(outputDirectory);
-            return new GenerationResult(0, 0, true);
+            return new GenerationResult(0, 0, true, List.of());
         }
 
         var analyses = analyzer.analyzeAll(
@@ -97,7 +98,7 @@ final class ProjectGraphGenerator {
         Objects.requireNonNull(developerOutput, "developerOutput");
         if (boundary.entrySourceFiles().isEmpty()) {
             removePriorArtifacts(outputDirectory);
-            return new GenerationResult(0, 0, true);
+            return new GenerationResult(0, 0, true, List.of());
         }
         return write(analyzer.analyzeAll(boundary), outputCharset, outputDirectory,
                 failOnIncomplete, developerOutput);
@@ -111,7 +112,7 @@ final class ProjectGraphGenerator {
             Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
         if (analyses.isEmpty()) {
             removePriorArtifacts(outputDirectory);
-            return new GenerationResult(0, 0, true);
+            return new GenerationResult(0, 0, true, List.of());
         }
 
         DeveloperGraphExporter.SourceRevision revision = developerOutput
@@ -158,7 +159,7 @@ final class ProjectGraphGenerator {
         Files.writeString(outputDirectory.resolve("index.md"), index.toString(), charset);
 
         if (failOnIncomplete && !incomplete.isEmpty()) throw new IncompleteGraphException(incomplete);
-        return new GenerationResult(analyses.size(), incomplete.size(), false);
+        return new GenerationResult(analyses.size(), incomplete.size(), false, analyses);
     }
 
     private static void removePriorArtifacts(Path outputDirectory) throws IOException {
@@ -200,7 +201,15 @@ final class ProjectGraphGenerator {
                 .replace("[", "\\[").replace("]", "\\]");
     }
 
-    record GenerationResult(int graphCount, int incompleteCount, boolean skipped) { }
+    record GenerationResult(
+            int graphCount,
+            int incompleteCount,
+            boolean skipped,
+            List<AnalysisManifest.AnalysisResult> analyses) {
+        GenerationResult {
+            analyses = List.copyOf(analyses);
+        }
+    }
 
     record DeveloperOutput(
             Path repositoryRoot,

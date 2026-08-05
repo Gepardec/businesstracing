@@ -345,3 +345,18 @@ hints. `Gepardec/mega-backend` remains one black-box conformance corpus.
 - Do not use subagents.
 - Keep technical provenance and diagnostics outside business records.
 - Keep Mega-specific knowledge inside conformance artifacts only.
+
+## PR 5 Remediation Requirements — Iteration 3
+
+- WHEN Maven writes an activation bundle THE SYSTEM SHALL include each business graph, its runtime
+  manifest, and matching class fingerprints so that an application can configure tracing without
+  Java source files, a compiler, or startup analysis.
+- WHEN graph extraction analyzes connected JPMS projects THE SYSTEM SHALL parse, attribute, and
+  extract the graph in one valid multi-module compiler context that includes module descriptors and
+  the effective module path. IF project compiler models cannot share that context THEN THE SYSTEM
+  SHALL reject the boundary before graph extraction.
+- WHEN delivery shutdown starts while repository I/O is blocked THE SYSTEM SHALL stop its delivery
+  worker and return within the configured shutdown bound. The accepted record SHALL be saved or
+  counted as dropped. WHERE the JDBC adapter is used THE SYSTEM SHALL configure statement timeouts.
+- THE SYSTEM SHALL give try-with-resources, pattern matching, sealed types, nested classes, and
+  method references separate capability entries and separate executable construct contracts.

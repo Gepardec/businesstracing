@@ -10,6 +10,7 @@ checks that every entry names an executable contract and appears in this documen
 - `switch-forms`, `ternary-expression`, `loops-and-collection-mutation`, `records-and-equality`
 - `lambdas-and-streams`, `try-synchronized-exception-flow`, `source-unavailable-call`
 - `reflection-service-loader-proxy`, `async-boundary`, `java17-java21-projects`
+- `try-with-resources`, `pattern-matching`, `sealed-types`, `nested-classes`, `method-references`
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
@@ -31,22 +32,23 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Ternary expression | Retains its result-relevant condition as a predicate |
 | `for`, enhanced `for`, `while`, `do while` | Creates a business iteration/choice node and analyzes the result-relevant body |
 | Relevant `try` or synchronized block | Produces an explicit coverage gap and an incomplete graph |
+| Try-with-resources | Produces an explicit `TRY` coverage gap and an incomplete graph |
+| Pattern matching | Retains result-relevant type patterns and their bound business facts |
+| Sealed type dispatch | Includes each source-visible permitted implementation as a candidate |
+| Nested class call | Resolves and expands source-visible nested-class decision logic |
+| Direct method reference | Resolves and expands a source-visible referenced decision method |
 | Source-unavailable call or reflection | Remains outside the complete subset and must be surfaced by the broader extractor |
 
 ## Project and compiler boundary
 
-Aggregate analysis creates one compiler context for each modular project and one extraction context
-for each project that contains an entry. It does not put module descriptors or duplicate fully
-qualified class names into one `javac` task. A context uses the project's source encoding, Java
-release, compiler arguments, compile classpath, generated compile roots, JPMS descriptor, module
-path, and declared reactor dependency links. Connected implementation projects can supply
-polymorphic candidates. Unconnected projects cannot affect the graph.
-
-Fachtracing parses and attributes each module descriptor with that project's sources and effective
-module path before graph extraction. It does not depend only on Maven's earlier compilation.
-Different releases, encodings, and arguments use separate compiler tasks. Unsupported forked
-compilers and annotation-processor configurations fail before graph extraction. Generated sources
-keep generated provenance in developer graph V2.
+For a connected modular source closure, aggregate analysis creates one valid multi-module `javac`
+task. The task includes each module descriptor, module source path, effective module path, classpath,
+release, encoding, and compiler argument. Graph extraction uses the trees and symbols from this same
+task. It does not validate in one context and extract from a flat context. Connected modules must
+use compatible release, encoding, and compiler arguments. External source files without module
+ownership are rejected for a modular closure. Unsupported forked compilers and annotation-processor
+configurations fail before graph extraction. Generated sources keep generated provenance in
+developer graph V2.
 
 Every annotated decision has one `Start` and one `Stop`. Return paths state the returned business
 expression on their edge to Stop. Relevant throws in the entry or an expanded source method use a

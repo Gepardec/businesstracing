@@ -20,6 +20,12 @@
 - Scope decision: keep one umbrella specification because the user requested one specification that
   fixes all audit findings; use one mandatory final release gate
 - Team conventions: ASD-STE100 Simplified Technical English; no subagents
+- Iteration 3 recovery: PR 5 review reopened four P1 contracts after version 2 completion.
+- Iteration 3 affected components: activation model and codec, Maven bundle writer, multi-manifest
+  agent, JPMS analyzer orchestration, delivery lifecycle, JDBC statements, capability matrix,
+  construct fixtures, release scripts, and integration documentation.
+- Iteration 3 regression risks: multi-graph instrumentation, source mappings, non-modular analysis,
+  queue admission counters, JDBC compatibility, generic-source isolation, and 1,000 RPS overhead.
 
 ## Phase 2 Completion Summary
 
@@ -148,6 +154,26 @@
 - Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
 - Final load: 600,000 completed records at 1,000 RPS; 0.108% p95 overhead
 - Integrity counters: 0 errors, mismatches, drops, contamination, or silent accepted-record loss
+
+## Remediation Iteration 3
+
+- Trigger: PR 5 changes requested after commit `96d07ec` on 2026-08-04.
+- Status: reopened because activation is not runtime-usable, JPMS validation and extraction differ,
+  shutdown can block forever in repository I/O, and five required Java constructs lack independent
+  capability contracts.
+- Scope: Tasks 18 through 22. Earlier generic, Mega, privacy, and performance behavior remains a
+  mandatory regression gate.
+- 2026-08-04: Started Task 18 after loading SpecOps 1.8.0, six steering files, project memory, the
+  completed version 2 journal, and the four review findings. The worktree was clean.
+- 2026-08-05: Tasks 18 through 21 completed. Activation V2 now contains executable graphs,
+  manifests, fingerprints, and the agent option. The external runtime loads only this file. JPMS
+  extraction uses one attributed multi-module task. Delivery isolates blocked repository calls and
+  JDBC applies statement timeouts. Five Java constructs now have separate capability contracts.
+- 2026-08-05: Started Task 22. Focused engine, agent, JDBC, JPMS reactor, capability, and external
+  release contracts pass.
+- 2026-08-05: Main verification passed with source-free external activation. The short 1,000-RPS
+  run completed 5,000 decisions with 0.136% p95 overhead and zero integrity errors. Pinned Mega
+  conformance passed with five complete graphs from 420 source files. The clean long gate remains.
 
 ## Remediation Iteration 2
 

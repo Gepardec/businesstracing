@@ -18,6 +18,9 @@
   </pluginRepositories>
   <dependencies>
     <dependency>
+      <groupId>example.rules</groupId><artifactId>external-rules</artifactId><version>1.0.0</version>
+    </dependency>
+    <dependency>
       <groupId>at.gepardec.fachtracing</groupId><artifactId>fachtracing-api</artifactId><version>0.1.0-rc.1</version>
     </dependency>
     <dependency>

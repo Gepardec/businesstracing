@@ -143,6 +143,35 @@ report as tracked conformance data. Validate their recorded hashes and pinned co
 source and generic configuration guard must reject Mega package, class, method, path, and vocabulary
 references.
 
+### Decision 12: Make the activation artifact executable configuration
+
+**Decision:** Replace the summary-only activation file with a deterministic runtime bundle. The
+bundle contains business graphs, instrumentation manifests, class fingerprints, the boundary
+fingerprint, and the Java-agent option. A public engine codec loads the bundle. The agent accepts all
+bundle manifests in one configuration and instruments each selected class once.
+
+**Constraint:** Runtime startup does not read Java source and does not use `jdk.compiler`.
+
+### Decision 13: Extract modular graphs in multi-module javac mode
+
+**Decision:** For a connected modular source closure, use one Java compiler task with every module
+descriptor, the effective module path, and explicit `module=source-path` mappings. Use this same task
+for attribution and graph extraction. Reject incompatible compiler models and unassigned external
+sources before extraction. Keep the flat task only for non-modular boundaries.
+
+### Decision 14: Isolate repository calls from bounded delivery shutdown
+
+**Decision:** Run one repository call in a cancellable daemon task. The delivery worker waits only
+for a configured operation bound. Shutdown interrupts that wait, accounts for the accepted record,
+and joins the delivery worker only to a configured deadline. JDBC statements also receive a query
+timeout. A repository call that ignores cancellation cannot keep the delivery worker active.
+
+### Decision 15: Verify Java capabilities by construct behavior
+
+**Decision:** Add one matrix entry and one focused executable method for each required construct.
+The verifier binds matrix entries to methods. Each method asserts the expected graph topology or
+explicit coverage gap.
+
 ## Component Design
 
 ### Spec and repository integrity checker

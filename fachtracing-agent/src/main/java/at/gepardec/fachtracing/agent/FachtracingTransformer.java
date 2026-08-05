@@ -22,12 +22,19 @@ import java.util.stream.Collectors;
  */
 public final class FachtracingTransformer implements ClassFileTransformer {
     private static final String RUNTIME = "at/gepardec/fachtracing/runtime/TraceRuntime";
-    private final AnalysisManifest manifest;
+    private final List<AnalysisManifest> manifests;
     private final Map<String, String> classFingerprints;
 
     public FachtracingTransformer(AnalysisManifest manifest, Map<String, String> classFingerprints) {
-        this.manifest = manifest;
+        this(List.of(manifest), classFingerprints);
+    }
+
+    /** Creates one class transformer for all disjoint method plans in an activation bundle. */
+    public FachtracingTransformer(List<AnalysisManifest> manifests, Map<String, String> classFingerprints) {
+        this.manifests = List.copyOf(manifests);
+        if (this.manifests.isEmpty()) throw new IllegalArgumentException("at least one manifest is required");
         this.classFingerprints = Map.copyOf(classFingerprints);
+        rejectOverlappingEntries(this.manifests);
     }
 
     @Override
@@ -37,16 +44,25 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         String expected = classFingerprints.get(className);
         if (expected == null || !expected.equals(sha256(classfileBuffer))) return null;
         try {
-            ClassReader reader = new ClassReader(classfileBuffer);
-            ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-            reader.accept(new ProbeClassVisitor(writer, className), ClassReader.SKIP_FRAMES);
-            return writer.toByteArray();
+            byte[] transformed = classfileBuffer;
+            for (AnalysisManifest manifest : manifests) {
+                if (!isSelectedClass(manifest, className)) continue;
+                ClassReader reader = new ClassReader(transformed);
+                ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                reader.accept(new ProbeClassVisitor(writer, className, manifest), ClassReader.SKIP_FRAMES);
+                transformed = writer.toByteArray();
+            }
+            return transformed;
         } catch (Throwable ignored) {
             return null;
         }
     }
 
     private boolean isSelectedClass(String className) {
+        return manifests.stream().anyMatch(manifest -> isSelectedClass(manifest, className));
+    }
+
+    private static boolean isSelectedClass(AnalysisManifest manifest, String className) {
         return manifest.probeSites().stream().anyMatch(site -> ownerMatches(className, site.ownerHint()))
                 || manifest.dispatchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
                 || manifest.branchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()));
@@ -62,10 +78,12 @@ public final class FachtracingTransformer implements ClassFileTransformer {
 
     private final class ProbeClassVisitor extends ClassVisitor {
         private final String className;
+        private final AnalysisManifest manifest;
 
-        private ProbeClassVisitor(ClassVisitor delegate, String className) {
+        private ProbeClassVisitor(ClassVisitor delegate, String className, AnalysisManifest manifest) {
             super(Opcodes.ASM9, delegate);
             this.className = className;
+            this.manifest = manifest;
         }
 
         @Override
@@ -85,7 +103,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                     .filter(target -> memberMatches(name, target.memberHint()))
                     .toList();
             return sites.isEmpty() && targets.isEmpty() && branches.isEmpty() ? delegate
-                    : new ProbeMethodVisitor(delegate, access, descriptor, sites, targets, branches);
+                    : new ProbeMethodVisitor(delegate, access, descriptor, manifest, sites, targets, branches);
         }
 
         private boolean memberMatches(String bytecodeName, String memberHint) {
@@ -98,6 +116,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
 
     private final class ProbeMethodVisitor extends MethodVisitor {
         private final Type returnType;
+        private final AnalysisManifest manifest;
         private final Type[] argumentTypes;
         private final boolean staticMethod;
         private final List<AnalysisManifest.ProbeSite> predicates;
@@ -115,10 +134,12 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         private long sourceLine = -1;
 
         private ProbeMethodVisitor(MethodVisitor delegate, int access, String descriptor,
+                                   AnalysisManifest manifest,
                                    List<AnalysisManifest.ProbeSite> sites,
                                    List<AnalysisManifest.DispatchTarget> targets,
                                    List<AnalysisManifest.BranchTarget> branches) {
             super(Opcodes.ASM9, delegate);
+            this.manifest = manifest;
             returnType = Type.getReturnType(descriptor);
             argumentTypes = Type.getArgumentTypes(descriptor);
             staticMethod = (access & Opcodes.ACC_STATIC) != 0;
@@ -163,9 +184,10 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 super.visitLabel(failureStart);
             }
             for (AnalysisManifest.DispatchTarget target : targets) {
+                pushGraph();
                 push(target.dispatchNodeId());
                 push(target.edgeId());
-                invoke("selectedEdge", "(Ljava/lang/String;Ljava/lang/String;)V");
+                invoke("selectedEdgeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V");
             }
         }
 
@@ -179,11 +201,12 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             int local = staticMethod ? 0 : 1;
             for (int index = 0; index < argumentTypes.length; index++) {
                 Type argument = argumentTypes[index];
+                pushGraph();
                 push(entry.nodeId());
                 push("input " + (index + 1));
                 mv.visitVarInsn(argument.getOpcode(Opcodes.ILOAD), local);
                 box(argument);
-                invoke("observe", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
+                invoke("observeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
                 local += argument.getSize();
             }
         }
@@ -253,16 +276,18 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         }
 
         private void emitEdge(String nodeId, String edgeId) {
+            pushGraph();
             push(nodeId);
             push(edgeId);
-            invoke("edge", "(Ljava/lang/String;Ljava/lang/String;)V");
+            invoke("edgeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V");
         }
 
         private void emitLegacyPredicate(AnalysisManifest.ProbeSite predicate) {
+            pushGraph();
             push(predicate.nodeId());
             push("evaluated");
             mv.visitInsn(Opcodes.ACONST_NULL);
-            invoke("observe", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
+            invoke("observeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
         }
 
         private boolean matchesSourceLine(AnalysisManifest.ProbeSite site) {
@@ -286,8 +311,9 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                         .filter(target -> target.dispatchNodeId().equals(next.nodeId()))
                         .anyMatch(target -> target.memberHint().equals(name));
                 if (memberMatches) {
+                    pushGraph();
                     push(next.nodeId());
-                    invoke("expectDispatch", "(Ljava/lang/String;)V");
+                    invoke("expectDispatchFor", "(Ljava/lang/String;JLjava/lang/String;)V");
                     dispatchIndex++;
                 }
             }
@@ -302,8 +328,9 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                         ? outcomes.getFirst()
                         : outcomes.get(outcomeIndex++);
                 duplicateAndBox(opcode);
-                pushUnderResult(outcome.nodeId());
-                invoke("complete", "(Ljava/lang/String;Ljava/lang/Object;)V");
+                pushGraph();
+                push(outcome.nodeId());
+                invoke("completeFor", "(Ljava/lang/Object;Ljava/lang/String;JLjava/lang/String;)V");
             }
             super.visitInsn(opcode);
         }
@@ -314,7 +341,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 super.visitLabel(failureEnd);
                 super.visitLabel(failureHandler);
                 mv.visitInsn(Opcodes.DUP);
-                invoke("fail", "(Ljava/lang/Throwable;)V");
+                pushGraph();
+                invoke("failFor", "(Ljava/lang/Throwable;Ljava/lang/String;J)V");
                 mv.visitInsn(Opcodes.ATHROW);
             }
             super.visitMaxs(maxStack, maxLocals);
@@ -346,11 +374,6 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             }
         }
 
-        private void pushUnderResult(String nodeId) {
-            push(nodeId);
-            mv.visitInsn(Opcodes.SWAP);
-        }
-
         private void box(String owner, String descriptor) {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, owner, "valueOf",
                     "(" + descriptor + ")L" + owner + ";", false);
@@ -358,6 +381,11 @@ public final class FachtracingTransformer implements ClassFileTransformer {
 
         private void push(String value) {
             mv.visitLdcInsn(value);
+        }
+
+        private void pushGraph() {
+            push(manifest.graphId());
+            mv.visitLdcInsn(manifest.graphVersion());
         }
 
         private void invoke(String name, String descriptor) {
@@ -379,6 +407,21 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
         } catch (Exception impossible) {
             throw new IllegalStateException(impossible);
+        }
+    }
+
+    private static void rejectOverlappingEntries(List<AnalysisManifest> manifests) {
+        var owners = new java.util.LinkedHashMap<String, String>();
+        for (AnalysisManifest manifest : manifests) {
+            var keys = new java.util.LinkedHashSet<String>();
+            manifest.probeSites().stream().filter(site -> site.kind() == AnalysisManifest.ProbeKind.ENTRY)
+                    .forEach(site -> keys.add(site.ownerHint() + '#' + site.memberHint()));
+            for (String key : keys) {
+                String previous = owners.putIfAbsent(key, manifest.graphId());
+                if (previous != null && !previous.equals(manifest.graphId())) {
+                    throw new IllegalArgumentException("activation manifests contain duplicate entries at " + key);
+                }
+            }
         }
     }
 }

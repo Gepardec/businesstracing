@@ -16,5 +16,7 @@ boundary; foreign-key cascade deletes their correlation rows in the same transac
 
 Each operation owns one transaction and rolls back on failure. SQL states in connection class `08`
 and transaction rollback class `40` are marked retryable. `DecisionRecordDelivery` performs retries
-outside the decision thread. Credentials remain in the configured `DataSource` and never enter logs,
+outside the decision thread. The adapter applies a positive query timeout to every JDBC statement.
+The default is 30 seconds. Use the constructor with `Duration` to set a deployment-specific value.
+Credentials remain in the configured `DataSource` and never enter logs,
 payloads, diagrams, or developer JSON.

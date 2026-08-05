@@ -28,6 +28,7 @@ public final class StaticDecisionAnalyzerTest {
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
         rejectsInvalidJpmsContextBeforeGraphExtraction();
+        rejectsIncompatibleOrUnownedJpmsSourcesBeforeExtraction();
         reportsTheSearchedBoundaryWhenImplementationsAreMissing();
         rejectsInvalidApplicationBoundaries();
         rejectsGraphRootsOutsideTheSourceUniverse();
@@ -44,6 +45,51 @@ public final class StaticDecisionAnalyzerTest {
         exportsMultiOriginDeveloperProvenanceWithoutFalseGitLinks();
         capturesOnlyCleanGitRevisions();
         rejectsSourceMissingFromCapturedCommit();
+        exposesTryWithResourcesAsAnIndependentGap();
+        supportsPatternMatchingIndependently();
+        supportsSealedTypesIndependently();
+        supportsNestedClassesIndependently();
+        supportsMethodReferencesIndependently();
+    }
+
+    private static void exposesTryWithResourcesAsAnIndependentGap() {
+        var result = construct("try resource decision");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result.graph();
+        assert result.diagnostics().stream().anyMatch(item -> item.constructKind().equals("TRY"))
+                : result.diagnostics();
+    }
+
+    private static void supportsPatternMatchingIndependently() {
+        var result = construct("pattern decision");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.diagnostics();
+        assert hasKind(result.graph(), BusinessDecisionGraph.NodeKind.PREDICATE);
+    }
+
+    private static void supportsSealedTypesIndependently() {
+        var result = construct("sealed decision");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.diagnostics();
+        assert result.graph().edges().stream().filter(edge -> edge.outcome().startsWith("candidate ")).count() == 2
+                : result.graph().edges();
+    }
+
+    private static void supportsNestedClassesIndependently() {
+        var result = construct("nested decision");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.diagnostics();
+        assert result.graph().nodes().stream().anyMatch(node -> node.businessLabel().contains("age is at least 24"))
+                : result.graph().nodes();
+    }
+
+    private static void supportsMethodReferencesIndependently() {
+        var result = construct("method reference decision");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.diagnostics();
+        assert result.graph().nodes().stream().anyMatch(node -> node.businessLabel().contains("amount is below 100"))
+                : result.graph().nodes();
+    }
+
+    private static AnalysisManifest.AnalysisResult construct(String label) {
+        return new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                        List.of(FIXTURES.resolve("constructs/JavaConstructPolicy.java")), CLASSPATH)).stream()
+                .filter(result -> result.graph().decisionLabel().equals(label)).findFirst().orElseThrow();
     }
 
     private static void supportedConstructsAcrossDomains() {
@@ -298,6 +344,63 @@ public final class StaticDecisionAnalyzerTest {
             } catch (IllegalArgumentException expected) {
                 assert expected.getMessage().contains("Effective compiler context failed") : expected;
                 assert expected.getMessage().contains("module not found") : expected;
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void rejectsIncompatibleOrUnownedJpmsSourcesBeforeExtraction() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-jpms-boundary-");
+            Path oneRoot = root.resolve("one");
+            Path twoRoot = root.resolve("two");
+            Path one = oneRoot.resolve("one/Policy.java");
+            Path two = twoRoot.resolve("two/Rule.java");
+            Files.createDirectories(one.getParent());
+            Files.createDirectories(two.getParent());
+            Files.writeString(one, """
+                    package one;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    public final class Policy {
+                        @FachTracing("JPMS boundary") public boolean decide() { return true; }
+                    }
+                    """);
+            Files.writeString(two, "package two; public final class Rule { }");
+            Path oneModule = oneRoot.resolve("module-info.java");
+            Path twoModule = twoRoot.resolve("module-info.java");
+            Files.writeString(oneModule, "module test.one { requires at.gepardec.fachtracing.api; requires test.two; }");
+            Files.writeString(twoModule, "module test.two { exports two; }");
+            var java21 = new ApplicationSourceBoundary.CompilerModel(
+                    StandardCharsets.UTF_8, "21", List.of(), CLASSPATH);
+            var java17 = new ApplicationSourceBoundary.CompilerModel(
+                    StandardCharsets.UTF_8, "17", List.of(), CLASSPATH);
+            var incompatible = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources("one", List.of(one), List.of(one), CLASSPATH,
+                            java21, List.of("two"), java.util.Optional.of(oneModule)),
+                    new ApplicationSourceBoundary.ProjectSources("two", List.of(), List.of(two), CLASSPATH,
+                            java17, List.of(), java.util.Optional.of(twoModule))), List.of());
+            try {
+                new StaticDecisionAnalyzer().analyzeAll(incompatible);
+                throw new AssertionError("incompatible JPMS compiler settings were accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("incompatible compiler settings") : expected;
+            }
+
+            var external = new ApplicationSourceBoundary.ResolutionSource(two,
+                    new ApplicationSourceBoundary.SourceOrigin(
+                            ApplicationSourceBoundary.OriginKind.LOCAL, "unowned", ""));
+            var unowned = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources("one", List.of(one), List.of(one), CLASSPATH,
+                            java21, List.of(), java.util.Optional.of(oneModule))), List.of(external));
+            try {
+                new StaticDecisionAnalyzer().analyzeAll(unowned);
+                throw new AssertionError("unowned external JPMS source was accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("cannot assign external sources") : expected;
             }
         } catch (IOException exception) {
             throw new AssertionError(exception);

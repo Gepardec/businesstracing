@@ -3,7 +3,7 @@
   "title": "Generic Java Fachtracing",
   "description": "Build a domain-neutral Java tracing library that derives business-decision graphs from annotated, previously unknown methods, correlates actual runtime paths, produces business-readable explanations and Mermaid/PlantUML, persists versioned records, and validates generality and scale without application-specific rules.",
   "created": "2026-07-10T14:03:23Z",
-  "updated": "2026-08-04T12:22:39Z",
+  "updated": "2026-08-04T12:34:23Z",
   "author": "lucostus",
   "specs": [
     "generic-tracing-walking-skeleton",
@@ -22,5 +22,5 @@
     ]
   ],
   "skeleton": "generic-tracing-walking-skeleton",
-  "status": "completed"
+  "status": "active"
 }
