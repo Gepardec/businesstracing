@@ -199,16 +199,16 @@ ordinal `candidate N` labels. These labels are implementation details, not busin
 
 ## Definition of Done
 
-- [ ] Each root cause has a failing-before-change executable contract.
-- [ ] The release negative test proves producer status propagation and no false success marker.
-- [ ] A runtime explanation shows `age was 20` and does not record an irrelevant identifier.
-- [ ] Caught and uncaught executor rejection tests publish one terminal record each.
-- [ ] Cancellation before callback execution has no reservation leak.
-- [ ] Binary stage methods and the thread-group constructor propagate context through the exact
+- [x] Each root cause has a failing-before-change executable contract.
+- [x] The release negative test proves producer status propagation and no false success marker.
+- [x] A runtime explanation shows `age was 20` and does not record an irrelevant identifier.
+- [x] Caught and uncaught executor rejection tests publish one terminal record each.
+- [x] Cancellation before callback execution has no reservation leak.
+- [x] Binary stage methods and the thread-group constructor propagate context through the exact
   callback position.
-- [ ] Unmatched async calls create an actionable coverage gap.
-- [ ] Generic indexed-loop fixtures and all five Mega graphs contain no technical loop patterns or
+- [x] Unmatched async calls create an actionable coverage gap.
+- [x] Generic indexed-loop fixtures and all five Mega graphs contain no technical loop patterns or
   ordinal candidate labels.
-- [ ] The external activation-bundle integration passes without runtime source analysis.
-- [ ] The clean-clone release gate and 1,000-RPS gate pass with zero result changes, contamination,
+- [x] The external activation-bundle integration passes without runtime source analysis.
+- [x] The clean-clone release gate and 1,000-RPS gate pass with zero result changes, contamination,
   or silent record loss.

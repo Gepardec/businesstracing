@@ -1,9 +1,9 @@
 ---
 specId: "release-explanation-async-correctness"
 startedAt: "2026-08-05T20:35:35Z"
-completedAt: null
-finalStatus: "running"
-phases: [1, 2, 3]
+completedAt: "2026-08-05T21:18:47Z"
+finalStatus: "passed"
+phases: [1, 2, 3, 4]
 ---
 
 # SpecOps Run: Release, Explanation, and Async Correctness
@@ -71,3 +71,28 @@ phases: [1, 2, 3]
 
 - Action: Prepare the clean committed checkpoint required by the release verifier.
 - Result: Full clean-clone release evidence remains in progress.
+
+## Phase 4: Release Verification
+
+**Started:** 2026-08-05T21:00:00Z
+
+### [21:05:00] Step 1: Prove fail-closed behavior
+
+- Action: Run the clean-clone gate from the first checkpoint.
+- Result: The gate stopped with a non-zero status on a stale reactor text assertion and did not
+  print `RELEASE_GATE_OK`. The evidence file retained all producer output.
+
+### [21:18:47] Step 2: Run final release evidence
+
+- Action: Correct the reactor contract to its new business-safe label and rerun standard and
+  clean-clone release verification from commit `280368d58263c045a01e6879769dac89f820a220`.
+- Result: PASS. Source-free external activation and all five complete Mega graphs passed. The load
+  gate completed 600,000 decisions at 1,000 RPS with 0.054% p95 overhead and zero errors,
+  mismatches, drops, or contamination.
+
+### [21:18:47] Step 3: Complete SpecOps records
+
+- Action: Evaluate the implementation, refresh the repository map, update project memory, and
+  complete all tasks, definition-of-done checks, specification metadata, and initiative metadata.
+- Result: All seven tasks and all 36 acceptance and completion checks have evidence. The
+  implementation evaluation passed all four dimensions.

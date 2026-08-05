@@ -136,7 +136,7 @@ business logic and remove ordinal dispatch labels.
 
 ## Task 7: Run full conformance and release evidence
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 2 through 6
 **Priority:** High
@@ -149,8 +149,8 @@ reviewed generic graph oracles and SpecOps completion records.
 
 **Acceptance Criteria:**
 
-- [ ] Standard verification passes.
-- [ ] Five Mega graphs are complete and pass the generic business-artifact guard.
-- [ ] External activation uses no runtime source analysis.
-- [ ] The release gate reports zero result changes, contamination, or silent loss.
-- [ ] All tasks and definition-of-done items have recorded evidence.
+- [x] Standard verification passes.
+- [x] Five Mega graphs are complete and pass the generic business-artifact guard.
+- [x] External activation uses no runtime source analysis.
+- [x] The release gate reports zero result changes, contamination, or silent loss.
+- [x] All tasks and definition-of-done items have recorded evidence.

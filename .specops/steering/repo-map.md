@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-05T20:16:37Z"
-_sourceHash: "44bc7a2ffd900f69e8b27cd450701cb857e654cbcb1fb9f461b0a2f066adcc14"
+_generatedAt: "2026-08-05T21:18:47Z"
+_sourceHash: "2692c035d6d14f8cc0403f72dfccae3c06bc5666953f4d715ec2e64ff40f9d9c"
 ---
 
 ## Project Structure Map
@@ -55,7 +55,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (59 files)
+#### fachtracing-engine/ (61 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -69,6 +69,8 @@ fachtracing/
   - `public final class BackwardDecisionSlicer`
 - `src/main/java/at/gepardec/fachtracing/analysis/BytecodeDecisionAnalyzer.java`
   - `public final class BytecodeDecisionAnalyzer`
+- `src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java`
+  - rejects technical loop and ordinal candidate output
 - `src/main/java/at/gepardec/fachtracing/analysis/DecisionGraphBuilder.java`
   - `public final class DecisionGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java`
@@ -111,16 +113,18 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-agent/ (11 files)
+#### fachtracing-agent/ (12 files)
 
 - `src/main/java/at/gepardec/fachtracing/agent/FachtracingAgent.java`
   - `public final class FachtracingAgent`
 - `src/main/java/at/gepardec/fachtracing/agent/FachtracingTransformer.java`
   - `public final class FachtracingTransformer`
+- `src/main/java/at/gepardec/fachtracing/agent/AsyncInvocationCatalog.java`
+  - exact standard asynchronous callback bindings
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (26 files)
+#### fachtracing-maven-plugin/ (27 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
@@ -136,7 +140,7 @@ fachtracing/
 - `src/test/resources/it/reactor/` — two-module JPMS implementation-resolution fixture
 - `pom.xml`
 
-#### fachtracing-storage-jdbc/ (4 files)
+#### fachtracing-storage-jdbc/ (5 files)
 
 - `src/main/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepository.java`
   - vendor-neutral JDBC envelope repository
@@ -169,4 +173,4 @@ fachtracing/
 - `README.md`
 - `pom.xml`
 - `scripts/verify.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
-- `scripts/verify-mega-backend.sh`
+- `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`

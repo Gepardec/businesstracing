@@ -8,7 +8,7 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 3,
+      "count": 4,
       "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 1,
+      "count": 2,
       "pattern": "Preserve result-relevant optionality as absent/exists while stripping language- and persistence-specific vocabulary from business projections."
     },
     {
@@ -30,6 +30,11 @@
       "category": "source-provenance",
       "count": 4,
       "pattern": "Keep source and module provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
+    },
+    {
+      "category": "release-gate-integrity",
+      "count": 1,
+      "pattern": "Capture producer output before presentation, preserve its exact status, and print a success marker only after every release sub-gate passes."
     }
   ],
   "fileOverlaps": [
@@ -52,9 +57,10 @@
         "developer-graph-json-export",
         "maven-developer-graph-export",
         "reactor-wide-implementation-resolution",
-        "generic-java-extractor-completion"
+        "generic-java-extractor-completion",
+        "release-explanation-async-correctness"
       ],
-      "count": 5
+      "count": 6
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -68,13 +74,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion"],
-      "count": 3
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness"],
+      "count": 4
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness"],
+      "count": 3
     },
     {
       "file": "docs/maven-plugin.md",
@@ -93,8 +99,8 @@
     },
     {
       "file": "scripts/verify.sh",
-      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion"],
-      "count": 3
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness"],
+      "count": 4
     }
   ]
 }

@@ -2,8 +2,8 @@
 
 ## Current Status
 
-Tasks 1 through 6 are complete. Task 7 is in progress. Standard verification and pinned Mega
-conformance pass. The clean-clone 600-second release gate still needs the committed checkpoint.
+All seven tasks are complete. Standard verification, source-free external activation, pinned Mega
+conformance, and the clean-clone 600-second release gate pass.
 
 ## Requirement Trace
 
@@ -30,12 +30,15 @@ conformance pass. The clean-clone 600-second release gate still needs the commit
   code.
 - The journey oracle changed only for generic indexed-loop lowering and neutral selected-rule edges.
 
-## Verification Recorded So Far
+## Final Verification
 
 - `./scripts/verify.sh`: PASS.
-- Short load gate: 0.191% p95 overhead, 5,000 enabled decisions, zero errors, mismatches, drops, or
+- Short load gate: 0.143% p95 overhead, 5,000 enabled decisions, zero errors, mismatches, drops, or
   contamination.
 - `MEGA_BACKEND_DIR=/tmp/fachtracing-mega-backend ./scripts/verify-mega-backend.sh`: PASS.
 - Mega source corpus: 420 Java files, five complete graphs.
+- Clean release commit: `280368d58263c045a01e6879769dac89f820a220`.
+- Long load gate: 600,000 enabled decisions at 1,000 RPS, 0.054% p95 overhead, zero errors,
+  mismatches, drops, or contamination.
 - PostgreSQL: not rerun locally because no connection was configured; the unchanged CI job remains
   required.

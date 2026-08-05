@@ -1,10 +1,10 @@
 {
   "id": "release-explanation-async-correctness",
   "type": "bugfix",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-05T20:35:35Z",
-  "updated": "2026-08-05T20:35:35Z",
+  "updated": "2026-08-05T21:18:47Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -38,6 +38,26 @@
         "taskCoverage": 9
       },
       "evaluatedAt": "2026-08-05T20:35:35Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 9,
+        "codeQuality": 9,
+        "testCoverage": 9,
+        "specCompliance": 10
+      },
+      "evaluatedAt": "2026-08-05T21:18:47Z"
     }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 5000,
+    "filesChanged": 50,
+    "linesAdded": 2876,
+    "linesRemoved": 1092,
+    "tasksCompleted": 7,
+    "acceptanceCriteriaVerified": 36,
+    "specDurationMinutes": 44
   }
 }

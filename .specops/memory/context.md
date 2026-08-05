@@ -120,3 +120,19 @@ Unsupported variants remain actionable gaps; no Mega-specific rule entered produ
 PostgreSQL 18.4, source-free Activation V3, and five complete Mega graphs passed. The clean-clone
 gate completed 600,000 decisions at 1,000 RPS with 6.126% p95 overhead and zero errors, result
 mismatches, dropped records, or trace contamination.
+
+### release-explanation-async-correctness (bugfix) — 2026-08-05
+
+Completed all seven tasks. Release output capture now preserves the producer status and evidence,
+and all verification scripts use declared POSIX tools. Static analysis binds only proven,
+result-relevant operands to predicate nodes, so explanations include typed business facts and do
+not store unrelated method identifiers.
+
+Asynchronous instrumentation uses exact JDK owner, method, descriptor, and callback-position
+bindings. Atomic reservation states close rejection and cancellation paths exactly once. Canonical
+indexed collection loops now use business iteration vocabulary, and a generic export guard rejects
+technical counter and ordinal candidate text.
+
+Release commit `280368d58263c045a01e6879769dac89f820a220` passed source-free activation, five
+complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.054% p95 overhead and zero errors,
+mismatches, dropped records, or trace contamination.

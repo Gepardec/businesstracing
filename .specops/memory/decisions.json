@@ -370,6 +370,56 @@
       "task": "Task 9",
       "date": "2026-08-05",
       "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Capture release producer output before presentation",
+      "rationale": "A separate temporary output capture preserves the producer status and still lets tee create readable evidence without hiding a failure.",
+      "task": "Task 2",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Bind typed evidence to proven predicate operands",
+      "rationale": "A static evidence plan records only a result-relevant fact at the node that uses it and prevents blanket annotated-method argument capture.",
+      "task": "Task 3",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Give each async reservation one atomic lifecycle",
+      "rationale": "Reserved, running, and released states make execution, rejection, and cancellation before start release the invocation exactly once.",
+      "task": "Task 4",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Identify standard async callbacks by exact JVM signature",
+      "rationale": "Owner, method, descriptor, and callback position prevent the transformer from wrapping a preceding stage, executor, or thread group.",
+      "task": "Task 5",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 5,
+      "decision": "Lower indexed collection loops before business projection",
+      "rationale": "Recognizing the canonical iteration shape keeps body decisions but removes counters, collection size checks, indexed access, and ordinal candidates.",
+      "task": "Task 6",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
     }
   ]
 }
