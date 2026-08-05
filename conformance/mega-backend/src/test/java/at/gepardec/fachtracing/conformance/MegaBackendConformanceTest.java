@@ -3,6 +3,7 @@ package at.gepardec.fachtracing.conformance;
 import at.gepardec.fachtracing.analysis.AnalysisRequest;
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
+import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.agent.FachtracingTransformer;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
 import at.gepardec.fachtracing.explain.DecisionExplanationProjector;
@@ -87,6 +88,9 @@ public final class MegaBackendConformanceTest {
         for (var entry : graphs.entrySet()) {
             String name = slug(entry.getKey());
             BusinessDecisionGraph graph = entry.getValue();
+            assert new BusinessArtifactGuard().violations(graph).isEmpty()
+                    : entry.getKey() + " technical graph output: "
+                    + new BusinessArtifactGuard().violations(graph);
             String semantic = semanticTopology(graph);
             String structure = renderer.structure(graph);
             String mermaidStructure = mermaid.structure(graph);
@@ -167,9 +171,9 @@ public final class MegaBackendConformanceTest {
         DecisionExecution execution = executions.getFirst();
         assert execution.finalResult().type().equals("collection") : execution.finalResult();
         assert execution.finalResult().canonicalValue().equals("[]") : execution.finalResult();
-        assert execution.observations().stream().anyMatch(item -> item.nodeId().equals(analysis.graph().entryNodeId())
-                && item.evidence().get("value").type().equals("collection")
-                && item.evidence().get("value").canonicalValue().equals("[]")) : execution.observations();
+        assert execution.observations().stream().noneMatch(item ->
+                item.nodeId().equals(analysis.graph().entryNodeId()) && !item.evidence().isEmpty())
+                : execution.observations();
         long selectedEdges = execution.observations().stream()
                 .filter(item -> item.selectedEdgeId() != null && item.outcome().equals("selected"))
                 .count();

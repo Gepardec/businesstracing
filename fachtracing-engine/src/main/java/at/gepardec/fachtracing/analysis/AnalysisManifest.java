@@ -16,6 +16,7 @@ public record AnalysisManifest(
         List<DispatchTarget> dispatchTargets,
         List<BranchTarget> branchTargets,
         List<ControlTarget> controlTargets,
+        List<EvidenceTarget> evidenceTargets,
         Map<String, String> sourceFingerprints) {
     /** Compatibility constructor for manifests that have no exact branch bindings. */
     public AnalysisManifest(
@@ -26,7 +27,7 @@ public record AnalysisManifest(
             List<DispatchTarget> dispatchTargets,
             Map<String, String> sourceFingerprints) {
         this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
-                List.of(), List.of(), sourceFingerprints);
+                List.of(), List.of(), List.of(), sourceFingerprints);
     }
 
     /** Compatibility constructor for manifests that have no exact control-path bindings. */
@@ -39,7 +40,21 @@ public record AnalysisManifest(
             List<BranchTarget> branchTargets,
             Map<String, String> sourceFingerprints) {
         this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
-                branchTargets, List.of(), sourceFingerprints);
+                branchTargets, List.of(), List.of(), sourceFingerprints);
+    }
+
+    /** Compatibility constructor for manifests that have no operand evidence bindings. */
+    public AnalysisManifest(
+            String graphId,
+            long graphVersion,
+            Map<String, SourceMapping> sourceMappings,
+            List<ProbeSite> probeSites,
+            List<DispatchTarget> dispatchTargets,
+            List<BranchTarget> branchTargets,
+            List<ControlTarget> controlTargets,
+            Map<String, String> sourceFingerprints) {
+        this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
+                branchTargets, controlTargets, List.of(), sourceFingerprints);
     }
 
     /** Creates a defensive manifest snapshot. */
@@ -50,6 +65,7 @@ public record AnalysisManifest(
         dispatchTargets = List.copyOf(dispatchTargets);
         branchTargets = List.copyOf(branchTargets);
         controlTargets = List.copyOf(controlTargets);
+        evidenceTargets = List.copyOf(evidenceTargets);
         sourceFingerprints = Map.copyOf(sourceFingerprints);
     }
 
@@ -209,6 +225,31 @@ public record AnalysisManifest(
 
     /** Bytecode point that proves a source control path was taken. */
     public enum ControlPoint { LINE, RETURN, CASE_EXIT, PREDICATE_TRUE }
+
+    /** Binds one result-relevant method argument to the predicate that uses it. */
+    public record EvidenceTarget(
+            String nodeId,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            int argumentIndex,
+            String evidenceLabel,
+            long sourceLine) {
+        /** Creates an exact, developer-only operand binding. */
+        public EvidenceTarget {
+            Objects.requireNonNull(nodeId, "nodeId");
+            Objects.requireNonNull(ownerHint, "ownerHint");
+            Objects.requireNonNull(memberHint, "memberHint");
+            Objects.requireNonNull(descriptorHint, "descriptorHint");
+            if (argumentIndex < 0) throw new IllegalArgumentException("argumentIndex must be non-negative");
+            if (evidenceLabel == null || evidenceLabel.isBlank()) {
+                throw new IllegalArgumentException("evidenceLabel must not be blank");
+            }
+            if (sourceLine == 0 || sourceLine < -1) {
+                throw new IllegalArgumentException("sourceLine must be positive or -1");
+            }
+        }
+    }
 
     /** Full static-analysis outcome. */
     public record AnalysisResult(

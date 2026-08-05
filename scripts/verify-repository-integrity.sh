@@ -20,6 +20,10 @@ require_spec() {
 require_tracked AGENTS.md
 require_tracked README.md
 require_tracked scripts/verify.sh
+require_tracked scripts/capture-gate-output.sh
+require_tracked scripts/test-capture-gate-output.sh
+require_tracked scripts/verify-release.sh
+require_tracked scripts/verify-release-gates.sh
 require_tracked scripts/verify-mega-backend.sh
 require_tracked scripts/verify-postgres.sh
 require_tracked .github/workflows/verify.yml
@@ -52,7 +56,7 @@ check_hash 192cd18116ed3522a7bd4ab07dc6cd4000cfbc4b42afaf830e4ed620ca3f3848 \
   conformance/mega-backend/src/test/resources/oracles/authorize-clarification-resolution.txt
 check_hash cccbb57b3ac143b86565c50ffeefb536d17ed6d2671feb7cf1ff2d553ee54198 \
   conformance/mega-backend/src/test/resources/oracles/detect-overlapping-time-entries.txt
-check_hash 4d40aea4e206cf9c954f901d53c7dacd8a0cbda5b81411a465be317dbc501c49 \
+check_hash 48e8ca1d82543775475f8433eb050db92e73263a498baa87e3122da85005ad19 \
   conformance/mega-backend/src/test/resources/oracles/determine-journey-warnings.txt
 check_hash 0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38 \
   conformance/mega-backend/src/test/resources/oracles/determine-project-activity-in-month.txt
@@ -63,7 +67,7 @@ for spec_file in .specops/*/spec.json
 do
   spec_id=$(sed -n 's/^[[:space:]]*"id":[[:space:]]*"\([^"]*\)".*/\1/p' "$spec_file" | head -1)
   test -n "$spec_id" || fail "specification has no id: $spec_file"
-  rg -q '"id"[[:space:]]*:[[:space:]]*"'"$spec_id"'"' .specops/index.json \
+  grep -E -q '"id"[[:space:]]*:[[:space:]]*"'"$spec_id"'"' .specops/index.json \
     || fail "specification is absent from index.json: $spec_id"
 done
 
@@ -72,7 +76,7 @@ do
   require_spec "$indexed_id"
 done
 
-for dependency_id in $(rg -o '"specId"[[:space:]]*:[[:space:]]*"[^"]+"' .specops/*/spec.json \
+for dependency_id in $(grep -E -h -o '"specId"[[:space:]]*:[[:space:]]*"[^"]+"' .specops/*/spec.json \
   | sed 's/.*"specId"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
 do
   require_spec "$dependency_id"
@@ -88,9 +92,9 @@ do
       done
 done
 
-for relative_link in $(rg -o '\]\([^)]+\)' README.md \
+for relative_link in $(grep -E -o '\]\([^)]+\)' README.md \
   | sed 's/^](//;s/)$//' \
-  | rg -v '^(https?://|#)')
+  | grep -E -v '^(https?://|#)')
 do
   link_path=${relative_link%%#*}
   test -e "$link_path" || fail "README link target is missing: $relative_link"

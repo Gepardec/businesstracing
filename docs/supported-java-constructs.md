@@ -6,14 +6,15 @@ checks that every entry names an executable contract and appears in this documen
 ## Machine-readable capability IDs
 
 - `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
-- `complex-boolean-exact-path`, `incomplete-exact-path-gap`
+- `complex-boolean-exact-path`, `predicate-operand-evidence`, `incomplete-exact-path-gap`
 - `assignment-data-flow`, `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
-- `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `records-and-equality`
+- `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
 - `source-unavailable-call`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
 - `reflection-service-loader-proxy`, `unresolved-dynamic-candidate-gap`, `async-boundary`
+- `exact-async-callback-position`, `async-submission-lifecycle`
 - `unsupported-async-boundary-gap`, `java17-java21-projects`
 - `owned-external-jpms-source`, `owned-automatic-module-source`
 - `try-with-resources`, `resource-close-result-gap`, `pattern-matching`, `sealed-types`, `nested-classes`, `method-references`
@@ -27,7 +28,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | `@FachTracing` method | Discovers every decision entry in deterministic source order and its optional business label |
 | `if / else` and comparison | Produces result-relevant predicate nodes; a complete Java 21 `javac` Boolean binding records the exact `true` or `false` edge |
 | `value == null`, `value != null` | Preserves result-relevant optionality as “is absent” or “exists”; Java `null` is never business output |
-| Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed Boolean evidence |
+| Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed result-relevant operand evidence when an exact binding is available |
 | Local initialization and assignment | Retained only when it can influence a return |
 | Returned mutable collection | Retains result-affecting mutations through calls and lambda bodies |
 | Direct method call | Follows a source-available callee and includes its relevant slice |
@@ -39,7 +40,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Switch statement/expression | Records one exact integral, string, enum, or default case edge |
 | Java 21 pattern switch | Records the selected pattern edge and each evaluated guard atom; compiler type-switch helpers stay hidden |
 | Boolean ternary expression | Records the selector and only the selected Boolean value path as exact atomic edges |
-| `for`, enhanced `for`, `while`, `do while` | Creates a business iteration/choice node and analyzes the result-relevant body |
+| `for`, enhanced `for`, `while`, `do while` | Creates a business iteration/choice node and analyzes the result-relevant body; canonical indexed collection loops omit the counter, size check, indexed access, and update |
 | Source-proven `try`, multi-catch, and `finally` | Retains primary and alternative business results; handler mechanics and exception types stay outside the business graph |
 | Synchronized block | Removes synchronization mechanics and retains result-relevant business logic in the block |
 | Try-with-resources | Removes resource mechanics when source proves that `close` has no result-relevant behavior; otherwise reports a located gap |
@@ -100,6 +101,8 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
   `CompletionStage` callbacks, platform threads, and virtual threads. Publication waits for
   captured callbacks. Inactive wrapping preserves callback identity, and each wrapper clears the
   worker context in `finally`.
+- Standard asynchronous calls use exact owner, method, descriptor, and callback-position bindings.
+  Rejection and cancellation before callback execution release the reservation exactly once.
 
 The boundary stays fail-closed. Complex binary control flow, result-relevant resource-close logic
 without source, ambiguous reflection, unsupported asynchronous APIs, and unowned modular sources

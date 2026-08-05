@@ -12,6 +12,7 @@ import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.DoWhileLoopTree;
 import com.sun.source.tree.EnhancedForLoopTree;
+import com.sun.source.tree.ExpressionStatementTree;
 import com.sun.source.tree.ForLoopTree;
 import com.sun.source.tree.IfTree;
 import com.sun.source.tree.IdentifierTree;
@@ -763,6 +764,8 @@ public final class StaticDecisionAnalyzer {
             private List<Tail> caughtTails = new ArrayList<>();
             private int deferredReturnDepth;
             private List<DeferredReturn> deferredReturns = new ArrayList<>();
+            private final Set<VariableTree> transparentLoopAliases =
+                    Collections.newSetFromMap(new IdentityHashMap<>());
 
             private FlowScanner(
                     MethodLocation location,
@@ -905,6 +908,7 @@ public final class StaticDecisionAnalyzer {
             }
 
             @Override public Void visitVariable(VariableTree node, Void unused) {
+                if (transparentLoopAliases.contains(node)) return null;
                 if (node.getInitializer() == null || !relevant(node.getInitializer(), slice, dependencies)) {
                     return super.visitVariable(node, unused);
                 }
@@ -1033,8 +1037,9 @@ public final class StaticDecisionAnalyzer {
                     String alternative = builder.addNode(
                             BusinessDecisionGraph.NodeKind.COMPUTATION,
                             businessRuleLabel(implementation),
-                            Map.of("candidate", Integer.toString(++candidate)), null, null, "", "");
-                    String candidateEdge = builder.addEdge(dispatch, alternative, "candidate " + candidate);
+                            Map.of(), null, null, "", "");
+                    candidate++;
+                    String candidateEdge = builder.addEdge(dispatch, alternative, "selected rule");
                     MethodLocation implementationMethod = implementationOf(contract, implementation);
                     if (implementationMethod == null) {
                         resultTails.add(new Tail(alternative, "result"));
@@ -1197,6 +1202,22 @@ public final class StaticDecisionAnalyzer {
 
             @Override public Void visitForLoop(ForLoopTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitForLoop(node, unused);
+                IndexedLoopPlan indexed = indexedLoop(node);
+                if (indexed != null) {
+                    String loop = add(BusinessDecisionGraph.NodeKind.CHOICE,
+                            "a following entry exists", node, null);
+                    advance(loop);
+                    frontier = List.of(new Tail(loop, "yes"));
+                    transparentLoopAliases.addAll(indexed.aliases());
+                    try {
+                        scan(node.getStatement(), unused);
+                    } finally {
+                        transparentLoopAliases.removeAll(indexed.aliases());
+                    }
+                    for (Tail tail : frontier) builder.addEdge(tail.nodeId(), loop, "next entry");
+                    frontier = List.of(new Tail(loop, "no"));
+                    return null;
+                }
                 scan(node.getInitializer(), unused);
                 if (node.getCondition() != null) scan(node.getCondition(), unused);
                 String loop = add(BusinessDecisionGraph.NodeKind.CHOICE,
@@ -1210,6 +1231,52 @@ public final class StaticDecisionAnalyzer {
                 frontier = List.of(new Tail(loop, "done"));
                 return null;
             }
+
+            private IndexedLoopPlan indexedLoop(ForLoopTree loop) {
+                if (loop.getInitializer().size() != 1
+                        || !(loop.getInitializer().getFirst() instanceof VariableTree counter)
+                        || !(counter.getInitializer() instanceof LiteralTree initial)
+                        || !(initial.getValue() instanceof Number number) || number.intValue() != 0
+                        || !(loop.getCondition() instanceof BinaryTree condition)
+                        || condition.getKind() != Tree.Kind.LESS_THAN
+                        || !(condition.getLeftOperand() instanceof IdentifierTree left)
+                        || !left.getName().contentEquals(counter.getName())
+                        || !(condition.getRightOperand() instanceof MethodInvocationTree sizeCall)
+                        || !(sizeCall.getMethodSelect() instanceof MemberSelectTree sizeSelect)
+                        || !sizeSelect.getIdentifier().contentEquals("size")
+                        || !sizeCall.getArguments().isEmpty()
+                        || loop.getUpdate().size() != 1
+                        || !(loop.getUpdate().getFirst() instanceof ExpressionStatementTree updateStatement)
+                        || !(updateStatement.getExpression() instanceof UnaryTree update)
+                        || !(update.getKind() == Tree.Kind.POSTFIX_INCREMENT
+                        || update.getKind() == Tree.Kind.PREFIX_INCREMENT)
+                        || !(update.getExpression() instanceof IdentifierTree updated)
+                        || !updated.getName().contentEquals(counter.getName())) return null;
+                String collection = sizeSelect.getExpression().toString();
+                var aliases = new ArrayList<VariableTree>();
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitVariable(VariableTree variable, Void unused) {
+                        if (indexedAccess(variable.getInitializer(), collection, counter.getName().toString())) {
+                            aliases.add(variable);
+                            return null;
+                        }
+                        return super.visitVariable(variable, unused);
+                    }
+                }.scan(loop.getStatement(), null);
+                return new IndexedLoopPlan(List.copyOf(aliases));
+            }
+
+            private boolean indexedAccess(Tree tree, String collection, String counter) {
+                if (!(tree instanceof MethodInvocationTree call)
+                        || !(call.getMethodSelect() instanceof MemberSelectTree select)
+                        || !select.getIdentifier().contentEquals("get")
+                        || !select.getExpression().toString().equals(collection)
+                        || call.getArguments().size() != 1
+                        || !(call.getArguments().getFirst() instanceof IdentifierTree index)) return false;
+                return index.getName().contentEquals(counter);
+            }
+
+            private record IndexedLoopPlan(List<VariableTree> aliases) { }
 
             @Override public Void visitEnhancedForLoop(EnhancedForLoopTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitEnhancedForLoop(node, unused);
@@ -1385,8 +1452,30 @@ public final class StaticDecisionAnalyzer {
                 }
                 String id = add(BusinessDecisionGraph.NodeKind.PREDICATE,
                         expression(unwrapped), unwrapped, AnalysisManifest.ProbeKind.PREDICATE);
+                addEvidenceTargets(id, unwrapped);
                 builder.setBranchCompletions(id, List.of(completion));
                 return new PredicatePlan(id, List.of(new Tail(id, "true")), List.of(new Tail(id, "false")));
+            }
+
+            private void addEvidenceTargets(String nodeId, Tree predicate) {
+                if (runtimeMemberHint(predicate).endsWith("#lambda")) return;
+                Map<String, Integer> parameters = new LinkedHashMap<>();
+                for (int index = 0; index < location.method().getParameters().size(); index++) {
+                    parameters.put(location.method().getParameters().get(index).getName().toString(), index);
+                }
+                var seen = new LinkedHashSet<String>();
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
+                        String name = identifier.getName().toString();
+                        Integer argumentIndex = parameters.get(name);
+                        if (argumentIndex != null && seen.add(name) && !technicalIdentifier(name)) {
+                            builder.addEvidenceTarget(nodeId, ownerHint(location.path()),
+                                    location.method().getName().toString(), methodDescriptor(location),
+                                    argumentIndex, words(name), mapping(location, identifier).line());
+                        }
+                        return super.visitIdentifier(identifier, unused);
+                    }
+                }.scan(predicate, null);
             }
 
             private void enter(PredicatePlan plan) {
@@ -1929,8 +2018,21 @@ public final class StaticDecisionAnalyzer {
 
     private static String renderBinary(BinaryTree binary) {
         if (isNullComparison(binary)) return renderNullComparison(binary, false);
+        String collectionBoundary = collectionBoundary(binary);
+        if (collectionBoundary != null) return collectionBoundary;
         return renderExpression(binary.getLeftOperand()) + binaryOperator(binary.getKind())
                 + renderExpression(binary.getRightOperand());
+    }
+
+    private static String collectionBoundary(BinaryTree binary) {
+        if (binary.getKind() != Tree.Kind.LESS_THAN
+                || !(binary.getRightOperand() instanceof MethodInvocationTree call)
+                || !(call.getMethodSelect() instanceof MemberSelectTree select)
+                || !select.getIdentifier().contentEquals("size")
+                || !call.getArguments().isEmpty()) return null;
+        if (followingPosition(binary.getLeftOperand())) return "a following entry exists";
+        if (technicalPosition(binary.getLeftOperand())) return "another entry exists";
+        return null;
     }
 
     private static boolean isNullComparison(BinaryTree binary) {
@@ -2011,7 +2113,16 @@ public final class StaticDecisionAnalyzer {
         } else {
             method = call.getMethodSelect().toString();
         }
-        List<String> arguments = call.getArguments().stream().map(StaticDecisionAnalyzer::renderExpression).toList();
+        if (method.equals("get") && call.getArguments().size() == 1) {
+            Tree position = call.getArguments().getFirst();
+            if (followingPosition(position)) return receiver.isBlank()
+                    ? "following entry" : receiver + " following entry";
+            if (technicalPosition(position)) return receiver.isBlank()
+                    ? "current entry" : receiver + " current entry";
+        }
+        List<String> arguments = call.getArguments().stream()
+                .filter(argument -> !technicalPosition(argument))
+                .map(StaticDecisionAnalyzer::renderExpression).toList();
         if (method.equals("equals") && arguments.size() == 1) {
             if (receiver.equals("true")) return arguments.getFirst();
             if (receiver.equals("false")) return "not " + arguments.getFirst();
@@ -2034,7 +2145,8 @@ public final class StaticDecisionAnalyzer {
             case "isBefore" -> "is before";
             case "isAfter" -> "is after";
             case "isEqual" -> "equals";
-            case "get" -> "item";
+            case "get" -> "entry";
+            case "size" -> "entry count";
             default -> words(method.replaceFirst("^get(?=[A-Z])", ""));
         };
         if (arguments.isEmpty() && (method.startsWith("get") || method.startsWith("is"))) {
@@ -2087,9 +2199,36 @@ public final class StaticDecisionAnalyzer {
     }
 
     private static String identifierLabel(String identifier) {
-        if (identifier.equals("i") || identifier.equals("idx")) return "index";
+        if (identifier.equals("i") || identifier.equals("idx") || identifier.equals("index")) return "entry";
         if (identifier.length() == 1) return "item";
         return words(identifier);
+    }
+
+    private static boolean technicalPosition(Tree tree) {
+        Tree unwrapped = unwrapParentheses(tree);
+        return unwrapped instanceof IdentifierTree identifier
+                && (identifier.getName().contentEquals("i")
+                || identifier.getName().contentEquals("idx")
+                || identifier.getName().contentEquals("index"));
+    }
+
+    private static boolean followingPosition(Tree tree) {
+        Tree unwrapped = unwrapParentheses(tree);
+        if (!(unwrapped instanceof BinaryTree binary) || binary.getKind() != Tree.Kind.PLUS) return false;
+        return technicalPosition(binary.getLeftOperand()) && isOne(binary.getRightOperand())
+                || technicalPosition(binary.getRightOperand()) && isOne(binary.getLeftOperand());
+    }
+
+    private static boolean isOne(Tree tree) {
+        return tree instanceof LiteralTree literal && literal.getValue() instanceof Number number
+                && number.intValue() == 1;
+    }
+
+    private static boolean technicalIdentifier(String identifier) {
+        String separated = identifier.replaceAll("([a-z0-9])([A-Z])", "$1 $2")
+                .replace('_', ' ').toLowerCase(Locale.ROOT);
+        return java.util.Arrays.stream(separated.split("\\s+"))
+                .anyMatch(part -> part.equals("id") || part.equals("ids"));
     }
 
     private static String hash(String prefix, Object... parts) {

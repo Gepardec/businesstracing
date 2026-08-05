@@ -33,13 +33,13 @@ mvn -q -f "$FIXTURE/pom.xml" -Dmaven.repo.local="$LOCAL" \
 test -f "$FIXTURE/target/fachtracing/external-approval-structure.mmd"
 test -f "$FIXTURE/target/fachtracing/external-approval-structure.puml"
 test -f "$FIXTURE/target/fachtracing/index.md"
-rg -q '"schema":"fachtracing-activation/v3"' "$FIXTURE/target/fachtracing/activation.json"
-rg -q '"classFingerprints"' "$FIXTURE/target/fachtracing/activation.json"
-rg -q '"manifest"' "$FIXTURE/target/fachtracing/activation.json"
-rg -q '"javaAgentOption":"-javaagent:' "$FIXTURE/target/fachtracing/activation.json"
+grep -q '"schema":"fachtracing-activation/v3"' "$FIXTURE/target/fachtracing/activation.json"
+grep -q '"classFingerprints"' "$FIXTURE/target/fachtracing/activation.json"
+grep -q '"manifest"' "$FIXTURE/target/fachtracing/activation.json"
+grep -q '"javaAgentOption":"-javaagent:' "$FIXTURE/target/fachtracing/activation.json"
 test -f "$FIXTURE/target/fachtracing/external-rule-approval-structure.mmd"
-rg -q 'amount is below 500' "$FIXTURE/target/fachtracing/external-rule-approval-structure.mmd"
-rg -q 'external rule approval.*COMPLETE' "$FIXTURE/target/fachtracing/index.md"
+grep -q 'amount is below 500' "$FIXTURE/target/fachtracing/external-rule-approval-structure.mmd"
+grep -q 'external rule approval.*COMPLETE' "$FIXTURE/target/fachtracing/index.md"
 
 rm -rf "$FIXTURE/target/fachtracing"
 mvn -q -o -f "$FIXTURE/pom.xml" -Dmaven.repo.local="$LOCAL" \
@@ -47,7 +47,7 @@ mvn -q -o -f "$FIXTURE/pom.xml" -Dmaven.repo.local="$LOCAL" \
   -Dfachtracing.sourceDependencies=example.rules:external-rules:1.0.0 \
   "at.gepardec.fachtracing:fachtracing-maven-plugin:$VERSION:analyze-reactor"
 test -f "$FIXTURE/target/fachtracing/external-rule-approval-structure.mmd"
-rg -q 'external rule approval.*COMPLETE' "$FIXTURE/target/fachtracing/index.md"
+grep -q 'external rule approval.*COMPLETE' "$FIXTURE/target/fachtracing/index.md"
 
 mvn -q -f "$FIXTURE/pom.xml" -Dmaven.repo.local="$LOCAL" \
   -Dfachtracing.repository="file:$REPOSITORY" dependency:build-classpath \

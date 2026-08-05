@@ -22,6 +22,7 @@ public final class DecisionGraphBuilder {
     private final List<AnalysisManifest.ProbeSite> probes = new ArrayList<>();
     private final List<AnalysisManifest.DispatchTarget> dispatchTargets = new ArrayList<>();
     private final List<ControlBinding> controlBindings = new ArrayList<>();
+    private final List<AnalysisManifest.EvidenceTarget> evidenceTargets = new ArrayList<>();
     private final Map<String, List<AnalysisManifest.BranchCompletion>> branchCompletions = new LinkedHashMap<>();
     private int nodeSequence;
     private int edgeSequence;
@@ -156,6 +157,20 @@ public final class DecisionGraphBuilder {
                 nodeId, outcome, ownerHint, memberHint, descriptorHint, sourceLine, point));
     }
 
+    /** Binds one result-relevant argument value to an existing predicate node. */
+    public void addEvidenceTarget(
+            String nodeId,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            int argumentIndex,
+            String evidenceLabel,
+            long sourceLine) {
+        var target = new AnalysisManifest.EvidenceTarget(
+                nodeId, ownerHint, memberHint, descriptorHint, argumentIndex, evidenceLabel, sourceLine);
+        if (!evidenceTargets.contains(target)) evidenceTargets.add(target);
+    }
+
     /** Adds a visible completeness gap linked to its graph node. */
     public void addGap(String nodeId, String description) {
         gaps.add(new BusinessDecisionGraph.CoverageGap(nodeId, description));
@@ -172,7 +187,8 @@ public final class DecisionGraphBuilder {
         var graph = new BusinessDecisionGraph(
                 graphId, 1, decisionLabel, entryNodeId, nodes, edges, completeness, gaps);
         var manifest = new AnalysisManifest(
-                graphId, 1, mappings, probes, dispatchTargets, branchTargets(), controlTargets(), sourceFingerprints);
+                graphId, 1, mappings, probes, dispatchTargets, branchTargets(), controlTargets(),
+                evidenceTargets, sourceFingerprints);
         return new BuiltGraph(graph, manifest, List.copyOf(diagnostics));
     }
 

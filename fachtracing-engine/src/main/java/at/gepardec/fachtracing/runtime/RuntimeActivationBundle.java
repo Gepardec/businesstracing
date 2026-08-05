@@ -178,6 +178,18 @@ public record RuntimeActivationBundle(
             number(output, "sourceLine", target.sourceLine()).append(',');
             field(output, "point", target.point().name()); output.append('}');
         }
+        output.append("],\"evidenceTargets\":[");
+        for (int index = 0; index < manifest.evidenceTargets().size(); index++) {
+            if (index > 0) output.append(',');
+            var target = manifest.evidenceTargets().get(index);
+            output.append('{'); field(output, "nodeId", target.nodeId()).append(',');
+            field(output, "ownerHint", target.ownerHint()).append(',');
+            field(output, "memberHint", target.memberHint()).append(',');
+            field(output, "descriptorHint", target.descriptorHint()).append(',');
+            number(output, "argumentIndex", target.argumentIndex()).append(',');
+            field(output, "evidenceLabel", target.evidenceLabel()).append(',');
+            number(output, "sourceLine", target.sourceLine()); output.append('}');
+        }
         output.append("],\"sourceFingerprints\":"); strings(output, manifest.sourceFingerprints());
         output.append('}');
     }
@@ -256,8 +268,20 @@ public record RuntimeActivationBundle(
                                 : AnalysisManifest.ControlPoint.LINE));
             }
         }
+        var evidenceTargets = new ArrayList<AnalysisManifest.EvidenceTarget>();
+        if (value.containsKey("evidenceTargets")) {
+            for (Object raw : array(value, "evidenceTargets")) {
+                Map<String, Object> item = object(raw);
+                evidenceTargets.add(new AnalysisManifest.EvidenceTarget(
+                        string(item, "nodeId"), string(item, "ownerHint"),
+                        string(item, "memberHint"), descriptor(item, legacy),
+                        Math.toIntExact(number(item, "argumentIndex")),
+                        string(item, "evidenceLabel"), number(item, "sourceLine")));
+            }
+        }
         return new AnalysisManifest(string(value, "graphId"), number(value, "graphVersion"), mappings,
-                sites, dispatches, branches, controls, stringMap(object(value.get("sourceFingerprints"))));
+                sites, dispatches, branches, controls, evidenceTargets,
+                stringMap(object(value.get("sourceFingerprints"))));
     }
 
     private static StringBuilder field(StringBuilder output, String name, String value) {

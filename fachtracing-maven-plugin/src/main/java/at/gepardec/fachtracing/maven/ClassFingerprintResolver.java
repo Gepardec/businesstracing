@@ -65,6 +65,7 @@ final class ClassFingerprintResolver {
             analysis.manifest().dispatchTargets().forEach(target -> result.add(target.ownerHint()));
             analysis.manifest().branchTargets().forEach(target -> result.add(target.ownerHint()));
             analysis.manifest().controlTargets().forEach(target -> result.add(target.ownerHint()));
+            analysis.manifest().evidenceTargets().forEach(target -> result.add(target.ownerHint()));
         }
         return Set.copyOf(result);
     }

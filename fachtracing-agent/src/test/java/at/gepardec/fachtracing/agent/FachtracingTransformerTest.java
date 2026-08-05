@@ -4,6 +4,7 @@ import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.AnalysisRequest;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
+import at.gepardec.fachtracing.explain.DecisionExplanationProjector;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
 import at.gepardec.fachtracing.runtime.RuntimeCollector;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Executable transformation and transparency contracts for the Java agent. */
 public final class FachtracingTransformerTest {
@@ -25,6 +27,7 @@ public final class FachtracingTransformerTest {
         premainAcceptsApplicationConfigurationAfterStartup();
         rejectsFingerprintMismatch();
         transformedMethodPreservesResultsAndCapturesExecution();
+        capturesOnlyResultRelevantPredicateOperands();
         analyzerBindingsCaptureOneCompoundPredicateEdge();
         partialCompoundBindingCreatesRuntimeGap();
         mixedCompoundRecordsExactAtomicPaths();
@@ -35,6 +38,8 @@ public final class FachtracingTransformerTest {
         exceptionResourceAndFinallyPathsAreExact();
         finallyReturnPathsOverrideExactly();
         standardAsyncBoundariesPropagateAutomatically();
+        exactAsyncCallbackPositionsPropagate();
+        rejectedAndCancelledSubmissionsReleaseReservations();
         unsupportedAsyncBoundaryCreatesExecutionGap();
         controlledBinaryFallbackRecordsExactRuntimePath();
         proxiesServiceLoaderAndConstantReflectionSelectProvenCandidates();
@@ -219,9 +224,8 @@ public final class FachtracingTransformerTest {
         var second = collector.pollCompleted().orElseThrow();
         assert first.finalResult().canonicalValue().equals("true");
         assert second.finalResult().canonicalValue().equals("false");
-        assert first.observations().stream().anyMatch(observation -> observation.nodeId().equals("entry")
-                && observation.evidence().get("value").type().equals("number")
-                && observation.evidence().get("value").canonicalValue().equals("20"));
+        assert first.observations().stream().noneMatch(observation -> observation.nodeId().equals("entry")
+                && !observation.evidence().isEmpty()) : first.observations();
         assert selectedEdge(first).equals("edge-true") : first.observations();
         assert selectedEdge(second).equals("edge-false") : second.observations();
         assert first.observations().stream().allMatch(observation -> !observation.nodeId().contains("agentfixture"));
@@ -252,6 +256,44 @@ public final class FachtracingTransformerTest {
         assert propagatedExecution.terminalStatus() == DecisionExecution.TerminalStatus.FAILED;
         assert propagatedExecution.failure().canonicalValue().equals("FAILED");
         assert collector.pollCompleted().isEmpty();
+    }
+
+    private static void capturesOnlyResultRelevantPredicateOperands() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        var result = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> item.graph().decisionLabel().equals("evidence decision"))
+                .findFirst().orElseThrow();
+        assert result.manifest().evidenceTargets().size() == 1 : result.manifest().evidenceTargets();
+        var target = result.manifest().evidenceTargets().getFirst();
+        assert target.argumentIndex() == 0 : target;
+        assert target.evidenceLabel().equals("age") : target;
+
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                result.manifest(), Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        RuntimeCollector collector = new RuntimeCollector();
+        collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+        String irrelevantIdentifier = "employee-secret-4711";
+        assert fixture.getMethod("decideEvidence", int.class, String.class)
+                .invoke(instance, 20, irrelevantIdentifier).equals(true);
+
+        var execution = collector.pollCompleted().orElseThrow();
+        assert execution.observations().stream().anyMatch(observation ->
+                observation.evidence().containsKey("age")
+                        && observation.evidence().get("age").canonicalValue().equals("20")) : execution;
+        assert !execution.toString().contains(irrelevantIdentifier) : execution;
+        String explanation = new DecisionExplanationProjector().text(
+                new DecisionExplanationProjector().project(result.graph(), execution));
+        assert explanation.contains("age was 20") : explanation;
+        assert !explanation.contains("employee") : explanation;
     }
 
     private static void manifestWithoutBranchTargetsCreatesRuntimeGap() throws Exception {
@@ -326,8 +368,9 @@ public final class FachtracingTransformerTest {
             assert selectedEdges.size() == 1 + testCase.expectedSecondEvaluations() : selectedEdges;
             assert selectedEdges.getLast().outcome().startsWith(testCase.expectedOutcome()) : selectedEdges;
             assert selectedEdges.stream().allMatch(observation ->
-                    observation.evidence().get("value") != null
-                            && observation.evidence().get("value").type().equals("boolean"))
+                    !observation.evidence().isEmpty()
+                            && observation.evidence().values().stream()
+                            .allMatch(value -> value.type().equals("boolean")))
                     : selectedEdges;
         }
         assert collector.pollCompleted().isEmpty();
@@ -400,8 +443,9 @@ public final class FachtracingTransformerTest {
         assert selected.size() == evaluatedAtoms : selected;
         assert selected.stream().noneMatch(observation -> observation.outcome().equals("evaluated")) : selected;
         assert selected.stream().allMatch(observation ->
-                observation.evidence().get("value") != null
-                        && observation.evidence().get("value").type().equals("boolean")) : selected;
+                !observation.evidence().isEmpty()
+                        && observation.evidence().values().stream()
+                        .allMatch(value -> value.type().equals("boolean"))) : selected;
     }
 
     private static void partialCompoundBindingCreatesRuntimeGap() throws Exception {
@@ -711,14 +755,12 @@ public final class FachtracingTransformerTest {
             executions.add(collector.pollCompleted().orElseThrow());
         }
         assert executions.size() == 1_000 : executions.size();
-        for (DecisionExecution execution : executions) {
-            String age = execution.observations().stream()
-                    .filter(item -> item.outcome().equals("input 1"))
-                    .map(item -> item.evidence().get("value").canonicalValue())
-                    .findFirst().orElseThrow();
-            assert execution.finalResult().canonicalValue()
-                    .equals(Boolean.toString(Integer.parseInt(age) >= 24)) : execution;
-        }
+        long expectedTrue = java.util.stream.IntStream.range(0, 1_000)
+                .filter(index -> index % 48 >= 24).count();
+        long actualTrue = executions.stream()
+                .filter(execution -> execution.finalResult().canonicalValue().equals("true")).count();
+        assert actualTrue == expectedTrue : actualTrue + " != " + expectedTrue;
+        assert executions.stream().allMatch(execution -> execution.coverageGaps().isEmpty()) : executions;
     }
 
     private static void unsupportedAsyncBoundaryCreatesExecutionGap() throws Exception {
@@ -747,6 +789,107 @@ public final class FachtracingTransformerTest {
                 "execution crossed an unsupported asynchronous boundary") : execution.coverageGaps();
         assert collector.pollDiagnostic().orElseThrow().reason()
                 == RuntimeCollector.DiagnosticReason.UNSUPPORTED_ASYNC_BOUNDARY;
+    }
+
+    private static void exactAsyncCallbackPositionsPropagate() throws Exception {
+        assert AsyncInvocationCatalog.find("java/util/concurrent/CompletionStage", "thenCombine",
+                "(Ljava/util/concurrent/CompletionStage;Ljava/util/function/BiFunction;)"
+                        + "Ljava/util/concurrent/CompletionStage;").orElseThrow().callbackPosition() == 1;
+        assert AsyncInvocationCatalog.find("java/util/concurrent/CompletionStage", "thenAcceptBoth",
+                "(Ljava/util/concurrent/CompletionStage;Ljava/util/function/BiConsumer;)"
+                        + "Ljava/util/concurrent/CompletionStage;").orElseThrow().callbackPosition() == 1;
+        assert AsyncInvocationCatalog.find("java/util/concurrent/CompletionStage", "runAfterBoth",
+                "(Ljava/util/concurrent/CompletionStage;Ljava/lang/Runnable;)"
+                        + "Ljava/util/concurrent/CompletionStage;").orElseThrow().callbackPosition() == 1;
+        assert AsyncInvocationCatalog.find("java/lang/Thread", "<init>",
+                "(Ljava/lang/ThreadGroup;Ljava/lang/Runnable;)V").orElseThrow().callbackPosition() == 1;
+
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        var results = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> Set.of("binary stage callback", "accept both callback",
+                                "run after both callback", "thread group callback")
+                        .contains(item.graph().decisionLabel())).toList();
+        assert results.size() == 4 : results;
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
+                Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        RuntimeCollector collector = new RuntimeCollector();
+        results.forEach(result -> collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none())));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+        assert fixture.getMethod("decideThenCombine", int.class).invoke(instance, 30).equals(true);
+        assert fixture.getMethod("decideThenAcceptBoth", int.class).invoke(instance, 30).equals(true);
+        assert fixture.getMethod("decideRunAfterBoth", int.class).invoke(instance, 30).equals(true);
+        assert fixture.getMethod("decideThreadGroup", int.class).invoke(instance, 30).equals(true);
+        for (int index = 0; index < 4; index++) {
+            var execution = collector.pollCompleted().orElseThrow();
+            assert execution.observations().stream().anyMatch(item -> item.selectedEdgeId() != null)
+                    : execution;
+            assert execution.coverageGaps().stream().noneMatch(gap -> gap.contains("asynchronous"))
+                    : execution.coverageGaps();
+        }
+    }
+
+    private static void rejectedAndCancelledSubmissionsReleaseReservations() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        var results = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> Set.of("caught rejection", "uncaught rejection", "cancelled submission")
+                        .contains(item.graph().decisionLabel())).toList();
+        assert results.size() == 3 : results;
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
+                Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        RuntimeCollector collector = new RuntimeCollector();
+        results.forEach(result -> collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none())));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+
+        assert fixture.getMethod("decideCaughtRejection", int.class).invoke(instance, 30).equals(true);
+        var caught = collector.pollCompleted().orElseThrow();
+        assert caught.terminalStatus() == DecisionExecution.TerminalStatus.SUCCEEDED : caught;
+
+        Throwable expected = (Throwable) fixture.getMethod("expectedRejection").invoke(instance);
+        try {
+            fixture.getMethod("decideUncaughtRejection", int.class).invoke(instance, 30);
+            throw new AssertionError("rejection did not escape");
+        } catch (java.lang.reflect.InvocationTargetException failure) {
+            assert failure.getCause() == expected : failure.getCause();
+        }
+        var uncaught = collector.pollCompleted().orElseThrow();
+        assert uncaught.terminalStatus() == DecisionExecution.TerminalStatus.FAILED : uncaught;
+
+        var releaseBlocker = new java.util.concurrent.CountDownLatch(1);
+        var executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            executor.submit(() -> {
+                releaseBlocker.await();
+                return null;
+            });
+            assert fixture.getMethod("decideCancelledSubmission",
+                    java.util.concurrent.ExecutorService.class, int.class)
+                    .invoke(instance, executor, 30).equals(true);
+            var cancelled = collector.pollCompleted().orElseThrow();
+            assert cancelled.terminalStatus() == DecisionExecution.TerminalStatus.SUCCEEDED : cancelled;
+            assert collector.pollCompleted().isEmpty();
+        } finally {
+            releaseBlocker.countDown();
+            executor.shutdownNow();
+            assert executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
+        }
     }
 
     private static void controlledBinaryFallbackRecordsExactRuntimePath() throws Exception {
@@ -889,7 +1032,7 @@ public final class FachtracingTransformerTest {
                 new AnalysisManifest.ProbeSite("entry", AnalysisManifest.ProbeKind.ENTRY,
                         "agentfixture.InstrumentedFixture", "decide"),
                 new AnalysisManifest.ProbeSite("predicate", AnalysisManifest.ProbeKind.PREDICATE,
-                        "agentfixture.InstrumentedFixture", "decide", 13),
+                        "agentfixture.InstrumentedFixture", "decide", 20),
                 new AnalysisManifest.ProbeSite("outcome", AnalysisManifest.ProbeKind.OUTCOME,
                         "agentfixture.InstrumentedFixture", "decide"),
                 new AnalysisManifest.ProbeSite("outcome", AnalysisManifest.ProbeKind.OUTCOME,
@@ -899,7 +1042,7 @@ public final class FachtracingTransformerTest {
                 new AnalysisManifest.ProbeSite("outcome", AnalysisManifest.ProbeKind.OUTCOME,
                         "agentfixture.InstrumentedFixture", "decideThroughHelper")), List.of(), List.of(
                 new AnalysisManifest.BranchTarget("predicate", "edge-true", "edge-false",
-                        "agentfixture.InstrumentedFixture", "decide", 13)), Map.of());
+                        "agentfixture.InstrumentedFixture", "decide", 20)), Map.of());
     }
 
     private static AnalysisManifest legacyManifest() {
@@ -907,7 +1050,7 @@ public final class FachtracingTransformerTest {
                 new AnalysisManifest.ProbeSite("entry", AnalysisManifest.ProbeKind.ENTRY,
                         "agentfixture.InstrumentedFixture", "decide"),
                 new AnalysisManifest.ProbeSite("predicate", AnalysisManifest.ProbeKind.PREDICATE,
-                        "agentfixture.InstrumentedFixture", "decide", 13),
+                        "agentfixture.InstrumentedFixture", "decide", 20),
                 new AnalysisManifest.ProbeSite("outcome", AnalysisManifest.ProbeKind.OUTCOME,
                         "agentfixture.InstrumentedFixture", "decide"),
                 new AnalysisManifest.ProbeSite("outcome", AnalysisManifest.ProbeKind.OUTCOME,

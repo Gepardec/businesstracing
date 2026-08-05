@@ -92,6 +92,10 @@ public final class ApiModelTest {
                 List.of(new AnalysisManifest.BranchTarget(
                         "start", "edge", "edge", "example.Policy", "approve", "(I)Z", 3, 0,
                         AnalysisManifest.BranchCompletion.BOTH_OUTCOMES)),
+                List.of(new AnalysisManifest.ControlTarget(
+                        "start", "edge", "example.Policy", "approve", "(I)Z", 3)),
+                List.of(new AnalysisManifest.EvidenceTarget(
+                        "start", "example.Policy", "approve", "(I)Z", 0, "age", 3)),
                 Map.of("Policy.java", "0".repeat(64)));
         var bundle = new RuntimeActivationBundle("boundary", "-javaagent:/opt/fachtracing-agent.jar",
                 Map.of("example/Policy", "1".repeat(64)),
@@ -108,6 +112,8 @@ public final class ApiModelTest {
                 .descriptorHint().equals("(I)Z");
         assert decoded.decisions().getFirst().manifest().branchTargets().getFirst()
                 .descriptorHint().equals("(I)Z");
+        assert decoded.decisions().getFirst().manifest().evidenceTargets().getFirst()
+                .evidenceLabel().equals("age");
 
         String legacyJson = new String(encoded, java.nio.charset.StandardCharsets.UTF_8)
                 .replace("fachtracing-activation/v3", "fachtracing-activation/v2")
@@ -119,6 +125,8 @@ public final class ApiModelTest {
         assert legacy.decisions().getFirst().manifest().dispatchTargets().getFirst()
                 .descriptorHint().isEmpty();
         assert legacy.decisions().getFirst().manifest().branchTargets().getFirst()
+                .descriptorHint().isEmpty();
+        assert legacy.decisions().getFirst().manifest().evidenceTargets().getFirst()
                 .descriptorHint().isEmpty();
     }
 }

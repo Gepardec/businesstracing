@@ -7,6 +7,8 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -18,6 +20,8 @@ public final class InvocationContext {
     private final List<DecisionExecution.NodeObservation> observations = new ArrayList<>();
     private final List<String> runtimeCoverageGaps = new ArrayList<>();
     private final ArrayDeque<String> expectedDispatches = new ArrayDeque<>();
+    private final Map<String, LinkedHashMap<String, DecisionExecution.DecisionValue>> pendingEvidence =
+            new LinkedHashMap<>();
     private long sequence;
     private int asyncReservations;
     private boolean terminalRequested;
@@ -41,6 +45,16 @@ public final class InvocationContext {
     synchronized void observeEdge(BusinessDecisionGraph.DecisionEdge edge) {
         Objects.requireNonNull(edge, "edge");
         observe(edge.fromNodeId(), edge.outcome(), java.util.Map.of(), edge.edgeId());
+    }
+
+    synchronized void addEvidence(
+            String nodeId, String label, DecisionExecution.DecisionValue value) {
+        pendingEvidence.computeIfAbsent(nodeId, ignored -> new LinkedHashMap<>()).put(label, value);
+    }
+
+    synchronized Map<String, DecisionExecution.DecisionValue> consumeEvidence(String nodeId) {
+        Map<String, DecisionExecution.DecisionValue> evidence = pendingEvidence.remove(nodeId);
+        return evidence == null ? Map.of() : Map.copyOf(evidence);
     }
 
     synchronized DecisionExecution finish(Instant completedAt, DecisionExecution.DecisionValue result) {

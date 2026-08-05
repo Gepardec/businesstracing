@@ -5,8 +5,8 @@ MATRIX="docs/java-capabilities.json"
 DOC="docs/supported-java-constructs.md"
 
 python3 -m json.tool "$MATRIX" >/dev/null
-rg -q 'fachtracing-java-capabilities/v1' "$MATRIX"
-rg -q 'Machine-readable capability IDs' "$DOC"
+grep -q 'fachtracing-java-capabilities/v1' "$MATRIX"
+grep -q 'Machine-readable capability IDs' "$DOC"
 
 contracts=$(sed -n 's/.*"contract":"\([^"]*\)".*/\1/p' "$MATRIX")
 test -n "$contracts"
@@ -26,7 +26,7 @@ for contract in $contracts; do
       echo "Unknown capability contract class: $class" >&2
       exit 1 ;;
   esac
-  rg -q "[[:space:]]$method\\(" "$file" || {
+  grep -E -q "[[:space:]]$method\\(" "$file" || {
     echo "Missing capability contract: $contract" >&2
     exit 1
   }
@@ -34,7 +34,7 @@ done
 
 ids=$(sed -n 's/.*"id":"\([^"]*\)".*/\1/p' "$MATRIX")
 for id in $ids; do
-  rg -F -q "\`$id\`" "$DOC" || {
+  grep -F -q "\`$id\`" "$DOC" || {
     echo "Capability is missing from documentation: $id" >&2
     exit 1
   }

@@ -14,8 +14,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -102,6 +107,15 @@ public class RuntimeCollector implements TraceContextCarrier {
         context.observe(nodeId, outcome, evidence, null);
     }
 
+    /** Stages one typed business fact for the next exact observation of its predicate. */
+    public void observeEvidence(String nodeId, String evidenceLabel, Object value) {
+        InvocationContext context = current();
+        if (context == null || value == null) return;
+        Definition definition = definition(context);
+        context.addEvidence(nodeId, evidenceLabel, definition.codec().encode(
+                value, definition.graph().decisionLabel(), evidenceLabel));
+    }
+
     /** Appends one exact edge when it leaves the named node in the active graph. */
     public void edge(String nodeId, String edgeId) {
         InvocationContext context = current();
@@ -117,8 +131,11 @@ public class RuntimeCollector implements TraceContextCarrier {
         Definition definition = definition(context);
         BusinessDecisionGraph.DecisionEdge edge = definition.edges().get(new EdgeKey(nodeId, edgeId));
         if (edge == null) return;
-        var evidence = Map.of("value", definition.codec().encode(
-                value, definition.graph().decisionLabel(), "value"));
+        Map<String, DecisionExecution.DecisionValue> evidence = context.consumeEvidence(nodeId);
+        if (evidence.isEmpty()) {
+            evidence = Map.of("value", definition.codec().encode(
+                    value, definition.graph().decisionLabel(), "value"));
+        }
         context.observe(nodeId, value ? "true" : "false", evidence, edgeId);
     }
 
@@ -260,7 +277,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         Objects.requireNonNull(task, "task");
         InvocationContext context = current();
         if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
-        return new WrappedRunnable(this, context, task);
+        return new WrappedRunnable(this, new AsyncReservation(this, context), task);
     }
 
     /** Captures the current context and restores it only while the task runs. */
@@ -268,7 +285,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         Objects.requireNonNull(task, "task");
         InvocationContext context = current();
         if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
-        return new WrappedCallable<>(this, context, task);
+        return new WrappedCallable<>(this, new AsyncReservation(this, context), task);
     }
 
     /** Captures context for one function callback. */
@@ -276,7 +293,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         Objects.requireNonNull(task, "task");
         InvocationContext context = current();
         if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
-        return new WrappedFunction<>(this, context, task);
+        return new WrappedFunction<>(this, new AsyncReservation(this, context), task);
     }
 
     /** Captures context for one consumer callback. */
@@ -284,7 +301,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         Objects.requireNonNull(task, "task");
         InvocationContext context = current();
         if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
-        return new WrappedConsumer<>(this, context, task);
+        return new WrappedConsumer<>(this, new AsyncReservation(this, context), task);
     }
 
     /** Captures context for one two-argument function callback. */
@@ -292,7 +309,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         Objects.requireNonNull(task, "task");
         InvocationContext context = current();
         if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
-        return new WrappedBiFunction<>(this, context, task);
+        return new WrappedBiFunction<>(this, new AsyncReservation(this, context), task);
     }
 
     /** Captures context for one two-argument consumer callback. */
@@ -300,7 +317,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         Objects.requireNonNull(task, "task");
         InvocationContext context = current();
         if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
-        return new WrappedBiConsumer<>(this, context, task);
+        return new WrappedBiConsumer<>(this, new AsyncReservation(this, context), task);
     }
 
     /** Captures context for one supplier callback. */
@@ -308,27 +325,54 @@ public class RuntimeCollector implements TraceContextCarrier {
         Objects.requireNonNull(task, "task");
         InvocationContext context = current();
         if (context == null || task instanceof ContextWrapped || !context.retainAsync()) return task;
-        return new WrappedSupplier<>(this, context, task);
+        return new WrappedSupplier<>(this, new AsyncReservation(this, context), task);
     }
 
     private void releaseAsync(InvocationContext context) {
         context.releaseAsync().ifPresent(completed::add);
     }
 
-    private void runAsync(InvocationContext context, Runnable task) {
-        try (ContextScope ignored = restoreContext(new CapturedContext(context))) {
+    private void runAsync(AsyncReservation reservation, Runnable task) {
+        if (!reservation.start()) {
+            task.run();
+            return;
+        }
+        try (ContextScope ignored = restoreContext(new CapturedContext(reservation.context()))) {
             task.run();
         } finally {
-            releaseAsync(context);
+            reservation.finish();
         }
     }
 
-    private <T> T callAsync(InvocationContext context, Callable<T> task) throws Exception {
-        try (ContextScope ignored = restoreContext(new CapturedContext(context))) {
+    private <T> T callAsync(AsyncReservation reservation, Callable<T> task) throws Exception {
+        if (!reservation.start()) return task.call();
+        try (ContextScope ignored = restoreContext(new CapturedContext(reservation.context()))) {
             return task.call();
         } finally {
-            releaseAsync(context);
+            reservation.finish();
         }
+    }
+
+    /** Releases a prepared callback that was rejected or cancelled before it ran. */
+    public void cancelPreparedAsync(Object callback) {
+        if (callback instanceof ContextWrapped wrapped) wrapped.reservation().cancelBeforeStart();
+    }
+
+    /** Reports whether a callback owns an automatic async reservation. */
+    public boolean isPreparedAsync(Object callback) { return callback instanceof ContextWrapped; }
+
+    /** Reports whether a callback reservation belongs to the named active graph. */
+    public boolean preparedAsyncBelongsTo(Object callback, String graphId, long graphVersion) {
+        if (!(callback instanceof ContextWrapped wrapped)) return false;
+        BusinessDecisionGraph graph = wrapped.reservation().context().graph();
+        return graph.graphId().equals(graphId) && graph.version() == graphVersion;
+    }
+
+    /** Wraps a submitted future so successful pre-start cancellation releases its callback. */
+    public <T> Future<T> trackFuture(Future<T> future, Object callback) {
+        Objects.requireNonNull(future, "future");
+        return callback instanceof ContextWrapped wrapped
+                ? new ReservationFuture<>(future, wrapped.reservation()) : future;
     }
 
     private String resolveDispatch(InvocationContext context, String nodeId, Class<?> runtimeType) {
@@ -376,26 +420,28 @@ public class RuntimeCollector implements TraceContextCarrier {
                 context.graph().graphId(), context.graph().version())), "active graph definition");
     }
 
-    private interface ContextWrapped { }
+    private interface ContextWrapped {
+        AsyncReservation reservation();
+    }
 
     private record WrappedRunnable(
-            RuntimeCollector collector, InvocationContext context, Runnable delegate)
+            RuntimeCollector collector, AsyncReservation reservation, Runnable delegate)
             implements Runnable, ContextWrapped {
-        @Override public void run() { collector.runAsync(context, delegate); }
+        @Override public void run() { collector.runAsync(reservation, delegate); }
     }
 
     private record WrappedCallable<T>(
-            RuntimeCollector collector, InvocationContext context, Callable<T> delegate)
+            RuntimeCollector collector, AsyncReservation reservation, Callable<T> delegate)
             implements Callable<T>, ContextWrapped {
-        @Override public T call() throws Exception { return collector.callAsync(context, delegate); }
+        @Override public T call() throws Exception { return collector.callAsync(reservation, delegate); }
     }
 
     private record WrappedFunction<T, R>(
-            RuntimeCollector collector, InvocationContext context, Function<T, R> delegate)
+            RuntimeCollector collector, AsyncReservation reservation, Function<T, R> delegate)
             implements Function<T, R>, ContextWrapped {
         @Override public R apply(T value) {
             try {
-                return collector.callAsync(context, () -> delegate.apply(value));
+                return collector.callAsync(reservation, () -> delegate.apply(value));
             } catch (RuntimeException | Error failure) {
                 throw failure;
             } catch (Exception impossible) {
@@ -405,17 +451,17 @@ public class RuntimeCollector implements TraceContextCarrier {
     }
 
     private record WrappedConsumer<T>(
-            RuntimeCollector collector, InvocationContext context, Consumer<T> delegate)
+            RuntimeCollector collector, AsyncReservation reservation, Consumer<T> delegate)
             implements Consumer<T>, ContextWrapped {
-        @Override public void accept(T value) { collector.runAsync(context, () -> delegate.accept(value)); }
+        @Override public void accept(T value) { collector.runAsync(reservation, () -> delegate.accept(value)); }
     }
 
     private record WrappedBiFunction<T, U, R>(
-            RuntimeCollector collector, InvocationContext context, BiFunction<T, U, R> delegate)
+            RuntimeCollector collector, AsyncReservation reservation, BiFunction<T, U, R> delegate)
             implements BiFunction<T, U, R>, ContextWrapped {
         @Override public R apply(T first, U second) {
             try {
-                return collector.callAsync(context, () -> delegate.apply(first, second));
+                return collector.callAsync(reservation, () -> delegate.apply(first, second));
             } catch (RuntimeException | Error failure) {
                 throw failure;
             } catch (Exception impossible) {
@@ -425,24 +471,70 @@ public class RuntimeCollector implements TraceContextCarrier {
     }
 
     private record WrappedBiConsumer<T, U>(
-            RuntimeCollector collector, InvocationContext context, BiConsumer<T, U> delegate)
+            RuntimeCollector collector, AsyncReservation reservation, BiConsumer<T, U> delegate)
             implements BiConsumer<T, U>, ContextWrapped {
         @Override public void accept(T first, U second) {
-            collector.runAsync(context, () -> delegate.accept(first, second));
+            collector.runAsync(reservation, () -> delegate.accept(first, second));
         }
     }
 
     private record WrappedSupplier<T>(
-            RuntimeCollector collector, InvocationContext context, Supplier<T> delegate)
+            RuntimeCollector collector, AsyncReservation reservation, Supplier<T> delegate)
             implements Supplier<T>, ContextWrapped {
         @Override public T get() {
             try {
-                return collector.callAsync(context, delegate::get);
+                return collector.callAsync(reservation, delegate::get);
             } catch (RuntimeException | Error failure) {
                 throw failure;
             } catch (Exception impossible) {
                 throw new IllegalStateException(impossible);
             }
+        }
+    }
+
+    private static final class AsyncReservation {
+        private final RuntimeCollector collector;
+        private final InvocationContext context;
+        private final AtomicReference<AsyncState> state = new AtomicReference<>(AsyncState.RESERVED);
+
+        private AsyncReservation(RuntimeCollector collector, InvocationContext context) {
+            this.collector = collector;
+            this.context = context;
+        }
+
+        private InvocationContext context() { return context; }
+
+        private boolean start() { return state.compareAndSet(AsyncState.RESERVED, AsyncState.RUNNING); }
+
+        private void finish() {
+            if (state.compareAndSet(AsyncState.RUNNING, AsyncState.RELEASED)) collector.releaseAsync(context);
+        }
+
+        private void cancelBeforeStart() {
+            if (state.compareAndSet(AsyncState.RESERVED, AsyncState.RELEASED)) collector.releaseAsync(context);
+        }
+    }
+
+    private enum AsyncState { RESERVED, RUNNING, RELEASED }
+
+    private record ReservationFuture<T>(Future<T> delegate, AsyncReservation reservation) implements Future<T> {
+        private ReservationFuture {
+            Objects.requireNonNull(delegate, "delegate");
+            Objects.requireNonNull(reservation, "reservation");
+        }
+
+        @Override public boolean cancel(boolean mayInterruptIfRunning) {
+            boolean cancelled = delegate.cancel(mayInterruptIfRunning);
+            if (cancelled) reservation.cancelBeforeStart();
+            return cancelled;
+        }
+
+        @Override public boolean isCancelled() { return delegate.isCancelled(); }
+        @Override public boolean isDone() { return delegate.isDone(); }
+        @Override public T get() throws InterruptedException, ExecutionException { return delegate.get(); }
+        @Override public T get(long timeout, TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return delegate.get(timeout, unit);
         }
     }
 

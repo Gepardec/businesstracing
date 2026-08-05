@@ -3,6 +3,7 @@ package at.gepardec.fachtracing.maven;
 import at.gepardec.fachtracing.analysis.AnalysisRequest;
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
@@ -132,6 +133,11 @@ final class ProjectGraphGenerator {
 
         for (var analysis : analyses) {
             BusinessDecisionGraph graph = analysis.graph();
+            List<String> artifactViolations = new BusinessArtifactGuard().violations(graph);
+            if (!artifactViolations.isEmpty()) {
+                throw new IllegalStateException("business graph contains technical iteration output: "
+                        + artifactViolations);
+            }
             String base = slug(graph.decisionLabel());
             if (slugCounts.get(base) > 1) base += "-" + graph.graphId().substring(0, 8);
             String mermaidName = base + "-structure.mmd";

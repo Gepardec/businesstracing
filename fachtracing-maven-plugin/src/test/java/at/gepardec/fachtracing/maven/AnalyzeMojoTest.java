@@ -287,7 +287,8 @@ public final class AnalyzeMojoTest {
         String index = Files.readString(output.resolve("index.md"));
         String diagram = Files.readString(output.resolve("reactor-approval-structure.mmd"));
         assert index.contains("reactor approval") && !index.contains("sibling entry") : index;
-        assert diagram.contains("candidate 1") && diagram.contains("candidate 2") : diagram;
+        assert diagram.contains("local decision rule") && diagram.contains("regional decision rule") : diagram;
+        assert !diagram.matches("(?s).*candidate [0-9]+.*") : diagram;
     }
 
     private static void preventsAggregateOutputCollisions() throws Exception {

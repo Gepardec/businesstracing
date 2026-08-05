@@ -20,15 +20,9 @@ if [ ! -d "$MEGA_SOURCE/.git" ]; then
   git -C "$MEGA_SOURCE" checkout -q 782cdec8dfe5b4062eb5c1859e6a9e53afe02770
 fi
 
-(
-  cd "$CLONE"
-  export MAVEN_OPTS="${MAVEN_OPTS:-} -Dmaven.repo.local=$LOCAL"
-  ./scripts/verify.sh
-  MEGA_BACKEND_DIR="$MEGA_SOURCE" ./scripts/verify-mega-backend.sh
-  CP="fachtracing-api/target/classes:fachtracing-engine/target/classes:fachtracing-engine/target/test-classes:$LOCAL/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$LOCAL/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
-  "$(/usr/libexec/java_home -v 21)/bin/java" -ea --add-modules jdk.compiler -cp "$CP" \
-    at.gepardec.fachtracing.performance.FachtracingLoadTest
-) | tee "$EVIDENCE_OUTPUT"
+FACHTRACING_RELEASE_MAVEN_REPOSITORY="$LOCAL" MEGA_BACKEND_DIR="$MEGA_SOURCE" \
+  "$CLONE/scripts/capture-gate-output.sh" "$EVIDENCE_OUTPUT" \
+  "$CLONE/scripts/verify-release-gates.sh"
 
 {
   echo "release_commit=$(git -C "$CLONE" rev-parse HEAD)"

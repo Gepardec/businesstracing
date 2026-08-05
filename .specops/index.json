@@ -89,5 +89,14 @@
     "author": "lucostus",
     "updated": "2026-08-05T20:16:37Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "release-explanation-async-correctness",
+    "type": "bugfix",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-05T20:35:35Z",
+    "partOf": "generic-java-fachtracing"
   }
 ]

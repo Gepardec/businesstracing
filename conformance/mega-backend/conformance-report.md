@@ -22,7 +22,7 @@ are the same artifacts used by non-Mega applications.
 | --- | --- | ---: | ---: | --- |
 | Authorize clarification resolution | Month end | 18 | 30 | Complete, exact atomic oracle match |
 | Detect overlapping time entries | Time warnings | 6 | 9 | Complete, exact atomic oracle match |
-| Determine journey warnings | Journey orchestration | 77 | 108 | Complete, exact atomic oracle match |
+| Determine journey warnings | Journey orchestration | 75 | 106 | Complete, exact atomic oracle match; indexed iteration is business-safe |
 | Determine project activity in month | Projects | 8 | 9 | Complete, exact atomic oracle match |
 | Validate journey direction | Journey validation | 22 | 34 | Complete, exact atomic oracle match |
 
@@ -34,7 +34,7 @@ oracles. Missing or extra nodes, edges, outcomes, dispatches, or completeness st
 
 The manager invocation calls `determineJourneyWarnings` with an empty business collection. The
 record contains the typed input collection, all three concrete strategy selections as opaque
-candidate edges, the one atomic early-return predicate actually evaluated, and final typed result
+selected-rule edges, the one atomic early-return predicate actually evaluated, and final typed result
 `[] [collection]`. The explanation is complete. The execution PlantUML highlights the path from
 entry through dispatch, the three selected strategy edges, evaluated early-return route, and final
 collection outcome; alternatives remain dashed.

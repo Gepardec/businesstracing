@@ -5,6 +5,13 @@ import at.gepardec.fachtracing.api.FachTracing;
 public final class InstrumentedFixture {
     private final IllegalStateException propagatedFailure = new IllegalStateException("called method failed");
     private int secondOperandEvaluations;
+    private final java.util.concurrent.RejectedExecutionException expectedRejection =
+            new java.util.concurrent.RejectedExecutionException("expected rejection");
+
+    @FachTracing("evidence decision")
+    public boolean decideEvidence(int age, String employeeId) {
+        return age < 24;
+    }
 
     public boolean decide(int age) {
         if (age < 0) {
@@ -218,6 +225,74 @@ public final class InstrumentedFixture {
         var thread = Thread.startVirtualThread(task);
         thread.join();
         return task.get();
+    }
+
+    @FachTracing("binary stage callback")
+    public boolean decideThenCombine(int age) {
+        return java.util.concurrent.CompletableFuture.completedFuture(age)
+                .thenCombine(java.util.concurrent.CompletableFuture.completedFuture(0),
+                        (value, offset) -> value + offset >= 24)
+                .join();
+    }
+
+    @FachTracing("accept both callback")
+    public boolean decideThenAcceptBoth(int age) {
+        secondOperandEvaluations = 0;
+        java.util.concurrent.CompletableFuture.completedFuture(age)
+                .thenAcceptBoth(java.util.concurrent.CompletableFuture.completedFuture(0),
+                        (value, offset) -> {
+                            if (value + offset >= 24) secondOperandEvaluations++;
+                        })
+                .join();
+        return secondOperandEvaluations > 0;
+    }
+
+    @FachTracing("run after both callback")
+    public boolean decideRunAfterBoth(int age) {
+        secondOperandEvaluations = 0;
+        java.util.concurrent.CompletableFuture.completedFuture(age)
+                .runAfterBoth(java.util.concurrent.CompletableFuture.completedFuture(0), () -> {
+                    if (age >= 24) secondOperandEvaluations++;
+                })
+                .join();
+        return secondOperandEvaluations > 0;
+    }
+
+    @FachTracing("thread group callback")
+    public boolean decideThreadGroup(int age) throws Exception {
+        var task = new java.util.concurrent.FutureTask<Boolean>(() -> age >= 24);
+        var thread = new Thread(new ThreadGroup("fixture"), task);
+        thread.start();
+        thread.join();
+        return task.get();
+    }
+
+    @FachTracing("caught rejection")
+    public boolean decideCaughtRejection(int age) {
+        java.util.concurrent.Executor rejecting = ignored -> { throw expectedRejection; };
+        try {
+            rejecting.execute(() -> { if (age >= 24) secondOperandEvaluations++; });
+        } catch (java.util.concurrent.RejectedExecutionException expected) {
+            return age >= 24;
+        }
+        return false;
+    }
+
+    @FachTracing("uncaught rejection")
+    public boolean decideUncaughtRejection(int age) {
+        java.util.concurrent.Executor rejecting = ignored -> { throw expectedRejection; };
+        rejecting.execute(() -> { if (age >= 24) secondOperandEvaluations++; });
+        return age >= 24;
+    }
+
+    @FachTracing("cancelled submission")
+    public boolean decideCancelledSubmission(java.util.concurrent.ExecutorService executor, int age) {
+        java.util.concurrent.Future<Boolean> future = executor.submit(() -> age >= 24);
+        return future.cancel(false) && age >= 24;
+    }
+
+    public Throwable expectedRejection() {
+        return expectedRejection;
     }
 
     @FachTracing("scheduled boundary gap")

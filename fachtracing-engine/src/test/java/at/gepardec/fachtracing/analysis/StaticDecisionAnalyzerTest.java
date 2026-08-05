@@ -59,6 +59,7 @@ public final class StaticDecisionAnalyzerTest {
         supportsSealedTypesIndependently();
         supportsNestedClassesIndependently();
         supportsMethodReferencesIndependently();
+        lowersIndexedLoopsToBusinessIteration();
     }
 
     private static void supportsTryWithResourcesIndependently() {
@@ -99,7 +100,7 @@ public final class StaticDecisionAnalyzerTest {
     private static void supportsSealedTypesIndependently() {
         var result = construct("sealed decision");
         assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.diagnostics();
-        assert result.graph().edges().stream().filter(edge -> edge.outcome().startsWith("candidate ")).count() == 2
+        assert result.graph().edges().stream().filter(edge -> edge.outcome().equals("selected rule")).count() == 2
                 : result.graph().edges();
     }
 
@@ -115,6 +116,22 @@ public final class StaticDecisionAnalyzerTest {
         assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.diagnostics();
         assert result.graph().nodes().stream().anyMatch(node -> node.businessLabel().contains("amount is below 100"))
                 : result.graph().nodes();
+    }
+
+    private static void lowersIndexedLoopsToBusinessIteration() {
+        var result = analyze("loops/IndexedEntryPolicy.java");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.businessLabel().equals("a following entry exists")) : result.graph().nodes();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.businessLabel().contains("age is below 24")) : result.graph().nodes();
+        assert new BusinessArtifactGuard().violations(result.graph()).isEmpty()
+                : new BusinessArtifactGuard().violations(result.graph());
+        String business = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel)
+                .collect(java.util.stream.Collectors.joining(" | "));
+        assert !business.matches("(?i).*\\b(?:index|idx|size)\\b.*") : business;
     }
 
     private static AnalysisManifest.AnalysisResult construct(String label) {
@@ -208,7 +225,7 @@ public final class StaticDecisionAnalyzerTest {
                 .findFirst().orElseThrow();
         long alternatives = result.graph().edges().stream()
                 .filter(edge -> edge.fromNodeId().equals(dispatch.nodeId()))
-                .filter(edge -> edge.outcome().startsWith("candidate "))
+                .filter(edge -> edge.outcome().equals("selected rule"))
                 .count();
         assert alternatives == 2 : result.graph().edges();
         assert result.manifest().dispatchTargets().size() == 2 : result.manifest();
@@ -233,7 +250,7 @@ public final class StaticDecisionAnalyzerTest {
         var graph = results.getFirst().graph();
         assert graph.decisionLabel().equals("reactor approval") : graph.decisionLabel();
         long candidates = graph.edges().stream()
-                .filter(edge -> edge.outcome().startsWith("candidate ")).count();
+                .filter(edge -> edge.outcome().equals("selected rule")).count();
         assert candidates == 2 : graph.edges();
         assert graph.nodes().stream()
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE).count() == 2
@@ -256,7 +273,7 @@ public final class StaticDecisionAnalyzerTest {
         var results = new StaticDecisionAnalyzer().analyzeAll(boundary);
         assert results.size() == 1 : results;
         long candidates = results.getFirst().graph().edges().stream()
-                .filter(edge -> edge.outcome().startsWith("candidate ")).count();
+                .filter(edge -> edge.outcome().equals("selected rule")).count();
         assert candidates == 2 : results.getFirst().graph().edges();
         assert boundary.entrySourceFiles().equals(List.of(entry.toAbsolutePath().normalize()));
         assert boundary.resolutionSourceFiles().size() == 3 : boundary.resolutionSourceFiles();
@@ -827,7 +844,7 @@ public final class StaticDecisionAnalyzerTest {
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.DISPATCH).count();
         assert alternatives >= 1 : result.graph().nodes();
         long candidates = result.graph().edges().stream()
-                .filter(edge -> edge.outcome().startsWith("candidate ")).count();
+                .filter(edge -> edge.outcome().equals("selected rule")).count();
         assert candidates == 2 : result.graph().edges();
         assert result.graph().nodes().stream()
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE).count() >= 2

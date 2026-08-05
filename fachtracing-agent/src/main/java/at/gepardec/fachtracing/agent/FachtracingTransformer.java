@@ -69,7 +69,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         return manifest.probeSites().stream().anyMatch(site -> ownerMatches(className, site.ownerHint()))
                 || manifest.dispatchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
                 || manifest.branchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
-                || manifest.controlTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()));
+                || manifest.controlTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
+                || manifest.evidenceTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()));
     }
 
     boolean selects(String binaryClassName) {
@@ -119,9 +120,15 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                     .filter(target -> memberMatches(
                             name, descriptor, target.memberHint(), target.descriptorHint()))
                     .toList();
-            return sites.isEmpty() && targets.isEmpty() && branches.isEmpty() && controls.isEmpty() ? delegate
+            List<AnalysisManifest.EvidenceTarget> evidence = manifest.evidenceTargets().stream()
+                    .filter(target -> ownerMatches(className, target.ownerHint()))
+                    .filter(target -> memberMatches(
+                            name, descriptor, target.memberHint(), target.descriptorHint()))
+                    .toList();
+            return sites.isEmpty() && targets.isEmpty() && branches.isEmpty()
+                    && controls.isEmpty() && evidence.isEmpty() ? delegate
                     : new ProbeMethodVisitor(delegate, access, descriptor, manifest,
-                            sites, targets, branches, controls);
+                            sites, targets, branches, controls, evidence);
         }
 
         private boolean memberMatches(
@@ -152,6 +159,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         private final List<AnalysisManifest.DispatchTarget> targets;
         private final List<AnalysisManifest.BranchTarget> branches;
         private final List<AnalysisManifest.ControlTarget> controls;
+        private final List<AnalysisManifest.EvidenceTarget> evidenceTargets;
         private final Label failureStart = new Label();
         private final Label failureEnd = new Label();
         private final Label failureHandler = new Label();
@@ -167,7 +175,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                                    List<AnalysisManifest.ProbeSite> sites,
                                    List<AnalysisManifest.DispatchTarget> targets,
                                    List<AnalysisManifest.BranchTarget> branches,
-                                   List<AnalysisManifest.ControlTarget> controls) {
+                                   List<AnalysisManifest.ControlTarget> controls,
+                                   List<AnalysisManifest.EvidenceTarget> evidenceTargets) {
             super(Opcodes.ASM9, delegate);
             this.manifest = manifest;
             returnType = Type.getReturnType(descriptor);
@@ -180,6 +189,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             this.targets = targets;
             this.branches = completeBranchGroups(branches);
             this.controls = controls;
+            this.evidenceTargets = evidenceTargets;
         }
 
         private List<AnalysisManifest.BranchTarget> completeBranchGroups(
@@ -211,9 +221,9 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 push(manifest.graphId());
                 mv.visitLdcInsn(manifest.graphVersion());
                 invoke("begin", "(Ljava/lang/String;J)V");
-                captureArguments();
                 super.visitLabel(failureStart);
             }
+            captureEvidenceArguments();
             for (AnalysisManifest.DispatchTarget target : targets) {
                 pushGraph();
                 push(target.dispatchNodeId());
@@ -246,17 +256,21 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             });
         }
 
-        private void captureArguments() {
-            int local = staticMethod ? 0 : 1;
-            for (int index = 0; index < argumentTypes.length; index++) {
-                Type argument = argumentTypes[index];
+        private void captureEvidenceArguments() {
+            for (AnalysisManifest.EvidenceTarget target : evidenceTargets) {
+                if (target.argumentIndex() >= argumentTypes.length) continue;
+                Type argument = argumentTypes[target.argumentIndex()];
                 pushGraph();
-                push(entry.nodeId());
-                push("input " + (index + 1));
+                push(target.nodeId());
+                push(target.evidenceLabel());
+                int local = staticMethod ? 0 : 1;
+                for (int index = 0; index < target.argumentIndex(); index++) {
+                    local += argumentTypes[index].getSize();
+                }
                 mv.visitVarInsn(argument.getOpcode(Opcodes.ILOAD), local);
                 box(argument);
-                invoke("observeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
-                local += argument.getSize();
+                invoke("observeEvidenceFor",
+                        "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
             }
         }
 
@@ -439,7 +453,10 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                                     boolean isInterface) {
             previousOriginalOpcode = opcode;
-            if (wrapAsyncArgument(owner, name, descriptor) == AsyncWrap.UNSUPPORTED) {
+            AsyncInvocationCatalog.Binding async = AsyncInvocationCatalog.find(owner, name, descriptor).orElse(null);
+            boolean asyncPrepared = async != null && prepareAsyncArgument(async);
+            if ((async == null && AsyncInvocationCatalog.isUnmatchedBoundary(owner, name, descriptor))
+                    || (async != null && !asyncPrepared)) {
                 push(owner.replace('/', '.') + "." + name);
                 invoke("unsupportedAsyncBoundary", "(Ljava/lang/String;)V");
             }
@@ -456,47 +473,50 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 }
             }
             super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+            if (asyncPrepared && !threadConstructor(async)) completeAsyncSubmission(async);
+            if (owner.equals("java/lang/Thread") && name.equals("start") && descriptor.equals("()V")) {
+                invoke("asyncSubmissionSucceeded", "()V");
+            }
         }
 
-        private AsyncWrap wrapAsyncArgument(String owner, String name, String descriptor) {
-            if (!isStandardAsyncOwner(owner) || name.equals("join") || name.equals("get")) {
-                return AsyncWrap.NOT_ASYNC;
+        private boolean prepareAsyncArgument(AsyncInvocationCatalog.Binding binding) {
+            Type[] arguments = Type.getArgumentTypes(binding.descriptor());
+            int callback = binding.callbackPosition();
+            if (callback == arguments.length - 1) {
+                prepareAsync(binding, arguments[callback]);
+                return true;
             }
-            Type[] arguments = Type.getArgumentTypes(descriptor);
-            if (arguments.length == 0) return AsyncWrap.NOT_ASYNC;
-            String wrapper = asyncWrapper(arguments[0]);
-            if (wrapper == null) return AsyncWrap.NOT_ASYNC;
-            if (arguments.length > 2) return AsyncWrap.UNSUPPORTED;
-            if (arguments.length == 2) {
-                int trailingSort = arguments[1].getSort();
-                if (trailingSort != Type.OBJECT && trailingSort != Type.ARRAY) return AsyncWrap.UNSUPPORTED;
+            if (callback == 0 && arguments.length == 2
+                    && reference(arguments[0]) && reference(arguments[1])) {
                 mv.visitInsn(Opcodes.SWAP);
+                prepareAsync(binding, arguments[0]);
+                mv.visitInsn(Opcodes.SWAP);
+                return true;
             }
-            String functionalDescriptor = arguments[0].getDescriptor();
-            invoke(wrapper, "(" + functionalDescriptor + ")" + functionalDescriptor);
-            if (arguments.length == 2) mv.visitInsn(Opcodes.SWAP);
-            return AsyncWrap.WRAPPED;
+            return false;
         }
 
-        private enum AsyncWrap { NOT_ASYNC, WRAPPED, UNSUPPORTED }
-
-        private boolean isStandardAsyncOwner(String owner) {
-            return owner.equals("java/lang/Thread")
-                    || owner.startsWith("java/lang/Thread$Builder")
-                    || owner.startsWith("java/util/concurrent/");
+        private void prepareAsync(AsyncInvocationCatalog.Binding binding, Type callbackType) {
+            String callbackDescriptor = callbackType.getDescriptor();
+            invoke(binding.wrapper().runtimeMethod(),
+                    "(" + callbackDescriptor + ")" + callbackDescriptor);
         }
 
-        private String asyncWrapper(Type type) {
-            return switch (type.getClassName()) {
-                case "java.lang.Runnable" -> "wrap";
-                case "java.util.concurrent.Callable" -> "wrap";
-                case "java.util.function.Function" -> "wrapFunction";
-                case "java.util.function.Consumer" -> "wrapConsumer";
-                case "java.util.function.BiFunction" -> "wrapBiFunction";
-                case "java.util.function.BiConsumer" -> "wrapBiConsumer";
-                case "java.util.function.Supplier" -> "wrapSupplier";
-                default -> null;
-            };
+        private void completeAsyncSubmission(AsyncInvocationCatalog.Binding binding) {
+            if (binding.futureResult()) {
+                invoke("asyncFutureSubmitted",
+                        "(Ljava/util/concurrent/Future;)Ljava/util/concurrent/Future;");
+            } else {
+                invoke("asyncSubmissionSucceeded", "()V");
+            }
+        }
+
+        private boolean threadConstructor(AsyncInvocationCatalog.Binding binding) {
+            return binding.owner().equals("java/lang/Thread") && binding.method().equals("<init>");
+        }
+
+        private boolean reference(Type type) {
+            return type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY;
         }
 
         @Override
