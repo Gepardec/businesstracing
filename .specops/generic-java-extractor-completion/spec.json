@@ -1,0 +1,51 @@
+{
+  "id": "generic-java-extractor-completion",
+  "type": "feature",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-05T08:40:07Z",
+  "updated": "2026-08-05T08:48:00Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus",
+    "email": "constantin.winkler@gepardec.com"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [
+    {
+      "specId": "generic-application-readiness",
+      "reason": "It supplies Activation V3, honest completeness, project-aware compiler contexts, durable delivery, and the release-candidate baseline.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "generic-tracing-walking-skeleton",
+    "runtime-decision-path-capture",
+    "reactor-wide-implementation-resolution",
+    "jpms-reactor-source-resolution"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 8,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-05T08:48:00Z"
+    },
+    "implementation": {
+      "iterations": 0,
+      "passed": false,
+      "scores": {},
+      "evaluatedAt": null
+    }
+  }
+}

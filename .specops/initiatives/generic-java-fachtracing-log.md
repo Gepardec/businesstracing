@@ -15,3 +15,4 @@
 | 2026-07-31T11:42:37Z | generic-application-readiness | completed | All 11 readiness tasks and the clean-clone 600-second release gate passed; initiative completed |
 | 2026-08-05T07:25:12Z | generic-application-readiness | reopened | Version 4 corrects restart-safe execution identity, unknown delivery outcomes, overload descriptors, and mixed JPMS boundaries. |
 | 2026-08-05T08:16:38Z | generic-application-readiness | completed | Version 4 passed focused contracts, five pinned Mega graphs, and the clean-clone 600,000-decision release gate. |
+| 2026-08-05T08:40:07Z | generic-java-extractor-completion | dispatched | Wave 4 follow-up for remaining generic Java extractor, runtime, JPMS, database, and CI coverage. |

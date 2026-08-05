@@ -80,5 +80,14 @@
     "version": 4,
     "author": "lucostus",
     "updated": "2026-08-05T08:16:38Z"
+  },
+  {
+    "id": "generic-java-extractor-completion",
+    "type": "feature",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-05T08:48:00Z",
+    "partOf": "generic-java-fachtracing"
   }
 ]
