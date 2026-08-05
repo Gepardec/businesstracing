@@ -13,3 +13,4 @@
 | 2026-07-31T09:20:33Z | runtime-decision-path-capture | adapted | Added occurrence-aware short-circuit completion and the current main verification baseline |
 | 2026-07-31T09:39:13Z | runtime-decision-path-capture | completed | Exact paths, failed executions, nested dispatch, compound fallback, and load verification passed |
 | 2026-07-31T11:42:37Z | generic-application-readiness | completed | All 11 readiness tasks and the clean-clone 600-second release gate passed; initiative completed |
+| 2026-08-05T07:25:12Z | generic-application-readiness | reopened | Version 4 corrects restart-safe execution identity, unknown delivery outcomes, overload descriptors, and mixed JPMS boundaries. |

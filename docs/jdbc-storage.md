@@ -18,5 +18,8 @@ Each operation owns one transaction and rolls back on failure. SQL states in con
 and transaction rollback class `40` are marked retryable. `DecisionRecordDelivery` performs retries
 outside the decision thread. The adapter applies a positive query timeout to every JDBC statement.
 The default is 30 seconds. Use the constructor with `Duration` to set a deployment-specific value.
+If a driver ignores interruption or finishes a commit after the delivery wait ends, delivery reports
+the record as unknown and stops that worker. It does not claim that the record was dropped. Operators
+must query the execution ID before they retry an unknown record.
 Credentials remain in the configured `DataSource` and never enter logs,
 payloads, diagrams, or developer JSON.

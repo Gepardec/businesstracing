@@ -20,6 +20,9 @@ At startup, read `target/fachtracing/activation.json` with
 `RuntimeActivationBundle.fromJson`, call `FachtracingAgent.configure(bundle)`, and register each
 bundle graph in `RuntimeCollector` with an application-owned redaction policy. The activation path
 does not need Java source or a compiler. The bundle's `javaAgentOption` gives the exact JVM option.
+Activation V3 includes the JVM descriptor for each runtime binding, so annotated overloads remain
+separate. The reader accepts activation V2 as a legacy name-only plan. Regenerate a V2 bundle before
+you use overloads or before you require exact overload-safe instrumentation.
 Send completed `DecisionRecordEnvelope` values to `DecisionRecordDelivery`, backed by
 `JdbcDecisionRecordRepository`. Call `migrate()` during controlled startup. Retrieve a record with
 `findByExecutionId` and project its opaque path with the matching graph version.

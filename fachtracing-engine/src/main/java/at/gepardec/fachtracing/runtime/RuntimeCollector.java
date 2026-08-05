@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,6 +32,7 @@ public class RuntimeCollector implements TraceContextCarrier {
     private final int diagnosticCapacity;
     private final AtomicLong diagnosticOverflow = new AtomicLong();
     private final AtomicLong executionSequence = new AtomicLong();
+    private final String executionNamespace;
 
     /** Creates a collector using the system clock. */
     public RuntimeCollector() { this(Clock.systemUTC(), 1024); }
@@ -43,6 +45,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         this.clock = Objects.requireNonNull(clock, "clock");
         if (diagnosticCapacity < 1) throw new IllegalArgumentException("diagnosticCapacity must be positive");
         this.diagnosticCapacity = diagnosticCapacity;
+        this.executionNamespace = UUID.randomUUID().toString();
     }
 
     /** Registers static graph metadata and the value boundary used by future invocations. */
@@ -78,7 +81,8 @@ public class RuntimeCollector implements TraceContextCarrier {
     public void begin(String graphId, long graphVersion) {
         Definition definition = definitions.get(new DefinitionKey(graphId, graphVersion));
         if (definition == null) return;
-        String executionId = Long.toUnsignedString(executionSequence.incrementAndGet(), 36);
+        String executionId = executionNamespace + "-"
+                + Long.toUnsignedString(executionSequence.incrementAndGet(), 36);
         contexts.get().push(new InvocationContext(executionId, definition.graph(), clock.instant()));
     }
 

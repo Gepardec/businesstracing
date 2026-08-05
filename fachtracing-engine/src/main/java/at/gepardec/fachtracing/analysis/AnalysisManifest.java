@@ -48,10 +48,21 @@ public record AnalysisManifest(
     }
 
     /** Requested runtime observation point. */
-    public record ProbeSite(String nodeId, ProbeKind kind, String ownerHint, String memberHint, long sourceLine) {
+    public record ProbeSite(
+            String nodeId,
+            ProbeKind kind,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine) {
+        /** Compatibility constructor for name-only bindings. */
+        public ProbeSite(String nodeId, ProbeKind kind, String ownerHint, String memberHint, long sourceLine) {
+            this(nodeId, kind, ownerHint, memberHint, "", sourceLine);
+        }
+
         /** Compatibility constructor for synthetic manifests without source provenance. */
         public ProbeSite(String nodeId, ProbeKind kind, String ownerHint, String memberHint) {
-            this(nodeId, kind, ownerHint, memberHint, -1);
+            this(nodeId, kind, ownerHint, memberHint, "", -1);
         }
 
         /** Creates a probe site kept outside business output. */
@@ -60,6 +71,7 @@ public record AnalysisManifest(
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(ownerHint, "ownerHint");
             Objects.requireNonNull(memberHint, "memberHint");
+            Objects.requireNonNull(descriptorHint, "descriptorHint");
             if (sourceLine == 0 || sourceLine < -1) {
                 throw new IllegalArgumentException("sourceLine must be positive or -1");
             }
@@ -70,13 +82,24 @@ public record AnalysisManifest(
     public enum ProbeKind { ENTRY, PREDICATE, DISPATCH, OUTCOME }
 
     /** Developer-only binding from an implementation entry to an opaque dispatch edge. */
-    public record DispatchTarget(String dispatchNodeId, String edgeId, String ownerHint, String memberHint) {
+    public record DispatchTarget(
+            String dispatchNodeId,
+            String edgeId,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint) {
+        /** Compatibility constructor for name-only bindings. */
+        public DispatchTarget(String dispatchNodeId, String edgeId, String ownerHint, String memberHint) {
+            this(dispatchNodeId, edgeId, ownerHint, memberHint, "");
+        }
+
         /** Creates a target binding kept outside the business record. */
         public DispatchTarget {
             Objects.requireNonNull(dispatchNodeId, "dispatchNodeId");
             Objects.requireNonNull(edgeId, "edgeId");
             Objects.requireNonNull(ownerHint, "ownerHint");
             Objects.requireNonNull(memberHint, "memberHint");
+            Objects.requireNonNull(descriptorHint, "descriptorHint");
         }
     }
 
@@ -87,6 +110,7 @@ public record AnalysisManifest(
             String falseEdgeId,
             String ownerHint,
             String memberHint,
+            String descriptorHint,
             long sourceLine,
             int predicateIndex,
             BranchCompletion completion) {
@@ -98,8 +122,22 @@ public record AnalysisManifest(
                 String ownerHint,
                 String memberHint,
                 long sourceLine) {
-            this(nodeId, trueEdgeId, falseEdgeId, ownerHint, memberHint, sourceLine,
+            this(nodeId, trueEdgeId, falseEdgeId, ownerHint, memberHint, "", sourceLine,
                     0, BranchCompletion.BOTH_OUTCOMES);
+        }
+
+        /** Compatibility constructor for exact name-only branch plans. */
+        public BranchTarget(
+                String nodeId,
+                String trueEdgeId,
+                String falseEdgeId,
+                String ownerHint,
+                String memberHint,
+                long sourceLine,
+                int predicateIndex,
+                BranchCompletion completion) {
+            this(nodeId, trueEdgeId, falseEdgeId, ownerHint, memberHint, "", sourceLine,
+                    predicateIndex, completion);
         }
 
         /** Creates a complete boolean branch binding kept outside the business record. */
@@ -109,6 +147,7 @@ public record AnalysisManifest(
             Objects.requireNonNull(falseEdgeId, "falseEdgeId");
             Objects.requireNonNull(ownerHint, "ownerHint");
             Objects.requireNonNull(memberHint, "memberHint");
+            Objects.requireNonNull(descriptorHint, "descriptorHint");
             if (sourceLine == 0 || sourceLine < -1) {
                 throw new IllegalArgumentException("sourceLine must be positive or -1");
             }

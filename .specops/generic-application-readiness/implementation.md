@@ -26,6 +26,29 @@
   construct fixtures, release scripts, and integration documentation.
 - Iteration 3 regression risks: multi-graph instrumentation, source mappings, non-modular analysis,
   queue admission counters, JDBC compatibility, generic-source isolation, and 1,000 RPS overhead.
+- Iteration 4 recovery: PR 5 review reopened four P1 contracts after version 3 completion.
+- Iteration 4 affected components: runtime execution identity, in-memory and JDBC idempotency,
+  delivery outcome counters and lifecycle, analyzer manifests, activation JSON, agent method and
+  lambda matching, mixed compiler orchestration, tests, and runtime/storage documents.
+- Iteration 4 blast radius: collector users, envelope persistence, delivery dashboards, activation
+  consumers, all static graphs with runtime probes, overloaded methods, lambda instrumentation,
+  flat reactors, JPMS reactors, and mixed reactors.
+- Iteration 4 behavior inventory: exact retries stay idempotent; decision-thread I/O remains absent;
+  queue admission rules remain stable; normal non-overloaded probes keep their paths; activation V2
+  remains readable; all-flat and all-modular analysis remains valid; business artifacts stay free
+  of Java and Mega details.
+- Iteration 4 coverage: existing runtime, protocol, JDBC, analyzer, transformer, external, Mega, and
+  load contracts cover the unchanged behavior. New tests must cover restart identity, conflicting
+  duplicates, late commits, overloads, overloaded lambdas, and mixed compiler boundaries.
+- Iteration 4 risk tier: every listed behavior is Must-Test because the changes modify shared public
+  contracts, persistence semantics, runtime bytecode selection, or compiler-mode selection.
+- Iteration 4 scope check: contained remediation. No new product feature or dependency is required.
+- Repo map: loaded but stale because it predates activation V2 and the iteration 3 implementation;
+  direct file and symbol searches provide the current map for this run.
+- Memory: loaded 23 decisions from 9 completed specifications and 6 decision patterns; no production
+  learnings file exists.
+- Plan validation: pass; every iteration 4 file path exists and no new source file is required.
+- Vocabulary check: pass for the library vertical.
 
 ## Phase 2 Completion Summary
 
@@ -54,6 +77,8 @@
 | 12 | Keep protocol envelopes already redacted before queue admission | Neither delivery nor persistence needs access to raw business identifiers or values. | 8 | 2026-07-31 |
 | 13 | Keep the production JDBC adapter vendor-neutral and H2 test-only | Applications provide a standard `DataSource`; the reference database does not become a runtime dependency. | 9 | 2026-07-31 |
 | 14 | Verify the RC through a temporary remote-style file repository and empty local repository | This proves published-coordinate use without relying on artifacts installed by the source checkout. | 10 | 2026-07-31 |
+| 15 | Namespace collector executions with one UUID and keep the local sequence | One random value per collector prevents restart collisions without adding shared state or UUID work to every invocation. | 23 | 2026-08-05 |
+| 16 | Stop a delivery worker after its first unknown save outcome | One stopped worker can retain at most one uncooperative storage call, while the unknown counter stays honest if that call commits later. | 24 | 2026-08-05 |
 
 ## Deviations from Design
 
@@ -216,3 +241,37 @@
 - Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
 - Final load: 600,000 completed records at 1,000 RPS; 0.071% p95 overhead
 - Integrity counters: 0 errors, mismatches, drops, contamination, or silent accepted-record loss
+
+## Remediation Iteration 4
+
+- Trigger: PR 5 changes requested after commit `4cfee73` on 2026-08-05.
+- Status: reopened because execution IDs repeat across collector restarts, timed-out saves can commit
+  after they are called dropped, overload bindings omit JVM descriptors, and mixed reactors can
+  impose a false module-descriptor requirement.
+- Scope: Tasks 23 through 27. Earlier generic extraction, business-only output, activation,
+  Java-capability, Mega, and performance behavior remains a mandatory regression gate.
+- 2026-08-05: Task 23 scope: add UUID-namespaced execution IDs and strict exact-content idempotency
+  for in-memory and JDBC envelope storage. Verify first-ID separation, concurrent uniqueness, exact
+  retries, execution-ID conflict, and record-ID conflict before completion.
+- 2026-08-05: Task 23 completed. Each collector now uses a UUID namespace plus a local sequence.
+  In-memory and JDBC storage accept exact retries and reject different content that reuses either
+  durable key. Focused runtime, protocol, and H2 contracts pass.
+- 2026-08-05: Task 24 scope: add an unknown save outcome for interrupted or timed-out active storage
+  calls, stop delivery after an unknown result, drop only queued records that never started, and
+  verify late commit plus exact counter reconciliation.
+- 2026-08-05: Task 24 completed. Timed-out and interrupted active saves count as unknown. Delivery
+  then stops, rejects new offers, drops queued records, and preserves `accepted = saved + dropped +
+  unknown`. A latch contract proves that a late commit does not change the reported outcome.
+- 2026-08-05: Task 25 scope: add JVM descriptors to all generated method bindings, round-trip them
+  through activation V3 with V2 read compatibility, match normal overloads exactly, and resolve
+  overloaded lambda targets from their enclosing method's `invokedynamic` handles.
+- 2026-08-05: Task 25 completed. Activation V3 carries JVM descriptors for entry, predicate,
+  outcome, branch, dispatch, and lambda bindings. The agent matches overloads by owner, name, and
+  descriptor. V2 name-only bundles remain readable. Focused activation and instrumentation
+  contracts pass for two normal overloads and two overloaded lambda entries.
+- 2026-08-05: Task 26 completed. The graph-entry project now selects flat or JPMS analysis. A mixed
+  contract proves that a non-modular library remains complete with a modular reverse dependent,
+  a modular entry does not require the library to have a module descriptor, and unavailable
+  cross-mode source logic is an explicit incomplete coverage gap.
+- 2026-08-05: Task 27 scope: run all generic, external release, pinned Mega, performance, integrity,
+  documentation, memory, and repository-state gates before the version 4 release decision.

@@ -32,6 +32,63 @@ public final class FachtracingTransformerTest {
         manifestWithoutBranchTargetsKeepsLegacyProbe();
         transformedTargetsRecordTheActualPolymorphicEdge();
         activationTransformerInstallsMultipleDisjointGraphs();
+        analyzerAndTransformerSeparateOverloadsAndTheirLambdas();
+    }
+
+    private static void analyzerAndTransformerSeparateOverloadsAndTheirLambdas() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        var selected = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> item.graph().decisionLabel().startsWith("overload "))
+                .toList();
+        assert selected.size() == 4 : selected;
+        var entryDescriptors = selected.stream()
+                .flatMap(item -> item.manifest().probeSites().stream())
+                .filter(site -> site.kind() == AnalysisManifest.ProbeKind.ENTRY)
+                .map(AnalysisManifest.ProbeSite::descriptorHint)
+                .collect(java.util.stream.Collectors.toSet());
+        assert entryDescriptors.equals(java.util.Set.of("(I)Z", "(Ljava/lang/String;)Z"))
+                : entryDescriptors;
+        selected.stream().flatMap(item -> item.manifest().probeSites().stream())
+                .forEach(site -> { assert !site.descriptorHint().isBlank() : site; });
+
+        byte[] original = fixtureBytes();
+        var transformer = new FachtracingTransformer(
+                selected.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
+                Map.of(CLASS_NAME, sha256(original)));
+        byte[] transformed = transformer.transform(null, null, CLASS_NAME, null, null, original);
+        assert transformed != null;
+
+        RuntimeCollector collector = new RuntimeCollector();
+        for (var result : selected) collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+        assert fixture.getMethod("overloaded", int.class).invoke(instance, 20).equals(true);
+        assert fixture.getMethod("overloaded", String.class).invoke(instance, "Vienna").equals(true);
+        assert fixture.getMethod("lambdaOverload", int.class).invoke(instance, 20).equals(true);
+        assert fixture.getMethod("lambdaOverload", String.class).invoke(instance, "Vienna").equals(true);
+
+        var byGraph = selected.stream().collect(java.util.stream.Collectors.toMap(
+                item -> item.graph().graphId(), AnalysisManifest.AnalysisResult::graph));
+        var executions = new java.util.ArrayList<DecisionExecution>();
+        collector.pollCompleted().ifPresent(executions::add);
+        collector.pollCompleted().ifPresent(executions::add);
+        collector.pollCompleted().ifPresent(executions::add);
+        collector.pollCompleted().ifPresent(executions::add);
+        assert executions.size() == 4 : executions;
+        assert executions.stream().map(DecisionExecution::graphId).collect(java.util.stream.Collectors.toSet())
+                .equals(byGraph.keySet()) : executions;
+        for (DecisionExecution execution : executions) {
+            var nodeIds = byGraph.get(execution.graphId()).nodes().stream()
+                    .map(BusinessDecisionGraph.DecisionNode::nodeId).collect(java.util.stream.Collectors.toSet());
+            assert execution.observations().stream().allMatch(item -> nodeIds.contains(item.nodeId()))
+                    : execution;
+        }
+        assert collector.pollCompleted().isEmpty();
     }
 
     private static void premainAcceptsApplicationConfigurationAfterStartup() {

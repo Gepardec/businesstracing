@@ -86,7 +86,12 @@ public final class ApiModelTest {
         var mapping = new AnalysisManifest.SourceMapping("start", Path.of("Policy.java"), 3, 5, "METHOD");
         var manifest = new AnalysisManifest("graph", 1, Map.of("start", mapping),
                 List.of(new AnalysisManifest.ProbeSite("start", AnalysisManifest.ProbeKind.ENTRY,
-                        "example.Policy", "approve", 3)), List.of(), List.of(),
+                        "example.Policy", "approve", "(I)Z", 3)),
+                List.of(new AnalysisManifest.DispatchTarget(
+                        "start", "edge", "example.Policy", "approve", "(I)Z")),
+                List.of(new AnalysisManifest.BranchTarget(
+                        "start", "edge", "edge", "example.Policy", "approve", "(I)Z", 3, 0,
+                        AnalysisManifest.BranchCompletion.BOTH_OUTCOMES)),
                 Map.of("Policy.java", "0".repeat(64)));
         var bundle = new RuntimeActivationBundle("boundary", "-javaagent:/opt/fachtracing-agent.jar",
                 Map.of("example/Policy", "1".repeat(64)),
@@ -95,5 +100,25 @@ public final class ApiModelTest {
         var decoded = RuntimeActivationBundle.fromJson(encoded);
         assert decoded.equals(bundle) : new String(encoded, java.nio.charset.StandardCharsets.UTF_8);
         assert java.util.Arrays.equals(encoded, decoded.toJson());
+        assert new String(encoded, java.nio.charset.StandardCharsets.UTF_8)
+                .contains("\"schema\":\"fachtracing-activation/v3\"");
+        assert decoded.decisions().getFirst().manifest().probeSites().getFirst()
+                .descriptorHint().equals("(I)Z");
+        assert decoded.decisions().getFirst().manifest().dispatchTargets().getFirst()
+                .descriptorHint().equals("(I)Z");
+        assert decoded.decisions().getFirst().manifest().branchTargets().getFirst()
+                .descriptorHint().equals("(I)Z");
+
+        String legacyJson = new String(encoded, java.nio.charset.StandardCharsets.UTF_8)
+                .replace("fachtracing-activation/v3", "fachtracing-activation/v2")
+                .replaceAll(",\\\"descriptorHint\\\":\\\"[^\\\"]*\\\"", "");
+        var legacy = RuntimeActivationBundle.fromJson(
+                legacyJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        assert legacy.decisions().getFirst().manifest().probeSites().getFirst()
+                .descriptorHint().isEmpty();
+        assert legacy.decisions().getFirst().manifest().dispatchTargets().getFirst()
+                .descriptorHint().isEmpty();
+        assert legacy.decisions().getFirst().manifest().branchTargets().getFirst()
+                .descriptorHint().isEmpty();
     }
 }

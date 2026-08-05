@@ -24,11 +24,15 @@ returns false and increments `rejected`. `BLOCK` is opt-in for deployments that 
 backpressure.
 
 Repository failures retry only on the worker with a configured retry count and delay. Counters report
-accepted, saved, retried, rejected, admission-dropped, and accepted-but-dropped records. After
-`close()` returns, the worker is stopped and `accepted = saved + dropped`. An interrupted retry counts
-the accepted record as dropped. Repository calls run in isolated virtual threads with a configured
-operation timeout. `close()` interrupts the delivery worker and returns within the configured
-shutdown timeout, even if a repository call ignores interruption. JDBC statements also have an
-independent query timeout. Production deployments must
-alert on rejected, admission-dropped, accepted-but-dropped, and repeated retry counts. Redaction,
-retention, deletion authorization, and backup deletion remain deployment responsibilities.
+accepted, saved, retried, rejected, admission-dropped, dropped, and unknown records. A dropped
+accepted record did not start a save or its repository call returned a final failure. An unknown
+accepted record had an active save when its wait timed out or shutdown interrupted it. The store can
+still commit that record later.
+
+After the worker stops, `accepted = saved + dropped + unknown`. An unknown result stops further
+delivery and drops queued records that did not start. Thus, one delivery instance can retain at most
+one uncooperative detached operation. `close()` returns within the configured shutdown timeout.
+JDBC statements have an independent query timeout. Production deployments must alert on rejected,
+admission-dropped, dropped, unknown, and repeated retry counts. They must reconcile unknown execution
+IDs with storage before retry. Redaction, retention, deletion authorization, and backup deletion
+remain deployment responsibilities.

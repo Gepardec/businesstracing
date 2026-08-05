@@ -44,7 +44,7 @@ roots. It also uses Java sources and compile classpaths from the active reactor 
 interface and abstract-method implementations. Thus, an implementation in a sibling module can
 appear as a dispatch candidate without creating a graph for an annotation in that sibling module.
 
-For a connected JPMS closure, the plugin puts all module descriptors and sources in one valid
+For a modular graph entry, the plugin puts all connected named module descriptors and sources in one valid
 multi-module compiler task. It uses the effective module paths and module source paths. Graph
 extraction uses this same attributed task. A module with no Java source skips graph generation and
 removes stale Fachtracing output.

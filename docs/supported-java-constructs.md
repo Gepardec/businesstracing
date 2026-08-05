@@ -41,14 +41,18 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 
 ## Project and compiler boundary
 
-For a connected modular source closure, aggregate analysis creates one valid multi-module `javac`
-task. The task includes each module descriptor, module source path, effective module path, classpath,
-release, encoding, and compiler argument. Graph extraction uses the trees and symbols from this same
-task. It does not validate in one context and extract from a flat context. Connected modules must
-use compatible release, encoding, and compiler arguments. External source files without module
-ownership are rejected for a modular closure. Unsupported forked compilers and annotation-processor
-configurations fail before graph extraction. Generated sources keep generated provenance in
-developer graph V2.
+The graph-entry project selects the compiler mode. A non-modular entry uses a flat source task, even
+when a named module depends on that project. A modular entry uses one valid multi-module `javac`
+task that contains only connected named source projects. Connected non-modular projects stay on the
+binary classpath or module path. If their source logic is not available to that task, the graph gets
+an explicit coverage gap.
+
+The JPMS task includes each selected module descriptor, module source path, effective module path,
+classpath, release, encoding, and compiler argument. Graph extraction uses the trees and symbols
+from this same task. Connected named modules must use compatible release, encoding, and compiler
+arguments. External source files without module ownership are rejected for a modular entry.
+Unsupported forked compilers and annotation-processor configurations fail before graph extraction.
+Generated sources keep generated provenance in developer graph V2.
 
 Every annotated decision has one `Start` and one `Stop`. Return paths state the returned business
 expression on their edge to Stop. Relevant throws in the entry or an expanded source method use a

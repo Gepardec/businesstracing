@@ -115,7 +115,7 @@ public final class DecisionRecordDelivery implements AutoCloseable {
                 DecisionRecordEnvelope envelope = queue.poll(50, TimeUnit.MILLISECONDS);
                 if (envelope != null) {
                     synchronized (lifecycle) { lifecycle.notifyAll(); }
-                    save(envelope);
+                    if (!save(envelope)) break;
                 }
             } catch (InterruptedException interrupted) {
                 if (running.get()) continue;
@@ -125,29 +125,39 @@ public final class DecisionRecordDelivery implements AutoCloseable {
         drainAsDropped();
     }
 
-    private void save(DecisionRecordEnvelope envelope) {
+    private boolean save(DecisionRecordEnvelope envelope) {
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 saveWithTimeout(envelope);
                 counters.saved.incrementAndGet();
-                return;
+                return true;
             } catch (InterruptedException interrupted) {
-                counters.dropped.incrementAndGet();
+                counters.unknown.incrementAndGet();
+                stopDelivery();
                 Thread.currentThread().interrupt();
-                return;
+                return false;
             } catch (TimeoutException timeout) {
-                counters.dropped.incrementAndGet();
-                return;
+                counters.unknown.incrementAndGet();
+                stopDelivery();
+                return false;
             } catch (RuntimeException failure) {
-                if (attempt == maxRetries) { counters.dropped.incrementAndGet(); return; }
+                if (attempt == maxRetries) { counters.dropped.incrementAndGet(); return true; }
                 counters.retried.incrementAndGet();
                 try { Thread.sleep(retryDelayMillis); }
                 catch (InterruptedException interrupted) {
                     counters.dropped.incrementAndGet();
                     Thread.currentThread().interrupt();
-                    return;
+                    return false;
                 }
             }
+        }
+        return true;
+    }
+
+    private void stopDelivery() {
+        synchronized (lifecycle) {
+            running.set(false);
+            lifecycle.notifyAll();
         }
     }
 
@@ -194,15 +204,17 @@ public final class DecisionRecordDelivery implements AutoCloseable {
 
     public enum AdmissionPolicy { FAIL_OPEN, BLOCK, REJECT_NEW_TRACE }
     public record DeliveryCounters(
-            long accepted, long saved, long retried, long rejected, long admissionDropped, long dropped) {
-        /** Accepted records that are neither saved nor accounted as dropped. */
-        public long unresolvedAccepted() { return accepted - saved - dropped; }
+            long accepted, long saved, long retried, long rejected, long admissionDropped,
+            long dropped, long unknown) {
+        /** Accepted records that have no final delivery outcome. */
+        public long unresolvedAccepted() { return accepted - saved - dropped - unknown; }
     }
     private static final class Counters {
         private final AtomicLong accepted = new AtomicLong(); private final AtomicLong saved = new AtomicLong();
         private final AtomicLong retried = new AtomicLong(); private final AtomicLong rejected = new AtomicLong();
         private final AtomicLong admissionDropped = new AtomicLong(); private final AtomicLong dropped = new AtomicLong();
+        private final AtomicLong unknown = new AtomicLong();
         private DeliveryCounters snapshot() { return new DeliveryCounters(accepted.get(), saved.get(), retried.get(),
-                rejected.get(), admissionDropped.get(), dropped.get()); }
+                rejected.get(), admissionDropped.get(), dropped.get(), unknown.get()); }
     }
 }

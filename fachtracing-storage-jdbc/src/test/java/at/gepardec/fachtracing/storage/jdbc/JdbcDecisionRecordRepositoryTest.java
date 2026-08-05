@@ -31,7 +31,12 @@ public final class JdbcDecisionRecordRepositoryTest {
         var first = envelope("record-1", "execution-1", Instant.parse("2026-01-01T00:00:01Z"));
         var second = envelope("record-2", "execution-2", Instant.parse("2026-01-02T00:00:01Z"));
         repository.saveEnvelope(first); repository.saveEnvelope(first); repository.saveEnvelope(second);
+        assertConflict(() -> repository.saveEnvelope(envelope(
+                "record-conflict", "execution-1", Instant.parse("2026-01-03T00:00:01Z"))));
+        assertConflict(() -> repository.saveEnvelope(envelope(
+                "record-1", "execution-conflict", Instant.parse("2026-01-03T00:00:01Z"))));
         assert repository.findByExecutionId("execution-1").orElseThrow().equals(first);
+        assert repository.findByExecutionId("execution-conflict").isEmpty();
         assert repository.findByExecutionId("missing").isEmpty();
         var query = new DecisionRecordRepository.DecisionRecordQuery(
                 "case", "hash-123", Instant.parse("2026-01-01T12:00:00Z"), Instant.parse("2026-01-03T00:00:00Z"));
@@ -41,6 +46,15 @@ public final class JdbcDecisionRecordRepositoryTest {
         assert repository.findByExecutionId("execution-2").isPresent();
         assert !tracking.timeouts.isEmpty();
         assert tracking.timeouts.stream().allMatch(timeout -> timeout == 2) : tracking.timeouts;
+    }
+
+    private static void assertConflict(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("conflicting record was accepted");
+        } catch (DecisionRecordRepository.DecisionRecordConflictException expected) {
+            assert expected.getMessage().contains("already belongs") : expected.getMessage();
+        }
     }
 
     private static DecisionRecordEnvelope envelope(String recordId, String executionId, Instant completed) {

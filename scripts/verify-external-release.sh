@@ -33,7 +33,7 @@ mvn -q -f "$FIXTURE/pom.xml" -Dmaven.repo.local="$LOCAL" \
 test -f "$FIXTURE/target/fachtracing/external-approval-structure.mmd"
 test -f "$FIXTURE/target/fachtracing/external-approval-structure.puml"
 test -f "$FIXTURE/target/fachtracing/index.md"
-rg -q '"schema":"fachtracing-activation/v2"' "$FIXTURE/target/fachtracing/activation.json"
+rg -q '"schema":"fachtracing-activation/v3"' "$FIXTURE/target/fachtracing/activation.json"
 rg -q '"classFingerprints"' "$FIXTURE/target/fachtracing/activation.json"
 rg -q '"manifest"' "$FIXTURE/target/fachtracing/activation.json"
 rg -q '"javaAgentOption":"-javaagent:' "$FIXTURE/target/fachtracing/activation.json"

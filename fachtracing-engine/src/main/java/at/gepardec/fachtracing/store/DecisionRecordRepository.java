@@ -32,6 +32,15 @@ public interface DecisionRecordRepository {
     /** Deletes records completed strictly before the retention boundary. */
     default long deleteCompletedBefore(Instant boundary) { return 0; }
 
+    /** Reports that a durable identity already belongs to different immutable record content. */
+    final class DecisionRecordConflictException extends RuntimeException {
+        /** Creates a collision error without including record data. */
+        public DecisionRecordConflictException(String identityKind) {
+            super(Objects.requireNonNull(identityKind, "identityKind")
+                    + " already belongs to a different decision record");
+        }
+    }
+
     /** Storage-neutral query over already-redacted indexed values. */
     record DecisionRecordQuery(
             String correlationKey,

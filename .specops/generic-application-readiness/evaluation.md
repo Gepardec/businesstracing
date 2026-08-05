@@ -17,6 +17,31 @@
 
 **Verdict:** PASS — 4 of 4 dimensions passed
 
+---
+
+## Spec Evaluation — Remediation Iteration 4
+
+### Iteration 4
+
+**Evaluated at:** 2026-08-05T07:31:02Z
+**Threshold:** 7/10
+**Context:** Direct adversarial review because `AGENTS.md` prohibits subagents.
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Criteria Testability | Iteration 4 gives binary checks for cross-collector identity, exact and conflicting duplicates, unknown counters, overload execution, lambda binding, mixed boundaries, five Mega graphs, and 600,000 decisions. | The late-commit contract needs a latch-based test so the test observes the commit after delivery reports unknown. | 9 | 7 | Pass |
+| Criteria Completeness | The requirements cover storage identity, false drop claims, detached-operation bounds, descriptors for every binding type, overloaded lambdas, and both directions of a mixed reactor. | A database constraint can collide on record ID or execution ID, so Task 23 must test both keys independently. | 9 | 7 | Pass |
+| Design Coherence | Decisions 16 through 19 map each finding to a small standard-library change and preserve legacy activation reading. | Activation V3 must keep V2 reading explicit in code and documentation; changing only the schema constant is insufficient. | 8 | 7 | Pass |
+| Task Coverage | Tasks 23 through 27 order identity, delivery, bytecode, compiler, and release work. Each task names focused tests and affected files. | Task 27 is an expensive final gate and must not hide a focused contract failure behind only the aggregate script result. | 9 | 7 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed
+
+**Non-blocking implementation controls:**
+
+- Use a latch-based late-commit test.
+- Test both execution-ID and record-ID conflicts.
+- Verify V2 input and V3 output in the activation codec.
+
 **Non-blocking implementation controls:**
 
 - Record the selected JDBC test/reference database and dependency audit before Task 9 installs it.

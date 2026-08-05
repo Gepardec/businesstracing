@@ -15,6 +15,7 @@ public final class RuntimeCollectorTest {
     private RuntimeCollectorTest() { }
 
     public static void main(String[] args) throws Exception {
+        createsRestartSafeExecutionIds();
         recordsOnlyValidExactEdges();
         queuesGenericFailedExecutions();
         failedChildKeepsParentDispatchState();
@@ -27,6 +28,41 @@ public final class RuntimeCollectorTest {
         matchesNestedDispatchExpectationsInStackOrder();
         isolatesThirtyTwoConcurrentInvocations();
         tracingFailuresDoNotEscape();
+    }
+
+    private static void createsRestartSafeExecutionIds() throws Exception {
+        RuntimeCollector first = collector();
+        RuntimeCollector second = collector();
+        first.begin("graph", 1);
+        first.complete("outcome", true);
+        second.begin("graph", 1);
+        second.complete("outcome", true);
+        String firstId = first.pollCompleted().orElseThrow().executionId();
+        String secondId = second.pollCompleted().orElseThrow().executionId();
+        assert !firstId.equals(secondId) : firstId;
+
+        RuntimeCollector concurrent = collector();
+        int invocations = 64;
+        var ready = new CountDownLatch(invocations);
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(invocations)) {
+            for (int index = 0; index < invocations; index++) {
+                executor.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    concurrent.begin("graph", 1);
+                    concurrent.complete("outcome", true);
+                    return null;
+                });
+            }
+            assert ready.await(10, TimeUnit.SECONDS);
+            start.countDown();
+            executor.shutdown();
+            assert executor.awaitTermination(10, TimeUnit.SECONDS);
+        }
+        var ids = new java.util.HashSet<String>();
+        while (concurrent.pollCompleted().map(execution -> ids.add(execution.executionId())).orElse(false)) { }
+        assert ids.size() == invocations : ids.size();
     }
 
     private static void recordsOnlyValidExactEdges() {
@@ -281,14 +317,17 @@ public final class RuntimeCollectorTest {
 
         int records = 0;
         var markers = new java.util.HashSet<String>();
+        var executionIds = new java.util.HashSet<String>();
         DecisionExecution execution;
         while ((execution = collector.pollCompleted().orElse(null)) != null) {
             records++;
+            executionIds.add(execution.executionId());
             assert execution.observations().size() == 2 : execution.observations();
             markers.add(execution.observations().getFirst().evidence().get("value").canonicalValue());
         }
         assert records == invocations : records;
         assert markers.size() == invocations : markers;
+        assert executionIds.size() == invocations : executionIds;
         assert collector.completedCount() == 0;
     }
 

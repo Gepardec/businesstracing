@@ -98,6 +98,17 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
 
     @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
         Objects.requireNonNull(envelope, "envelope");
+        try {
+            insertEnvelope(envelope);
+        } catch (JdbcRepositoryException failure) {
+            if (!failure.constraintViolation()) throw failure;
+            Optional<DecisionRecordEnvelope> existing = findByDurableIdentity(envelope);
+            if (existing.filter(envelope::equals).isPresent()) return;
+            throw new DecisionRecordConflictException("execution ID or record ID");
+        }
+    }
+
+    private void insertEnvelope(DecisionRecordEnvelope envelope) {
         transaction(connection -> {
             try (var statement = connection.prepareStatement("""
                     insert into fachtracing_decision_record
@@ -111,9 +122,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                 statement.setTimestamp(6, Timestamp.from(envelope.execution().completedAt()));
                 statement.setString(7, envelope.status()); statement.setString(8, DecisionRecordEnvelope.SCHEMA);
                 statement.setBytes(9, envelope.toJson());
-                try { statement.executeUpdate(); } catch (SQLException duplicate) {
-                    if (duplicateKey(duplicate)) return null; throw duplicate;
-                }
+                statement.executeUpdate();
             }
             try (var statement = connection.prepareStatement("""
                     insert into fachtracing_correlation
@@ -128,6 +137,22 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                 statement.executeBatch();
             }
             return null;
+        });
+    }
+
+    private Optional<DecisionRecordEnvelope> findByDurableIdentity(DecisionRecordEnvelope envelope) {
+        return transaction(connection -> {
+            try (var statement = connection.prepareStatement("""
+                    select payload from fachtracing_decision_record
+                    where execution_id = ? or record_id = ?
+                    """)) {
+                timeout(statement);
+                statement.setString(1, envelope.execution().executionId());
+                statement.setString(2, envelope.recordId());
+                try (ResultSet rows = statement.executeQuery()) {
+                    return rows.next() ? Optional.of(read(rows)) : Optional.empty();
+                }
+            }
         });
     }
 
@@ -188,20 +213,27 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
             try { T result = work.run(connection); connection.commit(); return result; }
             catch (Exception failure) { try { connection.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
                 if (failure instanceof SQLException sql) throw failure(sql); if (failure instanceof RuntimeException runtime) throw runtime;
-                throw new JdbcRepositoryException("JDBC operation failed", false, failure); }
+                throw new JdbcRepositoryException("JDBC operation failed", false, false, failure); }
             finally { connection.setAutoCommit(previous); }
         } catch (SQLException failure) { throw failure(failure); }
     }
     private static JdbcRepositoryException failure(SQLException failure) {
         String state = failure.getSQLState(); boolean retryable = state != null && (state.startsWith("08") || state.startsWith("40"));
-        return new JdbcRepositoryException("JDBC operation failed", retryable, failure);
+        return new JdbcRepositoryException("JDBC operation failed", retryable, duplicateKey(failure), failure);
     }
     private static boolean duplicateKey(SQLException failure) { return failure.getSQLState() != null && failure.getSQLState().startsWith("23"); }
     @FunctionalInterface private interface SqlWork<T> { T run(Connection connection) throws Exception; }
 
     public static final class JdbcRepositoryException extends RuntimeException {
         private final boolean retryable;
-        private JdbcRepositoryException(String message, boolean retryable, Throwable cause) { super(message, cause); this.retryable = retryable; }
+        private final boolean constraintViolation;
+        private JdbcRepositoryException(
+                String message, boolean retryable, boolean constraintViolation, Throwable cause) {
+            super(message, cause);
+            this.retryable = retryable;
+            this.constraintViolation = constraintViolation;
+        }
         public boolean retryable() { return retryable; }
+        private boolean constraintViolation() { return constraintViolation; }
     }
 }

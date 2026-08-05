@@ -9,6 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import javax.tools.ToolProvider;
 
 /** Executable dependency-free contract tests for the static analyzer. */
 public final class StaticDecisionAnalyzerTest {
@@ -27,6 +30,7 @@ public final class StaticDecisionAnalyzerTest {
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
+        supportsConnectedMixedModularAndNonModularProjects();
         rejectsInvalidJpmsContextBeforeGraphExtraction();
         rejectsIncompatibleOrUnownedJpmsSourcesBeforeExtraction();
         reportsTheSearchedBoundaryWhenImplementationsAreMissing();
@@ -106,6 +110,7 @@ public final class StaticDecisionAnalyzerTest {
         var result = analyze("eligibility/EligibilityPolicy.java");
         assert !result.manifest().branchTargets().isEmpty() : result.manifest();
         for (AnalysisManifest.BranchTarget target : result.manifest().branchTargets()) {
+            assert !target.descriptorHint().isBlank() : target;
             var trueEdge = result.graph().edges().stream()
                     .filter(edge -> edge.edgeId().equals(target.trueEdgeId())).findFirst().orElseThrow();
             var falseEdge = result.graph().edges().stream()
@@ -179,6 +184,10 @@ public final class StaticDecisionAnalyzerTest {
                 .filter(edge -> edge.outcome().startsWith("candidate "))
                 .count();
         assert alternatives == 2 : result.graph().edges();
+        assert result.manifest().dispatchTargets().size() == 2 : result.manifest();
+        result.manifest().dispatchTargets().forEach(target -> {
+            assert !target.descriptorHint().isBlank() : target;
+        });
         long implementationPredicates = result.graph().nodes().stream()
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
                 .count();
@@ -288,6 +297,103 @@ public final class StaticDecisionAnalyzerTest {
         } finally {
             if (secondRoot != null) deleteTree(secondRoot);
             if (firstRoot != null) deleteTree(firstRoot);
+        }
+    }
+
+    private static void supportsConnectedMixedModularAndNonModularProjects() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-mixed-jpms-");
+            Path libraryRoot = root.resolve("library");
+            Path consumerRoot = root.resolve("consumer");
+            Path library = libraryRoot.resolve("mixed/library/LibraryPolicy.java");
+            Path consumer = consumerRoot.resolve("mixed/consumer/ConsumerPolicy.java");
+            Path crossMode = consumerRoot.resolve("mixed/consumer/CrossModePolicy.java");
+            Files.createDirectories(library.getParent());
+            Files.createDirectories(consumer.getParent());
+            Files.writeString(library, """
+                    package mixed.library;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    public final class LibraryPolicy {
+                        @FachTracing("mixed library decision")
+                        public boolean decide(int age) { return age < 24; }
+                        public static boolean young(int age) { return age < 24; }
+                    }
+                    """);
+            Files.writeString(consumer, """
+                    package mixed.consumer;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    public final class ConsumerPolicy {
+                        @FachTracing("mixed module decision")
+                        public boolean decide(int amount) { return amount >= 100; }
+                    }
+                    """);
+            Files.writeString(crossMode, """
+                    package mixed.consumer;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import mixed.library.LibraryPolicy;
+                    public final class CrossModePolicy {
+                        @FachTracing("mixed unavailable source decision")
+                        public boolean decide(int age) { return LibraryPolicy.young(age); }
+                    }
+                    """);
+            Path binaryClasses = root.resolve("binary-classes");
+            Files.createDirectories(binaryClasses);
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-classpath", CLASSPATH.getFirst().toString(),
+                    "-d", binaryClasses.toString(), library.toString());
+            assert compilation == 0 : "could not compile the non-modular test library";
+            Path libraryJar = root.resolve("mixed.library.jar");
+            createJar(binaryClasses, libraryJar);
+            Path descriptor = consumerRoot.resolve("module-info.java");
+            Files.writeString(descriptor, """
+                    module mixed.consumer {
+                        requires at.gepardec.fachtracing.api;
+                        requires mixed.library;
+                    }
+                    """);
+            Path apiModule = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+            List<Path> mixedClasspath = List.of(apiModule, libraryJar);
+            var modularModel = new ApplicationSourceBoundary.CompilerModel(
+                    StandardCharsets.UTF_8, "21", List.of(), mixedClasspath);
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "library", List.of(library), List.of(library), CLASSPATH,
+                            ApplicationSourceBoundary.CompilerModel.java21(), List.of()),
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "consumer", List.of(consumer, crossMode), List.of(consumer, crossMode), mixedClasspath,
+                            modularModel, List.of("library"), java.util.Optional.of(descriptor))), List.of());
+
+            var results = new StaticDecisionAnalyzer().analyzeAll(boundary);
+            assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
+                    .equals(List.of("mixed library decision", "mixed module decision",
+                            "mixed unavailable source decision")) : results;
+            assert results.stream().filter(result -> !result.graph().decisionLabel()
+                            .equals("mixed unavailable source decision"))
+                    .allMatch(result -> result.graph().completeness()
+                            == BusinessDecisionGraph.Completeness.COMPLETE) : results;
+            var unavailable = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("mixed unavailable source decision")).findFirst().orElseThrow();
+            assert unavailable.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : unavailable;
+            assert unavailable.diagnostics().stream().anyMatch(diagnostic ->
+                    diagnostic.message().contains("unavailable")) : unavailable.diagnostics();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void createJar(Path classes, Path target) throws IOException {
+        try (var output = new JarOutputStream(Files.newOutputStream(target));
+                var paths = Files.walk(classes)) {
+            for (Path path : paths.filter(Files::isRegularFile).sorted().toList()) {
+                String name = classes.relativize(path).toString().replace(java.io.File.separatorChar, '/');
+                output.putNextEntry(new JarEntry(name));
+                Files.copy(path, output);
+                output.closeEntry();
+            }
         }
     }
 

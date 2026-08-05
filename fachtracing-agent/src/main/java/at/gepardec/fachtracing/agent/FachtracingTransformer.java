@@ -8,6 +8,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Handle;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.security.MessageDigest;
@@ -45,11 +46,13 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         if (expected == null || !expected.equals(sha256(classfileBuffer))) return null;
         try {
             byte[] transformed = classfileBuffer;
+            Map<MethodBinding, Set<MethodBinding>> lambdaTargets = lambdaTargets(classfileBuffer);
             for (AnalysisManifest manifest : manifests) {
                 if (!isSelectedClass(manifest, className)) continue;
                 ClassReader reader = new ClassReader(transformed);
                 ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                reader.accept(new ProbeClassVisitor(writer, className, manifest), ClassReader.SKIP_FRAMES);
+                reader.accept(new ProbeClassVisitor(writer, className, manifest, lambdaTargets),
+                        ClassReader.SKIP_FRAMES);
                 transformed = writer.toByteArray();
             }
             return transformed;
@@ -79,11 +82,17 @@ public final class FachtracingTransformer implements ClassFileTransformer {
     private final class ProbeClassVisitor extends ClassVisitor {
         private final String className;
         private final AnalysisManifest manifest;
+        private final Map<MethodBinding, Set<MethodBinding>> lambdaTargets;
 
-        private ProbeClassVisitor(ClassVisitor delegate, String className, AnalysisManifest manifest) {
+        private ProbeClassVisitor(
+                ClassVisitor delegate,
+                String className,
+                AnalysisManifest manifest,
+                Map<MethodBinding, Set<MethodBinding>> lambdaTargets) {
             super(Opcodes.ASM9, delegate);
             this.className = className;
             this.manifest = manifest;
+            this.lambdaTargets = lambdaTargets;
         }
 
         @Override
@@ -92,25 +101,35 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
             List<AnalysisManifest.ProbeSite> sites = manifest.probeSites().stream()
                     .filter(site -> ownerMatches(className, site.ownerHint()))
-                    .filter(site -> memberMatches(name, site.memberHint()))
+                    .filter(site -> memberMatches(name, descriptor, site.memberHint(), site.descriptorHint()))
                     .toList();
             List<AnalysisManifest.DispatchTarget> targets = manifest.dispatchTargets().stream()
                     .filter(target -> ownerMatches(className, target.ownerHint()))
-                    .filter(target -> target.memberHint().equals(name))
+                    .filter(target -> memberMatches(
+                            name, descriptor, target.memberHint(), target.descriptorHint()))
                     .toList();
             List<AnalysisManifest.BranchTarget> branches = manifest.branchTargets().stream()
                     .filter(target -> ownerMatches(className, target.ownerHint()))
-                    .filter(target -> memberMatches(name, target.memberHint()))
+                    .filter(target -> memberMatches(
+                            name, descriptor, target.memberHint(), target.descriptorHint()))
                     .toList();
             return sites.isEmpty() && targets.isEmpty() && branches.isEmpty() ? delegate
                     : new ProbeMethodVisitor(delegate, access, descriptor, manifest, sites, targets, branches);
         }
 
-        private boolean memberMatches(String bytecodeName, String memberHint) {
-            if (memberHint.equals(bytecodeName)) return true;
+        private boolean memberMatches(
+                String bytecodeName,
+                String bytecodeDescriptor,
+                String memberHint,
+                String descriptorHint) {
+            if (memberHint.equals(bytecodeName)) {
+                return descriptorHint.isBlank() || descriptorHint.equals(bytecodeDescriptor);
+            }
             if (!memberHint.endsWith("#lambda")) return false;
             String sourceMethod = memberHint.substring(0, memberHint.length() - "#lambda".length());
-            return bytecodeName.startsWith("lambda$" + sourceMethod + "$");
+            if (descriptorHint.isBlank()) return bytecodeName.startsWith("lambda$" + sourceMethod + "$");
+            return lambdaTargets.getOrDefault(new MethodBinding(sourceMethod, descriptorHint), Set.of())
+                    .contains(new MethodBinding(bytecodeName, bytecodeDescriptor));
         }
     }
 
@@ -398,6 +417,32 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         return sites.stream().filter(site -> site.kind() == kind).findFirst().orElse(null);
     }
 
+    private static Map<MethodBinding, Set<MethodBinding>> lambdaTargets(byte[] classfileBuffer) {
+        var targets = new java.util.LinkedHashMap<MethodBinding, Set<MethodBinding>>();
+        new ClassReader(classfileBuffer).accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override public MethodVisitor visitMethod(
+                    int access, String name, String descriptor, String signature, String[] exceptions) {
+                MethodBinding source = new MethodBinding(name, descriptor);
+                return new MethodVisitor(Opcodes.ASM9) {
+                    @Override public void visitInvokeDynamicInsn(
+                            String dynamicName,
+                            String dynamicDescriptor,
+                            Handle bootstrapMethodHandle,
+                            Object... bootstrapMethodArguments) {
+                        if (!bootstrapMethodHandle.getOwner().equals("java/lang/invoke/LambdaMetafactory")) return;
+                        for (Object argument : bootstrapMethodArguments) {
+                            if (argument instanceof Handle handle && handle.getName().startsWith("lambda$")) {
+                                targets.computeIfAbsent(source, ignored -> new java.util.LinkedHashSet<>())
+                                        .add(new MethodBinding(handle.getName(), handle.getDesc()));
+                            }
+                        }
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return targets;
+    }
+
     private static boolean isReturn(int opcode) {
         return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
     }
@@ -415,7 +460,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         for (AnalysisManifest manifest : manifests) {
             var keys = new java.util.LinkedHashSet<String>();
             manifest.probeSites().stream().filter(site -> site.kind() == AnalysisManifest.ProbeKind.ENTRY)
-                    .forEach(site -> keys.add(site.ownerHint() + '#' + site.memberHint()));
+                    .forEach(site -> keys.add(site.ownerHint() + '#' + site.memberHint()
+                            + site.descriptorHint()));
             for (String key : keys) {
                 String previous = owners.putIfAbsent(key, manifest.graphId());
                 if (previous != null && !previous.equals(manifest.graphId())) {
@@ -424,4 +470,6 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             }
         }
     }
+
+    private record MethodBinding(String name, String descriptor) { }
 }

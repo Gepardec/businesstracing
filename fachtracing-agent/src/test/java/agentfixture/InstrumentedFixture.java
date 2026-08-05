@@ -61,6 +61,26 @@ public final class InstrumentedFixture {
         return false;
     }
 
+    @FachTracing("overload integer")
+    public boolean overloaded(int age) {
+        return age < 24;
+    }
+
+    @FachTracing("overload text")
+    public boolean overloaded(String city) {
+        return city.equals("Vienna");
+    }
+
+    @FachTracing("overload lambda integer")
+    public boolean lambdaOverload(int age) {
+        return java.util.stream.Stream.of(age).anyMatch(value -> value < 24);
+    }
+
+    @FachTracing("overload lambda text")
+    public boolean lambdaOverload(String city) {
+        return java.util.stream.Stream.of(city).anyMatch(value -> value.equals("Vienna"));
+    }
+
     public int secondOperandEvaluations() {
         return secondOperandEvaluations;
     }

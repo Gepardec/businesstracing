@@ -19,10 +19,33 @@ public final class DecisionRecordProtocolTest {
     public static void main(String[] args) throws Exception {
         roundTripsDeterministicallyAndIgnoresUnknownFields();
         queriesOnlyRedactedCorrelationValuesAndRetainsBoundaries();
+        rejectsInMemoryExecutionAndRecordIdCollisions();
         retriesOutsideTheApplicationThreadWithCounters();
         timedOutRetriesAreAccountedAsDropped();
+        timedOutUncooperativeSaveIsUnknownAndStopsDelivery();
         shutdownAccountsForInterruptedInFlightRetry();
         shutdownIsBoundedWhenRepositoryIgnoresInterruption();
+    }
+
+    private static void rejectsInMemoryExecutionAndRecordIdCollisions() {
+        var repository = new InMemoryDecisionRecordRepository();
+        Instant completed = Instant.parse("2026-01-01T00:00:01Z");
+        var first = envelope("record-1", "execution-1", completed);
+        repository.saveEnvelope(first);
+        repository.saveEnvelope(first);
+        assertConflict(() -> repository.saveEnvelope(envelope("record-2", "execution-1", completed)));
+        assertConflict(() -> repository.saveEnvelope(envelope("record-1", "execution-2", completed)));
+        assert repository.findByExecutionId("execution-1").orElseThrow().equals(first);
+        assert repository.findByExecutionId("execution-2").isEmpty();
+    }
+
+    private static void assertConflict(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("conflicting record was accepted");
+        } catch (DecisionRecordRepository.DecisionRecordConflictException expected) {
+            assert expected.getMessage().contains("already belongs") : expected.getMessage();
+        }
     }
 
     private static void roundTripsDeterministicallyAndIgnoresUnknownFields() {
@@ -115,6 +138,9 @@ public final class DecisionRecordProtocolTest {
                 DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN, 100, Duration.ofHours(1));
         assert delivery.offer(envelope("shutdown-record", "shutdown-execution", Instant.now()));
         assert attempted.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        long retryDeadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (delivery.counters().retried() == 0 && System.nanoTime() < retryDeadline) Thread.sleep(1);
+        assert delivery.counters().retried() == 1 : delivery.counters();
         delivery.close();
         var counters = delivery.counters();
         assert !delivery.workerAlive();
@@ -148,7 +174,47 @@ public final class DecisionRecordProtocolTest {
         var counters = delivery.counters();
         assert elapsed < Duration.ofSeconds(1).toNanos() : Duration.ofNanos(elapsed);
         assert !delivery.workerAlive();
-        assert counters.accepted() == 1 && counters.dropped() == 1 : counters;
+        assert counters.accepted() == 1 && counters.dropped() == 0 && counters.unknown() == 1 : counters;
         assert counters.unresolvedAccepted() == 0 : counters;
+    }
+
+    private static void timedOutUncooperativeSaveIsUnknownAndStopsDelivery() throws Exception {
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var committed = new AtomicInteger();
+        var repository = new DecisionRecordRepository() {
+            @Override public DecisionRecordId save(DecisionRecord record) { return record.id(); }
+            @Override public Optional<DecisionRecord> findById(DecisionRecordId id) { return Optional.empty(); }
+            @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
+                entered.countDown();
+                while (release.getCount() > 0) {
+                    try { release.await(); }
+                    catch (InterruptedException ignored) { /* Deliberately emulate an uncooperative store. */ }
+                }
+                committed.incrementAndGet();
+            }
+        };
+        var delivery = new DecisionRecordDelivery(repository, 2,
+                DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN, 0, Duration.ZERO,
+                Duration.ofMillis(50), Duration.ofMillis(500));
+        assert delivery.offer(envelope("unknown-record", "unknown-execution", Instant.now()));
+        assert entered.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        assert delivery.offer(envelope("queued-record", "queued-execution", Instant.now()));
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (delivery.workerAlive() && System.nanoTime() < deadline) Thread.sleep(1);
+        var counters = delivery.counters();
+        assert !delivery.workerAlive();
+        assert counters.accepted() == 2 && counters.saved() == 0 : counters;
+        assert counters.unknown() == 1 && counters.dropped() == 1 : counters;
+        assert counters.unresolvedAccepted() == 0 : counters;
+        assert !delivery.offer(envelope("later-record", "later-execution", Instant.now()));
+
+        release.countDown();
+        deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (committed.get() == 0 && System.nanoTime() < deadline) Thread.sleep(1);
+        assert committed.get() == 1;
+        assert delivery.counters().unknown() == 1 : delivery.counters();
+        assert delivery.counters().saved() == 0 : delivery.counters();
+        delivery.close();
     }
 }

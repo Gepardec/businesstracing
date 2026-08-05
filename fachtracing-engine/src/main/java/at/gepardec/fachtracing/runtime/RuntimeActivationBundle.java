@@ -17,7 +17,8 @@ public record RuntimeActivationBundle(
         String javaAgentOption,
         Map<String, String> classFingerprints,
         List<DecisionDefinition> decisions) {
-    public static final String SCHEMA = "fachtracing-activation/v2";
+    public static final String SCHEMA = "fachtracing-activation/v3";
+    private static final String LEGACY_SCHEMA = "fachtracing-activation/v2";
 
     /** Creates a validated immutable activation bundle. */
     public RuntimeActivationBundle {
@@ -53,11 +54,14 @@ public record RuntimeActivationBundle(
     public static RuntimeActivationBundle fromJson(byte[] json) {
         Map<String, Object> root = object(new Parser(new String(
                 Objects.requireNonNull(json, "json"), StandardCharsets.UTF_8)).parse());
-        if (!SCHEMA.equals(string(root, "schema"))) {
+        String schema = string(root, "schema");
+        if (!SCHEMA.equals(schema) && !LEGACY_SCHEMA.equals(schema)) {
             throw new IllegalArgumentException("unsupported activation bundle schema");
         }
         var decisions = new ArrayList<DecisionDefinition>();
-        for (Object value : array(root, "decisions")) decisions.add(readDecision(object(value)));
+        for (Object value : array(root, "decisions")) {
+            decisions.add(readDecision(object(value), LEGACY_SCHEMA.equals(schema)));
+        }
         return new RuntimeActivationBundle(
                 string(root, "boundaryFingerprint"), string(root, "javaAgentOption"),
                 stringMap(object(root.get("classFingerprints"))), decisions);
@@ -135,6 +139,7 @@ public record RuntimeActivationBundle(
             field(output, "kind", site.kind().name()).append(',');
             field(output, "ownerHint", site.ownerHint()).append(',');
             field(output, "memberHint", site.memberHint()).append(',');
+            field(output, "descriptorHint", site.descriptorHint()).append(',');
             number(output, "sourceLine", site.sourceLine()); output.append('}');
         }
         output.append("],\"dispatchTargets\":[");
@@ -144,7 +149,8 @@ public record RuntimeActivationBundle(
             output.append('{'); field(output, "dispatchNodeId", target.dispatchNodeId()).append(',');
             field(output, "edgeId", target.edgeId()).append(',');
             field(output, "ownerHint", target.ownerHint()).append(',');
-            field(output, "memberHint", target.memberHint()); output.append('}');
+            field(output, "memberHint", target.memberHint()).append(',');
+            field(output, "descriptorHint", target.descriptorHint()); output.append('}');
         }
         output.append("],\"branchTargets\":[");
         for (int index = 0; index < manifest.branchTargets().size(); index++) {
@@ -155,6 +161,7 @@ public record RuntimeActivationBundle(
             field(output, "falseEdgeId", target.falseEdgeId()).append(',');
             field(output, "ownerHint", target.ownerHint()).append(',');
             field(output, "memberHint", target.memberHint()).append(',');
+            field(output, "descriptorHint", target.descriptorHint()).append(',');
             number(output, "sourceLine", target.sourceLine()).append(',');
             number(output, "predicateIndex", target.predicateIndex()).append(',');
             field(output, "completion", target.completion().name()); output.append('}');
@@ -163,9 +170,9 @@ public record RuntimeActivationBundle(
         output.append('}');
     }
 
-    private static DecisionDefinition readDecision(Map<String, Object> value) {
+    private static DecisionDefinition readDecision(Map<String, Object> value, boolean legacy) {
         return new DecisionDefinition(readGraph(object(value.get("graph"))),
-                readManifest(object(value.get("manifest"))));
+                readManifest(object(value.get("manifest")), legacy));
     }
 
     private static BusinessDecisionGraph readGraph(Map<String, Object> value) {
@@ -193,7 +200,7 @@ public record RuntimeActivationBundle(
                 BusinessDecisionGraph.Completeness.valueOf(string(value, "completeness")), gaps);
     }
 
-    private static AnalysisManifest readManifest(Map<String, Object> value) {
+    private static AnalysisManifest readManifest(Map<String, Object> value, boolean legacy) {
         var mappings = new LinkedHashMap<String, AnalysisManifest.SourceMapping>();
         for (Object raw : array(value, "sourceMappings")) {
             Map<String, Object> item = object(raw); String nodeId = string(item, "nodeId");
@@ -205,20 +212,23 @@ public record RuntimeActivationBundle(
             Map<String, Object> item = object(raw);
             sites.add(new AnalysisManifest.ProbeSite(string(item, "nodeId"),
                     AnalysisManifest.ProbeKind.valueOf(string(item, "kind")),
-                    string(item, "ownerHint"), string(item, "memberHint"), number(item, "sourceLine")));
+                    string(item, "ownerHint"), string(item, "memberHint"),
+                    descriptor(item, legacy), number(item, "sourceLine")));
         }
         var dispatches = new ArrayList<AnalysisManifest.DispatchTarget>();
         for (Object raw : array(value, "dispatchTargets")) {
             Map<String, Object> item = object(raw);
             dispatches.add(new AnalysisManifest.DispatchTarget(string(item, "dispatchNodeId"),
-                    string(item, "edgeId"), string(item, "ownerHint"), string(item, "memberHint")));
+                    string(item, "edgeId"), string(item, "ownerHint"), string(item, "memberHint"),
+                    descriptor(item, legacy)));
         }
         var branches = new ArrayList<AnalysisManifest.BranchTarget>();
         for (Object raw : array(value, "branchTargets")) {
             Map<String, Object> item = object(raw);
             branches.add(new AnalysisManifest.BranchTarget(string(item, "nodeId"),
                     string(item, "trueEdgeId"), string(item, "falseEdgeId"),
-                    string(item, "ownerHint"), string(item, "memberHint"), number(item, "sourceLine"),
+                    string(item, "ownerHint"), string(item, "memberHint"), descriptor(item, legacy),
+                    number(item, "sourceLine"),
                     Math.toIntExact(number(item, "predicateIndex")),
                     AnalysisManifest.BranchCompletion.valueOf(string(item, "completion"))));
         }
@@ -266,6 +276,10 @@ public record RuntimeActivationBundle(
         Object raw = value.get(key);
         if (!(raw instanceof String text)) throw new IllegalArgumentException("expected JSON string: " + key);
         return text;
+    }
+    private static String descriptor(Map<String, Object> value, boolean legacy) {
+        if (legacy && !value.containsKey("descriptorHint")) return "";
+        return string(value, "descriptorHint");
     }
     private static long number(Map<String, Object> value, String key) {
         Object raw = value.get(key);

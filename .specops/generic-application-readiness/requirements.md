@@ -219,7 +219,7 @@ hints. `Gepardec/mega-backend` remains one black-box conformance corpus.
   fail-open, block, or reject-new-trace policy and SHALL publish counters; the default SHALL preserve
   application behavior and SHALL not block the decision thread.
 - IF the repository is unavailable THEN THE SYSTEM SHALL retry outside the application thread with
-  bounded backoff and SHALL expose accepted, saved, retried, rejected, and dropped counters.
+  bounded backoff and SHALL expose accepted, saved, retried, rejected, dropped, and unknown counters.
 - THE SYSTEM SHALL define retention, deletion, schema migration, transaction, and sensitive-data
   rules without coupling the core graph model to one database product.
 
@@ -271,7 +271,8 @@ hints. `Gepardec/mega-backend` remains one black-box conformance corpus.
 - WHILE concurrent runtime mismatches exceed diagnostic capacity THE SYSTEM SHALL keep the retained
   diagnostic-key count at or below the configured capacity.
 - WHEN delivery shutdown returns THE SYSTEM SHALL have terminated its worker and SHALL account for
-  each accepted record as saved or dropped, including an interrupted or timed-out in-flight retry.
+  each accepted record as saved, dropped, or unknown. An interrupted or timed-out in-flight save
+  SHALL be unknown unless storage cancellation proves that it cannot commit.
 
 - **Performance:** Static aggregate analysis SHALL parse each effective project source model no more
   than once per reactor run. Runtime tracing and asynchronous delivery SHALL stay within 10% p95
@@ -360,3 +361,31 @@ hints. `Gepardec/mega-backend` remains one black-box conformance corpus.
   counted as dropped. WHERE the JDBC adapter is used THE SYSTEM SHALL configure statement timeouts.
 - THE SYSTEM SHALL give try-with-resources, pattern matching, sealed types, nested classes, and
   method references separate capability entries and separate executable construct contracts.
+
+## PR 5 Remediation Requirements — Iteration 4
+
+- WHEN two application processes or two collector instances create executions THE SYSTEM SHALL use
+  execution IDs with a process-unique component so that their first and later IDs cannot collide.
+- WHEN a repository receives the same execution ID and the same immutable envelope more than once
+  THE SYSTEM SHALL treat the save as idempotent. IF the execution ID or record ID already belongs to
+  different content THEN THE SYSTEM SHALL reject the collision and SHALL NOT report the new record
+  as saved.
+- WHEN a repository operation times out or shutdown interrupts it before the storage outcome is
+  known THE SYSTEM SHALL count the accepted record as `unknown`, not `dropped`. THE SYSTEM SHALL stop
+  further delivery from that worker so that uncooperative detached operations stay bounded to one.
+- THE SYSTEM SHALL maintain the accounting invariant `accepted = saved + dropped + unknown` after
+  the delivery worker stops. Admission drops and rejected offers SHALL remain outside `accepted`.
+- WHEN static analysis creates a probe, dispatch, or branch binding for a Java method THE SYSTEM
+  SHALL include the JVM method descriptor. WHEN annotated overloads share one owner and method name
+  THE AGENT SHALL instrument each overload only for its own graph.
+- WHEN a lambda belongs to an overloaded source method THE AGENT SHALL bind its generated method
+  through the enclosing source name and descriptor plus the class-file lambda target, not by source
+  name alone.
+- WHEN a non-modular graph entry has a modular reverse dependent THE SYSTEM SHALL analyze the entry
+  in a flat compiler context and SHALL NOT require the library to have `module-info.java`.
+- WHEN a modular graph entry has non-modular projects in its connected reactor THE SYSTEM SHALL put
+  only named source projects in the JPMS source context. Unavailable non-modular source logic SHALL
+  remain an explicit coverage gap instead of causing a false module-descriptor error.
+- WHEN iteration 4 completes THE SYSTEM SHALL pass focused regression contracts, the full generic
+  verifier, the external release fixture, five complete pinned Mega graphs, and the ten-minute
+  1,000-RPS release gate without application-specific extraction rules.

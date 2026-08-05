@@ -658,3 +658,194 @@ Run one clean, reproducible release gate that proves every requirement and preve
 - In Progress: 0
 - Blocked: 0
 - Pending: 0
+
+## PR 5 Remediation Tasks — Iteration 4
+
+### Task 23: Make execution IDs and idempotency collision-safe
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 22
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Add a restart-safe execution namespace and reject duplicate storage keys that contain different
+decision records.
+
+**Acceptance Criteria:**
+
+- [x] Two new collectors generate different first execution IDs.
+- [x] One collector keeps unique ordered IDs under concurrent load.
+- [x] Exact envelope retries remain idempotent in memory and JDBC.
+- [x] A different envelope with a reused execution ID or record ID fails and keeps the first record.
+
+**Files to Modify:**
+
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/runtime/RuntimeCollector.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/store/DecisionRecordRepository.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/store/InMemoryDecisionRecordRepository.java`
+- `fachtracing-storage-jdbc/src/main/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepository.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/runtime/RuntimeCollectorTest.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/store/DecisionRecordProtocolTest.java`
+- `fachtracing-storage-jdbc/src/test/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepositoryTest.java`
+
+**Tests Required:**
+
+- [x] Runtime identity contract.
+- [x] In-memory and H2 duplicate-collision contracts.
+
+---
+
+### Task 24: Make timed-out delivery outcomes honest and bounded
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 23
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Record an unknown storage outcome when an operation can finish after its wait times out. Stop the
+delivery circuit after this state so that only one uncooperative operation can remain detached.
+
+**Acceptance Criteria:**
+
+- [x] A timed-out uncooperative save increments `unknown` and does not increment `dropped`.
+- [x] The delivery worker stops, rejects later offers, and leaves no unresolved accepted count.
+- [x] A later commit does not change the honest unknown counter.
+- [x] Queued records that never started are counted as dropped.
+
+**Files to Modify:**
+
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/runtime/DecisionRecordDelivery.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/store/DecisionRecordProtocolTest.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/performance/FachtracingLoadTest.java`
+- `docs/decision-record-protocol.md`
+- `docs/jdbc-storage.md`
+
+**Tests Required:**
+
+- [x] Timeout, shutdown, late-commit, queue-drain, and accounting contracts.
+
+---
+
+### Task 25: Bind overloaded methods by JVM descriptor
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Task 24
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Carry JVM descriptors from attributed source into activation data and use them for agent method and
+lambda binding.
+
+**Acceptance Criteria:**
+
+- [x] Analyzer manifests contain descriptors for normal, dispatch, branch, and lambda bindings.
+- [x] Activation V3 round-trips descriptors and reads legacy V2 bundles.
+- [x] Two annotated overloads instrument and execute as two independent graphs.
+- [x] Lambda targets from overloaded methods do not cross-bind.
+
+**Files to Modify:**
+
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisManifest.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DecisionGraphBuilder.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/runtime/RuntimeActivationBundle.java`
+- `fachtracing-agent/src/main/java/at/gepardec/fachtracing/agent/FachtracingTransformer.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java`
+- `fachtracing-agent/src/test/java/at/gepardec/fachtracing/agent/FachtracingTransformerTest.java`
+- `fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java`
+- `docs/runtime-integration.md`
+
+**Tests Required:**
+
+- [x] Descriptor extraction, activation compatibility, overload, and overloaded-lambda contracts.
+
+---
+
+### Task 26: Support mixed modular and non-modular reactors
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 25
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Select JPMS mode from the graph-entry project and partition mixed connected sources without a false
+module-descriptor requirement.
+
+**Acceptance Criteria:**
+
+- [x] A non-modular annotated library stays complete when a modular project depends on it.
+- [x] A modular entry does not require unrelated connected non-modular projects to define modules.
+- [x] Existing all-modular and all-flat compiler contracts remain unchanged.
+- [x] Unavailable cross-mode source logic produces a coverage gap, not a false compiler claim.
+
+**Files to Modify:**
+
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java`
+- `docs/supported-java-constructs.md`
+
+**Tests Required:**
+
+- [x] Mixed-boundary, all-modular, and all-flat compiler contracts.
+
+---
+
+### Task 27: Rerun all iteration 4 release evidence
+
+**Status:** In Progress
+**Estimated Effort:** L
+**Dependencies:** Tasks 23, 24, 25, 26
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Run the full generic, external, Mega, and ten-minute release gates. Update the specification,
+decision journal, documentation, and evidence only after all gates pass.
+
+**Acceptance Criteria:**
+
+- [ ] `./scripts/verify.sh` passes.
+- [ ] External release integration invokes and stores an instrumented annotated overload-safe method.
+- [ ] Pinned Mega conformance returns five complete graphs with no production Mega hints.
+- [ ] The 600,000-decision gate passes at 1,000 RPS with less than 10% p95 overhead and no unresolved accepted records.
+- [ ] Repository integrity, documentation, memory, index, initiative, and clean-worktree checks pass.
+
+**Files to Modify:**
+
+- `.specops/generic-application-readiness/*`
+- `.specops/index.json`
+- `.specops/initiatives/generic-java-fachtracing.json`
+- `.specops/initiatives/generic-java-fachtracing-log.md`
+- `.specops/memory/context.md`
+- `.specops/memory/decisions.json`
+- `README.md`
+- `docs/*.md`
+
+**Tests Required:**
+
+- [ ] Focused contract suites.
+- [ ] Full generic verifier.
+- [ ] External release fixture.
+- [ ] Mega conformance.
+- [ ] Ten-minute persistence-enabled load gate.
+
+## Iteration 4 Progress Tracking
+
+- Total Tasks: 27
+- Completed: 26
+- In Progress: 1
+- Blocked: 0
+- Pending: 0

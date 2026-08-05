@@ -45,8 +45,10 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.util.Types;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -95,8 +97,12 @@ public final class StaticDecisionAnalyzer {
         for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
             if (project.entrySourceFiles().isEmpty()) continue;
             List<ApplicationSourceBoundary.ProjectSources> closure = projectClosure(boundary, project);
+            boolean modular = project.moduleDescriptor().isPresent();
+            List<ApplicationSourceBoundary.ProjectSources> analysisClosure = modular
+                    ? closure.stream().filter(item -> item.moduleDescriptor().isPresent()).toList()
+                    : closure;
             List<Path> sources = java.util.stream.Stream.concat(
-                            closure.stream().flatMap(item -> item.resolutionSourceFiles().stream()),
+                            analysisClosure.stream().flatMap(item -> item.resolutionSourceFiles().stream()),
                             boundary.externalResolutionSources().stream()
                                     .map(ApplicationSourceBoundary.ResolutionSource::path))
                     .distinct().sorted(Comparator.comparing(Path::toString)).toList();
@@ -105,8 +111,7 @@ public final class StaticDecisionAnalyzer {
                     .sorted(Comparator.comparing(Path::toString)).toList();
             var request = new AnalysisRequest(
                     sources, classpath, project.compilerModel().charset(), project.entrySourceFiles());
-            boolean modular = closure.stream().anyMatch(item -> item.moduleDescriptor().isPresent());
-            if (modular) results.addAll(analyzeModular(request, closure, boundary));
+            if (modular) results.addAll(analyzeModular(request, analysisClosure, boundary));
             else results.addAll(analyzeAll(request, project.compilerModel()));
         }
         return results.stream()
@@ -290,7 +295,8 @@ public final class StaticDecisionAnalyzer {
                 String graphId = hash("graph", root.unit().getSourceFile().toUri(), identity);
                 var builder = new DecisionGraphBuilder(graphId, label);
                 var diagnostics = new ArrayList<AnalysisManifest.AnalysisDiagnostic>();
-                var extractor = new Extractor(trees, task.getTypes(), index, builder, diagnostics);
+                var extractor = new Extractor(
+                        trees, task.getTypes(), task.getElements(), index, builder, diagnostics);
                 String entry = extractor.addEntry(root);
                 extractor.extract(root, entry, true, new HashSet<>());
                 var built = builder.build(entry, sourceFingerprints, diagnostics);
@@ -357,6 +363,7 @@ public final class StaticDecisionAnalyzer {
     private static final class Extractor {
         private final Trees trees;
         private final Types types;
+        private final Elements elements;
         private final SourceIndex index;
         private final DecisionGraphBuilder builder;
         private final List<AnalysisManifest.AnalysisDiagnostic> diagnostics;
@@ -366,11 +373,13 @@ public final class StaticDecisionAnalyzer {
         private Extractor(
                 Trees trees,
                 Types types,
+                Elements elements,
                 SourceIndex index,
                 DecisionGraphBuilder builder,
                 List<AnalysisManifest.AnalysisDiagnostic> diagnostics) {
             this.trees = trees;
             this.types = types;
+            this.elements = elements;
             this.index = index;
             this.builder = builder;
             this.diagnostics = diagnostics;
@@ -379,7 +388,8 @@ public final class StaticDecisionAnalyzer {
         private String addEntry(MethodLocation method) {
             return builder.addNode(BusinessDecisionGraph.NodeKind.ENTRY, "Start", Map.of(),
                     mapping(method, method.method()), AnalysisManifest.ProbeKind.ENTRY,
-                    ownerHint(method.path()), method.method().getName().toString());
+                    ownerHint(method.path()), method.method().getName().toString(),
+                    methodDescriptor(method));
         }
 
         private String stop(MethodLocation location, Tree terminal) {
@@ -545,7 +555,8 @@ public final class StaticDecisionAnalyzer {
                                 MethodLocation implementationMethod = implementationOf(executable, implementation);
                                 if (implementationMethod != null) {
                                     builder.addDispatchTarget(dispatch, candidateEdge, implementation.toString(),
-                                            implementationMethod.method().getName().toString());
+                                            implementationMethod.method().getName().toString(),
+                                            methodDescriptor(implementationMethod));
                                     pendingResultTails.addAll(extract(
                                             implementationMethod, alternative, false, activeMethods).exits().stream()
                                             .map(Tail::nodeId).toList());
@@ -675,7 +686,8 @@ public final class StaticDecisionAnalyzer {
                         Tree tree,
                         AnalysisManifest.ProbeKind probe) {
                     return builder.addNode(kind, label, Map.of(), mapping(location, tree), probe,
-                            ownerHint(location.path()), location.method().getName().toString());
+                            ownerHint(location.path()), location.method().getName().toString(),
+                            methodDescriptor(location));
                 }
 
                 private void connect(String from, String to, String outcome) {
@@ -876,7 +888,8 @@ public final class StaticDecisionAnalyzer {
                             continue;
                         }
                         builder.addDispatchTarget(dispatch, candidateEdge, implementation.toString(),
-                                implementationMethod.method().getName().toString());
+                                implementationMethod.method().getName().toString(),
+                                methodDescriptor(implementationMethod));
                         Extraction linked = extract(implementationMethod, alternative, false, activeMethods);
                         resultTails.addAll(linked.exits());
                     }
@@ -963,7 +976,8 @@ public final class StaticDecisionAnalyzer {
                 }
                 String id = stop(location, node);
                 builder.addProbe(id, AnalysisManifest.ProbeKind.OUTCOME,
-                        ownerHint(location.path()), runtimeMemberHint(node), mapping(location, node));
+                        ownerHint(location.path()), runtimeMemberHint(node), methodDescriptor(location),
+                        mapping(location, node));
                 String returned = "returns " + (node.getExpression() == null
                         ? "no value"
                         : (isPredicateExpression(node.getExpression()) ? "whether " : "")
@@ -1063,7 +1077,7 @@ public final class StaticDecisionAnalyzer {
                     Tree tree,
                     AnalysisManifest.ProbeKind probe) {
                 return builder.addNode(kind, label, Map.of(), mapping(location, tree), probe,
-                        ownerHint(location.path()), runtimeMemberHint(tree));
+                        ownerHint(location.path()), runtimeMemberHint(tree), methodDescriptor(location));
             }
 
             private String addPredicate(Tree condition) {
@@ -1072,7 +1086,8 @@ public final class StaticDecisionAnalyzer {
                         expression(condition), condition, AnalysisManifest.ProbeKind.PREDICATE);
                 for (int index = 1; index < atomicPredicates.size(); index++) {
                     builder.addProbe(id, AnalysisManifest.ProbeKind.PREDICATE,
-                            ownerHint(location.path()), runtimeMemberHint(condition));
+                            ownerHint(location.path()), runtimeMemberHint(condition), methodDescriptor(location),
+                            mapping(location, condition));
                 }
                 builder.setBranchCompletions(id, exactBranchCompletions(condition));
                 return id;
@@ -1243,6 +1258,41 @@ public final class StaticDecisionAnalyzer {
                 if (returned != null) return returned;
             }
             return null;
+        }
+
+        private String methodDescriptor(MethodLocation location) {
+            Element element = trees.getElement(location.path());
+            if (!(element instanceof ExecutableElement executable)) {
+                throw new IllegalArgumentException("attributed method is unavailable for runtime binding");
+            }
+            var descriptor = new StringBuilder("(");
+            executable.getParameters().forEach(parameter -> descriptor.append(typeDescriptor(parameter.asType())));
+            return descriptor.append(')').append(typeDescriptor(executable.getReturnType())).toString();
+        }
+
+        private String typeDescriptor(TypeMirror type) {
+            TypeMirror erased = types.erasure(type);
+            return switch (erased.getKind()) {
+                case BOOLEAN -> "Z";
+                case BYTE -> "B";
+                case SHORT -> "S";
+                case INT -> "I";
+                case LONG -> "J";
+                case CHAR -> "C";
+                case FLOAT -> "F";
+                case DOUBLE -> "D";
+                case VOID -> "V";
+                case ARRAY -> "[" + typeDescriptor(((ArrayType) erased).getComponentType());
+                case DECLARED, ERROR -> {
+                    Element element = types.asElement(erased);
+                    if (!(element instanceof TypeElement declared)) {
+                        throw new IllegalArgumentException("declared runtime type is unavailable: " + erased);
+                    }
+                    yield "L" + elements.getBinaryName(declared).toString().replace('.', '/') + ";";
+                }
+                default -> throw new IllegalArgumentException(
+                        "unsupported runtime descriptor type " + erased.getKind() + ": " + erased);
+            };
         }
 
         private String ownerHint(TreePath methodPath) {

@@ -161,16 +161,56 @@ sources before extraction. Keep the flat task only for non-modular boundaries.
 
 ### Decision 14: Isolate repository calls from bounded delivery shutdown
 
-**Decision:** Run one repository call in a cancellable daemon task. The delivery worker waits only
-for a configured operation bound. Shutdown interrupts that wait, accounts for the accepted record,
-and joins the delivery worker only to a configured deadline. JDBC statements also receive a query
-timeout. A repository call that ignores cancellation cannot keep the delivery worker active.
+**Decision:** Run one repository call in an isolated daemon task. The delivery worker waits only for
+a configured operation bound. Shutdown interrupts that wait, accounts for the accepted record, and
+joins the delivery worker only to a configured deadline. JDBC statements also receive a query
+timeout. A repository call that ignores interruption cannot keep the delivery worker active. The
+unknown-outcome circuit in Decision 17 prevents further detached calls from that worker.
 
 ### Decision 15: Verify Java capabilities by construct behavior
 
 **Decision:** Add one matrix entry and one focused executable method for each required construct.
 The verifier binds matrix entries to methods. Each method asserts the expected graph topology or
 explicit coverage gap.
+
+### Decision 16: Make execution identity restart-safe and collision-strict
+
+**Decision:** Give each `RuntimeCollector` a random UUID namespace and append its monotonic local
+sequence to each execution ID. Keep exact repeated envelopes idempotent. Reject any record-ID or
+execution-ID reuse with different immutable content in both in-memory and JDBC repositories.
+
+**Rationale:** A UUID namespace removes restart collisions without shared state or application I/O.
+Strict duplicate comparison prevents a storage constraint from hiding a different decision.
+
+### Decision 17: Represent an unconfirmed save as unknown
+
+**Decision:** Add an `unknown` delivery counter. A timeout or interrupted wait marks the active save
+as unknown because Java interruption cannot prove that the storage operation did not commit. The
+delivery circuit then stops and drops queued, not-started records. This limits an uncooperative
+detached operation to one per delivery instance.
+
+**Rationale:** `dropped` means that storage did not save the record. `unknown` states the only result
+that the process can prove after an uncooperative operation loses its completion signal.
+
+### Decision 18: Bind bytecode with JVM descriptors
+
+**Decision:** Activation V3 adds a JVM descriptor to each probe, dispatch, and branch binding. Normal
+methods match owner, name, and descriptor. Lambda probes also use the enclosing source method
+descriptor, and the transformer reads `invokedynamic` bootstrap handles to find only that method's
+generated lambda targets. Activation V2 remains readable as a legacy name-only bundle.
+
+**Rationale:** A method name is not a JVM identity. The descriptor separates overloads, while the
+lambda bootstrap handle gives the actual generated member without source-name guessing.
+
+### Decision 19: Let the graph-entry project select compiler mode
+
+**Decision:** A graph rooted in a non-modular project uses the flat compatible source context even
+when a reverse dependent is modular. A graph rooted in a named module uses a JPMS source context
+that contains only named projects; non-modular connected projects remain classpath/module-path
+inputs or explicit source-unavailable gaps.
+
+**Rationale:** Reverse dependents help source dispatch discovery, but they do not change the module
+identity of the graph-entry project. A mixed reactor is not one synthetic named module set.
 
 ## Component Design
 
