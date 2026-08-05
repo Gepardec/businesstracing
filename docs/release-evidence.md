@@ -69,3 +69,20 @@ application database or Mega credentials. It also supports a manual dispatch.
 - Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
 - Latency: 15,023.625 µs baseline p95; 15,035.291 µs enabled p95; 0.078% overhead
 - Gate result: `RELEASE_GATE_OK`
+
+## Generic extractor completion result
+
+- Release gate commit: `6fedefae73588e2c1a82349640e04e6eb61843d9`
+- Java: OpenJDK 21.0.2
+- Maven: 3.9.16
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Capability matrix SHA-256: `27fcd87673659961fdbfaac430da498092bc39d2f52de2cae037d2ec95270dcc`
+- Runtime proof: exact atomic Boolean and switch paths, proven dynamic targets, automatic standard
+  asynchronous context propagation, and source-free Activation V3 loading
+- Mega result: five complete graphs from 420 source files; the journey-warning execution contains
+  a typed empty collection and three selected strategies
+- PostgreSQL result: the PostgreSQL 18.4 integration contract passed separately
+- Long run: 60-second baseline and 600 seconds enabled at 1,000 RPS
+- Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
+- Latency: 14,075.666 µs baseline p95; 14,938.000 µs enabled p95; 6.126% overhead
+- Gate result: `RELEASE_GATE_OK`

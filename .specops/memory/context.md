@@ -109,3 +109,14 @@ Release commit `facd1daf052f4e3ffae42c48a876dc46e4dd9576` passed the isolated ex
 five complete pinned Mega graphs from 420 source files, and the clean-clone long gate. The gate
 completed 600,000 decisions at 1,000 RPS with 0.078% p95 overhead and zero errors, mismatches,
 drops, or contamination.
+
+### generic-java-extractor-completion (feature) — 2026-08-05
+
+Completed all 12 tasks. The generic analyzer now supports structured exception and synchronized
+flow, exact atomic Boolean and switch paths, proven dynamic candidates, a fingerprinted bytecode
+subset, automatic standard asynchronous context propagation, and owned mixed-JPMS sources.
+Unsupported variants remain actionable gaps; no Mega-specific rule entered production code.
+
+PostgreSQL 18.4, source-free Activation V3, and five complete Mega graphs passed. The clean-clone
+gate completed 600,000 decisions at 1,000 RPS with 6.126% p95 overhead and zero errors, result
+mismatches, dropped records, or trace contamination.

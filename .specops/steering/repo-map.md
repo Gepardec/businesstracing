@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-05T08:40:07Z"
-_sourceHash: "71d81149f580a84cbce818bec4220c6445bc93240224878901340ec49321261c"
+_generatedAt: "2026-08-05T20:16:37Z"
+_sourceHash: "44bc7a2ffd900f69e8b27cd450701cb857e654cbcb1fb9f461b0a2f066adcc14"
 ---
 
 ## Project Structure Map
@@ -44,7 +44,7 @@ fachtracing/
 
 ### File Declarations
 
-#### fachtracing-api/ (5 files)
+#### fachtracing-api/ (6 files)
 
 - `src/main/java/at/gepardec/fachtracing/api/FachTracing.java`
   - `public @interface FachTracing`
@@ -55,7 +55,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (56 files)
+#### fachtracing-engine/ (59 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -67,6 +67,8 @@ fachtracing/
   - `public record ApplicationSourceBoundary`
 - `src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java`
   - `public final class BackwardDecisionSlicer`
+- `src/main/java/at/gepardec/fachtracing/analysis/BytecodeDecisionAnalyzer.java`
+  - `public final class BytecodeDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/DecisionGraphBuilder.java`
   - `public final class DecisionGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java`
@@ -109,7 +111,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-agent/ (9 files)
+#### fachtracing-agent/ (11 files)
 
 - `src/main/java/at/gepardec/fachtracing/agent/FachtracingAgent.java`
   - `public final class FachtracingAgent`

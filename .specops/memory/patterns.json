@@ -8,8 +8,8 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 2,
-      "pattern": "Precompute opaque graph topology and developer-only probe plans, then let runtime capture record only validated selected edges without Java details."
+      "count": 3,
+      "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
       "category": "multi-format-projection",
@@ -23,13 +23,13 @@
     },
     {
       "category": "build-tool-adapter",
-      "count": 2,
-      "pattern": "Let the build tool provide source roots, resolved classpaths, and explicit repository settings, while the engine owns graph and provenance contracts."
+      "count": 3,
+      "pattern": "Let the build tool provide source roots, resolved classpaths, explicit module ownership, and repository settings, while the engine owns graph and provenance contracts."
     },
     {
       "category": "source-provenance",
-      "count": 3,
-      "pattern": "Keep source data outside business records and verify both working files and exact commit blobs before a developer export claims a Git revision."
+      "count": 4,
+      "pattern": "Keep source and module provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
     }
   ],
   "fileOverlaps": [
@@ -40,9 +40,10 @@
         "maven-project-analysis",
         "developer-graph-json-export",
         "maven-developer-graph-export",
-        "reactor-wide-implementation-resolution"
+        "reactor-wide-implementation-resolution",
+        "generic-java-extractor-completion"
       ],
-      "count": 5
+      "count": 6
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
@@ -50,9 +51,10 @@
         "generic-tracing-walking-skeleton",
         "developer-graph-json-export",
         "maven-developer-graph-export",
-        "reactor-wide-implementation-resolution"
+        "reactor-wide-implementation-resolution",
+        "generic-java-extractor-completion"
       ],
-      "count": 4
+      "count": 5
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -61,13 +63,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion"],
+      "count": 3
     },
     {
       "file": "docs/supported-java-constructs.md",
@@ -76,22 +78,23 @@
     },
     {
       "file": "docs/maven-plugin.md",
-      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion"],
+      "count": 3
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java",
       "specs": [
         "maven-developer-graph-export",
         "reactor-wide-implementation-resolution",
-        "jpms-reactor-source-resolution"
+        "jpms-reactor-source-resolution",
+        "generic-java-extractor-completion"
       ],
-      "count": 3
+      "count": 4
     },
     {
       "file": "scripts/verify.sh",
-      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution"],
-      "count": 2
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion"],
+      "count": 3
     }
   ]
 }

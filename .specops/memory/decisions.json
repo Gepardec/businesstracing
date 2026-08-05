@@ -270,6 +270,106 @@
       "task": "Task 26",
       "date": "2026-08-05",
       "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Lower compound Boolean expressions to atomic graph nodes",
+      "rationale": "Exact runtime paths require one edge per evaluated business fact, including short-circuit skips.",
+      "task": "Task 3",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Use source artifacts before a fail-closed ASM fallback",
+      "rationale": "Source keeps business vocabulary and semantics; bytecode is safe only in a small proven subset.",
+      "task": "Task 6",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Inject async wrappers at application call sites",
+      "rationale": "This avoids bootstrap instrumentation and removes manual wrapping for standard APIs.",
+      "task": "Task 7",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 4,
+      "decision": "Make module ownership an explicit source input",
+      "rationale": "A file path alone cannot be assigned safely to a named or automatic module.",
+      "task": "Task 8",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 5,
+      "decision": "Test JDBC against PostgreSQL without a production driver dependency",
+      "rationale": "A test-scope driver proves production database behavior while the adapter stays vendor-neutral.",
+      "task": "Task 9",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 6,
+      "decision": "Retain each proven atomic path and add a gap for each unproven atom",
+      "rationale": "Exact evidence stays useful, but the runtime never infers an edge for an atom that bytecode correlation cannot prove.",
+      "task": "Task 3",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 7,
+      "decision": "Model structured exits before graph projection",
+      "rationale": "Normal, return, throw, catch, and finally effects need one control-flow model before business-only rendering.",
+      "task": "Task 2",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 8,
+      "decision": "Select dynamic targets only from static candidates with runtime evidence",
+      "rationale": "A proxy, provider, or reflected member can select known logic, but an unknown or ambiguous target must stay a gap.",
+      "task": "Task 5",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 9,
+      "decision": "Limit bytecode extraction to fingerprinted side-effect-free methods",
+      "rationale": "A small ASM subset can prove result-relevant binary logic without exposing bytecode vocabulary or claiming unsupported behavior.",
+      "task": "Task 6",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 10,
+      "decision": "Keep the production JDBC adapter driver-neutral",
+      "rationale": "PostgreSQL proof uses a test-scope driver and an explicit integration command, while applications continue to supply a standard data source.",
+      "task": "Task 9",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
     }
   ]
 }

@@ -201,13 +201,13 @@ Codex non-interactive mode keeps one specification. The tasks preserve these bou
 
 ## Definition of Done
 
-- [ ] Every required construct has an independent generic fixture and executable contract.
-- [ ] Supported constructs produce complete business graphs and exact runtime paths.
-- [ ] Unsupported variants produce source-located actionable gaps.
-- [ ] Mega Backend produces the five reviewed graphs with no production Mega hints.
-- [ ] External activation integration passes without runtime source analysis.
-- [ ] PostgreSQL integration passes in local opt-in mode and required GitHub CI.
-- [ ] The clean-clone 600-second release gate passes at 1,000 RPS.
-- [ ] GitHub CI runs the standard verification and conformance gates for each pull request.
-- [ ] `RuntimeActivationBundle` JavaDoc states Activation V3.
+- [x] Every required construct has an independent generic fixture and executable contract.
+- [x] Supported constructs produce complete business graphs and exact runtime paths.
+- [x] Unsupported variants produce source-located actionable gaps.
+- [x] Mega Backend produces the five reviewed graphs with no production Mega hints.
+- [x] External activation integration passes without runtime source analysis.
+- [x] PostgreSQL integration passes in local opt-in mode and required GitHub CI.
+- [x] The clean-clone 600-second release gate passes at 1,000 RPS.
+- [x] GitHub CI runs the standard verification and conformance gates for each pull request.
+- [x] `RuntimeActivationBundle` JavaDoc states Activation V3.
 

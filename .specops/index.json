@@ -84,10 +84,10 @@
   {
     "id": "generic-java-extractor-completion",
     "type": "feature",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-05T08:48:00Z",
+    "updated": "2026-08-05T20:16:37Z",
     "partOf": "generic-java-fachtracing"
   }
 ]

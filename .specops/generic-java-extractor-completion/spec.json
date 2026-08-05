@@ -1,10 +1,10 @@
 {
   "id": "generic-java-extractor-completion",
   "type": "feature",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-05T08:40:07Z",
-  "updated": "2026-08-05T08:48:00Z",
+  "updated": "2026-08-05T20:16:37Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -42,10 +42,24 @@
       "evaluatedAt": "2026-08-05T08:48:00Z"
     },
     "implementation": {
-      "iterations": 0,
-      "passed": false,
-      "scores": {},
-      "evaluatedAt": null
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 9,
+        "codeQuality": 9,
+        "testCoverage": 10,
+        "specCompliance": 9
+      },
+      "evaluatedAt": "2026-08-05T20:16:37Z"
     }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 11999,
+    "filesChanged": 84,
+    "linesAdded": 5825,
+    "linesRemoved": 1342,
+    "tasksCompleted": 12,
+    "acceptanceCriteriaVerified": 75,
+    "specDurationMinutes": 696
   }
 }

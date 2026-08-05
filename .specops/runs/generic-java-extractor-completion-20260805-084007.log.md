@@ -1,9 +1,9 @@
 ---
 specId: "generic-java-extractor-completion"
 startedAt: "2026-08-05T08:40:07Z"
-completedAt: null
-finalStatus: "running"
-phases: [1]
+completedAt: "2026-08-05T20:16:37Z"
+finalStatus: "passed"
+phases: [1, 2, 3, 4]
 ---
 
 # SpecOps Run: Generic Java Extractor Completion
@@ -57,3 +57,35 @@ phases: [1]
 
 - Action: Set the independent capability contracts and Activation V3 JavaDoc task to In Progress.
 - Result: Implementation gates passed. No task or specification dependency is blocked.
+
+### [13:20:00] Step 2: Complete source and runtime path tasks
+
+- Action: Implement structured exception exits, synchronized scanning, exact atomic predicates,
+  exact switches, proven dynamic targets, and the controlled bytecode fallback.
+- Result: Tasks 1 through 6 passed their independent generic fixtures. Unproved behavior produces
+  precise gaps and no generic `evaluated` claim.
+
+### [17:40:00] Step 3: Complete integration tasks
+
+- Action: Add automatic standard asynchronous propagation, owned external JPMS sources,
+  PostgreSQL 18.4 integration, pull-request CI, and the supported-capability documents.
+- Result: Tasks 7 through 11 passed. PostgreSQL covered both durable conflicts, rollback, retry,
+  query, retention, and lock timeout behavior.
+
+## Phase 4: Release Verification
+
+**Started:** 2026-08-05T19:55:00Z
+
+### [20:16:37] Step 1: Run final evidence
+
+- Action: Run standard verification, source-free external activation, pinned Mega conformance,
+  PostgreSQL integration, and the clean-clone 600-second release gate.
+- Result: PASS. Five Mega graphs are complete. The load gate completed 600,000 decisions at
+  1,000 RPS with 6.126% p95 overhead and zero errors, mismatches, drops, or contamination.
+
+### [20:16:37] Step 2: Complete SpecOps records
+
+- Action: Evaluate the implementation, capture proxy metrics, refresh the repo map, update memory,
+  review documentation, and complete the initiative and specification metadata.
+- Result: All 12 tasks and all acceptance criteria are complete. The implementation evaluation
+  passed all four dimensions.
