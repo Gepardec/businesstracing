@@ -2,38 +2,57 @@ decision: validate journey direction
 completeness: COMPLETE
 node 1: ENTRY | Start
 node 2: CHOICE | choose by current direction
-node 3: PREDICATE | either former direction equals to or former direction equals further
-node 4: COMPUTATION | set warning to back missing
-node 5: COMPUTATION | set former direction to current direction
-node 6: PREDICATE | either former direction is absent or former direction equals back
-node 7: COMPUTATION | set warning to to missing
-node 8: PREDICATE | former direction exists
-node 9: COMPUTATION | set former direction to current direction
-node 10: COMPUTATION | decision cannot continue
-node 11: OUTCOME | Stop
-node 12: COMPUTATION | evaluate is finished
-node 13: PREDICATE | former direction exists and former direction equals back
-node 14: COMPUTATION | evaluate is starting new journey
-node 15: PREDICATE | all of warning is absent and not is finished and either next direction is absent or is starting new journey next direction
-node 16: COMPUTATION | set former direction to absent
+node 3: PREDICATE | former direction equals to
+node 4: PREDICATE | former direction equals further
+node 5: COMPUTATION | set warning to back missing
+node 6: COMPUTATION | set former direction to current direction
+node 7: PREDICATE | former direction is absent
+node 8: PREDICATE | former direction equals back
+node 9: COMPUTATION | set warning to to missing
+node 10: PREDICATE | former direction exists
+node 11: COMPUTATION | set former direction to current direction
+node 12: COMPUTATION | decision cannot continue
+node 13: OUTCOME | Stop
+node 14: COMPUTATION | evaluate is finished
+node 15: PREDICATE | former direction exists
+node 16: PREDICATE | former direction equals back
+node 17: COMPUTATION | evaluate is starting new journey
+node 18: PREDICATE | warning is absent
+node 19: PREDICATE | is not finished
+node 20: PREDICATE | next direction is absent
+node 21: PREDICATE | is starting new journey next direction
+node 22: COMPUTATION | set former direction to absent
 edge 1 -> 2 | next
+edge 3 -> 4 | false
 edge 2 -> 3 | to
-edge 3 -> 4 | true
-edge 4 -> 5 | next
-edge 3 -> 5 | false
-edge 2 -> 6 | further or back
-edge 6 -> 7 | true
-edge 7 -> 8 | next
-edge 6 -> 8 | false
+edge 3 -> 5 | true
+edge 4 -> 5 | true
+edge 5 -> 6 | next
+edge 4 -> 6 | false
+edge 7 -> 8 | false
+edge 2 -> 7 | further or back
+edge 7 -> 9 | true
 edge 8 -> 9 | true
-edge 2 -> 10 | default
-edge 10 -> 11 | fails
-edge 5 -> 12 | next
-edge 9 -> 12 | next
-edge 8 -> 12 | false
-edge 12 -> 13 | next
-edge 13 -> 14 | result
-edge 14 -> 15 | result
+edge 9 -> 10 | next
+edge 8 -> 10 | false
+edge 10 -> 11 | true
+edge 2 -> 12 | default
+edge 12 -> 13 | fails
+edge 6 -> 14 | next
+edge 11 -> 14 | next
+edge 10 -> 14 | false
 edge 15 -> 16 | true
-edge 16 -> 11 | returns back missing
-edge 15 -> 11 | false; returns warning
+edge 14 -> 15 | next
+edge 16 -> 17 | true
+edge 15 -> 17 | false
+edge 16 -> 17 | false
+edge 18 -> 19 | true
+edge 20 -> 21 | false
+edge 19 -> 20 | true
+edge 17 -> 18 | result
+edge 20 -> 22 | true
+edge 21 -> 22 | true
+edge 22 -> 13 | returns back missing
+edge 18 -> 13 | false; returns warning
+edge 19 -> 13 | false; returns warning
+edge 21 -> 13 | false; returns warning

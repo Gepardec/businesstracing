@@ -20,11 +20,11 @@ are the same artifacts used by non-Mega applications.
 
 | Decision | Business area | Nodes | Edges | Status |
 | --- | --- | ---: | ---: | --- |
-| Authorize clarification resolution | Month end | 11 | 11 | Complete, exact oracle match |
-| Detect overlapping time entries | Time warnings | 4 | 4 | Complete, exact oracle match |
-| Determine journey warnings | Journey orchestration | 72 | 90 | Complete, exact oracle match |
-| Determine project activity in month | Projects | 7 | 6 | Complete, exact oracle match |
-| Validate journey direction | Journey validation | 16 | 21 | Complete, exact oracle match |
+| Authorize clarification resolution | Month end | 18 | 30 | Complete, exact atomic oracle match |
+| Detect overlapping time entries | Time warnings | 6 | 9 | Complete, exact atomic oracle match |
+| Determine journey warnings | Journey orchestration | 77 | 108 | Complete, exact atomic oracle match |
+| Determine project activity in month | Projects | 8 | 9 | Complete, exact atomic oracle match |
+| Validate journey direction | Journey validation | 22 | 34 | Complete, exact atomic oracle match |
 
 The independent source-walk method, reviewed semantic inventories, approval outcomes, and SHA-256
 hashes are recorded in `src/test/resources/oracles/README.md`. Verification cannot rewrite those
@@ -34,7 +34,7 @@ oracles. Missing or extra nodes, edges, outcomes, dispatches, or completeness st
 
 The manager invocation calls `determineJourneyWarnings` with an empty business collection. The
 record contains the typed input collection, all three concrete strategy selections as opaque
-candidate edges, the one business predicate actually evaluated, and final typed result
+candidate edges, the one atomic early-return predicate actually evaluated, and final typed result
 `[] [collection]`. The explanation is complete. The execution PlantUML highlights the path from
 entry through dispatch, the three selected strategy edges, evaluated early-return route, and final
 collection outcome; alternatives remain dashed.
@@ -56,7 +56,7 @@ raw null, and representative Java implementation terms. Meaningful optionality i
 
 - correct branch topology with fall-through, early returns, terminal throws, ternaries, switches,
   indexed/enhanced loops, and loop-back/completion edges;
-- short-circuit predicate extraction and source-line-bound runtime probes;
+- exact atomic short-circuit predicate extraction and source-line-bound runtime probes;
 - source-visible direct calls, generic interface target resolution, lambda/stream predicates, and
   per-call-site runtime dispatch correlation;
 - collection-building decisions and recursively typed collection results without arbitrary

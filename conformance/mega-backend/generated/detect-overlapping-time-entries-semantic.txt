@@ -1,10 +1,17 @@
 decision: detect overlapping time entries
 completeness: COMPLETE
 node 1: ENTRY | Start
-node 2: PREDICATE | either entry one to time equals entry two from time or entry one from time equals entry two to time
-node 3: OUTCOME | Stop
-node 4: PREDICATE | neither entry one to time is before entry two from time nor entry one from time is after entry two to time
+node 2: PREDICATE | entry one to time equals entry two from time
+node 3: PREDICATE | entry one from time equals entry two to time
+node 4: OUTCOME | Stop
+node 5: PREDICATE | entry one to time is before entry two from time
+node 6: PREDICATE | entry one from time is after entry two to time
+edge 2 -> 3 | false
 edge 1 -> 2 | next
-edge 2 -> 3 | true; returns false
-edge 2 -> 4 | false
-edge 4 -> 3 | returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time
+edge 2 -> 4 | true; returns false
+edge 3 -> 4 | true; returns false
+edge 5 -> 6 | false
+edge 3 -> 5 | false
+edge 6 -> 4 | false; returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time
+edge 5 -> 4 | true; returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time
+edge 6 -> 4 | true; returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time

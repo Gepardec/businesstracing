@@ -5,22 +5,48 @@ usecase "Start" as n1
 diamond "user equals created by" as n2
 rectangle "evaluate is open" as n3
 diamond "status equals open" as n4
-diamond "is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user" as n5
-usecase "Stop" as n6
-rectangle "evaluate is open" as n7
-diamond "status equals open" as n8
-rectangle "evaluate is involved" as n9
-diamond "eligible project lead contains actor or all of subject employee exists and subject employee equals actor" as n10
-diamond "is open and is involved actor and not actor equals created by" as n11
+diamond "is open" as n5
+diamond "eligible project lead contains actor" as n6
+diamond "actor does not equal subject employee" as n7
+diamond "actor does not equal user" as n8
+usecase "Stop" as n9
+rectangle "evaluate is open" as n10
+diamond "status equals open" as n11
+rectangle "evaluate is involved" as n12
+diamond "eligible project lead contains actor" as n13
+diamond "subject employee exists" as n14
+diamond "subject employee equals actor" as n15
+diamond "is open" as n16
+diamond "is involved actor" as n17
+diamond "actor does not equal created by" as n18
 n1 --> n2 : next
 n2 --> n3 : true
 n3 --> n4 : next
-n4 --> n5 : result
-n5 --> n6 : returns whether is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user
-n2 --> n7 : false
-n7 --> n8 : next
-n8 --> n9 : result
-n9 --> n10 : next
-n10 --> n11 : result
-n11 --> n6 : returns whether is open and is involved actor and not actor equals created by
+n5 --> n6 : true
+n6 --> n7 : true
+n7 --> n8 : true
+n4 --> n5 : true
+n4 --> n5 : false
+n8 --> n9 : true; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
+n5 --> n9 : false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
+n6 --> n9 : false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
+n7 --> n9 : false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
+n8 --> n9 : false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
+n2 --> n10 : false
+n10 --> n11 : next
+n11 --> n12 : true
+n11 --> n12 : false
+n14 --> n15 : true
+n13 --> n14 : false
+n12 --> n13 : next
+n16 --> n17 : true
+n17 --> n18 : true
+n13 --> n16 : true
+n15 --> n16 : true
+n14 --> n16 : false
+n15 --> n16 : false
+n18 --> n9 : true; returns whether is open and is involved actor and actor does not equal created by
+n16 --> n9 : false; returns whether is open and is involved actor and actor does not equal created by
+n17 --> n9 : false; returns whether is open and is involved actor and actor does not equal created by
+n18 --> n9 : false; returns whether is open and is involved actor and actor does not equal created by
 @enduml

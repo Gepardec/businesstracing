@@ -186,7 +186,8 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 List<AnalysisManifest.BranchTarget> candidates) {
             Map<String, Set<Integer>> expectedIndexes = new java.util.LinkedHashMap<>();
             for (int index = 0; index < predicates.size(); index++) {
-                expectedIndexes.computeIfAbsent(predicates.get(index).nodeId(), ignored -> new java.util.LinkedHashSet<>())
+                expectedIndexes.computeIfAbsent(predicates.get(index).nodeId(),
+                                ignored -> new java.util.LinkedHashSet<>())
                         .add(index);
             }
             Map<String, Set<Integer>> actualIndexes = candidates.stream().collect(Collectors.groupingBy(
@@ -200,11 +201,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                     .filter(entry -> actualCounts.getOrDefault(entry.getKey(), 0L) == entry.getValue().size())
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toSet());
-            if (completeNodes.size() != expectedIndexes.size()
-                    || candidates.size() != expectedIndexes.values().stream().mapToInt(Set::size).sum()) {
-                return List.of();
-            }
-            return candidates;
+            return candidates.stream().filter(candidate -> completeNodes.contains(candidate.nodeId())).toList();
         }
 
         @Override

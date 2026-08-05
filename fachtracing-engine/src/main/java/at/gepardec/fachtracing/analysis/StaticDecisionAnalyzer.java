@@ -1134,8 +1134,7 @@ public final class StaticDecisionAnalyzer {
                 if (!slice.contains(node)) return super.visitReturn(node, unused);
                 if (node.getExpression() != null) {
                     scan(node.getExpression(), unused);
-                    if (isPredicateExpression(node.getExpression()) && frontier.stream()
-                            .noneMatch(tail -> tail.outcome().equals("true") || tail.outcome().equals("false"))) {
+                    if (isPredicateExpression(node.getExpression())) {
                         PredicatePlan predicate = addPredicatePlan(node.getExpression());
                         enter(predicate);
                         var outcomes = new ArrayList<Tail>(predicate.trueTails());
@@ -1906,6 +1905,10 @@ public final class StaticDecisionAnalyzer {
         if (unwrapped instanceof BinaryTree binary && isNullComparison(binary)) {
             return renderNullComparison(binary, true);
         }
+        if (unwrapped instanceof BinaryTree binary && isComparison(binary.getKind())) {
+            return renderExpression(binary.getLeftOperand()) + negatedBinaryOperator(binary.getKind())
+                    + renderExpression(binary.getRightOperand());
+        }
         if (unwrapped instanceof BinaryTree binary && binary.getKind() == Tree.Kind.CONDITIONAL_OR) {
             return "neither " + renderExpression(binary.getLeftOperand()) + " nor "
                     + renderExpression(binary.getRightOperand());
@@ -1913,7 +1916,15 @@ public final class StaticDecisionAnalyzer {
         if (unwrapped instanceof BinaryTree binary && binary.getKind() == Tree.Kind.CONDITIONAL_AND) {
             return "not all of " + renderExpression(binary);
         }
-        return "not " + renderExpression(unwrapped);
+        String rendered = renderExpression(unwrapped);
+        if (rendered.startsWith("is ")) return "is not " + rendered.substring(3);
+        if (rendered.startsWith("has ")) return "does not have " + rendered.substring(4);
+        int equals = rendered.indexOf(" equals ");
+        if (equals >= 0) {
+            return rendered.substring(0, equals) + " does not equal "
+                    + rendered.substring(equals + " equals ".length());
+        }
+        return "not " + rendered;
     }
 
     private static String renderBinary(BinaryTree binary) {
@@ -1925,6 +1936,26 @@ public final class StaticDecisionAnalyzer {
     private static boolean isNullComparison(BinaryTree binary) {
         return (binary.getKind() == Tree.Kind.EQUAL_TO || binary.getKind() == Tree.Kind.NOT_EQUAL_TO)
                 && (isNullLiteral(binary.getLeftOperand()) || isNullLiteral(binary.getRightOperand()));
+    }
+
+    private static boolean isComparison(Tree.Kind kind) {
+        return switch (kind) {
+            case EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_THAN_EQUAL,
+                    GREATER_THAN, GREATER_THAN_EQUAL -> true;
+            default -> false;
+        };
+    }
+
+    private static String negatedBinaryOperator(Tree.Kind kind) {
+        return switch (kind) {
+            case EQUAL_TO -> " does not equal ";
+            case NOT_EQUAL_TO -> " equals ";
+            case LESS_THAN -> " is at least ";
+            case LESS_THAN_EQUAL -> " is above ";
+            case GREATER_THAN -> " is at most ";
+            case GREATER_THAN_EQUAL -> " is below ";
+            default -> throw new IllegalArgumentException("not a comparison: " + kind);
+        };
     }
 
     private static boolean isNullLiteral(Tree tree) {

@@ -3,21 +3,47 @@ flowchart LR
     n2{"user equals created by"}
     n3["evaluate is open"]
     n4{"status equals open"}
-    n5{"is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user"}
-    n6(["Stop"])
-    n7["evaluate is open"]
-    n8{"status equals open"}
-    n9["evaluate is involved"]
-    n10{"eligible project lead contains actor or all of subject employee exists and subject employee equals actor"}
-    n11{"is open and is involved actor and not actor equals created by"}
+    n5{"is open"}
+    n6{"eligible project lead contains actor"}
+    n7{"actor does not equal subject employee"}
+    n8{"actor does not equal user"}
+    n9(["Stop"])
+    n10["evaluate is open"]
+    n11{"status equals open"}
+    n12["evaluate is involved"]
+    n13{"eligible project lead contains actor"}
+    n14{"subject employee exists"}
+    n15{"subject employee equals actor"}
+    n16{"is open"}
+    n17{"is involved actor"}
+    n18{"actor does not equal created by"}
     n1 -->|"next"| n2
     n2 -->|"true"| n3
     n3 -->|"next"| n4
-    n4 -->|"result"| n5
-    n5 -->|"returns whether is open and eligible project lead contains actor and not actor equals subject employee and not actor equals user"| n6
-    n2 -->|"false"| n7
-    n7 -->|"next"| n8
-    n8 -->|"result"| n9
-    n9 -->|"next"| n10
-    n10 -->|"result"| n11
-    n11 -->|"returns whether is open and is involved actor and not actor equals created by"| n6
+    n5 -->|"true"| n6
+    n6 -->|"true"| n7
+    n7 -->|"true"| n8
+    n4 -->|"true"| n5
+    n4 -->|"false"| n5
+    n8 -->|"true; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user"| n9
+    n5 -->|"false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user"| n9
+    n6 -->|"false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user"| n9
+    n7 -->|"false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user"| n9
+    n8 -->|"false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user"| n9
+    n2 -->|"false"| n10
+    n10 -->|"next"| n11
+    n11 -->|"true"| n12
+    n11 -->|"false"| n12
+    n14 -->|"true"| n15
+    n13 -->|"false"| n14
+    n12 -->|"next"| n13
+    n16 -->|"true"| n17
+    n17 -->|"true"| n18
+    n13 -->|"true"| n16
+    n15 -->|"true"| n16
+    n14 -->|"false"| n16
+    n15 -->|"false"| n16
+    n18 -->|"true; returns whether is open and is involved actor and actor does not equal created by"| n9
+    n16 -->|"false; returns whether is open and is involved actor and actor does not equal created by"| n9
+    n17 -->|"false; returns whether is open and is involved actor and actor does not equal created by"| n9
+    n18 -->|"false; returns whether is open and is involved actor and actor does not equal created by"| n9

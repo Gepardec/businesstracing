@@ -48,15 +48,15 @@ check_hash() {
   test "$actual" = "$expected" || fail "reviewed oracle hash changed: $file"
 }
 
-check_hash 18a7047cba3dd024c4058cd2f20411705c3e01b63502e04c5cc6a99c661cc384 \
+check_hash 192cd18116ed3522a7bd4ab07dc6cd4000cfbc4b42afaf830e4ed620ca3f3848 \
   conformance/mega-backend/src/test/resources/oracles/authorize-clarification-resolution.txt
-check_hash 04da12e820de5c3e640af192734261ddbb49f385ef99a573149331068e607ace \
+check_hash cccbb57b3ac143b86565c50ffeefb536d17ed6d2671feb7cf1ff2d553ee54198 \
   conformance/mega-backend/src/test/resources/oracles/detect-overlapping-time-entries.txt
-check_hash 31c59b66a9a7887add4f88c850837cbdbfabdc6e9cfc90561e07103d80398205 \
+check_hash 4d40aea4e206cf9c954f901d53c7dacd8a0cbda5b81411a465be317dbc501c49 \
   conformance/mega-backend/src/test/resources/oracles/determine-journey-warnings.txt
-check_hash 53dba8048f35e02c15f6a67b03d0a7e7fb93dc08e980762af01899c262d70993 \
+check_hash 0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38 \
   conformance/mega-backend/src/test/resources/oracles/determine-project-activity-in-month.txt
-check_hash 56ef5ac56f8a462569d00cbfd81157407e51c71e7c071866cb45be92a02c82ae \
+check_hash 1684955f4aa81930040a8d9df919be77df0f953f1fd4a419d70b6621a9f6c36e \
   conformance/mega-backend/src/test/resources/oracles/validate-journey-direction.txt
 
 for spec_file in .specops/*/spec.json

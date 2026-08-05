@@ -432,8 +432,8 @@ public final class FachtracingTransformerTest {
         assert fixture.getMethod("decideAnd", boolean.class, boolean.class)
                 .invoke(instance, true, false).equals(false);
         var execution = collector.pollCompleted().orElseThrow();
-        assert execution.observations().stream().noneMatch(observation ->
-                observation.selectedEdgeId() != null) : execution.observations();
+        assert execution.observations().stream().filter(observation ->
+                observation.selectedEdgeId() != null).count() == 1 : execution.observations();
         assert execution.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : execution;
         assert execution.coverageGaps().stream().anyMatch(gap ->
                 gap.contains("exact Boolean path correlation is unavailable")) : execution.coverageGaps();

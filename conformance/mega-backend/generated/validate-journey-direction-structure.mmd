@@ -1,38 +1,57 @@
 flowchart LR
     n1(["Start"])
     n2{"choose by current direction"}
-    n3{"either former direction equals to or former direction equals further"}
-    n4["set warning to back missing"]
-    n5["set former direction to current direction"]
-    n6{"either former direction is absent or former direction equals back"}
-    n7["set warning to to missing"]
-    n8{"former direction exists"}
-    n9["set former direction to current direction"]
-    n10["decision cannot continue"]
-    n11(["Stop"])
-    n12["evaluate is finished"]
-    n13{"former direction exists and former direction equals back"}
-    n14["evaluate is starting new journey"]
-    n15{"all of warning is absent and not is finished and either next direction is absent or is starting new journey next direction"}
-    n16["set former direction to absent"]
+    n3{"former direction equals to"}
+    n4{"former direction equals further"}
+    n5["set warning to back missing"]
+    n6["set former direction to current direction"]
+    n7{"former direction is absent"}
+    n8{"former direction equals back"}
+    n9["set warning to to missing"]
+    n10{"former direction exists"}
+    n11["set former direction to current direction"]
+    n12["decision cannot continue"]
+    n13(["Stop"])
+    n14["evaluate is finished"]
+    n15{"former direction exists"}
+    n16{"former direction equals back"}
+    n17["evaluate is starting new journey"]
+    n18{"warning is absent"}
+    n19{"is not finished"}
+    n20{"next direction is absent"}
+    n21{"is starting new journey next direction"}
+    n22["set former direction to absent"]
     n1 -->|"next"| n2
+    n3 -->|"false"| n4
     n2 -->|"to"| n3
-    n3 -->|"true"| n4
-    n4 -->|"next"| n5
-    n3 -->|"false"| n5
-    n2 -->|"further or back"| n6
-    n6 -->|"true"| n7
-    n7 -->|"next"| n8
-    n6 -->|"false"| n8
+    n3 -->|"true"| n5
+    n4 -->|"true"| n5
+    n5 -->|"next"| n6
+    n4 -->|"false"| n6
+    n7 -->|"false"| n8
+    n2 -->|"further or back"| n7
+    n7 -->|"true"| n9
     n8 -->|"true"| n9
-    n2 -->|"default"| n10
-    n10 -->|"fails"| n11
-    n5 -->|"next"| n12
-    n9 -->|"next"| n12
-    n8 -->|"false"| n12
-    n12 -->|"next"| n13
-    n13 -->|"result"| n14
-    n14 -->|"result"| n15
+    n9 -->|"next"| n10
+    n8 -->|"false"| n10
+    n10 -->|"true"| n11
+    n2 -->|"default"| n12
+    n12 -->|"fails"| n13
+    n6 -->|"next"| n14
+    n11 -->|"next"| n14
+    n10 -->|"false"| n14
     n15 -->|"true"| n16
-    n16 -->|"returns back missing"| n11
-    n15 -->|"false; returns warning"| n11
+    n14 -->|"next"| n15
+    n16 -->|"true"| n17
+    n15 -->|"false"| n17
+    n16 -->|"false"| n17
+    n18 -->|"true"| n19
+    n20 -->|"false"| n21
+    n19 -->|"true"| n20
+    n17 -->|"result"| n18
+    n20 -->|"true"| n22
+    n21 -->|"true"| n22
+    n22 -->|"returns back missing"| n13
+    n18 -->|"false; returns warning"| n13
+    n19 -->|"false; returns warning"| n13
+    n21 -->|"false; returns warning"| n13

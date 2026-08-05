@@ -18,11 +18,11 @@ journey-warning manager. Review anchors and results:
 
 | Oracle | Direct source-derived checks | SHA-256 | Outcome |
 | --- | --- | --- | --- |
-| `authorize-clarification-resolution.txt` | system-created and ordinary clarification branches; open, lead, involved, subject, and creator conditions; both returns converge on Stop | `18a7047cba3dd024c4058cd2f20411705c3e01b63502e04c5cc6a99c661cc384` | Approved |
-| `detect-overlapping-time-entries.txt` | touching boundaries return false; otherwise neither interval lies wholly before/after the other; both paths state their return | `04da12e820de5c3e640af192734261ddbb49f385ef99a573149331068e607ace` | Approved |
-| `determine-project-activity-in-month.txt` | month boundary derivations; start-before-end and absent-or-after-start conditions; conjunction return | `53dba8048f35e02c15f6a67b03d0a7e7fb93dc08e980762af01899c262d70993` | Approved |
-| `validate-journey-direction.txt` | all enum cases, state updates, default failure, unfinished-journey early return, final return, shared Stop | `56ef5ac56f8a462569d00cbfd81157407e51c71e7c071866cb45be92a02c82ae` | Approved |
-| `determine-journey-warnings.txt` | manager collection flow; all three strategy candidates; filtering, indexed and enhanced loops, ternary, validator switch, absence checks, terminal validator failure, warning additions, convergence, final list | `31c59b66a9a7887add4f88c850837cbdbfabdc6e9cfc90561e07103d80398205` | Approved |
+| `authorize-clarification-resolution.txt` | atomic system-created and ordinary clarification branches; open, lead, involved, subject, and creator conditions; both returns converge on Stop | `192cd18116ed3522a7bd4ab07dc6cd4000cfbc4b42afaf830e4ed620ca3f3848` | Approved |
+| `detect-overlapping-time-entries.txt` | atomic touching-boundary checks return false; otherwise each interval position is tested and both paths state their return | `cccbb57b3ac143b86565c50ffeefb536d17ed6d2671feb7cf1ff2d553ee54198` | Approved |
+| `determine-project-activity-in-month.txt` | month boundary derivations; atomic start-before-end and absent-or-after-start conditions; conjunction return | `0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38` | Approved |
+| `validate-journey-direction.txt` | all enum cases, atomic state and completion predicates, state updates, default failure, early return, final return, shared Stop | `1684955f4aa81930040a8d9df919be77df0f953f1fd4a419d70b6621a9f6c36e` | Approved |
+| `determine-journey-warnings.txt` | manager collection flow; all three strategy candidates; atomic filtering, loop, validator, absence, and warning predicates; convergence and final list | `4d40aea4e206cf9c954f901d53c7dacd8a0cbda5b81411a465be317dbc501c49` | Approved |
 
 The hashes make review drift visible. Exact semantic equality is still the authoritative
 executable assertion; hashes document the reviewed revisions rather than replacing comparison.

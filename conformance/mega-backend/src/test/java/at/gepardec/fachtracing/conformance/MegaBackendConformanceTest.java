@@ -83,6 +83,7 @@ public final class MegaBackendConformanceTest {
         Files.createDirectories(oracles);
         var renderer = new PlantUmlRenderer();
         var mermaid = new MermaidRenderer();
+        var topologyMismatches = new ArrayList<String>();
         for (var entry : graphs.entrySet()) {
             String name = slug(entry.getKey());
             BusinessDecisionGraph graph = entry.getValue();
@@ -94,7 +95,7 @@ public final class MegaBackendConformanceTest {
             Files.writeString(generated.resolve(name + "-semantic.txt"), semantic);
             Path oracle = oracles.resolve(name + ".txt");
             assert Files.exists(oracle) : "missing reviewed oracle " + oracle;
-            assert Files.readString(oracle).equals(semantic) : "semantic topology differs for " + entry.getKey();
+            if (!Files.readString(oracle).equals(semantic)) topologyMismatches.add(entry.getKey());
             if (REQUIRED_COMPLETE.contains(entry.getKey())) {
                 assert graph.completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                         : entry.getKey() + " gaps: " + graph.coverageGaps();
@@ -111,6 +112,7 @@ public final class MegaBackendConformanceTest {
             System.out.println(entry.getKey() + ": " + graph.nodes().size() + " nodes, "
                     + graph.edges().size() + " edges, " + graph.completeness());
         }
+        assert topologyMismatches.isEmpty() : "semantic topology differs for " + topologyMismatches;
         BusinessDecisionGraph strategyGraph = graphs.get("determine journey warnings");
         assert strategyGraph.nodes().stream().anyMatch(node -> node.kind() == BusinessDecisionGraph.NodeKind.DISPATCH)
                 : "manager graph must expose warning strategy dispatch";

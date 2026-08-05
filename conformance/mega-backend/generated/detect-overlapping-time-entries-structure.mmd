@@ -1,9 +1,16 @@
 flowchart LR
     n1(["Start"])
-    n2{"either entry one to time equals entry two from time or entry one from time equals entry two to time"}
-    n3(["Stop"])
-    n4{"neither entry one to time is before entry two from time nor entry one from time is after entry two to time"}
+    n2{"entry one to time equals entry two from time"}
+    n3{"entry one from time equals entry two to time"}
+    n4(["Stop"])
+    n5{"entry one to time is before entry two from time"}
+    n6{"entry one from time is after entry two to time"}
+    n2 -->|"false"| n3
     n1 -->|"next"| n2
-    n2 -->|"true; returns false"| n3
-    n2 -->|"false"| n4
-    n4 -->|"returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time"| n3
+    n2 -->|"true; returns false"| n4
+    n3 -->|"true; returns false"| n4
+    n5 -->|"false"| n6
+    n3 -->|"false"| n5
+    n6 -->|"false; returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time"| n4
+    n5 -->|"true; returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time"| n4
+    n6 -->|"true; returns whether neither entry one to time is before entry two from time nor entry one from time is after entry two to time"| n4
