@@ -92,10 +92,20 @@ passes.
 
 ### generic-application-readiness (feature) — 2026-07-31
 
-Completed all 11 readiness tasks. Fachtracing now has project-aware source boundaries, safe exact
-external source inputs, multi-origin developer provenance, one aggregate reactor goal, isolated
-compiler contexts, bounded runtime diagnostics, explicit async context propagation, a verified Java
-capability matrix, deterministic V1 record envelopes, bounded asynchronous delivery, and a
-vendor-neutral JDBC adapter. Release candidate `0.1.0-rc.1` passed an isolated external-project build
-and the pinned Mega conformance suite. The clean-clone release gate completed 600,000 persisted
-decisions at 1,000 RPS with 0.108% p95 overhead and zero correctness, loss, or contamination errors.
+Completed version 4 on 2026-08-05 with 27 tasks. Fachtracing has project-aware source boundaries,
+safe external source inputs, multi-origin developer provenance, one aggregate reactor goal,
+isolated flat, JPMS, and mixed compiler contexts, bounded runtime diagnostics, explicit async
+context propagation, a verified Java capability matrix, deterministic V1 records, bounded delivery,
+and a vendor-neutral JDBC adapter.
+
+Remediation version 4 adds UUID-namespaced execution IDs and strict content-aware idempotency for
+both durable keys. A timed-out or interrupted active save is `unknown`, stops its delivery worker,
+and cannot be falsely counted as dropped. Activation V3 carries exact JVM descriptors for normal,
+branch, dispatch, and lambda bindings, while V2 remains readable. The graph-entry project now
+selects flat or JPMS analysis in a mixed reactor; unavailable cross-mode source logic becomes an
+explicit coverage gap.
+
+Release commit `facd1daf052f4e3ffae42c48a876dc46e4dd9576` passed the isolated external project,
+five complete pinned Mega graphs from 420 source files, and the clean-clone long gate. The gate
+completed 600,000 decisions at 1,000 RPS with 0.078% p95 overhead and zero errors, mismatches,
+drops, or contamination.

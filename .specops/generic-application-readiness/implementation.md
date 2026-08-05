@@ -275,3 +275,8 @@
   cross-mode source logic is an explicit incomplete coverage gap.
 - 2026-08-05: Task 27 scope: run all generic, external release, pinned Mega, performance, integrity,
   documentation, memory, and repository-state gates before the version 4 release decision.
+- 2026-08-05: Task 27 completed. Clean-clone release commit
+  `facd1daf052f4e3ffae42c48a876dc46e4dd9576` passed repository integrity, Java capability,
+  external runtime instrumentation, five complete Mega graphs from 420 sources, and 600,000
+  decisions at 1,000 RPS. P95 overhead was 0.078%, with zero errors, mismatches, drops, or
+  contamination. Remediation iteration 4 is complete.

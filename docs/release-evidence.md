@@ -51,3 +51,17 @@ evidence file contains successful generic, external, Mega, and long-load results
 - Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
 - Latency: 14,288.459 µs baseline p95; 14,028.834 µs enabled p95; -1.817% overhead
 - Gate result: `RELEASE_GATE_OK`
+
+## RC 1 remediation V4 result
+
+- Release gate commit: `facd1daf052f4e3ffae42c48a876dc46e4dd9576`
+- Java: OpenJDK 21.0.2
+- Maven: 3.9.16
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Capability matrix SHA-256: `122bf93232cb423577cc2c0ade2d3bc640a230df5a58d3f6ee0af08bf7069593`
+- Runtime proof: activation V3 separated annotated overloads and overloaded lambda targets
+- Mega result: five complete graphs from 420 source files
+- Long run: 60-second baseline and 600 seconds enabled at 1,000 RPS
+- Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
+- Latency: 15,023.625 µs baseline p95; 15,035.291 µs enabled p95; 0.078% overhead
+- Gate result: `RELEASE_GATE_OK`

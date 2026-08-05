@@ -230,6 +230,46 @@
       "task": "Task 4",
       "date": "2026-07-31",
       "completedAt": "2026-07-31T09:36:45Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 16,
+      "decision": "Namespace execution IDs per collector process",
+      "rationale": "A UUID namespace plus a local sequence prevents restarts from reusing an execution ID while keeping generation independent of storage.",
+      "task": "Task 23",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 17,
+      "decision": "Represent an unconfirmed save as unknown",
+      "rationale": "Java interruption cannot prove that an uncooperative storage operation did not commit, so unknown is more accurate than dropped and stops further detached calls.",
+      "task": "Task 24",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 18,
+      "decision": "Bind runtime probes with JVM descriptors",
+      "rationale": "Owner and method name do not identify an overload. The descriptor also lets the transformer resolve only the lambda targets of the correct enclosing overload.",
+      "task": "Task 25",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 19,
+      "decision": "Select compiler mode from the graph-entry project",
+      "rationale": "A mixed reactor is not one synthetic named module set. Flat entries and named-module entries need separate valid compiler contexts.",
+      "task": "Task 26",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
     }
   ]
 }

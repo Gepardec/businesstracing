@@ -1,9 +1,9 @@
 ---
 specId: "generic-application-readiness"
 startedAt: "2026-08-05T07:25:12Z"
-completedAt: null
-finalStatus: "running"
-phases: [1]
+completedAt: "2026-08-05T08:16:38Z"
+finalStatus: "passed"
+phases: [1, 2, 3, 4]
 ---
 
 # SpecOps Run: Generic Application Readiness
@@ -73,3 +73,29 @@ phases: [1]
   the graph-entry project and add a connected mixed-reactor contract.
 - Result: Overload, overloaded-lambda, activation V2 compatibility, flat, JPMS, mixed-boundary, and
   cross-mode coverage-gap contracts pass. Task 27 is In Progress.
+
+## Phase 4: Release Verification
+
+**Started:** 2026-08-05T07:48:12Z
+
+### [08:16:38] Step 1: Complete Task 27
+
+- Action: Run focused contracts, the full verifier, external release integration, pinned Mega
+  conformance, the 600,000-decision load gate, and the mandatory clean-clone release gate.
+- Result: PASS. Release commit `facd1daf052f4e3ffae42c48a876dc46e4dd9576` completed 600,000
+  decisions at 1,000 RPS with 0.078% p95 overhead and zero errors, mismatches, drops, or
+  contamination. Mega produced five complete graphs from 420 source files.
+
+### [08:16:38] Step 2: Capture completion metrics
+
+- Action: Count specification characters, completed tasks, verified criteria, wall-clock duration,
+  and repository diff statistics from the specification creation time.
+- Result: Captured 24,588 estimated specification tokens, 118 changed files, 10,427 added lines,
+  146 removed lines, 27 completed tasks, 138 verified criteria, and 7,081 elapsed minutes.
+
+### [08:16:38] Step 3: Update memory and documentation
+
+- Action: Update project memory, the decision journal, release evidence, index, initiative state,
+  implementation evaluation, and run state.
+- Result: All completion metadata is consistent. The final repository verifier passed after these
+  documentation changes.

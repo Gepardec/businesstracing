@@ -79,3 +79,17 @@
 | Spec Compliance | All 22 tasks and the source-free clean-clone release gate passed at the recorded commit. | No blocking deviation remains. | 9 | 7 | Pass |
 
 **Verdict:** PASS — 4 of 4 dimensions passed
+
+### Iteration 4
+
+**Evaluated at:** 2026-08-05T08:16:38Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Functionality | Restart-safe IDs, strict durable conflicts, honest unknown delivery outcomes, exact overload bindings, and mixed compiler contexts pass their focused contracts. The clean-clone release gate also passed. | A storage driver that ignores cancellation can still finish one operation after it becomes unknown. The stopped worker bounds this to one operation and does not make a false dropped claim. | 9 | 7 | Pass |
+| Code Quality | The changes use UUIDs, Java concurrency primitives, compiler symbols, JVM descriptors, ASM bootstrap handles, and existing repository interfaces. Business artifacts stay free of Java metadata. | Activation V2 stays name-only and is read for compatibility. Applications must regenerate it to get overload-safe V3 bindings. | 9 | 7 | Pass |
+| Test Coverage | Contracts cover two collector instances, both durable-key conflicts, exact retries, a late commit, overloads, overloaded lambdas, branch and dispatch descriptors, both mixed-reactor directions, and unavailable cross-mode logic. | Database portability beyond H2 needs deployment-specific tests. | 9 | 7 | Pass |
+| Spec Compliance | All 27 tasks are complete. Five Mega graphs are complete. The 600,000-decision run had 0.078% p95 overhead and zero errors, mismatches, drops, or contamination. | No blocking deviation remains. | 9 | 7 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed

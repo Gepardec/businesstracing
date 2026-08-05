@@ -804,7 +804,7 @@ module-descriptor requirement.
 
 ### Task 27: Rerun all iteration 4 release evidence
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 23, 24, 25, 26
 **Priority:** High
@@ -817,11 +817,11 @@ decision journal, documentation, and evidence only after all gates pass.
 
 **Acceptance Criteria:**
 
-- [ ] `./scripts/verify.sh` passes.
-- [ ] External release integration invokes and stores an instrumented annotated overload-safe method.
-- [ ] Pinned Mega conformance returns five complete graphs with no production Mega hints.
-- [ ] The 600,000-decision gate passes at 1,000 RPS with less than 10% p95 overhead and no unresolved accepted records.
-- [ ] Repository integrity, documentation, memory, index, initiative, and clean-worktree checks pass.
+- [x] `./scripts/verify.sh` passes.
+- [x] External release integration invokes and stores an instrumented annotated overload-safe method.
+- [x] Pinned Mega conformance returns five complete graphs with no production Mega hints.
+- [x] The 600,000-decision gate passes at 1,000 RPS with less than 10% p95 overhead and no unresolved accepted records.
+- [x] Repository integrity, documentation, memory, index, initiative, and clean-worktree checks pass.
 
 **Files to Modify:**
 
@@ -836,16 +836,16 @@ decision journal, documentation, and evidence only after all gates pass.
 
 **Tests Required:**
 
-- [ ] Focused contract suites.
-- [ ] Full generic verifier.
-- [ ] External release fixture.
-- [ ] Mega conformance.
-- [ ] Ten-minute persistence-enabled load gate.
+- [x] Focused contract suites.
+- [x] Full generic verifier.
+- [x] External release fixture.
+- [x] Mega conformance.
+- [x] Ten-minute persistence-enabled load gate.
 
 ## Iteration 4 Progress Tracking
 
 - Total Tasks: 27
-- Completed: 26
-- In Progress: 1
+- Completed: 27
+- In Progress: 0
 - Blocked: 0
 - Pending: 0
