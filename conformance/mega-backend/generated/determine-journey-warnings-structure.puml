@@ -16,7 +16,7 @@ diamond "a following entry exists" as n12
 rectangle "use journey time entries following entry journey direction" as n13
 rectangle "use absent" as n14
 rectangle "derive next direction as try to get next journey direction grouped project time entries" as n15
-rectangle "evaluate validate" as n16
+rectangle "evaluate journey direction" as n16
 diamond "choose by current direction" as n17
 diamond "former direction equals to" as n18
 diamond "former direction equals further" as n19
@@ -37,11 +37,11 @@ diamond "is not finished" as n33
 diamond "next direction is absent" as n34
 diamond "is starting new journey next direction" as n35
 rectangle "set former direction to absent" as n36
-rectangle "derive warning as validate cur entry journey direction and next direction" as n37
+rectangle "derive warning" as n37
 diamond "warning exists" as n38
 rectangle "create journey warning" as n39
 rectangle "journey warning" as n40
-rectangle "evaluate set date" as n41
+rectangle "set journey warning date" as n41
 rectangle "invalid working location in journey rule" as n42
 rectangle "derive sorted project entries" as n43
 rectangle "warnings" as n44
@@ -64,7 +64,7 @@ rectangle "set working location to project entry working location" as n60
 diamond "project entry working location does not equal working location" as n61
 rectangle "create journey warning" as n62
 rectangle "journey warning" as n63
-rectangle "evaluate set date" as n64
+rectangle "set journey warning date" as n64
 rectangle "location relevant set journey rule" as n65
 rectangle "warnings" as n66
 diamond "for each project entry in project entries" as n67
@@ -72,8 +72,8 @@ diamond "project entry work location is project relevant" as n68
 diamond "none of warnings match item date equals project entry date" as n69
 rectangle "create journey warning" as n70
 rectangle "journey warning" as n71
-rectangle "evaluate set date" as n72
-rectangle "derive calculated warnings as calculator calculate project time list" as n73
+rectangle "set journey warning date" as n72
+rectangle "derive calculated warnings" as n73
 rectangle "evaluate add to journey warnings" as n74
 usecase "Stop" as n75
 n1 --> n2 : next

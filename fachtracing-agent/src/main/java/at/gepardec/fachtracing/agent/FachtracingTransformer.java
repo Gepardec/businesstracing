@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.agent;
 
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.analysis.CancellationBoundaryScanner;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -47,6 +48,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         try {
             byte[] transformed = classfileBuffer;
             Map<MethodBinding, Set<MethodBinding>> lambdaTargets = lambdaTargets(classfileBuffer);
+            boolean changed = false;
             for (AnalysisManifest manifest : manifests) {
                 if (!isSelectedClass(manifest, className)) continue;
                 ClassReader reader = new ClassReader(transformed);
@@ -55,13 +57,17 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                                 methodMaxLocals(transformed)),
                         ClassReader.SKIP_FRAMES);
                 transformed = writer.toByteArray();
+                changed = true;
             }
-            ClassReader cancellationReader = new ClassReader(transformed);
-            ClassWriter cancellationWriter = new ClassWriter(
-                    cancellationReader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-            cancellationReader.accept(new CancellationClassVisitor(cancellationWriter), ClassReader.SKIP_FRAMES);
-            transformed = cancellationWriter.toByteArray();
-            return transformed;
+            if (CancellationBoundaryScanner.contains(transformed)) {
+                ClassReader cancellationReader = new ClassReader(transformed);
+                ClassWriter cancellationWriter = new ClassWriter(
+                        cancellationReader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                cancellationReader.accept(new CancellationClassVisitor(cancellationWriter), ClassReader.SKIP_FRAMES);
+                transformed = cancellationWriter.toByteArray();
+                changed = true;
+            }
+            return changed ? transformed : null;
         } catch (Throwable ignored) {
             return null;
         }
@@ -90,9 +96,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
     }
 
     private static boolean cancellationBoundary(String owner, String name, String descriptor) {
-        return name.equals("cancel") && descriptor.equals("(Z)Z") && Set.of(
-                "java/util/concurrent/Future", "java/util/concurrent/CompletableFuture",
-                "java/util/concurrent/ForkJoinTask").contains(owner);
+        return CancellationBoundaryScanner.matches(owner, name, descriptor);
     }
 
     private boolean isSelectedClass(String className) {

@@ -2,6 +2,7 @@ package at.gepardec.fachtracing.analysis;
 
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.ArrayAccessTree;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.BinaryTree;
@@ -406,6 +407,8 @@ public final class StaticDecisionAnalyzer {
         private final List<AnalysisManifest.AnalysisDiagnostic> diagnostics;
         private final List<Path> binaryClasspath;
         private final List<String> pendingFailureNodes = new ArrayList<>();
+        private final Map<ExecutableElement, MutationSummary> mutationSummaries = new HashMap<>();
+        private final Set<ExecutableElement> activeMutationSummaries = new HashSet<>();
         private String rootStop;
 
         private Extractor(
@@ -451,6 +454,263 @@ public final class StaticDecisionAnalyzer {
             builder.addEdge(failure, terminalNode, "fails");
         }
 
+        private DependencyGraphBuilder.CallEffects callEffects(
+                MethodLocation caller, MethodInvocationTree call) {
+            DependencyGraphBuilder.CallEffects callbackEffects = callbackEffects(caller, call);
+            TreePath path = TreePath.getPath(caller.unit(), call);
+            Element called = path == null ? null : trees.getElement(path);
+            if (!(called instanceof ExecutableElement executable)) {
+                return mergeEffects(callbackEffects,
+                        new DependencyGraphBuilder.CallEffects(Set.of(), possibleReferenceRoots(caller, call)));
+            }
+            Set<String> platformWrites = platformMutationRoots(caller, call, executable);
+            if (!platformWrites.isEmpty()) {
+                return mergeEffects(callbackEffects,
+                        new DependencyGraphBuilder.CallEffects(platformWrites, Set.of()));
+            }
+            MethodLocation callee = index.methods().get(executable);
+            if (callee != null && callee.method().getBody() != null) {
+                MutationSummary summary = mutationSummary(callee);
+                Set<String> proven = mapSummaryRoots(
+                        call, summary.receiverWrite(), summary.parameterWrites());
+                Set<String> possible = mapSummaryRoots(
+                        call, summary.receiverUnknown(), summary.parameterUnknown());
+                return mergeEffects(callbackEffects,
+                        new DependencyGraphBuilder.CallEffects(proven, possible));
+            }
+            if (isSupportedLibraryOperation(executable)) return callbackEffects;
+            return mergeEffects(callbackEffects,
+                    new DependencyGraphBuilder.CallEffects(Set.of(), possibleReferenceRoots(caller, call)));
+        }
+
+        private DependencyGraphBuilder.CallEffects callbackEffects(
+                MethodLocation caller, MethodInvocationTree call) {
+            String method = call.getMethodSelect() instanceof MemberSelectTree member
+                    ? member.getIdentifier().toString() : call.getMethodSelect().toString();
+            if (!Set.of("forEach", "forEachOrdered", "map", "mapToInt", "mapToLong", "mapToDouble",
+                    "flatMap", "filter", "anyMatch", "allMatch", "noneMatch", "removeIf", "replaceAll",
+                    "compute", "computeIfAbsent", "computeIfPresent", "merge").contains(method)) {
+                return DependencyGraphBuilder.CallEffects.none();
+            }
+            var proven = new LinkedHashSet<String>();
+            var possible = new LinkedHashSet<String>();
+            for (Tree argument : call.getArguments()) {
+                if (!(argument instanceof LambdaExpressionTree lambda)) continue;
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitMethodInvocation(MethodInvocationTree nested, Void unused) {
+                        DependencyGraphBuilder.CallEffects effects = callEffects(caller, nested);
+                        proven.addAll(effects.provenWrites());
+                        possible.addAll(effects.possibleWrites());
+                        return super.visitMethodInvocation(nested, unused);
+                    }
+                }.scan((Tree) lambda.getBody(), null);
+            }
+            return new DependencyGraphBuilder.CallEffects(proven, possible);
+        }
+
+        private static DependencyGraphBuilder.CallEffects mergeEffects(
+                DependencyGraphBuilder.CallEffects first,
+                DependencyGraphBuilder.CallEffects second) {
+            var proven = new LinkedHashSet<>(first.provenWrites());
+            proven.addAll(second.provenWrites());
+            var possible = new LinkedHashSet<>(first.possibleWrites());
+            possible.addAll(second.possibleWrites());
+            return new DependencyGraphBuilder.CallEffects(proven, possible);
+        }
+
+        private Set<String> platformMutationRoots(
+                MethodLocation caller,
+                MethodInvocationTree call,
+                ExecutableElement executable) {
+            String owner = ((TypeElement) executable.getEnclosingElement()).getQualifiedName().toString();
+            String method = executable.getSimpleName().toString();
+            if (Set.of("java.util.Collections", "java.util.Arrays").contains(owner)
+                    && Set.of("sort", "parallelSort", "fill", "copy", "swap", "reverse", "rotate",
+                            "shuffle", "replaceAll", "setAll", "parallelSetAll").contains(method)
+                    && !call.getArguments().isEmpty()) {
+                return stateRoots(call.getArguments().getFirst());
+            }
+            boolean collection = owner.startsWith("java.util.") && Set.of(
+                    "add", "addAll", "remove", "removeAll", "removeIf", "retainAll", "clear",
+                    "set", "replace", "replaceAll", "sort", "put", "putAll", "putIfAbsent",
+                    "compute", "computeIfAbsent", "computeIfPresent", "merge", "setValue")
+                    .contains(method);
+            boolean mutableText = (owner.equals("java.lang.StringBuilder")
+                    || owner.equals("java.lang.StringBuffer"))
+                    && Set.of("append", "appendCodePoint", "delete", "deleteCharAt", "insert",
+                            "replace", "reverse", "setCharAt", "setLength").contains(method);
+            boolean atomic = owner.startsWith("java.util.concurrent.atomic.")
+                    && (method.startsWith("set") || method.startsWith("compareAndSet")
+                    || method.startsWith("getAnd") || method.startsWith("increment")
+                    || method.startsWith("decrement") || method.startsWith("addAnd"));
+            if (!(collection || mutableText || atomic)
+                    || !(call.getMethodSelect() instanceof MemberSelectTree member)) return Set.of();
+            TreePath receiverPath = TreePath.getPath(caller.unit(), member.getExpression());
+            Element receiver = receiverPath == null ? null : trees.getElement(receiverPath);
+            if (receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
+                    ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind())) return Set.of();
+            return stateRoots(member.getExpression());
+        }
+
+        private Set<String> mapSummaryRoots(
+                MethodInvocationTree call,
+                boolean receiver,
+                Set<Integer> parameters) {
+            var roots = new LinkedHashSet<String>();
+            if (receiver) {
+                if (call.getMethodSelect() instanceof MemberSelectTree member) {
+                    roots.addAll(stateRoots(member.getExpression()));
+                } else {
+                    roots.add("this");
+                }
+            }
+            for (Integer parameter : parameters) {
+                if (parameter >= 0 && parameter < call.getArguments().size()) {
+                    roots.addAll(stateRoots(call.getArguments().get(parameter)));
+                }
+            }
+            return Set.copyOf(roots);
+        }
+
+        private Set<String> possibleReferenceRoots(MethodLocation location, MethodInvocationTree call) {
+            var roots = new LinkedHashSet<String>();
+            if (call.getMethodSelect() instanceof MemberSelectTree member) {
+                TreePath path = TreePath.getPath(location.unit(), member.getExpression());
+                Element receiver = path == null ? null : trees.getElement(path);
+                boolean typeReceiver = receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE,
+                        ElementKind.ENUM, ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind());
+                if (!typeReceiver && referenceValue(location, member.getExpression())) {
+                    roots.addAll(stateRoots(member.getExpression()));
+                }
+            } else {
+                roots.add("this");
+            }
+            for (Tree argument : call.getArguments()) {
+                if (referenceValue(location, argument)) roots.addAll(stateRoots(argument));
+            }
+            return Set.copyOf(roots);
+        }
+
+        private boolean referenceValue(MethodLocation location, Tree tree) {
+            TreePath path = TreePath.getPath(location.unit(), tree);
+            TypeMirror type = path == null ? null : trees.getTypeMirror(path);
+            return type == null || !type.getKind().isPrimitive();
+        }
+
+        private static Set<String> stateRoots(Tree tree) {
+            return DependencyGraphBuilder.collectIdentifiers(tree);
+        }
+
+        private MutationSummary mutationSummary(MethodLocation location) {
+            Element element = trees.getElement(location.path());
+            if (!(element instanceof ExecutableElement executable)) return MutationSummary.unknown();
+            MutationSummary cached = mutationSummaries.get(executable);
+            if (cached != null) return cached;
+            if (!activeMutationSummaries.add(executable)) return recursiveSummary(location);
+
+            Map<String, Integer> parameters = new LinkedHashMap<>();
+            for (int index = 0; index < location.method().getParameters().size(); index++) {
+                parameters.put(location.method().getParameters().get(index).getName().toString(), index);
+            }
+            Set<String> fields = executable.getEnclosingElement().getEnclosedElements().stream()
+                    .filter(member -> member.getKind() == ElementKind.FIELD)
+                    .map(member -> member.getSimpleName().toString()).collect(Collectors.toSet());
+            var receiverWrite = new boolean[1];
+            var receiverUnknown = new boolean[1];
+            var parameterWrites = new LinkedHashSet<Integer>();
+            var parameterUnknown = new LinkedHashSet<Integer>();
+
+            new TreePathScanner<Void, Void>() {
+                @Override public Void visitAssignment(AssignmentTree node, Void unused) {
+                    mark(node.getVariable(), true);
+                    return super.visitAssignment(node, unused);
+                }
+
+                @Override public Void visitCompoundAssignment(CompoundAssignmentTree node, Void unused) {
+                    mark(node.getVariable(), true);
+                    return super.visitCompoundAssignment(node, unused);
+                }
+
+                @Override public Void visitUnary(UnaryTree node, Void unused) {
+                    if (Set.of(Tree.Kind.PREFIX_INCREMENT, Tree.Kind.PREFIX_DECREMENT,
+                            Tree.Kind.POSTFIX_INCREMENT, Tree.Kind.POSTFIX_DECREMENT).contains(node.getKind())) {
+                        mark(node.getExpression(), true);
+                    }
+                    return super.visitUnary(node, unused);
+                }
+
+                @Override public Void visitMethodInvocation(MethodInvocationTree node, Void unused) {
+                    DependencyGraphBuilder.CallEffects effects = callEffects(location, node);
+                    effects.provenWrites().forEach(name -> markName(name, true));
+                    effects.possibleWrites().forEach(name -> markName(name, false));
+                    return super.visitMethodInvocation(node, unused);
+                }
+
+                private void mark(Tree target, boolean proven) {
+                    Tree state = target instanceof ArrayAccessTree array ? array.getExpression() : target;
+                    stateRoots(state).forEach(name -> markName(name, proven));
+                }
+
+                private void markName(String name, boolean proven) {
+                    Integer parameter = parameters.get(name);
+                    if (parameter != null) {
+                        (proven ? parameterWrites : parameterUnknown).add(parameter);
+                    } else if (name.equals("this") || name.equals("super") || fields.contains(name)) {
+                        if (proven) receiverWrite[0] = true;
+                        else receiverUnknown[0] = true;
+                    }
+                }
+            }.scan(new TreePath(location.path(), location.method().getBody()), null);
+
+            activeMutationSummaries.remove(executable);
+            var summary = new MutationSummary(receiverWrite[0], Set.copyOf(parameterWrites),
+                    receiverUnknown[0], Set.copyOf(parameterUnknown));
+            mutationSummaries.put(executable, summary);
+            return summary;
+        }
+
+        private MutationSummary recursiveSummary(MethodLocation location) {
+            Set<Integer> parameters = java.util.stream.IntStream.range(0, location.method().getParameters().size())
+                    .filter(index -> {
+                        TreePath path = TreePath.getPath(
+                                location.unit(), location.method().getParameters().get(index));
+                        TypeMirror type = path == null ? null : trees.getTypeMirror(path);
+                        return type == null || !type.getKind().isPrimitive();
+                    }).boxed().collect(Collectors.toSet());
+            return new MutationSummary(false, Set.of(), true, parameters);
+        }
+
+        private Set<Tree> unknownResultEffects(
+                MethodLocation location,
+                DependencyGraphBuilder.MethodDependencies dependencies,
+                Set<Tree> slice) {
+            var dependentNames = new LinkedHashSet<String>();
+            slice.forEach(tree -> dependentNames.addAll(DependencyGraphBuilder.collectIdentifiers(tree)));
+            Element method = trees.getElement(location.path());
+            Set<String> fields = method instanceof ExecutableElement executable
+                    ? executable.getEnclosingElement().getEnclosedElements().stream()
+                            .filter(member -> member.getKind() == ElementKind.FIELD)
+                            .map(member -> member.getSimpleName().toString()).collect(Collectors.toSet())
+                    : Set.of();
+            boolean receiverStateReturned = dependentNames.stream().anyMatch(fields::contains);
+            Set<Tree> result = Collections.newSetFromMap(new IdentityHashMap<>());
+            dependencies.possibleEffectsByIdentifier().forEach((name, calls) -> {
+                if (!dependentNames.contains(name) && !(name.equals("this") && receiverStateReturned)) return;
+                calls.stream().filter(call -> !relevant(call, slice, dependencies)).forEach(result::add);
+            });
+            return Collections.unmodifiableSet(result);
+        }
+
+        private record MutationSummary(
+                boolean receiverWrite,
+                Set<Integer> parameterWrites,
+                boolean receiverUnknown,
+                Set<Integer> parameterUnknown) {
+            private static MutationSummary unknown() {
+                return new MutationSummary(false, Set.of(), true, Set.of());
+            }
+        }
+
         private Extraction extract(
                 MethodLocation location,
                 String predecessor,
@@ -460,9 +720,12 @@ public final class StaticDecisionAnalyzer {
             if (methodElement instanceof ExecutableElement executable && !activeMethods.add(executable)) {
                 return new Extraction(predecessor, List.of(new Tail(predecessor, "result")));
             }
-            var dependencies = new DependencyGraphBuilder().build(location.method());
+            var dependencies = new DependencyGraphBuilder().build(
+                    location.method(), call -> callEffects(location, call));
             Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies);
-            var flow = new FlowScanner(location, root, activeMethods, dependencies, slice, predecessor);
+            Set<Tree> unknownResultEffects = unknownResultEffects(location, dependencies, slice);
+            var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
+                    unknownResultEffects, predecessor);
             flow.scan(new TreePath(location.path(), location.method().getBody()), null);
             if (methodElement instanceof ExecutableElement executable) activeMethods.remove(executable);
             return new Extraction(flow.lastNode(), flow.exits());
@@ -479,7 +742,8 @@ public final class StaticDecisionAnalyzer {
                 return new Extraction(predecessor, List.of(new Tail(predecessor, "result")));
             }
 
-            var dependencies = new DependencyGraphBuilder().build(location.method());
+            var dependencies = new DependencyGraphBuilder().build(
+                    location.method(), call -> callEffects(location, call));
             Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies);
             var last = new String[] { predecessor };
             var predicateNodes = new LinkedHashMap<Tree, String>();
@@ -757,6 +1021,7 @@ public final class StaticDecisionAnalyzer {
             private final Set<ExecutableElement> activeMethods;
             private final DependencyGraphBuilder.MethodDependencies dependencies;
             private final Set<Tree> slice;
+            private final Set<Tree> unknownResultEffects;
             private final List<Tail> exitNodes = new ArrayList<>();
             private List<Tail> frontier;
             private String lastNode;
@@ -766,6 +1031,7 @@ public final class StaticDecisionAnalyzer {
             private List<DeferredReturn> deferredReturns = new ArrayList<>();
             private final Set<VariableTree> transparentLoopAliases =
                     Collections.newSetFromMap(new IdentityHashMap<>());
+            private final Map<String, String> validationHelperRoles = new LinkedHashMap<>();
 
             private FlowScanner(
                     MethodLocation location,
@@ -773,12 +1039,14 @@ public final class StaticDecisionAnalyzer {
                     Set<ExecutableElement> activeMethods,
                     DependencyGraphBuilder.MethodDependencies dependencies,
                     Set<Tree> slice,
+                    Set<Tree> unknownResultEffects,
                     String predecessor) {
                 this.location = location;
                 this.root = root;
                 this.activeMethods = activeMethods;
                 this.dependencies = dependencies;
                 this.slice = slice;
+                this.unknownResultEffects = unknownResultEffects;
                 this.frontier = List.of(new Tail(predecessor, "next"));
                 this.lastNode = predecessor;
             }
@@ -909,15 +1177,17 @@ public final class StaticDecisionAnalyzer {
 
             @Override public Void visitVariable(VariableTree node, Void unused) {
                 if (transparentLoopAliases.contains(node)) return null;
+                if (node.getInitializer() == null || !relevant(node.getInitializer(), slice, dependencies)) {
+                    return super.visitVariable(node, unused);
+                }
                 if (validationHelperVariable(node)) {
                     String subject = words(node.getName().toString().replaceFirst("(?i)Validator$", ""));
+                    validationHelperRoles.put(node.getName().toString(),
+                            subject.isBlank() ? "validation" : subject);
                     String id = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                             subject.isBlank() ? "validation" : subject, node, null);
                     advance(id);
                     return null;
-                }
-                if (node.getInitializer() == null || !relevant(node.getInitializer(), slice, dependencies)) {
-                    return super.visitVariable(node, unused);
                 }
                 scan(node.getInitializer(), unused);
                 String id = add(BusinessDecisionGraph.NodeKind.COMPUTATION, derivationLabel(node), node, null);
@@ -991,6 +1261,10 @@ public final class StaticDecisionAnalyzer {
             }
 
             @Override public Void visitMethodInvocation(MethodInvocationTree node, Void unused) {
+                if (unknownResultEffects.contains(node)) {
+                    addCoverageGap(node, "a possible side effect on the returned decision cannot be reconstructed");
+                    return null;
+                }
                 if (!relevant(node, slice, dependencies)) return super.visitMethodInvocation(node, unused);
                 Element called = trees.getElement(getCurrentPath());
                 if (!(called instanceof ExecutableElement executable)) return super.visitMethodInvocation(node, unused);
@@ -1021,7 +1295,7 @@ public final class StaticDecisionAnalyzer {
                     if (callee != null && isDecisionFreeProjection(callee)) return null;
                     if (callee != null && !activeMethods.contains(executable)) {
                         String call = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
-                                "evaluate " + words(executable.getSimpleName().toString()), node, null);
+                                invocationLabel(node, executable), node, null);
                         advance(call);
                         Extraction linked = extract(callee, call, false, activeMethods);
                         frontier = linked.exits();
@@ -1729,7 +2003,7 @@ public final class StaticDecisionAnalyzer {
                 var unavailable = new boolean[1];
                 new TreeScanner<Void, Void>() {
                     @Override public Void visitMethodInvocation(MethodInvocationTree node, Void unused) {
-                        if (!slice.contains(node)) return super.visitMethodInvocation(node, unused);
+                        if (!relevant(node, slice, dependencies)) return super.visitMethodInvocation(node, unused);
                         TreePath path = TreePath.getPath(location.unit(), node);
                         Element called = path == null ? null : trees.getElement(path);
                         if (!(called instanceof ExecutableElement executable)
@@ -1778,7 +2052,38 @@ public final class StaticDecisionAnalyzer {
                 Tree initializer = variable.getInitializer();
                 if (initializer.getKind() == Tree.Kind.NEW_CLASS) return "initialize " + subject;
                 if (containsImplementationSyntax(initializer)) return "derive " + subject;
+                if (initializer instanceof MethodInvocationTree call) {
+                    if (call.getMethodSelect() instanceof MemberSelectTree member
+                            && member.getIdentifier().contentEquals("validate")
+                            && member.getExpression() instanceof IdentifierTree identifier
+                            && validationHelperRoles.containsKey(identifier.getName().toString())) {
+                        return "derive " + subject;
+                    }
+                    TreePath path = TreePath.getPath(location.unit(), call);
+                    Element called = path == null ? null : trees.getElement(path);
+                    if (called instanceof ExecutableElement executable
+                            && (executable.getModifiers().contains(Modifier.ABSTRACT)
+                            || executable.getEnclosingElement().getKind() == ElementKind.INTERFACE)) {
+                        return "derive " + subject;
+                    }
+                }
                 return "derive " + subject + " as " + expression(initializer);
+            }
+
+            private String invocationLabel(MethodInvocationTree call, ExecutableElement executable) {
+                String method = executable.getSimpleName().toString();
+                if (call.getMethodSelect() instanceof MemberSelectTree member) {
+                    if (member.getExpression() instanceof IdentifierTree identifier
+                            && method.equals("validate")) {
+                        String role = validationHelperRoles.get(identifier.getName().toString());
+                        if (role != null) return "evaluate " + role;
+                    }
+                    if (method.startsWith("set") && method.length() > 3) {
+                        String receiver = expression(member.getExpression()).replaceFirst("^new\\s+", "");
+                        return "set " + receiver + " " + words(method.substring(3));
+                    }
+                }
+                return "evaluate " + words(method);
             }
 
             private boolean isPredicateOperation(MethodInvocationTree invocation) {
@@ -2234,7 +2539,6 @@ public final class StaticDecisionAnalyzer {
         List<String> arguments = call.getArguments().stream()
                 .filter(argument -> !technicalPosition(argument))
                 .map(StaticDecisionAnalyzer::renderExpression).toList();
-        if (method.equals("validate")) receiver = "";
         if (method.equals("equals") && arguments.size() == 1) {
             if (receiver.equals("true")) return arguments.getFirst();
             if (receiver.equals("false")) return "not " + arguments.getFirst();

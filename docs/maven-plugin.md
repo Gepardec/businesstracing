@@ -65,6 +65,12 @@ manifest, original class fingerprints, the source-boundary fingerprint, and the 
 option. A runtime can load this file without Java source or a compiler. Duplicate decision labels
 get graph-ID suffixes, so one graph cannot replace another.
 
+Activation generation also scans selected project output directories for the exact supported
+`Future.cancel(boolean)`, `CompletableFuture.cancel(boolean)`, and
+`ForkJoinTask.cancel(boolean)` bytecode calls. It fingerprints each matching application caller so
+cancellation in a separate controller can release the correct trace reservation. Dependency output
+directories and JAR files remain lookup-only and are not added by this scan.
+
 Optional `includeProjects` and `excludeProjects` lists use exact `groupId:artifactId` values. They
 filter Maven's effective selection. An include value that is not in that selection causes a failure.
 The existing `analyze` goal remains available for per-module output.

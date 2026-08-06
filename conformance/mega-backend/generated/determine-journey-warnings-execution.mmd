@@ -14,7 +14,7 @@ flowchart LR
     n13["use journey time entries following entry journey direction"]
     n14["use absent"]
     n15["derive next direction as try to get next journey direction grouped project time entries"]
-    n16["evaluate validate"]
+    n16["evaluate journey direction"]
     n17{"choose by current direction"}
     n18{"former direction equals to"}
     n19{"former direction equals further"}
@@ -35,11 +35,11 @@ flowchart LR
     n34{"next direction is absent"}
     n35{"is starting new journey next direction"}
     n36["set former direction to absent"]
-    n37["derive warning as validate cur entry journey direction and next direction"]
+    n37["derive warning"]
     n38{"warning exists"}
     n39["create journey warning"]
     n40["journey warning"]
-    n41["evaluate set date"]
+    n41["set journey warning date"]
     n42["invalid working location in journey rule"]
     n43["derive sorted project entries"]
     n44["warnings"]
@@ -62,7 +62,7 @@ flowchart LR
     n61{"project entry working location does not equal working location"}
     n62["create journey warning"]
     n63["journey warning"]
-    n64["evaluate set date"]
+    n64["set journey warning date"]
     n65["location relevant set journey rule"]
     n66["warnings"]
     n67{"for each project entry in project entries"}
@@ -70,8 +70,8 @@ flowchart LR
     n69{"none of warnings match item date equals project entry date"}
     n70["create journey warning"]
     n71["journey warning"]
-    n72["evaluate set date"]
-    n73["derive calculated warnings as calculator calculate project time list"]
+    n72["set journey warning date"]
+    n73["derive calculated warnings"]
     n74["evaluate add to journey warnings"]
     n75(["Stop"])
     n1 -->|"next"| n2

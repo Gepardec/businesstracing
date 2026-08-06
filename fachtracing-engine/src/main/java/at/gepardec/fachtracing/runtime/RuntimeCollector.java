@@ -187,7 +187,9 @@ public class RuntimeCollector implements TraceContextCarrier {
             markUnresolvedDispatches(context);
             Definition definition = definition(context);
             var encoded = definition.codec().encode(result, definition.graph().decisionLabel(), "final decision");
-            context.observe(nodeId, "result", Map.of("result", encoded), null);
+            var evidence = new java.util.LinkedHashMap<>(context.consumeEvidence(nodeId));
+            evidence.put("result", encoded);
+            context.observe(nodeId, "result", Map.copyOf(evidence), null);
             context.completeWhenReady(clock.instant(), encoded).ifPresent(completed::add);
         } finally {
             stack.pop();

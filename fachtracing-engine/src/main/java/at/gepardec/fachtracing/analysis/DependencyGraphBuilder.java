@@ -18,16 +18,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /** Builds result data dependencies without using names or package classifications. */
 public final class DependencyGraphBuilder {
     /** Extracts return sinks, local definitions, identifier uses, and parent relationships. */
-    public MethodDependencies build(MethodTree method) {
+    public MethodDependencies build(
+            MethodTree method,
+            Function<MethodInvocationTree, CallEffects> callEffects) {
         var definitions = new LinkedHashMap<String, Tree>();
         var identifiers = new IdentityHashMap<Tree, Set<String>>();
         var parents = new IdentityHashMap<Tree, Tree>();
         var returns = new ArrayList<ReturnTree>();
         var effectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
+        var possibleEffectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
 
         new TreeScanner<Void, Tree>() {
             @Override public Void scan(Tree tree, Tree parent) {
@@ -60,8 +64,11 @@ public final class DependencyGraphBuilder {
             }
 
             @Override public Void visitMethodInvocation(MethodInvocationTree node, Tree parent) {
-                collectIdentifiers(node).forEach(identifier ->
+                CallEffects effects = callEffects.apply(node);
+                effects.provenWrites().forEach(identifier ->
                         effectsByIdentifier.computeIfAbsent(identifier, ignored -> new ArrayList<>()).add(node));
+                effects.possibleWrites().forEach(identifier ->
+                        possibleEffectsByIdentifier.computeIfAbsent(identifier, ignored -> new ArrayList<>()).add(node));
                 return super.visitMethodInvocation(node, parent);
             }
         }.scan(method, null);
@@ -77,7 +84,25 @@ public final class DependencyGraphBuilder {
 
         Map<String, List<Tree>> immutableEffects = new LinkedHashMap<>();
         effectsByIdentifier.forEach((name, effects) -> immutableEffects.put(name, List.copyOf(effects)));
-        return new MethodDependencies(method, returns, definitions, identifiers, parents, immutableEffects);
+        Map<String, List<Tree>> immutablePossibleEffects = new LinkedHashMap<>();
+        possibleEffectsByIdentifier.forEach((name, effects) ->
+                immutablePossibleEffects.put(name, List.copyOf(effects)));
+        return new MethodDependencies(method, returns, definitions, identifiers, parents,
+                immutableEffects, immutablePossibleEffects);
+    }
+
+    /** Classified writes for one attributed call. */
+    public record CallEffects(Set<String> provenWrites, Set<String> possibleWrites) {
+        /** Creates immutable disjoint write sets. */
+        public CallEffects {
+            provenWrites = Set.copyOf(provenWrites);
+            var possible = new LinkedHashSet<>(possibleWrites);
+            possible.removeAll(provenWrites);
+            possibleWrites = Set.copyOf(possible);
+        }
+
+        /** Returns a call with no effect on caller-visible state. */
+        public static CallEffects none() { return new CallEffects(Set.of(), Set.of()); }
     }
 
     /** Compiler-tree dependence input for backward slicing. */
@@ -87,7 +112,8 @@ public final class DependencyGraphBuilder {
             Map<String, Tree> definitions,
             Map<Tree, Set<String>> identifierUses,
             Map<Tree, Tree> parents,
-            Map<String, List<Tree>> effectsByIdentifier) {
+            Map<String, List<Tree>> effectsByIdentifier,
+            Map<String, List<Tree>> possibleEffectsByIdentifier) {
         /** Creates defensive collections while retaining tree object identity. */
         public MethodDependencies {
             returns = List.copyOf(returns);
@@ -95,6 +121,7 @@ public final class DependencyGraphBuilder {
             identifierUses = Map.copyOf(identifierUses);
             parents = Map.copyOf(parents);
             effectsByIdentifier = Map.copyOf(effectsByIdentifier);
+            possibleEffectsByIdentifier = Map.copyOf(possibleEffectsByIdentifier);
         }
     }
 

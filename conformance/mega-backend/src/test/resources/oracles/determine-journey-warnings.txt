@@ -15,7 +15,7 @@ node 12: PREDICATE | a following entry exists
 node 13: COMPUTATION | use journey time entries following entry journey direction
 node 14: COMPUTATION | use absent
 node 15: COMPUTATION | derive next direction as try to get next journey direction grouped project time entries
-node 16: COMPUTATION | evaluate validate
+node 16: COMPUTATION | evaluate journey direction
 node 17: CHOICE | choose by current direction
 node 18: PREDICATE | former direction equals to
 node 19: PREDICATE | former direction equals further
@@ -36,11 +36,11 @@ node 33: PREDICATE | is not finished
 node 34: PREDICATE | next direction is absent
 node 35: PREDICATE | is starting new journey next direction
 node 36: COMPUTATION | set former direction to absent
-node 37: COMPUTATION | derive warning as validate cur entry journey direction and next direction
+node 37: COMPUTATION | derive warning
 node 38: PREDICATE | warning exists
 node 39: COMPUTATION | create journey warning
 node 40: COMPUTATION | journey warning
-node 41: COMPUTATION | evaluate set date
+node 41: COMPUTATION | set journey warning date
 node 42: COMPUTATION | invalid working location in journey rule
 node 43: COMPUTATION | derive sorted project entries
 node 44: COMPUTATION | warnings
@@ -63,7 +63,7 @@ node 60: COMPUTATION | set working location to project entry working location
 node 61: PREDICATE | project entry working location does not equal working location
 node 62: COMPUTATION | create journey warning
 node 63: COMPUTATION | journey warning
-node 64: COMPUTATION | evaluate set date
+node 64: COMPUTATION | set journey warning date
 node 65: COMPUTATION | location relevant set journey rule
 node 66: COMPUTATION | warnings
 node 67: CHOICE | for each project entry in project entries
@@ -71,8 +71,8 @@ node 68: PREDICATE | project entry work location is project relevant
 node 69: PREDICATE | none of warnings match item date equals project entry date
 node 70: COMPUTATION | create journey warning
 node 71: COMPUTATION | journey warning
-node 72: COMPUTATION | evaluate set date
-node 73: COMPUTATION | derive calculated warnings as calculator calculate project time list
+node 72: COMPUTATION | set journey warning date
+node 73: COMPUTATION | derive calculated warnings
 node 74: COMPUTATION | evaluate add to journey warnings
 node 75: OUTCOME | Stop
 edge 1 -> 2 | next

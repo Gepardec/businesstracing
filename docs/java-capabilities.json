@@ -14,8 +14,11 @@
     {"id":"predicate-operand-evidence","status":"supported","contract":"FachtracingTransformerTest.capturesOnlyResultRelevantPredicateOperands"},
     {"id":"predicate-site-evidence","status":"supported","contract":"FachtracingTransformerTest.capturesCurrentEvidenceOrReportsAnExactGap"},
     {"id":"method-receiver-evidence","status":"supported","contract":"StaticDecisionAnalyzerTest.scansMethodReceiversForEvidence"},
+    {"id":"terminal-outcome-evidence","status":"supported","contract":"FachtracingTransformerTest.analyzerAndTransformerSeparateOverloadsAndTheirLambdas"},
     {"id":"incomplete-exact-path-gap","status":"explicit-gap","contract":"FachtracingTransformerTest.partialCompoundBindingCreatesRuntimeGap"},
     {"id":"assignment-data-flow","status":"supported","contract":"StaticDecisionAnalyzerTest.excludesResultIndependentWork"},
+    {"id":"proven-write-result-slice","status":"supported","contract":"StaticDecisionAnalyzerTest.excludesIgnoredReadsAndReportsUnknownEffects"},
+    {"id":"unknown-result-effect-gap","status":"explicit-gap","contract":"StaticDecisionAnalyzerTest.excludesIgnoredReadsAndReportsUnknownEffects"},
     {"id":"direct-source-call","status":"supported","contract":"StaticDecisionAnalyzerTest.followsDirectCallsAcrossDomains"},
     {"id":"generic-polymorphic-dispatch","status":"supported","contract":"StaticDecisionAnalyzerTest.representsDynamicDispatchWithoutGuessing"},
     {"id":"typed-result","status":"supported","contract":"ApiModelTest.builtInsRoundTrip"},
@@ -52,6 +55,7 @@
     {"id":"owned-automatic-module-source","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsOwnedExternalAutomaticModuleSources"},
     {"id":"java17-java21-projects","status":"supported","contract":"StaticDecisionAnalyzerTest.isolatesDuplicateTypesAndCompilerModelsByProject"},
     {"id":"business-java-vocabulary","status":"supported","contract":"StaticDecisionAnalyzerTest.removesJavaConstructionVocabularyGenerically"},
-    {"id":"call-role-label-lowering","status":"supported","contract":"StaticDecisionAnalyzerTest.removesJavaConstructionVocabularyGenerically"}
+    {"id":"call-role-label-lowering","status":"supported","contract":"StaticDecisionAnalyzerTest.removesJavaConstructionVocabularyGenerically"},
+    {"id":"receiver-preserving-call-label","status":"supported","contract":"StaticDecisionAnalyzerTest.usesProvenValidationRolesWithoutGlobalReceiverRemoval"}
   ]
 }

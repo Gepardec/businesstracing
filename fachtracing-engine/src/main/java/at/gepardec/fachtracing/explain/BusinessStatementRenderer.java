@@ -23,8 +23,17 @@ public final class BusinessStatementRenderer {
             case COMPUTATION -> node.businessLabel() + evidence;
             case COVERAGE_GAP -> node.businessLabel();
             case ENTRY -> "decision started";
-            case OUTCOME -> "decision produced " + evidenceValue(observation.evidence(), "result");
+            case OUTCOME -> outcomeEvidence(observation.evidence());
         };
+    }
+
+    private static String outcomeEvidence(Map<String, DecisionExecution.DecisionValue> evidence) {
+        String facts = evidence.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals("result"))
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> friendly(entry.getKey()) + " was " + entry.getValue().displayValue())
+                .collect(Collectors.joining(", "));
+        return facts.isBlank() ? "decision produced " + evidenceValue(evidence, "result") : facts;
     }
 
     private static String selectedAlternative(

@@ -48,14 +48,20 @@ CompletableFuture, and ForkJoinTask cancellation is observed without replacing t
 so identity, runtime type, equality, hash code, text, and implemented interfaces stay unchanged.
 Every exact catalog callback position is supported. The agent stores and reloads invocation
 operands when the callback is not the last argument. It observes the returned `CompletionStage`, so
-normal or exceptional completion releases a callback reservation that never started. Cancel calls
-in methods without graph probes are also observed when the class has an activation fingerprint.
+normal or exceptional completion releases a callback reservation that never started. Activation
+generation scans compiled application output for the exact supported `Future.cancel(boolean)`,
+`CompletableFuture.cancel(boolean)`, and `ForkJoinTask.cancel(boolean)` calls. It fingerprints these
+application caller classes, including separate controllers with no graph probes. Dependency
+directories and JAR files remain lookup-only. The agent changes a fingerprinted class only when it
+contains a graph probe or one of these exact calls.
 
 Direct parameter evidence is read at the predicate branch, not at method entry. If the required
 operand is a property, local, or calculation outside the exact capture subset, or if its value has
 no safe adapter, the execution contains a source-located coverage gap and is incomplete.
 A direct parameter used as a result-relevant method receiver is also recorded at the predicate or
 return site. An explicit value receiver outside the exact subset creates a source-located gap.
+At completion, the collector merges evidence staged for `Stop` with the typed result. The
+explanation shows non-result values as business reasons and keeps the result in its result field.
 
 `scripts/verify-external-release.sh` publishes the RC to a temporary isolated file repository,
 uses an empty Maven local repository, resolves an exact external source artifact, and repeats that

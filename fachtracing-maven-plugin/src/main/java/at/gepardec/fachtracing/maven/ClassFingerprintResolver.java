@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.analysis.CancellationBoundaryScanner;
 import org.apache.maven.project.MavenProject;
 
 import java.io.IOException;
@@ -23,12 +24,15 @@ final class ClassFingerprintResolver {
     static Map<String, String> resolve(
             List<MavenProject> projects,
             List<AnalysisManifest.AnalysisResult> analyses) throws IOException {
-        Set<String> needed = selectedOwners(analyses);
+        Set<String> needed = new LinkedHashSet<>(selectedOwners(analyses));
         var found = new LinkedHashMap<String, FoundClass>();
         var locations = new LinkedHashSet<Path>();
+        var applicationOutputs = new LinkedHashSet<Path>();
         for (MavenProject project : projects) {
             if (project.getBuild() != null && project.getBuild().getOutputDirectory() != null) {
-                locations.add(Path.of(project.getBuild().getOutputDirectory()).toAbsolutePath().normalize());
+                Path output = Path.of(project.getBuild().getOutputDirectory()).toAbsolutePath().normalize();
+                locations.add(output);
+                applicationOutputs.add(output);
             }
             try {
                 project.getCompileClasspathElements().stream().map(Path::of)
@@ -40,6 +44,9 @@ final class ClassFingerprintResolver {
             project.getArtifacts().stream().map(artifact -> artifact.getFile())
                     .filter(java.util.Objects::nonNull).map(java.io.File::toPath)
                     .map(path -> path.toAbsolutePath().normalize()).forEach(locations::add);
+        }
+        for (Path output : applicationOutputs) {
+            if (Files.isDirectory(output)) addCancellationCallers(output, needed);
         }
         for (Path location : locations) {
             if (Files.isDirectory(location)) scanDirectory(location, needed, found);
@@ -56,6 +63,19 @@ final class ClassFingerprintResolver {
         found.values().stream().sorted(java.util.Comparator.comparing(FoundClass::internalName))
                 .forEach(item -> result.put(item.internalName(), item.fingerprint()));
         return Map.copyOf(result);
+    }
+
+    private static void addCancellationCallers(Path root, Set<String> needed) throws IOException {
+        try (var paths = Files.walk(root)) {
+            for (Path path : paths.filter(Files::isRegularFile)
+                    .filter(item -> item.toString().endsWith(".class")).toList()) {
+                byte[] bytecode = Files.readAllBytes(path);
+                if (!CancellationBoundaryScanner.contains(bytecode)) continue;
+                String internal = root.relativize(path).toString().replace(java.io.File.separatorChar, '/');
+                internal = internal.substring(0, internal.length() - ".class".length());
+                needed.add(internal.replace('/', '.').replace('$', '.'));
+            }
+        }
     }
 
     private static Set<String> selectedOwners(List<AnalysisManifest.AnalysisResult> analyses) {

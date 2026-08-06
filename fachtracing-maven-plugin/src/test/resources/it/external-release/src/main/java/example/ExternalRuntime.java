@@ -50,6 +50,36 @@ public final class ExternalRuntime {
             throw new IllegalStateException("runtime trace did not produce an explanation");
         }
 
+        var blocker = new java.util.concurrent.CountDownLatch(1);
+        var executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            executor.submit(() -> {
+                blocker.await();
+                return null;
+            });
+            var cancellationDecision = new ExternalDecision();
+            if (!cancellationDecision.submit(executor, 25)) {
+                throw new IllegalStateException("cancellation decision returned false");
+            }
+            if (collector.pollCompleted().isPresent()) {
+                throw new IllegalStateException("queued trace completed before cancellation");
+            }
+            if (!new ExternalController().cancel(cancellationDecision.pending())) {
+                throw new IllegalStateException("separate controller did not cancel queued work");
+            }
+            var cancelled = collector.pollCompleted().orElseThrow(() ->
+                    new IllegalStateException("separate controller did not release the trace"));
+            if (!cancelled.finalResult().canonicalValue().equals("true")) {
+                throw new IllegalStateException("cancelled trace changed its decision result");
+            }
+        } finally {
+            blocker.countDown();
+            executor.shutdownNow();
+            if (!executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                throw new IllegalStateException("external cancellation executor did not stop");
+            }
+        }
+
         var dataSource = new JdbcDataSource();
         dataSource.setURL("jdbc:h2:mem:external;DB_CLOSE_DELAY=-1");
         var repository = new JdbcDecisionRecordRepository(dataSource);

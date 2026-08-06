@@ -6,8 +6,8 @@ checks that every entry names an executable contract and appears in this documen
 ## Machine-readable capability IDs
 
 - `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
-- `complex-boolean-exact-path`, `predicate-operand-evidence`, `predicate-site-evidence`, `method-receiver-evidence`, `incomplete-exact-path-gap`
-- `assignment-data-flow`, `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
+- `complex-boolean-exact-path`, `predicate-operand-evidence`, `predicate-site-evidence`, `method-receiver-evidence`, `terminal-outcome-evidence`, `incomplete-exact-path-gap`
+- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
@@ -18,7 +18,7 @@ checks that every entry names an executable contract and appears in this documen
 - `unsupported-async-boundary-gap`, `java17-java21-projects`
 - `owned-external-jpms-source`, `owned-automatic-module-source`
 - `try-with-resources`, `resource-close-result-gap`, `pattern-matching`, `sealed-types`, `nested-classes`, `method-references`
-- `business-java-vocabulary`, `call-role-label-lowering`
+- `business-java-vocabulary`, `call-role-label-lowering`, `receiver-preserving-call-label`
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
@@ -32,8 +32,11 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed result-relevant operand evidence when an exact binding is available |
 | Predicate operand evidence | Reads a direct parameter from its current local slot at each predicate branch; reassignment and repeated evaluation cannot reuse the method-entry value. Property, local, or calculated operands outside the exact subset produce a source-located execution gap |
 | Method receiver evidence | Records a direct parameter receiver for result-relevant value calls, including direct Boolean return expressions. An unsupported explicit value receiver creates a source-located gap |
+| Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
 | Local initialization and assignment | Retained only when it can influence a return |
-| Returned mutable collection | Retains result-affecting mutations through calls and lambda bodies |
+| Result slice call effects | Includes only source-proven or attributed platform writes. A read-only ignored call does not become a business cause |
+| Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies |
+| Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
 | Direct method call | Follows a source-available callee and includes its relevant slice |
 | Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |
 | Proxy or `ServiceLoader` dispatch | Uses the instrumented implementation entry to select one proven source candidate; proxy mechanics and provider classes stay outside business output |
@@ -110,13 +113,15 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 - Every catalog callback position uses typed local slots, including argument 1 in a three-argument
   binary stage call. Returned stages release a still-reserved callback when completion skips it.
 - Cancellation of supported `Future`, `CompletableFuture`, and `ForkJoinTask` results releases the
-  reservation exactly once and keeps the original result object unchanged. Cancel calls in all
-  methods of a fingerprinted application class are observed, even when the method has no graph probe.
+  reservation exactly once and keeps the original result object unchanged. Activation scans compiled
+  application output for the exact supported `cancel(boolean)` calls. It fingerprints those caller
+  classes even when they have no graph probe. It does not scan dependency directories or JAR files.
 - A required predicate fact with no safe value adapter makes the execution incomplete. A Boolean
   fallback does not hide the missing fact.
 - Generic label normalization and the artifact guard remove Java construction and enum-type
-  vocabulary. Helper cleanup uses new-object and validate-only call roles. It does not delete
-  domain words such as `validator` from unrelated labels.
+  vocabulary. Helper cleanup uses new-object and validate-only call roles. Other `validate` calls
+  keep their business receiver, so different validator roles remain distinct. The renderer does not
+  use a global method-name rule.
 
 The boundary stays fail-closed. Complex binary control flow, result-relevant resource-close logic
 without source, ambiguous reflection, unsupported asynchronous APIs, and unowned modular sources

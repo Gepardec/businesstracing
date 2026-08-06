@@ -20,6 +20,7 @@ import java.util.Set;
 /** Executable transformation and transparency contracts for the Java agent. */
 public final class FachtracingTransformerTest {
     private static final String CLASS_NAME = "agentfixture/InstrumentedFixture";
+    private static final String CANCELLATION_CONTROLLER = "agentfixture/ExternalCancellationController";
 
     private FachtracingTransformerTest() { }
 
@@ -111,6 +112,20 @@ public final class FachtracingTransformerTest {
             assert execution.observations().stream().allMatch(item -> nodeIds.contains(item.nodeId()))
                     : execution;
         }
+        var textGraph = selected.stream()
+                .filter(item -> item.graph().decisionLabel().equals("overload text"))
+                .findFirst().orElseThrow();
+        var textExecution = executions.stream()
+                .filter(item -> item.graphId().equals(textGraph.graph().graphId()))
+                .findFirst().orElseThrow();
+        assert textExecution.observations().stream().anyMatch(item ->
+                item.evidence().get("city") != null
+                        && item.evidence().get("city").canonicalValue().equals("Vienna"))
+                : textExecution.observations();
+        var projector = new DecisionExplanationProjector();
+        String explanation = projector.text(projector.project(textGraph.graph(), textExecution));
+        assert explanation.contains("city was Vienna") : explanation;
+        assert !explanation.contains("No evaluated reasons") : explanation;
         assert collector.pollCompleted().isEmpty();
     }
 
@@ -959,16 +974,26 @@ public final class FachtracingTransformerTest {
                         .contains(item.graph().decisionLabel())).toList();
         assert results.size() == 4 : results;
         byte[] original = fixtureBytes();
-        byte[] transformed = new FachtracingTransformer(
+        byte[] controllerOriginal = classBytes(CANCELLATION_CONTROLLER);
+        var transformer = new FachtracingTransformer(
                 results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
-                Map.of(CLASS_NAME, sha256(original)))
-                .transform(null, null, CLASS_NAME, null, null, original);
+                Map.of(CLASS_NAME, sha256(original),
+                        CANCELLATION_CONTROLLER, sha256(controllerOriginal)));
+        byte[] transformed = transformer.transform(null, null, CLASS_NAME, null, null, original);
+        byte[] transformedController = transformer.transform(
+                null, null, CANCELLATION_CONTROLLER, null, null, controllerOriginal);
+        assert transformedController != null : "separate cancellation controller was not transformed";
         RuntimeCollector collector = new RuntimeCollector();
         results.forEach(result -> collector.register(result.graph(),
                 new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none())));
         TraceRuntime.configure(collector);
-        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        ClassLoader loader = new MultiClassLoader(Map.of(
+                CLASS_NAME, transformed,
+                CANCELLATION_CONTROLLER, transformedController));
+        Class<?> fixture = loader.loadClass(CLASS_NAME.replace('/', '.'));
         Object instance = fixture.getConstructor().newInstance();
+        Class<?> controllerType = loader.loadClass(CANCELLATION_CONTROLLER.replace('/', '.'));
+        Object controller = controllerType.getConstructor().newInstance();
 
         assert fixture.getMethod("decideCaughtRejection", int.class).invoke(instance, 30).equals(true);
         var caught = collector.pollCompleted().orElseThrow();
@@ -1014,7 +1039,9 @@ public final class FachtracingTransformerTest {
                             java.util.concurrent.ExecutorService.class, int.class)
                     .invoke(instance, externalExecutor, 30).equals(true);
             assert collector.pollCompleted().isEmpty();
-            assert fixture.getMethod("cancelPendingFromController").invoke(instance).equals(true);
+            Object pending = fixture.getMethod("pendingExternalCancellation").invoke(instance);
+            assert controllerType.getMethod("cancel", java.util.concurrent.Future.class)
+                    .invoke(controller, pending).equals(true);
             assert collector.pollCompleted().orElseThrow().terminalStatus()
                     == DecisionExecution.TerminalStatus.SUCCEEDED;
         } finally {

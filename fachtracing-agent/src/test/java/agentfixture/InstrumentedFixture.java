@@ -343,6 +343,10 @@ public final class InstrumentedFixture {
         return pendingExternalCancellation.cancel(false);
     }
 
+    public java.util.concurrent.Future<?> pendingExternalCancellation() {
+        return pendingExternalCancellation;
+    }
+
     @FachTracing("nested inline rejection")
     public boolean decideNestedInlineRejection(int age) {
         java.util.concurrent.Executor rejecting = ignored -> { throw expectedRejection; };

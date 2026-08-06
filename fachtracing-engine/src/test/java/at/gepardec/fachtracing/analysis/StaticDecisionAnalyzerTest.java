@@ -27,6 +27,8 @@ public final class StaticDecisionAnalyzerTest {
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
         excludesResultIndependentWork();
+        excludesIgnoredReadsAndReportsUnknownEffects();
+        usesProvenValidationRolesWithoutGlobalReceiverRemoval();
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
@@ -238,6 +240,39 @@ public final class StaticDecisionAnalyzerTest {
             assert !node.businessLabel().contains(")") : node;
             assert !node.businessLabel().contains(".equals") : node;
         });
+    }
+
+    private static void excludesIgnoredReadsAndReportsUnknownEffects() {
+        var ignored = analyzeLabel("slicing/ResultSlicePolicy.java", "ignored audit call");
+        assert ignored.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : ignored;
+        String ignoredLabels = ignored.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert !ignoredLabels.contains("audit") : ignoredLabels;
+        assert !ignoredLabels.contains("validate") : ignoredLabels;
+        assert !ignoredLabels.contains("value is above 0") : ignoredLabels;
+        assert ignored.graph().nodes().stream().anyMatch(node ->
+                node.businessLabel().contains("age is at least 24")) : ignored.graph().nodes();
+
+        var unknown = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown customer effect");
+        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unknown;
+        assert unknown.graph().coverageGaps().stream().anyMatch(gap ->
+                gap.description().contains("side effect")
+                        && gap.description().contains("returned decision"))
+                : unknown.graph().coverageGaps();
+        assert unknown.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0)
+                : unknown.diagnostics();
+        assert unknown.graph().nodes().stream().noneMatch(node ->
+                node.businessLabel().contains("evaluate update")) : unknown.graph().nodes();
+    }
+
+    private static void usesProvenValidationRolesWithoutGlobalReceiverRemoval() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "distinct validation roles");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result;
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("fraud") : labels;
+        assert labels.contains("credit") : labels;
+        assert !labels.contains("evaluate validate") : labels;
     }
 
     private static void followsDirectCallsAcrossDomains() {
@@ -1191,6 +1226,13 @@ public final class StaticDecisionAnalyzerTest {
     private static AnalysisManifest.AnalysisResult analyze(String relativeFixture) {
         return new StaticDecisionAnalyzer().analyze(AnalysisRequest.of(
                 List.of(FIXTURES.resolve(relativeFixture)), CLASSPATH));
+    }
+
+    private static AnalysisManifest.AnalysisResult analyzeLabel(String relativeFixture, String label) {
+        return new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                        List.of(FIXTURES.resolve(relativeFixture)), CLASSPATH)).stream()
+                .filter(result -> result.graph().decisionLabel().equals(label))
+                .findFirst().orElseThrow();
     }
 
     private static boolean hasKind(BusinessDecisionGraph graph, BusinessDecisionGraph.NodeKind kind) {
