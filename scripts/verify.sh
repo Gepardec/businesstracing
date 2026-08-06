@@ -3,9 +3,23 @@ set -eu
 
 ./scripts/verify-repository-integrity.sh
 ./scripts/test-capture-gate-output.sh
+./scripts/test-maven-repository-path.sh
 ./scripts/verify-java-capabilities.sh
 mvn -q install
-CP="fachtracing-api/target/classes:fachtracing-engine/target/classes:fachtracing-engine/target/test-classes:$HOME/.m2/repository/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$HOME/.m2/repository/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+MAVEN_REPOSITORY=$(./scripts/maven-repository-path.sh)
+mkdir -p target/verification-classpaths
+mvn -q -pl fachtracing-engine dependency:build-classpath -DincludeScope=test \
+  -Dmdep.outputFile="$PWD/target/verification-classpaths/engine.txt"
+mvn -q -pl fachtracing-maven-plugin dependency:build-classpath -DincludeScope=test \
+  -Dmdep.outputFile="$PWD/target/verification-classpaths/maven-plugin.txt"
+mvn -q -pl fachtracing-storage-jdbc dependency:build-classpath -DincludeScope=test \
+  -Dmdep.outputFile="$PWD/target/verification-classpaths/storage-jdbc.txt"
+for dependency_classpath in target/verification-classpaths/*.txt
+do
+  grep -F -q "$MAVEN_REPOSITORY/" "$dependency_classpath"
+done
+ENGINE_DEPENDENCIES=$(cat target/verification-classpaths/engine.txt)
+CP="fachtracing-api/target/classes:fachtracing-engine/target/classes:fachtracing-engine/target/test-classes:$ENGINE_DEPENDENCIES"
 JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.model.ApiModelTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.analysis.StaticDecisionAnalyzerTest
@@ -20,10 +34,11 @@ JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"
   --baseline-seconds=5 --enabled-seconds=5 --rate=1000 --work-micros=10000
 AGENT_CP="$CP:fachtracing-agent/target/classes:fachtracing-agent/target/test-classes"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$AGENT_CP" at.gepardec.fachtracing.agent.FachtracingTransformerTest
-MAVEN_CP="$HOME/.m2/repository/org/apache/maven/maven-core/3.9.16/maven-core-3.9.16.jar:$HOME/.m2/repository/org/apache/maven/maven-model/3.9.16/maven-model-3.9.16.jar:$HOME/.m2/repository/org/apache/maven/maven-artifact/3.9.16/maven-artifact-3.9.16.jar:$HOME/.m2/repository/org/codehaus/plexus/plexus-utils/3.5.1/plexus-utils-3.5.1.jar:$HOME/.m2/repository/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar"
-PLUGIN_CP="$CP:fachtracing-maven-plugin/target/classes:fachtracing-maven-plugin/target/test-classes:$MAVEN_CP"
+MAVEN_DEPENDENCIES=$(cat target/verification-classpaths/maven-plugin.txt)
+PLUGIN_CP="$CP:fachtracing-maven-plugin/target/classes:fachtracing-maven-plugin/target/test-classes:$MAVEN_DEPENDENCIES"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$PLUGIN_CP" at.gepardec.fachtracing.maven.AnalyzeMojoTest
-JDBC_CP="$CP:fachtracing-storage-jdbc/target/classes:fachtracing-storage-jdbc/target/test-classes:$HOME/.m2/repository/com/h2database/h2/2.4.240/h2-2.4.240.jar"
+JDBC_DEPENDENCIES=$(cat target/verification-classpaths/storage-jdbc.txt)
+JDBC_CP="$CP:fachtracing-storage-jdbc/target/classes:fachtracing-storage-jdbc/target/test-classes:$JDBC_DEPENDENCIES"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$JDBC_CP" at.gepardec.fachtracing.storage.jdbc.JdbcDecisionRecordRepositoryTest
 FIXTURE="fachtracing-maven-plugin/src/test/resources/it/basic"
 mvn -q -f "$FIXTURE/pom-command.xml" clean compile \

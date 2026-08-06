@@ -1,0 +1,51 @@
+# Tasks: CI Isolated Maven Repository
+
+## Task 1: Add and adopt the repository resolver
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** None
+**Priority:** High
+**IssueID:** PR #5 release-gate
+
+**Description:** Add one resolver and replace hard-coded Maven dependency paths in all verification
+scripts.
+
+**Acceptance Criteria:**
+
+- [x] Explicit and release overrides have stable precedence.
+- [x] Default local use stays compatible.
+- [x] Standard, Mega, PostgreSQL, and release load classpaths use the resolved path.
+
+## Task 2: Add the isolated-repository regression contract
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** Task 1
+**Priority:** High
+**IssueID:** PR #5 release-gate
+
+**Description:** Add a network-free shell contract and run it from standard verification.
+
+**Acceptance Criteria:**
+
+- [x] The test proves explicit override, release override, and default resolution.
+- [x] The test rejects direct home-repository dependency paths in consumer scripts.
+
+## Task 3: Verify and update PR #5
+
+**Status:** In Progress
+**Estimated Effort:** L
+**Dependencies:** Tasks 1 and 2
+**Priority:** High
+**IssueID:** PR #5 release-gate
+
+**Description:** Run focused, standard, and clean release verification. Commit and push the fix,
+then monitor the pull-request checks.
+
+**Acceptance Criteria:**
+
+- [ ] Local verification passes.
+- [ ] The clean release gate passes.
+- [ ] The fix is committed and pushed.
+- [ ] PR check status is reported without hiding residual failures.

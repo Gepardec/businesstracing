@@ -98,5 +98,13 @@
     "author": "lucostus",
     "updated": "2026-08-05T21:18:47Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "ci-isolated-maven-repository",
+    "type": "bugfix",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-06T08:26:47Z"
   }
 ]
