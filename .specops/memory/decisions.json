@@ -440,6 +440,16 @@
       "task": "Task 2",
       "date": "2026-08-06",
       "completedAt": "2026-08-06T08:53:42Z"
+    },
+    {
+      "specId": "ci-isolated-maven-repository",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Give the hosted release job a bounded 60-minute budget",
+      "rationale": "A cold macOS runner needs more than 35 minutes for clean builds, Mega analysis, and the required 600-second load gate.",
+      "task": "Task 4",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T17:40:51Z"
     }
   ]
 }

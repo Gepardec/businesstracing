@@ -16,6 +16,10 @@ This handles the trailing slash in the macOS `TMPDIR` value without changing spa
 path once and build all manual classpaths from it. Maven commands keep their existing repository
 configuration.
 
+The hosted release job uses a 60-minute upper bound. This keeps the job bounded and gives a cold
+macOS runner 25 more minutes than the observed canceled run. A focused shell contract prevents a
+future workflow edit from reducing the time budget below 50 minutes.
+
 ## Architecture Decisions
 
 - Use a small POSIX shell resolver so all verification entry points share one rule.
@@ -23,6 +27,8 @@ configuration.
 - Add a separate explicit override for direct verification and focused testing.
 - Normalize repeated separators before classpath validation.
 - Test the resolver without Maven or network access.
+- Keep a separate workflow-budget contract because the long load test cannot detect cancellation
+  by the external GitHub job limit.
 
 ## Failure Behavior
 

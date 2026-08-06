@@ -24,6 +24,7 @@ require_tracked scripts/capture-gate-output.sh
 require_tracked scripts/maven-repository-path.sh
 require_tracked scripts/test-capture-gate-output.sh
 require_tracked scripts/test-maven-repository-path.sh
+require_tracked scripts/test-release-workflow-budget.sh
 require_tracked scripts/verify-release.sh
 require_tracked scripts/verify-release-gates.sh
 require_tracked scripts/verify-mega-backend.sh

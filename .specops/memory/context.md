@@ -139,10 +139,14 @@ mismatches, dropped records, or trace contamination.
 
 ### ci-isolated-maven-repository (bugfix) — 2026-08-06
 
-Completed all three tasks. Verification scripts now resolve one Maven repository path for local,
+Completed all four tasks. Verification scripts now resolve one Maven repository path for local,
 release, and explicit use. Manual test launchers use Maven-resolved dependency classpaths, so a
 warm home cache cannot hide missing or stale transitive artifacts. The resolver also normalizes
 the repeated separator produced by the trailing slash in macOS `TMPDIR`.
+
+Hosted monitoring found that the cold macOS release job reached its old 35-minute limit. The job
+now has a bounded 60-minute budget. Standard verification enforces a minimum of 50 minutes so the
+clean builds, Mega analysis, and 600-second load gate have time to finish.
 
 Release commit `defe774040f5a5604caffc15838519fd753c0db2` passed source-free activation, five
 complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.059% p95 overhead and zero errors,

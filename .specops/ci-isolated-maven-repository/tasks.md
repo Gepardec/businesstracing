@@ -49,3 +49,21 @@ then monitor the pull-request checks.
 - [x] The clean release gate passes.
 - [x] The fix is committed and ready to push.
 - [x] PR check monitoring is part of the active handoff after the push.
+
+## Task 4: Correct the hosted release-job time budget
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** Task 3
+**Priority:** High
+**IssueID:** PR #5 release-gate run 31086887346
+
+**Description:** Increase the bounded release-job timeout and add a focused regression contract
+after GitHub cancels the correct release command at the old 35-minute limit.
+
+**Acceptance Criteria:**
+
+- [x] The release job has a 60-minute upper bound.
+- [x] Standard verification rejects a release timeout below 50 minutes.
+- [x] The new focused contract passes.
+- [x] PR #5 receives the pushed correction and the new checks are monitored.

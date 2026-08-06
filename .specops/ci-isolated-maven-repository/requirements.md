@@ -6,6 +6,9 @@ PR #5 fails in the `release-gate` job because verification builds dependencies i
 Maven repository but starts Java processes with dependency paths from `$HOME/.m2/repository`. A
 clean runner cannot load ASM from that unrelated location.
 
+After the repository fix, the hosted gate reaches its 35-minute workflow limit. GitHub cancels the
+job before the clean builds, Mega analysis, and 600-second load gate finish on a cold macOS runner.
+
 ## Root Cause
 
 `verify-release.sh` sets `FACHTRACING_RELEASE_MAVEN_REPOSITORY` and configures Maven with
@@ -36,6 +39,8 @@ location. The PostgreSQL verifier has the same hard-coded default path.
   verification scripts.
 - WHEN a clean isolated repository contains the Maven build artifacts THE SYSTEM SHALL complete
   standard verification without reading dependency jars from the home repository.
+- THE RELEASE JOB SHALL have a bounded time budget of at least 50 minutes so that the required
+  cold-run verification can finish.
 
 ## Constraints
 
@@ -50,3 +55,4 @@ location. The PostgreSQL verifier has the same hard-coded default path.
 - [x] Standard verification passes.
 - [x] The clean release gate passes from the committed revision.
 - [x] PR #5 receives the pushed fix and its checks are monitored.
+- [x] A focused contract enforces the hosted release-job time budget before each standard run.

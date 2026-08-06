@@ -1,7 +1,7 @@
 ---
 specId: "ci-isolated-maven-repository"
 startedAt: "2026-08-06T08:26:25Z"
-completedAt: "2026-08-06T08:53:42Z"
+completedAt: "2026-08-06T17:40:51Z"
 finalStatus: "passed"
 phases: [1, 2, 3, 4]
 ---
@@ -85,3 +85,20 @@ phases: [1, 2, 3, 4]
   complete the specification.
 - Result: All tasks and acceptance criteria pass. The implementation evaluation passed all four
   dimensions.
+
+## Phase 5: Hosted Time-Budget Correction
+
+**Started:** 2026-08-06T17:30:33Z
+
+### [17:30:33] Step 1: Inspect the hosted cancellation
+
+- Action: Read the complete GitHub Actions log for run `31086887346`.
+- Result: PostgreSQL passed. GitHub canceled the release command at the workflow's exact 35-minute
+  limit. No verification command reported a failure before cancellation.
+
+### [17:40:51] Step 2: Complete Task 4
+
+- Action: Set a bounded 60-minute release-job limit and add a standard verification contract that
+  requires at least 50 minutes.
+- Result: The focused contract, repository integrity, and standard verification pass. The short
+  load check completed 5,000 decisions with zero correctness or isolation failures.

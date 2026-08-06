@@ -4,6 +4,7 @@ set -eu
 ./scripts/verify-repository-integrity.sh
 ./scripts/test-capture-gate-output.sh
 ./scripts/test-maven-repository-path.sh
+./scripts/test-release-workflow-budget.sh
 ./scripts/verify-java-capabilities.sh
 mvn -q install
 MAVEN_REPOSITORY=$(./scripts/maven-repository-path.sh)

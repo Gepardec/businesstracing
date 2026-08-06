@@ -2,9 +2,9 @@
   "id": "ci-isolated-maven-repository",
   "type": "bugfix",
   "status": "completed",
-  "version": 1,
+  "version": 2,
   "created": "2026-08-06T08:26:47Z",
-  "updated": "2026-08-06T08:53:42Z",
+  "updated": "2026-08-06T17:40:51Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -26,35 +26,35 @@
   ],
   "evaluation": {
     "spec": {
-      "iterations": 1,
+      "iterations": 2,
       "passed": true,
       "scores": {
         "criteriaTestability": 9,
         "criteriaCompleteness": 9,
-        "designCoherence": 8,
+        "designCoherence": 9,
         "taskCoverage": 9
       },
-      "evaluatedAt": "2026-08-06T08:26:47Z"
+      "evaluatedAt": "2026-08-06T17:40:51Z"
     },
     "implementation": {
-      "iterations": 1,
+      "iterations": 2,
       "passed": true,
       "scores": {
-        "functionality": 10,
+        "functionality": 9,
         "codeQuality": 9,
-        "testVerification": 10,
+        "testVerification": 9,
         "specCompliance": 9
       },
-      "evaluatedAt": "2026-08-06T08:53:42Z"
+      "evaluatedAt": "2026-08-06T17:40:51Z"
     }
   },
   "metrics": {
-    "specArtifactTokensEstimate": 2400,
-    "filesChanged": 20,
-    "linesAdded": 478,
-    "linesRemoved": 13,
-    "tasksCompleted": 3,
-    "acceptanceCriteriaVerified": 14,
-    "specDurationMinutes": 28
+    "specArtifactTokensEstimate": 3000,
+    "filesChanged": 24,
+    "linesAdded": 555,
+    "linesRemoved": 14,
+    "tasksCompleted": 4,
+    "acceptanceCriteriaVerified": 18,
+    "specDurationMinutes": 40
   }
 }
