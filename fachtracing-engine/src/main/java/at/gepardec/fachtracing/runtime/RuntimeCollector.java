@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -385,6 +386,20 @@ public class RuntimeCollector implements TraceContextCarrier {
             synchronized (trackedFutures) {
                 if (reservation.attachFuture(future)) trackedFutures.put(future, reservation);
             }
+        }
+    }
+
+    /** Releases a reservation when its returned stage completes without starting the callback. */
+    public void trackStage(CompletionStage<?> stage, Object callback) {
+        Objects.requireNonNull(stage, "stage");
+        if (!(callback instanceof ContextWrapped wrapped)) return;
+        AsyncReservation reservation = wrapped.reservation();
+        if (stage instanceof Future<?> future) trackFuture(future, callback);
+        try {
+            stage.whenComplete((ignoredResult, ignoredFailure) -> reservation.cancelBeforeStart());
+        } catch (Throwable failure) {
+            reservation.cancelBeforeStart();
+            throw failure;
         }
     }
 

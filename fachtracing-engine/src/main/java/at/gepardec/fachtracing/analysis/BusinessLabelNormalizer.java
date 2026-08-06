@@ -8,7 +8,6 @@ public final class BusinessLabelNormalizer {
     public static String normalize(String value) {
         String label = value == null ? "" : value.trim().replaceAll("\\s+", " ");
         label = label.replaceAll("(?i)\\benum\\s+type\\b", "");
-        label = label.replaceAll("(?i)\\bvalidator\\b", "");
         label = label.replaceFirst("(?i)^initialize\\s+(?:new\\s+)?", "");
         label = label.replaceFirst("(?i)^evaluate\\s+create\\s+", "create ");
         label = label.replaceFirst("(?i)\\s+with\\s*$", "");

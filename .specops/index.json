@@ -115,5 +115,14 @@
     "author": "codex",
     "updated": "2026-08-06T19:37:02Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "stage-lifecycle-evidence-label-correctness",
+    "type": "bugfix",
+    "status": "implementing",
+    "version": 1,
+    "author": "codex",
+    "updated": "2026-08-06T20:08:41Z",
+    "partOf": "generic-java-fachtracing"
   }
 ]

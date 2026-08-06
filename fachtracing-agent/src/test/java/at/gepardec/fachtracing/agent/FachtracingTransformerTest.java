@@ -40,6 +40,7 @@ public final class FachtracingTransformerTest {
         finallyReturnPathsOverrideExactly();
         standardAsyncBoundariesPropagateAutomatically();
         exactAsyncCallbackPositionsPropagate();
+        skippedCompletionStageCallbacksReleaseReservations();
         rejectedAndCancelledSubmissionsReleaseReservations();
         nestedReservationsAndFutureIdentityAreExact();
         unsupportedAsyncBoundaryCreatesExecutionGap();
@@ -67,6 +68,12 @@ public final class FachtracingTransformerTest {
                 .collect(java.util.stream.Collectors.toSet());
         assert entryDescriptors.equals(java.util.Set.of("(I)Z", "(Ljava/lang/String;)Z"))
                 : entryDescriptors;
+        var textOverload = selected.stream()
+                .filter(item -> item.graph().decisionLabel().equals("overload text"))
+                .findFirst().orElseThrow();
+        assert textOverload.manifest().evidenceTargets().stream().anyMatch(target ->
+                target.argumentIndex() == 0 && target.evidenceLabel().equals("city"))
+                : textOverload.manifest().evidenceTargets();
         selected.stream().flatMap(item -> item.manifest().probeSites().stream())
                 .forEach(site -> { assert !site.descriptorHint().isBlank() : site; });
 
@@ -361,8 +368,10 @@ public final class FachtracingTransformerTest {
 
     private static void assertExactEvidenceGap(DecisionExecution execution) {
         assert execution.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : execution;
-        assert execution.coverageGaps().stream().anyMatch(gap -> gap.contains("exact predicate evidence")
-                && gap.contains("source line")) : execution.coverageGaps();
+        assert execution.coverageGaps().stream().anyMatch(gap ->
+                gap.contains("exact predicate evidence") && gap.contains("source line")
+                        || gap.contains("required predicate evidence")
+                        && gap.contains("no safe value adapter")) : execution.coverageGaps();
     }
 
     private static void manifestWithoutBranchTargetsCreatesRuntimeGap() throws Exception {
@@ -879,9 +888,10 @@ public final class FachtracingTransformerTest {
         var results = new StaticDecisionAnalyzer().analyzeAll(
                         AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
                 .filter(item -> Set.of("binary stage callback", "accept both callback",
-                                "run after both callback", "thread group callback")
+                                "run after both callback", "thread group callback",
+                                "explicit executor binary stage")
                         .contains(item.graph().decisionLabel())).toList();
-        assert results.size() == 4 : results;
+        assert results.size() == 5 : results;
         byte[] original = fixtureBytes();
         byte[] transformed = new FachtracingTransformer(
                 results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
@@ -897,7 +907,9 @@ public final class FachtracingTransformerTest {
         assert fixture.getMethod("decideThenAcceptBoth", int.class).invoke(instance, 30).equals(true);
         assert fixture.getMethod("decideRunAfterBoth", int.class).invoke(instance, 30).equals(true);
         assert fixture.getMethod("decideThreadGroup", int.class).invoke(instance, 30).equals(true);
-        for (int index = 0; index < 4; index++) {
+        assert fixture.getMethod("decideThenCombineAsync", int.class, java.util.concurrent.Executor.class)
+                .invoke(instance, 30, (java.util.concurrent.Executor) Runnable::run).equals(true);
+        for (int index = 0; index < 5; index++) {
             var execution = collector.pollCompleted().orElseThrow();
             assert execution.observations().stream().anyMatch(item -> item.selectedEdgeId() != null)
                     : execution;
@@ -906,15 +918,46 @@ public final class FachtracingTransformerTest {
         }
     }
 
+    private static void skippedCompletionStageCallbacksReleaseReservations() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        Set<String> labels = Set.of(
+                "skipped failed stage", "skipped recovery stage", "skipped binary stage");
+        var results = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> labels.contains(item.graph().decisionLabel())).toList();
+        assert results.size() == labels.size() : results;
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
+                Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        RuntimeCollector collector = new RuntimeCollector();
+        results.forEach(result -> collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none())));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+        for (String method : List.of(
+                "decideSkippedFailedStage", "decideSkippedRecoveryStage", "decideSkippedBinaryStage")) {
+            assert fixture.getMethod(method, int.class).invoke(instance, 30).equals(true) : method;
+            assert collector.pollCompleted().orElseThrow().terminalStatus()
+                    == DecisionExecution.TerminalStatus.SUCCEEDED : method;
+        }
+        assert collector.pollCompleted().isEmpty();
+    }
+
     private static void rejectedAndCancelledSubmissionsReleaseReservations() throws Exception {
         Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
                 .toAbsolutePath().normalize();
         Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
         var results = new StaticDecisionAnalyzer().analyzeAll(
                         AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
-                .filter(item -> Set.of("caught rejection", "uncaught rejection", "cancelled submission")
+                .filter(item -> Set.of("caught rejection", "uncaught rejection", "cancelled submission",
+                                "external cancellation")
                         .contains(item.graph().decisionLabel())).toList();
-        assert results.size() == 3 : results;
+        assert results.size() == 4 : results;
         byte[] original = fixtureBytes();
         byte[] transformed = new FachtracingTransformer(
                 results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
@@ -958,6 +1001,26 @@ public final class FachtracingTransformerTest {
             releaseBlocker.countDown();
             executor.shutdownNow();
             assert executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
+        }
+
+        var externalRelease = new java.util.concurrent.CountDownLatch(1);
+        var externalExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            externalExecutor.submit(() -> {
+                externalRelease.await();
+                return null;
+            });
+            assert fixture.getMethod("decideExternalCancellation",
+                            java.util.concurrent.ExecutorService.class, int.class)
+                    .invoke(instance, externalExecutor, 30).equals(true);
+            assert collector.pollCompleted().isEmpty();
+            assert fixture.getMethod("cancelPendingFromController").invoke(instance).equals(true);
+            assert collector.pollCompleted().orElseThrow().terminalStatus()
+                    == DecisionExecution.TerminalStatus.SUCCEEDED;
+        } finally {
+            externalRelease.countDown();
+            externalExecutor.shutdownNow();
+            assert externalExecutor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
         }
     }
 

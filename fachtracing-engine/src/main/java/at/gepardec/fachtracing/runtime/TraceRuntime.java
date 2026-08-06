@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.CompletionStage;
 import java.util.ArrayDeque;
 import java.util.IdentityHashMap;
 import java.util.function.Consumer;
@@ -215,6 +216,11 @@ public final class TraceRuntime {
     /** Registers cancellation for the original Future without replacing it. */
     public static void asyncFutureSubmitted(Future<?> future, Object callback) {
         if (removePending(callback)) collector.trackFuture(future, callback);
+    }
+
+    /** Observes completion of the returned stage for callbacks that the stage can skip. */
+    public static void asyncStageSubmitted(CompletionStage<?> stage, Object callback) {
+        if (removePending(callback)) collector.trackStage(stage, callback);
     }
 
     /** Binds an exact constructor reservation to the created Thread object. */

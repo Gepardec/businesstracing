@@ -36,7 +36,7 @@ node 33: PREDICATE | is not finished
 node 34: PREDICATE | next direction is absent
 node 35: PREDICATE | is starting new journey next direction
 node 36: COMPUTATION | set former direction to absent
-node 37: COMPUTATION | derive warning as journey direction validate cur entry journey direction and next direction
+node 37: COMPUTATION | derive warning as validate cur entry journey direction and next direction
 node 38: PREDICATE | warning exists
 node 39: COMPUTATION | create journey warning
 node 40: COMPUTATION | journey warning

@@ -37,7 +37,7 @@ diamond "is not finished" as n33
 diamond "next direction is absent" as n34
 diamond "is starting new journey next direction" as n35
 rectangle "set former direction to absent" as n36
-rectangle "derive warning as journey direction validate cur entry journey direction and next direction" as n37
+rectangle "derive warning as validate cur entry journey direction and next direction" as n37
 diamond "warning exists" as n38
 rectangle "create journey warning" as n39
 rectangle "journey warning" as n40

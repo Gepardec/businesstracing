@@ -23,6 +23,7 @@ public final class StaticDecisionAnalyzerTest {
 
     public static void main(String[] args) {
         removesJavaConstructionVocabularyGenerically();
+        scansMethodReceiversForEvidence();
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
         excludesResultIndependentWork();
@@ -65,10 +66,46 @@ public final class StaticDecisionAnalyzerTest {
 
     private static void removesJavaConstructionVocabularyGenerically() {
         assert BusinessLabelNormalizer.normalize("initialize new approval validator")
-                .equals("approval") : BusinessLabelNormalizer.normalize("initialize new approval validator");
+                .equals("approval validator")
+                : BusinessLabelNormalizer.normalize("initialize new approval validator");
+        assert BusinessLabelNormalizer.normalize("ticket validator is available")
+                .equals("ticket validator is available");
         assert BusinessLabelNormalizer.normalize("evaluate create warning with enum type")
                 .equals("create warning")
                 : BusinessLabelNormalizer.normalize("evaluate create warning with enum type");
+    }
+
+    private static void scansMethodReceiversForEvidence() {
+        Path directory = null;
+        try {
+            directory = Files.createTempDirectory("fachtracing-receiver-evidence");
+            Path source = directory.resolve("ReceiverPolicy.java");
+            Files.writeString(source, """
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class ReceiverPolicy {
+                        @FachTracing("direct receiver")
+                        boolean direct(String city) { return city.equals("Vienna"); }
+                        @FachTracing("unsupported receiver")
+                        boolean unsupported(String city) { return city.trim().equals("Vienna"); }
+                    }
+                    """);
+            var results = new StaticDecisionAnalyzer().analyzeAll(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            var direct = results.stream().filter(item ->
+                    item.graph().decisionLabel().equals("direct receiver")).findFirst().orElseThrow();
+            assert direct.manifest().evidenceTargets().stream().anyMatch(target ->
+                    target.argumentIndex() == 0 && target.evidenceLabel().equals("city"))
+                    : direct.graph().nodes() + " / " + direct.manifest();
+            var unsupported = results.stream().filter(item ->
+                    item.graph().decisionLabel().equals("unsupported receiver")).findFirst().orElseThrow();
+            assert unsupported.manifest().evidenceTargets().stream().anyMatch(target ->
+                    target.argumentIndex() == -1 && target.sourceLine() > 0)
+                    : unsupported.manifest().evidenceTargets();
+        } catch (IOException exception) {
+            throw new java.io.UncheckedIOException(exception);
+        } finally {
+            if (directory != null) deleteTree(directory);
+        }
     }
 
     private static void supportsTryWithResourcesIndependently() {

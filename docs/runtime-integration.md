@@ -46,10 +46,16 @@ rejection, and terminal rollback cannot consume a different call's reservation. 
 thread is associated with its actual `Thread` object until `start`. Supported Future,
 CompletableFuture, and ForkJoinTask cancellation is observed without replacing the returned object,
 so identity, runtime type, equality, hash code, text, and implemented interfaces stay unchanged.
+Every exact catalog callback position is supported. The agent stores and reloads invocation
+operands when the callback is not the last argument. It observes the returned `CompletionStage`, so
+normal or exceptional completion releases a callback reservation that never started. Cancel calls
+in methods without graph probes are also observed when the class has an activation fingerprint.
 
 Direct parameter evidence is read at the predicate branch, not at method entry. If the required
 operand is a property, local, or calculation outside the exact capture subset, or if its value has
 no safe adapter, the execution contains a source-located coverage gap and is incomplete.
+A direct parameter used as a result-relevant method receiver is also recorded at the predicate or
+return site. An explicit value receiver outside the exact subset creates a source-located gap.
 
 `scripts/verify-external-release.sh` publishes the RC to a temporary isolated file repository,
 uses an empty Maven local repository, resolves an exact external source artifact, and repeats that

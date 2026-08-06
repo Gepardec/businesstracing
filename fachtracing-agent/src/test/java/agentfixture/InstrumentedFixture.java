@@ -235,6 +235,36 @@ public final class InstrumentedFixture {
                 .join();
     }
 
+    @FachTracing("explicit executor binary stage")
+    public boolean decideThenCombineAsync(int age, java.util.concurrent.Executor executor) {
+        return java.util.concurrent.CompletableFuture.completedFuture(age)
+                .thenCombineAsync(java.util.concurrent.CompletableFuture.completedFuture(0),
+                        (value, offset) -> value + offset >= 24, executor)
+                .join();
+    }
+
+    @FachTracing("skipped failed stage")
+    public boolean decideSkippedFailedStage(int age) {
+        java.util.concurrent.CompletableFuture.<Integer>failedFuture(expectedRejection)
+                .thenApply(value -> value >= 24);
+        return age >= 24;
+    }
+
+    @FachTracing("skipped recovery stage")
+    public boolean decideSkippedRecoveryStage(int age) {
+        java.util.concurrent.CompletableFuture.completedFuture(age)
+                .exceptionally(failure -> age >= 24 ? age : 0);
+        return age >= 24;
+    }
+
+    @FachTracing("skipped binary stage")
+    public boolean decideSkippedBinaryStage(int age) {
+        java.util.concurrent.CompletableFuture.<Integer>failedFuture(expectedRejection)
+                .thenCombine(java.util.concurrent.CompletableFuture.completedFuture(0),
+                        (value, offset) -> value + offset >= 24);
+        return age >= 24;
+    }
+
     @FachTracing("accept both callback")
     public boolean decideThenAcceptBoth(int age) {
         secondOperandEvaluations = 0;
@@ -299,6 +329,18 @@ public final class InstrumentedFixture {
     public boolean decideCancelledSubmission(java.util.concurrent.ExecutorService executor, int age) {
         java.util.concurrent.Future<Boolean> future = executor.submit(() -> age >= 24);
         return future.cancel(false) && age >= 24;
+    }
+
+    private java.util.concurrent.Future<?> pendingExternalCancellation;
+
+    @FachTracing("external cancellation")
+    public boolean decideExternalCancellation(java.util.concurrent.ExecutorService executor, int age) {
+        pendingExternalCancellation = executor.submit(() -> age >= 24);
+        return age >= 24;
+    }
+
+    public boolean cancelPendingFromController() {
+        return pendingExternalCancellation.cancel(false);
     }
 
     @FachTracing("nested inline rejection")
@@ -399,6 +441,11 @@ public final class InstrumentedFixture {
     @FachTracing("overload text")
     public boolean overloaded(String city) {
         return city.equals("Vienna");
+    }
+
+    @FachTracing("unsupported receiver")
+    public boolean unsupportedReceiver(String city) {
+        return city.trim().equals("Vienna");
     }
 
     @FachTracing("overload lambda integer")

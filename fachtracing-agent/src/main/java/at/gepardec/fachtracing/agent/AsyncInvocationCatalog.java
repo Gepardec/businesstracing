@@ -137,12 +137,17 @@ final class AsyncInvocationCatalog {
                 ? WrapperKind.forDescriptor(arguments[callbackPosition].getDescriptor()) : null;
         if (wrapper == null) throw new IllegalArgumentException("catalog callback is not supported: " + descriptor);
         result.add(new Binding(owner, method, descriptor, callbackPosition, wrapper,
-                cancellableResult(Type.getReturnType(descriptor).getDescriptor())));
+                cancellableResult(Type.getReturnType(descriptor).getDescriptor()),
+                stageResult(Type.getReturnType(descriptor).getDescriptor())));
     }
 
     private static boolean cancellableResult(String descriptor) {
         return descriptor.equals(FUTURE) || descriptor.equals(COMPLETABLE_FUTURE)
                 || descriptor.equals(FORK_JOIN_TASK);
+    }
+
+    private static boolean stageResult(String descriptor) {
+        return descriptor.equals(STAGE) || descriptor.equals(COMPLETABLE_FUTURE);
     }
 
     record Binding(
@@ -151,7 +156,8 @@ final class AsyncInvocationCatalog {
             String descriptor,
             int callbackPosition,
             WrapperKind wrapper,
-            boolean futureResult) { }
+            boolean futureResult,
+            boolean stageResult) { }
 
     enum WrapperKind {
         RUNNABLE("prepareRunnable"), CALLABLE("prepareCallable"), FUNCTION("prepareFunction"),

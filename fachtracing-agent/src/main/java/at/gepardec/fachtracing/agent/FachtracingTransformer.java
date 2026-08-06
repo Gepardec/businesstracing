@@ -41,7 +41,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
     @Override
     public byte[] transform(Module module, ClassLoader loader, String className, Class<?> classBeingRedefined,
                             ProtectionDomain protectionDomain, byte[] classfileBuffer) {
-        if (className == null || !isSelectedClass(className)) return null;
+        if (className == null) return null;
         String expected = classFingerprints.get(className);
         if (expected == null || !expected.equals(sha256(classfileBuffer))) return null;
         try {
@@ -56,10 +56,43 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                         ClassReader.SKIP_FRAMES);
                 transformed = writer.toByteArray();
             }
+            ClassReader cancellationReader = new ClassReader(transformed);
+            ClassWriter cancellationWriter = new ClassWriter(
+                    cancellationReader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+            cancellationReader.accept(new CancellationClassVisitor(cancellationWriter), ClassReader.SKIP_FRAMES);
+            transformed = cancellationWriter.toByteArray();
             return transformed;
         } catch (Throwable ignored) {
             return null;
         }
+    }
+
+    private static final class CancellationClassVisitor extends ClassVisitor {
+        private CancellationClassVisitor(ClassVisitor delegate) { super(Opcodes.ASM9, delegate); }
+
+        @Override public MethodVisitor visitMethod(
+                int access, String name, String descriptor, String signature, String[] exceptions) {
+            return new MethodVisitor(Opcodes.ASM9,
+                    super.visitMethod(access, name, descriptor, signature, exceptions)) {
+                @Override public void visitMethodInsn(
+                        int opcode, String owner, String method, String methodDescriptor,
+                        boolean isInterface) {
+                    boolean cancellation = cancellationBoundary(owner, method, methodDescriptor);
+                    if (cancellation) mv.visitInsn(Opcodes.DUP2);
+                    super.visitMethodInsn(opcode, owner, method, methodDescriptor, isInterface);
+                    if (cancellation) {
+                        mv.visitMethodInsn(Opcodes.INVOKESTATIC, RUNTIME, "asyncFutureCancelled",
+                                "(Ljava/util/concurrent/Future;ZZ)Z", false);
+                    }
+                }
+            };
+        }
+    }
+
+    private static boolean cancellationBoundary(String owner, String name, String descriptor) {
+        return name.equals("cancel") && descriptor.equals("(Z)Z") && Set.of(
+                "java/util/concurrent/Future", "java/util/concurrent/CompletableFuture",
+                "java/util/concurrent/ForkJoinTask").contains(owner);
     }
 
     private boolean isSelectedClass(String className) {
@@ -190,6 +223,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         private long sourceLine = -1;
         private final Set<Label> visitedLabels = new java.util.HashSet<>();
         private final int asyncHandleLocal;
+        private int nextAsyncLocal;
 
         private ProbeMethodVisitor(MethodVisitor delegate, int access, String descriptor,
                                    AnalysisManifest manifest,
@@ -213,6 +247,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             this.controls = controls;
             this.evidenceTargets = evidenceTargets;
             this.asyncHandleLocal = originalMaxLocals;
+            this.nextAsyncLocal = originalMaxLocals + 1;
         }
 
         private List<AnalysisManifest.BranchTarget> completeBranchGroups(
@@ -483,13 +518,11 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                                     boolean isInterface) {
             previousOriginalOpcode = opcode;
-            boolean cancellation = cancellationBoundary(owner, name, descriptor);
-            if (cancellation) mv.visitInsn(Opcodes.DUP2);
             boolean threadStart = owner.equals("java/lang/Thread")
                     && name.equals("start") && descriptor.equals("()V");
             if (threadStart) mv.visitInsn(Opcodes.DUP);
             AsyncInvocationCatalog.Binding async = AsyncInvocationCatalog.find(owner, name, descriptor).orElse(null);
-            PreparedAsync prepared = async == null ? null : prepareAsyncArgument(async);
+            PreparedAsync prepared = async == null ? null : prepareAsyncArgument(opcode, async);
             boolean asyncPrepared = prepared != null;
             if ((async == null && AsyncInvocationCatalog.isUnmatchedBoundary(owner, name, descriptor))
                     || (async != null && !asyncPrepared)) {
@@ -509,9 +542,6 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 }
             }
             super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-            if (cancellation) {
-                invoke("asyncFutureCancelled", "(Ljava/util/concurrent/Future;ZZ)Z");
-            }
             if (asyncPrepared && threadConstructor(async)) {
                 mv.visitInsn(Opcodes.DUP);
                 mv.visitVarInsn(Opcodes.ALOAD, prepared.local());
@@ -524,25 +554,43 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             }
         }
 
-        private PreparedAsync prepareAsyncArgument(AsyncInvocationCatalog.Binding binding) {
+        private PreparedAsync prepareAsyncArgument(int opcode, AsyncInvocationCatalog.Binding binding) {
             Type[] arguments = Type.getArgumentTypes(binding.descriptor());
             int callback = binding.callbackPosition();
-            if (callback == arguments.length - 1) {
+            if (threadConstructor(binding) && callback == arguments.length - 1) {
                 prepareAsync(binding, arguments[callback]);
                 mv.visitInsn(Opcodes.DUP);
                 mv.visitVarInsn(Opcodes.ASTORE, asyncHandleLocal);
                 return new PreparedAsync(binding, asyncHandleLocal);
             }
-            if (callback == 0 && arguments.length == 2
-                    && reference(arguments[0]) && reference(arguments[1])) {
-                mv.visitInsn(Opcodes.SWAP);
-                prepareAsync(binding, arguments[0]);
-                mv.visitInsn(Opcodes.DUP);
-                mv.visitVarInsn(Opcodes.ASTORE, asyncHandleLocal);
-                mv.visitInsn(Opcodes.SWAP);
-                return new PreparedAsync(binding, asyncHandleLocal);
+            int[] argumentLocals = new int[arguments.length];
+            for (int index = 0; index < arguments.length; index++) {
+                argumentLocals[index] = allocate(arguments[index]);
             }
-            return null;
+            for (int index = arguments.length - 1; index >= 0; index--) {
+                mv.visitVarInsn(arguments[index].getOpcode(Opcodes.ISTORE), argumentLocals[index]);
+            }
+            int receiverLocal = -1;
+            if (opcode != Opcodes.INVOKESTATIC) {
+                receiverLocal = allocate(Type.getObjectType(binding.owner()));
+                mv.visitVarInsn(Opcodes.ASTORE, receiverLocal);
+            }
+            mv.visitVarInsn(arguments[callback].getOpcode(Opcodes.ILOAD), argumentLocals[callback]);
+            prepareAsync(binding, arguments[callback]);
+            mv.visitInsn(Opcodes.DUP);
+            mv.visitVarInsn(Opcodes.ASTORE, asyncHandleLocal);
+            mv.visitVarInsn(arguments[callback].getOpcode(Opcodes.ISTORE), argumentLocals[callback]);
+            if (receiverLocal >= 0) mv.visitVarInsn(Opcodes.ALOAD, receiverLocal);
+            for (int index = 0; index < arguments.length; index++) {
+                mv.visitVarInsn(arguments[index].getOpcode(Opcodes.ILOAD), argumentLocals[index]);
+            }
+            return new PreparedAsync(binding, asyncHandleLocal);
+        }
+
+        private int allocate(Type type) {
+            int local = nextAsyncLocal;
+            nextAsyncLocal += type.getSize();
+            return local;
         }
 
         private void prepareAsync(AsyncInvocationCatalog.Binding binding, Type callbackType) {
@@ -552,7 +600,12 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         }
 
         private void completeAsyncSubmission(PreparedAsync prepared) {
-            if (prepared.binding().futureResult()) {
+            if (prepared.binding().stageResult()) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitVarInsn(Opcodes.ALOAD, prepared.local());
+                invoke("asyncStageSubmitted",
+                        "(Ljava/util/concurrent/CompletionStage;Ljava/lang/Object;)V");
+            } else if (prepared.binding().futureResult()) {
                 mv.visitInsn(Opcodes.DUP);
                 mv.visitVarInsn(Opcodes.ALOAD, prepared.local());
                 invoke("asyncFutureSubmitted",
@@ -563,11 +616,6 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             }
         }
 
-        private boolean cancellationBoundary(String owner, String name, String descriptor) {
-            return name.equals("cancel") && descriptor.equals("(Z)Z") && Set.of(
-                    "java/util/concurrent/Future", "java/util/concurrent/CompletableFuture",
-                    "java/util/concurrent/ForkJoinTask").contains(owner);
-        }
 
         private boolean threadConstructor(AsyncInvocationCatalog.Binding binding) {
             return binding.owner().equals("java/lang/Thread") && binding.method().equals("<init>");
@@ -585,6 +633,7 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             if (isReturn(opcode)) emitReturnControls();
             AnalysisManifest.ProbeSite outcome = isReturn(opcode) ? outcomeForCurrentReturn() : null;
             if (outcome != null) {
+                captureEvidenceArguments(outcome.nodeId());
                 duplicateAndBox(opcode);
                 pushGraph();
                 push(outcome.nodeId());

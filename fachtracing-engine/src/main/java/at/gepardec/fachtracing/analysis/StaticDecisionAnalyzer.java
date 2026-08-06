@@ -909,6 +909,13 @@ public final class StaticDecisionAnalyzer {
 
             @Override public Void visitVariable(VariableTree node, Void unused) {
                 if (transparentLoopAliases.contains(node)) return null;
+                if (validationHelperVariable(node)) {
+                    String subject = words(node.getName().toString().replaceFirst("(?i)Validator$", ""));
+                    String id = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                            subject.isBlank() ? "validation" : subject, node, null);
+                    advance(id);
+                    return null;
+                }
                 if (node.getInitializer() == null || !relevant(node.getInitializer(), slice, dependencies)) {
                     return super.visitVariable(node, unused);
                 }
@@ -916,6 +923,31 @@ public final class StaticDecisionAnalyzer {
                 String id = add(BusinessDecisionGraph.NodeKind.COMPUTATION, derivationLabel(node), node, null);
                 advance(id);
                 return null;
+            }
+
+            private boolean validationHelperVariable(VariableTree variable) {
+                if (variable.getInitializer() == null
+                        || variable.getInitializer().getKind() != Tree.Kind.NEW_CLASS) return false;
+                String name = variable.getName().toString();
+                int[] uses = { 0 };
+                int[] validationReceivers = { 0 };
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
+                        if (identifier.getName().contentEquals(name)) uses[0]++;
+                        return super.visitIdentifier(identifier, unused);
+                    }
+
+                    @Override public Void visitMethodInvocation(MethodInvocationTree call, Void unused) {
+                        if (call.getMethodSelect() instanceof MemberSelectTree member
+                                && member.getIdentifier().contentEquals("validate")
+                                && member.getExpression() instanceof IdentifierTree identifier
+                                && identifier.getName().contentEquals(name)) {
+                            validationReceivers[0]++;
+                        }
+                        return super.visitMethodInvocation(call, unused);
+                    }
+                }.scan(location.method().getBody(), null);
+                return uses[0] > 0 && uses[0] == validationReceivers[0];
             }
 
             @Override public Void visitAssignment(AssignmentTree node, Void unused) {
@@ -1161,6 +1193,11 @@ public final class StaticDecisionAnalyzer {
                     return null;
                 }
                 String id = stop(location, node);
+                if (node.getExpression() != null
+                        && unwrapParentheses(node.getExpression()) instanceof MethodInvocationTree call
+                        && receiverEvidenceRelevant(call)) {
+                    addEvidenceTargets(id, node.getExpression());
+                }
                 builder.addProbe(id, AnalysisManifest.ProbeKind.OUTCOME,
                         ownerHint(location.path()), runtimeMemberHint(node), methodDescriptor(location),
                         mapping(location, node));
@@ -1465,6 +1502,19 @@ public final class StaticDecisionAnalyzer {
                 }
                 var seen = new LinkedHashSet<String>();
                 final boolean[] unavailable = { false };
+                final boolean[] unsupportedReceiver = { false };
+                Tree root = unwrapParentheses(predicate);
+                if (root instanceof MethodInvocationTree call
+                        && call.getMethodSelect() instanceof MemberSelectTree member
+                        && member.getExpression() instanceof IdentifierTree identifier) {
+                    String name = identifier.getName().toString();
+                    Integer argumentIndex = parameters.get(name);
+                    if (argumentIndex != null && seen.add(name) && !technicalIdentifier(name)) {
+                        builder.addEvidenceTarget(nodeId, ownerHint(location.path()),
+                                location.method().getName().toString(), methodDescriptor(location),
+                                argumentIndex, words(name), mapping(location, identifier).line());
+                    }
+                }
                 new TreeScanner<Void, Void>() {
                     @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
                         String name = identifier.getName().toString();
@@ -1481,7 +1531,26 @@ public final class StaticDecisionAnalyzer {
                     }
 
                     @Override public Void visitMethodInvocation(MethodInvocationTree call, Void unused) {
-                        unavailable[0] = true;
+                        if (call.getMethodSelect() instanceof MemberSelectTree member) {
+                            Tree receiver = member.getExpression();
+                            boolean relevantReceiver = receiverEvidenceRelevant(call);
+                            boolean self = receiver instanceof IdentifierTree identifier
+                                    && (identifier.getName().contentEquals("this")
+                                    || identifier.getName().contentEquals("super"));
+                            TreePath receiverPath = TreePath.getPath(location.unit(), receiver);
+                            Element receiverElement = receiverPath == null ? null : trees.getElement(receiverPath);
+                            boolean typeReceiver = receiverElement != null && Set.of(
+                                    ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
+                                    ElementKind.RECORD, ElementKind.ANNOTATION_TYPE,
+                                    ElementKind.PACKAGE).contains(receiverElement.getKind());
+                            if (relevantReceiver && !self && !typeReceiver) {
+                                if (!(receiver instanceof IdentifierTree identifier)
+                                        || !parameters.containsKey(identifier.getName().toString())) {
+                                    unsupportedReceiver[0] = true;
+                                }
+                                scan(receiver, unused);
+                            }
+                        }
                         for (Tree argument : call.getArguments()) scan(argument, unused);
                         return null;
                     }
@@ -1491,7 +1560,8 @@ public final class StaticDecisionAnalyzer {
                         return null;
                     }
                 }.scan(predicate, null);
-                if (unavailable[0] && requiresOperandEvidence(predicate)) {
+                if (unsupportedReceiver[0]
+                        || (unavailable[0] && requiresOperandEvidence(predicate))) {
                     long line = mapping(location, predicate).line();
                     builder.addEvidenceTarget(nodeId, ownerHint(location.path()),
                             location.method().getName().toString(), methodDescriptor(location), -1,
@@ -1499,6 +1569,15 @@ public final class StaticDecisionAnalyzer {
                                     : "exact predicate evidence is unavailable at an unknown source line",
                             line);
                 }
+            }
+
+            private boolean receiverEvidenceRelevant(MethodInvocationTree call) {
+                if (!(call.getMethodSelect() instanceof MemberSelectTree member)) return false;
+                if (member.getExpression() instanceof IdentifierTree identifier
+                        && location.method().getParameters().stream().anyMatch(parameter ->
+                        parameter.getName().contentEquals(identifier.getName()))) return true;
+                return Set.of("equals", "contains", "isBefore", "isAfter", "isEqual",
+                        "startsWith", "endsWith", "matches").contains(member.getIdentifier().toString());
             }
 
             private boolean requiresOperandEvidence(Tree predicate) {
@@ -2155,6 +2234,7 @@ public final class StaticDecisionAnalyzer {
         List<String> arguments = call.getArguments().stream()
                 .filter(argument -> !technicalPosition(argument))
                 .map(StaticDecisionAnalyzer::renderExpression).toList();
+        if (method.equals("validate")) receiver = "";
         if (method.equals("equals") && arguments.size() == 1) {
             if (receiver.equals("true")) return arguments.getFirst();
             if (receiver.equals("false")) return "not " + arguments.getFirst();
