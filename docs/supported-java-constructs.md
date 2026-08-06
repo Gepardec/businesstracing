@@ -6,7 +6,7 @@ checks that every entry names an executable contract and appears in this documen
 ## Machine-readable capability IDs
 
 - `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
-- `complex-boolean-exact-path`, `predicate-operand-evidence`, `incomplete-exact-path-gap`
+- `complex-boolean-exact-path`, `predicate-operand-evidence`, `predicate-site-evidence`, `incomplete-exact-path-gap`
 - `assignment-data-flow`, `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
@@ -14,10 +14,11 @@ checks that every entry names an executable contract and appears in this documen
 - `source-unavailable-call`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
 - `reflection-service-loader-proxy`, `unresolved-dynamic-candidate-gap`, `async-boundary`
-- `exact-async-callback-position`, `async-submission-lifecycle`
+- `exact-async-callback-position`, `async-submission-lifecycle`, `nested-async-reservation-identity`, `transparent-future-cancellation`
 - `unsupported-async-boundary-gap`, `java17-java21-projects`
 - `owned-external-jpms-source`, `owned-automatic-module-source`
 - `try-with-resources`, `resource-close-result-gap`, `pattern-matching`, `sealed-types`, `nested-classes`, `method-references`
+- `business-java-vocabulary`
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
@@ -29,6 +30,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | `if / else` and comparison | Produces result-relevant predicate nodes; a complete Java 21 `javac` Boolean binding records the exact `true` or `false` edge |
 | `value == null`, `value != null` | Preserves result-relevant optionality as “is absent” or “exists”; Java `null` is never business output |
 | Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed result-relevant operand evidence when an exact binding is available |
+| Predicate operand evidence | Reads a direct parameter from its current local slot at each predicate branch; reassignment and repeated evaluation cannot reuse the method-entry value. Property, local, or calculated operands outside the exact subset produce a source-located execution gap |
 | Local initialization and assignment | Retained only when it can influence a return |
 | Returned mutable collection | Retains result-affecting mutations through calls and lambda bodies |
 | Direct method call | Follows a source-available callee and includes its relevant slice |
@@ -102,7 +104,14 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
   captured callbacks. Inactive wrapping preserves callback identity, and each wrapper clears the
   worker context in `finally`.
 - Standard asynchronous calls use exact owner, method, descriptor, and callback-position bindings.
-  Rejection and cancellation before callback execution release the reservation exactly once.
+  Each call confirms its own callback handle. Nested synchronous callbacks cannot consume another
+  call's reservation. Thread constructors bind the handle to the actual `Thread` object.
+- Cancellation of supported `Future`, `CompletableFuture`, and `ForkJoinTask` results releases the
+  reservation exactly once and keeps the original result object unchanged.
+- A required predicate fact with no safe value adapter makes the execution incomplete. A Boolean
+  fallback does not hide the missing fact.
+- Generic label normalization and the artifact guard remove Java construction, enum-type, and
+  helper-role vocabulary. They contain no application-specific terms.
 
 The boundary stays fail-closed. Complex binary control flow, result-relevant resource-close logic
 without source, ambiguous reflection, unsupported asynchronous APIs, and unowned modular sources

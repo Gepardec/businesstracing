@@ -1464,6 +1464,7 @@ public final class StaticDecisionAnalyzer {
                     parameters.put(location.method().getParameters().get(index).getName().toString(), index);
                 }
                 var seen = new LinkedHashSet<String>();
+                final boolean[] unavailable = { false };
                 new TreeScanner<Void, Void>() {
                     @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
                         String name = identifier.getName().toString();
@@ -1472,10 +1473,41 @@ public final class StaticDecisionAnalyzer {
                             builder.addEvidenceTarget(nodeId, ownerHint(location.path()),
                                     location.method().getName().toString(), methodDescriptor(location),
                                     argumentIndex, words(name), mapping(location, identifier).line());
+                        } else if (argumentIndex == null && !name.equals("this")
+                                && !name.equals("super") && !technicalPosition(identifier)) {
+                            unavailable[0] = true;
                         }
                         return super.visitIdentifier(identifier, unused);
                     }
+
+                    @Override public Void visitMethodInvocation(MethodInvocationTree call, Void unused) {
+                        unavailable[0] = true;
+                        for (Tree argument : call.getArguments()) scan(argument, unused);
+                        return null;
+                    }
+
+                    @Override public Void visitMemberSelect(MemberSelectTree member, Void unused) {
+                        unavailable[0] = true;
+                        return null;
+                    }
                 }.scan(predicate, null);
+                if (unavailable[0] && requiresOperandEvidence(predicate)) {
+                    long line = mapping(location, predicate).line();
+                    builder.addEvidenceTarget(nodeId, ownerHint(location.path()),
+                            location.method().getName().toString(), methodDescriptor(location), -1,
+                            line > 0 ? "exact predicate evidence is unavailable at source line " + line
+                                    : "exact predicate evidence is unavailable at an unknown source line",
+                            line);
+                }
+            }
+
+            private boolean requiresOperandEvidence(Tree predicate) {
+                Tree unwrapped = unwrapParentheses(predicate);
+                if (unwrapped instanceof UnaryTree unary
+                        && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT) {
+                    unwrapped = unwrapParentheses(unary.getExpression());
+                }
+                return !(unwrapped instanceof MethodInvocationTree);
             }
 
             private void enter(PredicatePlan plan) {

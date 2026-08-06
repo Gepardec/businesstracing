@@ -1,0 +1,42 @@
+{
+  "id": "runtime-evidence-async-identity-correctness",
+  "type": "bugfix",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-06T16:58:20Z",
+  "updated": "2026-08-06T16:58:20Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "codex"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [
+    {
+      "specId": "release-explanation-async-correctness",
+      "reason": "It introduced the async and evidence behavior corrected by this review.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "generic-java-extractor-completion",
+    "generic-application-readiness"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-06T16:58:20Z"
+    }
+  }
+}

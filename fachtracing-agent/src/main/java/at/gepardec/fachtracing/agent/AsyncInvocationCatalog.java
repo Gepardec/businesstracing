@@ -20,6 +20,7 @@ final class AsyncInvocationCatalog {
     private static final String STAGE = "Ljava/util/concurrent/CompletionStage;";
     private static final String FUTURE = "Ljava/util/concurrent/Future;";
     private static final String COMPLETABLE_FUTURE = "Ljava/util/concurrent/CompletableFuture;";
+    private static final String FORK_JOIN_TASK = "Ljava/util/concurrent/ForkJoinTask;";
     private static final Set<String> EXECUTOR_OWNERS = Set.of(
             "java/util/concurrent/Executor",
             "java/util/concurrent/ExecutorService",
@@ -136,7 +137,12 @@ final class AsyncInvocationCatalog {
                 ? WrapperKind.forDescriptor(arguments[callbackPosition].getDescriptor()) : null;
         if (wrapper == null) throw new IllegalArgumentException("catalog callback is not supported: " + descriptor);
         result.add(new Binding(owner, method, descriptor, callbackPosition, wrapper,
-                Type.getReturnType(descriptor).getDescriptor().equals(FUTURE)));
+                cancellableResult(Type.getReturnType(descriptor).getDescriptor())));
+    }
+
+    private static boolean cancellableResult(String descriptor) {
+        return descriptor.equals(FUTURE) || descriptor.equals(COMPLETABLE_FUTURE)
+                || descriptor.equals(FORK_JOIN_TASK);
     }
 
     record Binding(

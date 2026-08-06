@@ -1,13 +1,13 @@
 flowchart LR
     n1(["Start"])
-    n2["initialize warnings"]
+    n2["warnings"]
     n3{"select applicable decision rule"}
     n4["invalid journey rule"]
     n5["evaluate is journey"]
     n6{"task equals reisen"}
     n7["derive grouped project time entries"]
-    n8["initialize warnings"]
-    n9["initialize journey direction validator"]
+    n8["warnings"]
+    n9["journey direction"]
     n10{"a following entry exists"}
     n11["evaluate try to get next journey direction"]
     n12{"a following entry exists"}
@@ -35,14 +35,14 @@ flowchart LR
     n34{"next direction is absent"}
     n35{"is starting new journey next direction"}
     n36["set former direction to absent"]
-    n37["derive warning as journey direction validator validate cur entry journey direction and next direction"]
+    n37["derive warning as journey direction validate cur entry journey direction and next direction"]
     n38{"warning exists"}
-    n39["evaluate create journey warning with enum type"]
-    n40["initialize new journey warning"]
+    n39["create journey warning"]
+    n40["journey warning"]
     n41["evaluate set date"]
     n42["invalid working location in journey rule"]
     n43["derive sorted project entries"]
-    n44["initialize warnings"]
+    n44["warnings"]
     n45["evaluate has journey entries"]
     n46["evaluate is task"]
     n47["evaluate is journey"]
@@ -60,16 +60,16 @@ flowchart LR
     n59{"journey direction equals further"}
     n60["set working location to project entry working location"]
     n61{"project entry working location does not equal working location"}
-    n62["evaluate create journey warning with enum type"]
-    n63["initialize new journey warning"]
+    n62["create journey warning"]
+    n63["journey warning"]
     n64["evaluate set date"]
     n65["location relevant set journey rule"]
-    n66["initialize warnings"]
+    n66["warnings"]
     n67{"for each project entry in project entries"}
     n68{"project entry work location is project relevant"}
     n69{"none of warnings match item date equals project entry date"}
-    n70["evaluate create journey warning"]
-    n71["initialize new journey warning"]
+    n70["create journey warning"]
+    n71["journey warning"]
     n72["evaluate set date"]
     n73["derive calculated warnings as calculator calculate project time list"]
     n74["evaluate add to journey warnings"]

@@ -22,6 +22,7 @@ public final class StaticDecisionAnalyzerTest {
     private StaticDecisionAnalyzerTest() { }
 
     public static void main(String[] args) {
+        removesJavaConstructionVocabularyGenerically();
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
         excludesResultIndependentWork();
@@ -60,6 +61,14 @@ public final class StaticDecisionAnalyzerTest {
         supportsNestedClassesIndependently();
         supportsMethodReferencesIndependently();
         lowersIndexedLoopsToBusinessIteration();
+    }
+
+    private static void removesJavaConstructionVocabularyGenerically() {
+        assert BusinessLabelNormalizer.normalize("initialize new approval validator")
+                .equals("approval") : BusinessLabelNormalizer.normalize("initialize new approval validator");
+        assert BusinessLabelNormalizer.normalize("evaluate create warning with enum type")
+                .equals("create warning")
+                : BusinessLabelNormalizer.normalize("evaluate create warning with enum type");
     }
 
     private static void supportsTryWithResourcesIndependently() {

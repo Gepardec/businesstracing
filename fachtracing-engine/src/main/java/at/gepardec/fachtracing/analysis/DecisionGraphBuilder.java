@@ -55,8 +55,9 @@ public final class DecisionGraphBuilder {
             String ownerHint,
             String memberHint,
             String descriptorHint) {
-        String nodeId = opaque("node", ++nodeSequence, kind.name(), label);
-        nodes.add(new BusinessDecisionGraph.DecisionNode(nodeId, kind, requireText(label, "label"), attributes));
+        String businessLabel = BusinessLabelNormalizer.normalize(requireText(label, "label"));
+        String nodeId = opaque("node", ++nodeSequence, kind.name(), businessLabel);
+        nodes.add(new BusinessDecisionGraph.DecisionNode(nodeId, kind, businessLabel, attributes));
         if (source != null) {
             mappings.put(nodeId, new AnalysisManifest.SourceMapping(
                     nodeId, source.source(), source.line(), source.column(), source.treeKind()));

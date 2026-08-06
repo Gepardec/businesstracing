@@ -267,6 +267,16 @@ public final class InstrumentedFixture {
         return task.get();
     }
 
+    @FachTracing("thread object reservation")
+    public boolean decideThreadObjectReservation(int age) throws Exception {
+        var startedTask = new java.util.concurrent.FutureTask<Boolean>(() -> age >= 24);
+        var started = new Thread(startedTask);
+        var neverStarted = new Thread(() -> secondOperandEvaluations++);
+        started.start();
+        started.join();
+        return startedTask.get() && neverStarted.getState() == Thread.State.NEW;
+    }
+
     @FachTracing("caught rejection")
     public boolean decideCaughtRejection(int age) {
         java.util.concurrent.Executor rejecting = ignored -> { throw expectedRejection; };
@@ -290,6 +300,83 @@ public final class InstrumentedFixture {
         java.util.concurrent.Future<Boolean> future = executor.submit(() -> age >= 24);
         return future.cancel(false) && age >= 24;
     }
+
+    @FachTracing("nested inline rejection")
+    public boolean decideNestedInlineRejection(int age) {
+        java.util.concurrent.Executor rejecting = ignored -> { throw expectedRejection; };
+        return java.util.concurrent.CompletableFuture.completedFuture(age).thenApply(value -> {
+            try {
+                rejecting.execute(() -> secondOperandEvaluations++);
+            } catch (java.util.concurrent.RejectedExecutionException expected) {
+                return value >= 24;
+            }
+            return false;
+        }).join();
+    }
+
+    @FachTracing("completable future cancellation")
+    public boolean decideCompletableFutureCancellation(java.util.concurrent.Executor executor, int age) {
+        var future = java.util.concurrent.CompletableFuture.supplyAsync(() -> age >= 24, executor);
+        return future.cancel(false) && age >= 24;
+    }
+
+    @FachTracing("fork join cancellation")
+    public boolean decideForkJoinCancellation(java.util.concurrent.ForkJoinPool executor, int age) {
+        var future = executor.submit(() -> age >= 24);
+        return future.cancel(false) && age >= 24;
+    }
+
+    @FachTracing("future identity")
+    public boolean decideFutureIdentity(
+            java.util.concurrent.ExecutorService executor,
+            java.util.concurrent.atomic.AtomicReference<java.util.concurrent.Future<?>> submitted,
+            int age) {
+        java.util.concurrent.Future<Boolean> future = executor.submit(() -> age >= 24);
+        java.util.concurrent.Future<?> original = submitted.get();
+        boolean unchanged = future == original
+                && future.getClass() == original.getClass()
+                && future.equals(original)
+                && future.hashCode() == original.hashCode()
+                && future.toString().equals(original.toString())
+                && java.util.Arrays.equals(
+                        future.getClass().getInterfaces(), original.getClass().getInterfaces());
+        boolean cancelled = future.cancel(false);
+        return unchanged && cancelled && age >= 24;
+    }
+
+    @FachTracing("reassigned evidence decision")
+    public boolean decideReassignedEvidence(int age) {
+        age += 10;
+        return age < 24;
+    }
+
+    @FachTracing("loop evidence decision")
+    public boolean decideLoopEvidence(int age) {
+        while (age < 24) {
+            if (age == 23) return true;
+            age++;
+        }
+        return false;
+    }
+
+    @FachTracing("property evidence decision")
+    public boolean decidePropertyEvidence(Customer customer) {
+        return customer.age() < 24;
+    }
+
+    @FachTracing("calculated evidence decision")
+    public boolean decideCalculatedEvidence(int age) {
+        int adjustedAge = age + 2;
+        return adjustedAge < 24;
+    }
+
+    @FachTracing("unsupported evidence value decision")
+    public boolean decideUnsupportedEvidenceValue(EvidenceBox first, EvidenceBox second) {
+        return first == second;
+    }
+
+    public record Customer(int age) { }
+    public record EvidenceBox(String value) { }
 
     public Throwable expectedRejection() {
         return expectedRejection;

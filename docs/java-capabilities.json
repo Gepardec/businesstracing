@@ -12,6 +12,7 @@
     {"id":"short-circuit-boolean","status":"supported","contract":"FachtracingTransformerTest.analyzerBindingsCaptureOneCompoundPredicateEdge"},
     {"id":"complex-boolean-exact-path","status":"supported","contract":"FachtracingTransformerTest.mixedCompoundRecordsExactAtomicPaths"},
     {"id":"predicate-operand-evidence","status":"supported","contract":"FachtracingTransformerTest.capturesOnlyResultRelevantPredicateOperands"},
+    {"id":"predicate-site-evidence","status":"supported","contract":"FachtracingTransformerTest.capturesCurrentEvidenceOrReportsAnExactGap"},
     {"id":"incomplete-exact-path-gap","status":"explicit-gap","contract":"FachtracingTransformerTest.partialCompoundBindingCreatesRuntimeGap"},
     {"id":"assignment-data-flow","status":"supported","contract":"StaticDecisionAnalyzerTest.excludesResultIndependentWork"},
     {"id":"direct-source-call","status":"supported","contract":"StaticDecisionAnalyzerTest.followsDirectCallsAcrossDomains"},
@@ -41,9 +42,12 @@
     {"id":"async-boundary","status":"supported","contract":"FachtracingTransformerTest.standardAsyncBoundariesPropagateAutomatically"},
     {"id":"exact-async-callback-position","status":"supported","contract":"FachtracingTransformerTest.exactAsyncCallbackPositionsPropagate"},
     {"id":"async-submission-lifecycle","status":"supported","contract":"FachtracingTransformerTest.rejectedAndCancelledSubmissionsReleaseReservations"},
+    {"id":"nested-async-reservation-identity","status":"supported","contract":"FachtracingTransformerTest.nestedReservationsAndFutureIdentityAreExact"},
+    {"id":"transparent-future-cancellation","status":"supported","contract":"FachtracingTransformerTest.nestedReservationsAndFutureIdentityAreExact"},
     {"id":"unsupported-async-boundary-gap","status":"explicit-gap","contract":"FachtracingTransformerTest.unsupportedAsyncBoundaryCreatesExecutionGap"},
     {"id":"owned-external-jpms-source","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsOwnedExternalNamedModuleSources"},
     {"id":"owned-automatic-module-source","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsOwnedExternalAutomaticModuleSources"},
-    {"id":"java17-java21-projects","status":"supported","contract":"StaticDecisionAnalyzerTest.isolatesDuplicateTypesAndCompilerModelsByProject"}
+    {"id":"java17-java21-projects","status":"supported","contract":"StaticDecisionAnalyzerTest.isolatesDuplicateTypesAndCompilerModelsByProject"},
+    {"id":"business-java-vocabulary","status":"supported","contract":"StaticDecisionAnalyzerTest.removesJavaConstructionVocabularyGenerically"}
   ]
 }

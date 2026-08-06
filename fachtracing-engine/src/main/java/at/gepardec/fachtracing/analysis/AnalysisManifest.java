@@ -226,7 +226,7 @@ public record AnalysisManifest(
     /** Bytecode point that proves a source control path was taken. */
     public enum ControlPoint { LINE, RETURN, CASE_EXIT, PREDICATE_TRUE }
 
-    /** Binds one result-relevant method argument to the predicate that uses it. */
+    /** Binds one result-relevant method argument, or an unavailable exact operand, to a predicate. */
     public record EvidenceTarget(
             String nodeId,
             String ownerHint,
@@ -241,7 +241,7 @@ public record AnalysisManifest(
             Objects.requireNonNull(ownerHint, "ownerHint");
             Objects.requireNonNull(memberHint, "memberHint");
             Objects.requireNonNull(descriptorHint, "descriptorHint");
-            if (argumentIndex < 0) throw new IllegalArgumentException("argumentIndex must be non-negative");
+            if (argumentIndex < -1) throw new IllegalArgumentException("argumentIndex must be -1 or non-negative");
             if (evidenceLabel == null || evidenceLabel.isBlank()) {
                 throw new IllegalArgumentException("evidenceLabel must not be blank");
             }

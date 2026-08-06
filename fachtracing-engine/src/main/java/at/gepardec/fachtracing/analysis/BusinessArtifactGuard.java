@@ -15,7 +15,9 @@ public final class BusinessArtifactGuard {
             String label = node.businessLabel().toLowerCase(Locale.ROOT);
             if (label.matches("derive (?:i|idx|index)(?: as 0)?")
                     || label.matches("repeat while .*\\b(?:index|idx)\\b.*\\bsize\\b.*")
-                    || label.matches(".*\\bitem (?:index|idx)(?: plus [0-9]+)?\\b.*")) {
+                    || label.matches(".*\\bitem (?:index|idx)(?: plus [0-9]+)?\\b.*")
+                    || label.matches(".*\\b(?:initialize|validator)\\b.*")
+                    || label.matches(".*\\benum\\s+type\\b.*")) {
                 violations.add("node " + node.nodeId() + ": " + node.businessLabel());
             }
         }

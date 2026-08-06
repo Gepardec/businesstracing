@@ -2,14 +2,14 @@
 title determine journey warnings
 left to right direction
 usecase "Start" as n1
-rectangle "initialize warnings" as n2
+rectangle "warnings" as n2
 diamond "select applicable decision rule" as n3
 rectangle "invalid journey rule" as n4
 rectangle "evaluate is journey" as n5
 diamond "task equals reisen" as n6
 rectangle "derive grouped project time entries" as n7
-rectangle "initialize warnings" as n8
-rectangle "initialize journey direction validator" as n9
+rectangle "warnings" as n8
+rectangle "journey direction" as n9
 diamond "a following entry exists" as n10
 rectangle "evaluate try to get next journey direction" as n11
 diamond "a following entry exists" as n12
@@ -37,14 +37,14 @@ diamond "is not finished" as n33
 diamond "next direction is absent" as n34
 diamond "is starting new journey next direction" as n35
 rectangle "set former direction to absent" as n36
-rectangle "derive warning as journey direction validator validate cur entry journey direction and next direction" as n37
+rectangle "derive warning as journey direction validate cur entry journey direction and next direction" as n37
 diamond "warning exists" as n38
-rectangle "evaluate create journey warning with enum type" as n39
-rectangle "initialize new journey warning" as n40
+rectangle "create journey warning" as n39
+rectangle "journey warning" as n40
 rectangle "evaluate set date" as n41
 rectangle "invalid working location in journey rule" as n42
 rectangle "derive sorted project entries" as n43
-rectangle "initialize warnings" as n44
+rectangle "warnings" as n44
 rectangle "evaluate has journey entries" as n45
 rectangle "evaluate is task" as n46
 rectangle "evaluate is journey" as n47
@@ -62,16 +62,16 @@ diamond "journey direction equals to" as n58
 diamond "journey direction equals further" as n59
 rectangle "set working location to project entry working location" as n60
 diamond "project entry working location does not equal working location" as n61
-rectangle "evaluate create journey warning with enum type" as n62
-rectangle "initialize new journey warning" as n63
+rectangle "create journey warning" as n62
+rectangle "journey warning" as n63
 rectangle "evaluate set date" as n64
 rectangle "location relevant set journey rule" as n65
-rectangle "initialize warnings" as n66
+rectangle "warnings" as n66
 diamond "for each project entry in project entries" as n67
 diamond "project entry work location is project relevant" as n68
 diamond "none of warnings match item date equals project entry date" as n69
-rectangle "evaluate create journey warning" as n70
-rectangle "initialize new journey warning" as n71
+rectangle "create journey warning" as n70
+rectangle "journey warning" as n71
 rectangle "evaluate set date" as n72
 rectangle "derive calculated warnings as calculator calculate project time list" as n73
 rectangle "evaluate add to journey warnings" as n74

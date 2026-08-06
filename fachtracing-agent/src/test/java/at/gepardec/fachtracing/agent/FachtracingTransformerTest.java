@@ -28,6 +28,7 @@ public final class FachtracingTransformerTest {
         rejectsFingerprintMismatch();
         transformedMethodPreservesResultsAndCapturesExecution();
         capturesOnlyResultRelevantPredicateOperands();
+        capturesCurrentEvidenceOrReportsAnExactGap();
         analyzerBindingsCaptureOneCompoundPredicateEdge();
         partialCompoundBindingCreatesRuntimeGap();
         mixedCompoundRecordsExactAtomicPaths();
@@ -40,6 +41,7 @@ public final class FachtracingTransformerTest {
         standardAsyncBoundariesPropagateAutomatically();
         exactAsyncCallbackPositionsPropagate();
         rejectedAndCancelledSubmissionsReleaseReservations();
+        nestedReservationsAndFutureIdentityAreExact();
         unsupportedAsyncBoundaryCreatesExecutionGap();
         controlledBinaryFallbackRecordsExactRuntimePath();
         proxiesServiceLoaderAndConstantReflectionSelectProvenCandidates();
@@ -294,6 +296,73 @@ public final class FachtracingTransformerTest {
                 new DecisionExplanationProjector().project(result.graph(), execution));
         assert explanation.contains("age was 20") : explanation;
         assert !explanation.contains("employee") : explanation;
+    }
+
+    private static void capturesCurrentEvidenceOrReportsAnExactGap() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        Set<String> labels = Set.of("reassigned evidence decision", "loop evidence decision",
+                "property evidence decision", "calculated evidence decision",
+                "unsupported evidence value decision");
+        var results = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> labels.contains(item.graph().decisionLabel())).toList();
+        assert results.size() == labels.size() : results;
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
+                Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        assert transformed != null;
+        RuntimeCollector collector = new RuntimeCollector();
+        results.forEach(result -> collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none())));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+
+        assert fixture.getMethod("decideReassignedEvidence", int.class).invoke(instance, 20).equals(false);
+        DecisionExecution reassigned = collector.pollCompleted().orElseThrow();
+        assert reassigned.observations().stream().anyMatch(item -> item.evidence().values().stream()
+                .anyMatch(value -> value.canonicalValue().equals("30"))) : reassigned;
+        assert reassigned.observations().stream().noneMatch(item -> item.evidence().values().stream()
+                .anyMatch(value -> value.canonicalValue().equals("20"))) : reassigned;
+
+        assert fixture.getMethod("decideLoopEvidence", int.class).invoke(instance, 22).equals(true);
+        DecisionExecution loop = collector.pollCompleted().orElseThrow();
+        Set<String> loopValues = loop.observations().stream().flatMap(item -> item.evidence().values().stream())
+                .map(DecisionExecution.DecisionValue::canonicalValue)
+                .collect(java.util.stream.Collectors.toSet());
+        assert loopValues.containsAll(Set.of("22", "23"))
+                || loop.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                && loop.coverageGaps().stream().anyMatch(gap -> gap.contains("source line")) : loop;
+
+        Class<?> customer = fixture.getDeclaredClasses().length == 0 ? null
+                : java.util.Arrays.stream(fixture.getDeclaredClasses())
+                        .filter(type -> type.getSimpleName().equals("Customer")).findFirst().orElseThrow();
+        Object customerValue = customer.getConstructor(int.class).newInstance(20);
+        assert fixture.getMethod("decidePropertyEvidence", customer).invoke(instance, customerValue).equals(true);
+        assertExactEvidenceGap(collector.pollCompleted().orElseThrow());
+
+        assert fixture.getMethod("decideCalculatedEvidence", int.class).invoke(instance, 20).equals(true);
+        assertExactEvidenceGap(collector.pollCompleted().orElseThrow());
+
+        Class<?> box = java.util.Arrays.stream(fixture.getDeclaredClasses())
+                .filter(type -> type.getSimpleName().equals("EvidenceBox")).findFirst().orElseThrow();
+        Object boxValue = box.getConstructor(String.class).newInstance("same");
+        assert fixture.getMethod("decideUnsupportedEvidenceValue", box, box)
+                .invoke(instance, boxValue, boxValue).equals(true);
+        DecisionExecution unsupported = collector.pollCompleted().orElseThrow();
+        assert unsupported.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unsupported;
+        assert unsupported.coverageGaps().stream().anyMatch(gap -> gap.contains("no safe value adapter"))
+                : unsupported.coverageGaps();
+    }
+
+    private static void assertExactEvidenceGap(DecisionExecution execution) {
+        assert execution.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : execution;
+        assert execution.coverageGaps().stream().anyMatch(gap -> gap.contains("exact predicate evidence")
+                && gap.contains("source line")) : execution.coverageGaps();
     }
 
     private static void manifestWithoutBranchTargetsCreatesRuntimeGap() throws Exception {
@@ -890,6 +959,94 @@ public final class FachtracingTransformerTest {
             executor.shutdownNow();
             assert executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
         }
+    }
+
+    private static void nestedReservationsAndFutureIdentityAreExact() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        Set<String> labels = Set.of("nested inline rejection", "completable future cancellation",
+                "fork join cancellation", "future identity", "thread object reservation");
+        var results = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> labels.contains(item.graph().decisionLabel())).toList();
+        assert results.size() == labels.size() : results;
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                results.stream().map(AnalysisManifest.AnalysisResult::manifest).toList(),
+                Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        assert transformed != null;
+        RuntimeCollector collector = new RuntimeCollector();
+        results.forEach(result -> collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none())));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+
+        assert fixture.getMethod("decideNestedInlineRejection", int.class)
+                .invoke(instance, 30).equals(true);
+        assert collector.pollCompleted().orElseThrow().terminalStatus()
+                == DecisionExecution.TerminalStatus.SUCCEEDED;
+
+        assert fixture.getMethod("decideThreadObjectReservation", int.class)
+                .invoke(instance, 30).equals(true);
+        assert collector.pollCompleted().orElseThrow().terminalStatus()
+                == DecisionExecution.TerminalStatus.SUCCEEDED;
+
+        var queued = new java.util.concurrent.atomic.AtomicReference<Runnable>();
+        java.util.concurrent.Executor queueOnly = queued::set;
+        assert fixture.getMethod("decideCompletableFutureCancellation",
+                        java.util.concurrent.Executor.class, int.class)
+                .invoke(instance, queueOnly, 30).equals(true);
+        assert queued.get() != null;
+        assert collector.pollCompleted().orElseThrow().terminalStatus()
+                == DecisionExecution.TerminalStatus.SUCCEEDED;
+
+        var blocker = new java.util.concurrent.CountDownLatch(1);
+        var pool = new java.util.concurrent.ForkJoinPool(1);
+        try {
+            pool.submit(() -> {
+                try {
+                    blocker.await();
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            assert fixture.getMethod("decideForkJoinCancellation",
+                            java.util.concurrent.ForkJoinPool.class, int.class)
+                    .invoke(instance, pool, 30).equals(true);
+            assert collector.pollCompleted().orElseThrow().terminalStatus()
+                    == DecisionExecution.TerminalStatus.SUCCEEDED;
+        } finally {
+            blocker.countDown();
+            pool.shutdownNow();
+        }
+
+        var submitted = new java.util.concurrent.atomic.AtomicReference<java.util.concurrent.Future<?>>();
+        java.util.concurrent.ExecutorService identityExecutor = new java.util.concurrent.AbstractExecutorService() {
+            private volatile boolean shutdown;
+            @Override public void shutdown() { shutdown = true; }
+            @Override public java.util.List<Runnable> shutdownNow() { shutdown = true; return java.util.List.of(); }
+            @Override public boolean isShutdown() { return shutdown; }
+            @Override public boolean isTerminated() { return shutdown; }
+            @Override public boolean awaitTermination(long timeout, java.util.concurrent.TimeUnit unit) {
+                return shutdown;
+            }
+            @Override public void execute(Runnable command) {
+                submitted.set((java.util.concurrent.Future<?>) command);
+            }
+        };
+        try {
+            assert fixture.getMethod("decideFutureIdentity", java.util.concurrent.ExecutorService.class,
+                            java.util.concurrent.atomic.AtomicReference.class, int.class)
+                    .invoke(instance, identityExecutor, submitted, 30).equals(true);
+            assert collector.pollCompleted().orElseThrow().terminalStatus()
+                    == DecisionExecution.TerminalStatus.SUCCEEDED;
+        } finally {
+            identityExecutor.shutdownNow();
+        }
+        assert collector.pollCompleted().isEmpty();
     }
 
     private static void controlledBinaryFallbackRecordsExactRuntimePath() throws Exception {

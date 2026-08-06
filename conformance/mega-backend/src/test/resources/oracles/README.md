@@ -22,7 +22,7 @@ journey-warning manager. Review anchors and results:
 | `detect-overlapping-time-entries.txt` | atomic touching-boundary checks return false; otherwise each interval position is tested and both paths state their return | `cccbb57b3ac143b86565c50ffeefb536d17ed6d2671feb7cf1ff2d553ee54198` | Approved |
 | `determine-project-activity-in-month.txt` | month boundary derivations; atomic start-before-end and absent-or-after-start conditions; conjunction return | `0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38` | Approved |
 | `validate-journey-direction.txt` | all enum cases, atomic state and completion predicates, state updates, default failure, early return, final return, shared Stop | `1684955f4aa81930040a8d9df919be77df0f953f1fd4a419d70b6621a9f6c36e` | Approved |
-| `determine-journey-warnings.txt` | manager collection flow; all three selected strategy rules; business-safe entry iteration; atomic filtering, validator, absence, and warning predicates; convergence and final list | `48e8ca1d82543775475f8433eb050db92e73263a498baa87e3122da85005ad19` | Approved |
+| `determine-journey-warnings.txt` | manager collection flow; all three selected strategy rules; business-safe entry iteration; atomic filtering, direction, absence, and warning predicates; convergence and final list | `2d0abeac6c25f9a914cb4b0c2b26b51adf0c070d877689497afdba746eb4f38b` | Approved |
 
 The hashes make review drift visible. Exact semantic equality is still the authoritative
 executable assertion; hashes document the reviewed revisions rather than replacing comparison.

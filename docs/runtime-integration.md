@@ -41,6 +41,16 @@ context on the worker, and always clears it in `finally`. Calls made without an 
 the original callback object. An unsupported asynchronous boundary adds an execution coverage gap.
 The public manual wrapper APIs remain available for custom asynchronous frameworks.
 
+Automatic submission uses one exact callback handle per call. Synchronous nested stage callbacks,
+rejection, and terminal rollback cannot consume a different call's reservation. A created platform
+thread is associated with its actual `Thread` object until `start`. Supported Future,
+CompletableFuture, and ForkJoinTask cancellation is observed without replacing the returned object,
+so identity, runtime type, equality, hash code, text, and implemented interfaces stay unchanged.
+
+Direct parameter evidence is read at the predicate branch, not at method entry. If the required
+operand is a property, local, or calculation outside the exact capture subset, or if its value has
+no safe adapter, the execution contains a source-located coverage gap and is incomplete.
+
 `scripts/verify-external-release.sh` publishes the RC to a temporary isolated file repository,
 uses an empty Maven local repository, resolves an exact external source artifact, and repeats that
 source analysis offline from cache. It generates Mermaid and PlantUML, starts a JVM with the released

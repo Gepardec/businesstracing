@@ -7,6 +7,7 @@ import at.gepardec.fachtracing.model.DecisionExecution;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -15,9 +16,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,6 +41,7 @@ public class RuntimeCollector implements TraceContextCarrier {
     private final AtomicLong diagnosticOverflow = new AtomicLong();
     private final AtomicLong executionSequence = new AtomicLong();
     private final String executionNamespace;
+    private final IdentityHashMap<Future<?>, AsyncReservation> trackedFutures = new IdentityHashMap<>();
 
     /** Creates a collector using the system clock. */
     public RuntimeCollector() { this(Clock.systemUTC(), 1024); }
@@ -110,10 +109,20 @@ public class RuntimeCollector implements TraceContextCarrier {
     /** Stages one typed business fact for the next exact observation of its predicate. */
     public void observeEvidence(String nodeId, String evidenceLabel, Object value) {
         InvocationContext context = current();
-        if (context == null || value == null) return;
+        if (context == null) return;
         Definition definition = definition(context);
-        context.addEvidence(nodeId, evidenceLabel, definition.codec().encode(
-                value, definition.graph().decisionLabel(), evidenceLabel));
+        if (value == null) {
+            context.addRuntimeCoverageGap("required predicate evidence '" + evidenceLabel
+                    + "' was absent and could not be encoded");
+            return;
+        }
+        try {
+            context.addEvidence(nodeId, evidenceLabel, definition.codec().encode(
+                    value, definition.graph().decisionLabel(), evidenceLabel));
+        } catch (RuntimeException unsupported) {
+            context.addRuntimeCoverageGap("required predicate evidence '" + evidenceLabel
+                    + "' has no safe value adapter");
+        }
     }
 
     /** Appends one exact edge when it leaves the named node in the active graph. */
@@ -368,11 +377,28 @@ public class RuntimeCollector implements TraceContextCarrier {
         return graph.graphId().equals(graphId) && graph.version() == graphVersion;
     }
 
-    /** Wraps a submitted future so successful pre-start cancellation releases its callback. */
-    public <T> Future<T> trackFuture(Future<T> future, Object callback) {
+    /** Registers the original future for successful pre-start cancellation. */
+    public void trackFuture(Future<?> future, Object callback) {
         Objects.requireNonNull(future, "future");
-        return callback instanceof ContextWrapped wrapped
-                ? new ReservationFuture<>(future, wrapped.reservation()) : future;
+        if (callback instanceof ContextWrapped wrapped) {
+            AsyncReservation reservation = wrapped.reservation();
+            synchronized (trackedFutures) {
+                if (reservation.attachFuture(future)) trackedFutures.put(future, reservation);
+            }
+        }
+    }
+
+    /** Releases the reservation for an original future that was cancelled before start. */
+    public void cancelTrackedFuture(Future<?> future) {
+        AsyncReservation reservation;
+        synchronized (trackedFutures) { reservation = trackedFutures.remove(future); }
+        if (reservation != null) reservation.cancelBeforeStart();
+    }
+
+    private void unregisterFuture(Future<?> future, AsyncReservation reservation) {
+        synchronized (trackedFutures) {
+            if (trackedFutures.get(future) == reservation) trackedFutures.remove(future);
+        }
     }
 
     private String resolveDispatch(InvocationContext context, String nodeId, Class<?> runtimeType) {
@@ -496,6 +522,7 @@ public class RuntimeCollector implements TraceContextCarrier {
         private final RuntimeCollector collector;
         private final InvocationContext context;
         private final AtomicReference<AsyncState> state = new AtomicReference<>(AsyncState.RESERVED);
+        private volatile Future<?> future;
 
         private AsyncReservation(RuntimeCollector collector, InvocationContext context) {
             this.collector = collector;
@@ -504,39 +531,39 @@ public class RuntimeCollector implements TraceContextCarrier {
 
         private InvocationContext context() { return context; }
 
-        private boolean start() { return state.compareAndSet(AsyncState.RESERVED, AsyncState.RUNNING); }
+        private boolean start() {
+            boolean started = state.compareAndSet(AsyncState.RESERVED, AsyncState.RUNNING);
+            if (started) detachFuture();
+            return started;
+        }
+
+        private boolean attachFuture(Future<?> value) {
+            if (state.get() != AsyncState.RESERVED) return false;
+            future = value;
+            if (state.get() == AsyncState.RESERVED) return true;
+            future = null;
+            return false;
+        }
+
+        private void detachFuture() {
+            Future<?> attached = future;
+            future = null;
+            if (attached != null) collector.unregisterFuture(attached, this);
+        }
 
         private void finish() {
             if (state.compareAndSet(AsyncState.RUNNING, AsyncState.RELEASED)) collector.releaseAsync(context);
         }
 
         private void cancelBeforeStart() {
-            if (state.compareAndSet(AsyncState.RESERVED, AsyncState.RELEASED)) collector.releaseAsync(context);
+            if (state.compareAndSet(AsyncState.RESERVED, AsyncState.RELEASED)) {
+                detachFuture();
+                collector.releaseAsync(context);
+            }
         }
     }
 
     private enum AsyncState { RESERVED, RUNNING, RELEASED }
-
-    private record ReservationFuture<T>(Future<T> delegate, AsyncReservation reservation) implements Future<T> {
-        private ReservationFuture {
-            Objects.requireNonNull(delegate, "delegate");
-            Objects.requireNonNull(reservation, "reservation");
-        }
-
-        @Override public boolean cancel(boolean mayInterruptIfRunning) {
-            boolean cancelled = delegate.cancel(mayInterruptIfRunning);
-            if (cancelled) reservation.cancelBeforeStart();
-            return cancelled;
-        }
-
-        @Override public boolean isCancelled() { return delegate.isCancelled(); }
-        @Override public boolean isDone() { return delegate.isDone(); }
-        @Override public T get() throws InterruptedException, ExecutionException { return delegate.get(); }
-        @Override public T get(long timeout, TimeUnit unit)
-                throws InterruptedException, ExecutionException, TimeoutException {
-            return delegate.get(timeout, unit);
-        }
-    }
 
     private record Definition(
             BusinessDecisionGraph graph,

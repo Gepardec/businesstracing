@@ -1,14 +1,14 @@
 decision: determine journey warnings
 completeness: COMPLETE
 node 1: ENTRY | Start
-node 2: COMPUTATION | initialize warnings
+node 2: COMPUTATION | warnings
 node 3: DISPATCH | select applicable decision rule
 node 4: COMPUTATION | invalid journey rule
 node 5: COMPUTATION | evaluate is journey
 node 6: PREDICATE | task equals reisen
 node 7: COMPUTATION | derive grouped project time entries
-node 8: COMPUTATION | initialize warnings
-node 9: COMPUTATION | initialize journey direction validator
+node 8: COMPUTATION | warnings
+node 9: COMPUTATION | journey direction
 node 10: CHOICE | a following entry exists
 node 11: COMPUTATION | evaluate try to get next journey direction
 node 12: PREDICATE | a following entry exists
@@ -36,14 +36,14 @@ node 33: PREDICATE | is not finished
 node 34: PREDICATE | next direction is absent
 node 35: PREDICATE | is starting new journey next direction
 node 36: COMPUTATION | set former direction to absent
-node 37: COMPUTATION | derive warning as journey direction validator validate cur entry journey direction and next direction
+node 37: COMPUTATION | derive warning as journey direction validate cur entry journey direction and next direction
 node 38: PREDICATE | warning exists
-node 39: COMPUTATION | evaluate create journey warning with enum type
-node 40: COMPUTATION | initialize new journey warning
+node 39: COMPUTATION | create journey warning
+node 40: COMPUTATION | journey warning
 node 41: COMPUTATION | evaluate set date
 node 42: COMPUTATION | invalid working location in journey rule
 node 43: COMPUTATION | derive sorted project entries
-node 44: COMPUTATION | initialize warnings
+node 44: COMPUTATION | warnings
 node 45: COMPUTATION | evaluate has journey entries
 node 46: COMPUTATION | evaluate is task
 node 47: COMPUTATION | evaluate is journey
@@ -61,16 +61,16 @@ node 58: PREDICATE | journey direction equals to
 node 59: PREDICATE | journey direction equals further
 node 60: COMPUTATION | set working location to project entry working location
 node 61: PREDICATE | project entry working location does not equal working location
-node 62: COMPUTATION | evaluate create journey warning with enum type
-node 63: COMPUTATION | initialize new journey warning
+node 62: COMPUTATION | create journey warning
+node 63: COMPUTATION | journey warning
 node 64: COMPUTATION | evaluate set date
 node 65: COMPUTATION | location relevant set journey rule
-node 66: COMPUTATION | initialize warnings
+node 66: COMPUTATION | warnings
 node 67: CHOICE | for each project entry in project entries
 node 68: PREDICATE | project entry work location is project relevant
 node 69: PREDICATE | none of warnings match item date equals project entry date
-node 70: COMPUTATION | evaluate create journey warning
-node 71: COMPUTATION | initialize new journey warning
+node 70: COMPUTATION | create journey warning
+node 71: COMPUTATION | journey warning
 node 72: COMPUTATION | evaluate set date
 node 73: COMPUTATION | derive calculated warnings as calculator calculate project time list
 node 74: COMPUTATION | evaluate add to journey warnings

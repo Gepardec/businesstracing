@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.ArrayDeque;
+import java.util.IdentityHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.BiConsumer;
@@ -19,12 +20,15 @@ public final class TraceRuntime {
     private static final ConcurrentLinkedQueue<CaptureDiagnostic> diagnostics = new ConcurrentLinkedQueue<>();
     private static final ThreadLocal<ArrayDeque<Object>> pendingSubmissions =
             ThreadLocal.withInitial(ArrayDeque::new);
+    private static final IdentityHashMap<Thread, Object> pendingThreads = new IdentityHashMap<>();
 
     private TraceRuntime() { }
 
     /** Installs the process collector. */
     public static void configure(RuntimeCollector replacement) {
         collector = Objects.requireNonNull(replacement, "replacement");
+        pendingSubmissions.remove();
+        synchronized (pendingThreads) { pendingThreads.clear(); }
     }
 
     public static void begin(String graphId, long graphVersion) {
@@ -205,13 +209,30 @@ public final class TraceRuntime {
     /** Prepares one supplier for an automatically instrumented stage registration. */
     public static <T> Supplier<T> prepareSupplier(Supplier<T> task) { return pending(collector.wrap(task)); }
 
-    /** Confirms that the latest prepared callback was accepted by a non-Future boundary. */
-    public static void asyncSubmissionSucceeded() { popPending(); }
+    /** Confirms that the exact prepared callback was accepted by a non-Future boundary. */
+    public static void asyncSubmissionSucceeded(Object callback) { removePending(callback); }
 
-    /** Confirms a Future submission and adds cancellation-before-start release. */
-    public static <T> Future<T> asyncFutureSubmitted(Future<T> future) {
-        Object callback = popPending();
-        return callback == null ? future : collector.trackFuture(future, callback);
+    /** Registers cancellation for the original Future without replacing it. */
+    public static void asyncFutureSubmitted(Future<?> future, Object callback) {
+        if (removePending(callback)) collector.trackFuture(future, callback);
+    }
+
+    /** Binds an exact constructor reservation to the created Thread object. */
+    public static void asyncThreadCreated(Thread thread, Object callback) {
+        if (!removePending(callback)) return;
+        synchronized (pendingThreads) { pendingThreads.put(thread, callback); }
+    }
+
+    /** Confirms start of the exact Thread object. */
+    public static void asyncThreadStarted(Thread thread) {
+        synchronized (pendingThreads) { pendingThreads.remove(thread); }
+    }
+
+    /** Reports the unchanged result of one cancellation call. */
+    public static boolean asyncFutureCancelled(
+            Future<?> future, boolean ignoredMayInterruptIfRunning, boolean cancelled) {
+        if (cancelled) collector.cancelTrackedFuture(future);
+        return cancelled;
     }
 
     private static <T> T pending(T callback) {
@@ -219,11 +240,21 @@ public final class TraceRuntime {
         return callback;
     }
 
-    private static Object popPending() {
+    private static boolean removePending(Object callback) {
         ArrayDeque<Object> pending = pendingSubmissions.get();
-        Object callback = pending.poll();
+        boolean removed = removeIdentity(pending, callback);
         if (pending.isEmpty()) pendingSubmissions.remove();
-        return callback;
+        return removed;
+    }
+
+    private static boolean removeIdentity(ArrayDeque<Object> pending, Object callback) {
+        for (var iterator = pending.iterator(); iterator.hasNext();) {
+            if (iterator.next() == callback) {
+                iterator.remove();
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void rollbackPendingSubmissions(String graphId, long graphVersion) {
@@ -234,6 +265,14 @@ public final class TraceRuntime {
             return true;
         });
         if (pending.isEmpty()) pendingSubmissions.remove();
+        synchronized (pendingThreads) {
+            pendingThreads.entrySet().removeIf(entry -> {
+                Object callback = entry.getValue();
+                if (!collector.preparedAsyncBelongsTo(callback, graphId, graphVersion)) return false;
+                collector.cancelPreparedAsync(callback);
+                return true;
+            });
+        }
     }
 
     /** Returns and removes the next developer-facing capture diagnostic. */
