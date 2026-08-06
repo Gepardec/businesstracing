@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-05T21:18:47Z"
-_sourceHash: "2692c035d6d14f8cc0403f72dfccae3c06bc5666953f4d715ec2e64ff40f9d9c"
+_generatedAt: "2026-08-06T08:53:42Z"
+_sourceHash: "4d77337aea1210db3fe30ed5d544dce3fdec3875f0bdcf78bb659d1e24cde345"
 ---
 
 ## Project Structure Map
@@ -174,3 +174,4 @@ fachtracing/
 - `pom.xml`
 - `scripts/verify.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
 - `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
+- `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`

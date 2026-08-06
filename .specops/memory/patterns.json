@@ -33,7 +33,7 @@
     },
     {
       "category": "release-gate-integrity",
-      "count": 1,
+      "count": 2,
       "pattern": "Capture producer output before presentation, preserve its exact status, and print a success marker only after every release sub-gate passes."
     }
   ],
@@ -99,8 +99,8 @@
     },
     {
       "file": "scripts/verify.sh",
-      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness"],
-      "count": 4
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository"],
+      "count": 5
     }
   ]
 }

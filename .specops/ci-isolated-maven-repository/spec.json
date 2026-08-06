@@ -1,10 +1,10 @@
 {
   "id": "ci-isolated-maven-repository",
   "type": "bugfix",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-06T08:26:47Z",
-  "updated": "2026-08-06T08:26:47Z",
+  "updated": "2026-08-06T08:53:42Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -35,6 +35,26 @@
         "taskCoverage": 9
       },
       "evaluatedAt": "2026-08-06T08:26:47Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 10,
+        "codeQuality": 9,
+        "testVerification": 10,
+        "specCompliance": 9
+      },
+      "evaluatedAt": "2026-08-06T08:53:42Z"
     }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 2400,
+    "filesChanged": 20,
+    "linesAdded": 478,
+    "linesRemoved": 13,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 14,
+    "specDurationMinutes": 28
   }
 }

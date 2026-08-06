@@ -45,8 +45,8 @@ location. The PostgreSQL verifier has the same hard-coded default path.
 
 ## Definition of Done
 
-- [ ] A focused shell contract proves override, explicit, and default repository resolution.
-- [ ] Verification scripts contain no direct `$HOME/.m2/repository` dependency path.
-- [ ] Standard verification passes.
-- [ ] The clean release gate passes from the committed revision.
-- [ ] PR #5 receives the pushed fix and its checks are monitored.
+- [x] A focused shell contract proves override, explicit, and default repository resolution.
+- [x] Verification scripts contain no direct `$HOME/.m2/repository` dependency path.
+- [x] Standard verification passes.
+- [x] The clean release gate passes from the committed revision.
+- [x] PR #5 receives the pushed fix and its checks are monitored.

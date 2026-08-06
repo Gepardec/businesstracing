@@ -420,6 +420,26 @@
       "task": "Task 6",
       "date": "2026-08-05",
       "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "ci-isolated-maven-repository",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Resolve one Maven repository path for all verification scripts",
+      "rationale": "Manual Java classpaths must use the same repository that Maven populated in local and clean release runs.",
+      "task": "Task 1",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T08:53:42Z"
+    },
+    {
+      "specId": "ci-isolated-maven-repository",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Let Maven build transitive verification classpaths",
+      "rationale": "Resolved classpaths prevent a warm home cache from hiding stale pinned transitive versions such as SLF4J.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T08:53:42Z"
     }
   ]
 }

@@ -136,3 +136,14 @@ technical counter and ordinal candidate text.
 Release commit `280368d58263c045a01e6879769dac89f820a220` passed source-free activation, five
 complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.054% p95 overhead and zero errors,
 mismatches, dropped records, or trace contamination.
+
+### ci-isolated-maven-repository (bugfix) — 2026-08-06
+
+Completed all three tasks. Verification scripts now resolve one Maven repository path for local,
+release, and explicit use. Manual test launchers use Maven-resolved dependency classpaths, so a
+warm home cache cannot hide missing or stale transitive artifacts. The resolver also normalizes
+the repeated separator produced by the trailing slash in macOS `TMPDIR`.
+
+Release commit `defe774040f5a5604caffc15838519fd753c0db2` passed source-free activation, five
+complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.059% p95 overhead and zero errors,
+mismatches, dropped records, or trace contamination.

@@ -102,9 +102,9 @@
   {
     "id": "ci-isolated-maven-repository",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-06T08:26:47Z"
+    "updated": "2026-08-06T08:53:42Z"
   }
 ]
