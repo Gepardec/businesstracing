@@ -57,7 +57,36 @@
   construction, enum-type, and helper-role terms. Mega conformance produced five complete graphs
   from 420 sources. The reviewed journey-warning oracle and all generated structure and execution
   diagrams now use business-only labels. No Mega-specific production term was added.
+- 2026-08-06: Task 5 completed. Commit `d9a1d4cc7c38a604b41ce91ade069ffe3ca50de2`
+  passed the clean-clone release gate. The long run completed 600,000 decisions at 1,000 RPS with
+  0.054% p95 overhead and zero errors, result mismatches, dropped records, or trace contamination.
+  External source-free activation and five complete Mega graphs also passed. PostgreSQL was not
+  rerun because no database connection was configured; the existing production-database contract
+  remains unchanged.
 
 ## Blockers
 
 - None.
+
+## Final Evaluation
+
+- Functionality: 10/10. All five attached review findings have executable passing contracts.
+- Code quality: 9/10. Exact identity protocols are small, fail closed, and add no dependency.
+- Test coverage: 10/10. Focused, standard, external, Mega, and long-load gates passed.
+- Spec compliance: 10/10. No finding was closed by documentation alone.
+
+## Documentation Review
+
+- `docs/java-capabilities.json`: added independent contracts for predicate-site evidence, nested
+  reservation identity, transparent future cancellation, and business Java vocabulary.
+- `docs/runtime-integration.md`: documented exact handles, Thread ownership, original Future
+  identity, predicate-site evidence, and coverage gaps.
+- `docs/supported-java-constructs.md`: documented the supported exact subsets and fail-closed cases.
+- `docs/release-evidence.md`: recorded the clean release result.
+
+## Summary
+
+All five tasks are complete. Nested async calls now confirm their own reservation. Supported
+cancellation keeps the original Future object. Direct facts are read at the predicate, and missing
+or unsafe facts make the execution incomplete. Generic graph normalization removes the reviewed
+Java terms. Standard, external, Mega, and clean long-load verification passed.

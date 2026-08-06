@@ -1,10 +1,10 @@
 {
   "id": "runtime-evidence-async-identity-correctness",
   "type": "bugfix",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-06T16:58:20Z",
-  "updated": "2026-08-06T16:58:20Z",
+  "updated": "2026-08-06T19:37:02Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -37,6 +37,26 @@
         "taskCoverage": 9
       },
       "evaluatedAt": "2026-08-06T16:58:20Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 10,
+        "codeQuality": 9,
+        "testCoverage": 10,
+        "specCompliance": 10
+      },
+      "evaluatedAt": "2026-08-06T19:37:02Z"
     }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 4300,
+    "filesChanged": 30,
+    "linesAdded": 945,
+    "linesRemoved": 144,
+    "tasksCompleted": 5,
+    "acceptanceCriteriaVerified": 7,
+    "specDurationMinutes": 159
   }
 }

@@ -77,14 +77,14 @@ evidence timing, and Java vocabulary in business graphs. Mega Backend is only a 
 
 ## Definition of Done
 
-- [ ] Independent fixtures cover nested synchronous callbacks, rejected inner submission, and
+- [x] Independent fixtures cover nested synchronous callbacks, rejected inner submission, and
   thread-object ownership.
-- [ ] Independent fixtures cover cancellation of `Future`, `CompletableFuture`, and `ForkJoinTask`.
-- [ ] Tests prove result object identity, runtime type, equality, hash code, text, and interfaces do
+- [x] Independent fixtures cover cancellation of `Future`, `CompletableFuture`, and `ForkJoinTask`.
+- [x] Tests prove result object identity, runtime type, equality, hash code, text, and interfaces do
   not change.
-- [ ] Independent fixtures cover reassigned parameters, loop evidence, property operands, local or
+- [x] Independent fixtures cover reassigned parameters, loop evidence, property operands, local or
   calculated operands, and evidence encoding failure.
-- [ ] Generic graph fixtures and all five Mega graphs contain no prohibited Java vocabulary.
-- [ ] External source-free activation still passes.
-- [ ] Standard verification and the 600-second 1,000-RPS gate pass with zero result changes,
+- [x] Generic graph fixtures and all five Mega graphs contain no prohibited Java vocabulary.
+- [x] External source-free activation still passes.
+- [x] Standard verification and the 600-second 1,000-RPS gate pass with zero result changes,
   contamination, or silent record loss.

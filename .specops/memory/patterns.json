@@ -8,7 +8,7 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 4,
+      "count": 8,
       "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 2,
+      "count": 3,
       "pattern": "Preserve result-relevant optionality as absent/exists while stripping language- and persistence-specific vocabulary from business projections."
     },
     {

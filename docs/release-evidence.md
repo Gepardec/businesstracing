@@ -86,3 +86,18 @@ application database or Mega credentials. It also supports a manual dispatch.
 - Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
 - Latency: 14,075.666 µs baseline p95; 14,938.000 µs enabled p95; 6.126% overhead
 - Gate result: `RELEASE_GATE_OK`
+
+## Runtime evidence and async identity correction
+
+- Release gate commit: `d9a1d4cc7c38a604b41ce91ade069ffe3ca50de2`
+- Java: OpenJDK 21.0.2
+- Maven: 3.9.16
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Capability matrix SHA-256: `ddfafa3619826f4e5b926bd1ae72b9c98f40628dece0de2007a03d9ad9482545`
+- Runtime proof: submission-specific async handles, actual Thread ownership, unchanged Future
+  objects, predicate-site facts, and fail-closed evidence gaps
+- Mega result: five complete graphs from 420 source files with no reviewed Java vocabulary
+- Long run: 60-second baseline and 600 seconds enabled at 1,000 RPS
+- Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
+- Latency: 15,020.250 us baseline p95; 15,028.416 us enabled p95; 0.054% overhead
+- Gate result: `RELEASE_GATE_OK`

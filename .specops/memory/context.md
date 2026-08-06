@@ -151,3 +151,16 @@ clean builds, Mega analysis, and 600-second load gate have time to finish.
 Release commit `defe774040f5a5604caffc15838519fd753c0db2` passed source-free activation, five
 complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.059% p95 overhead and zero errors,
 mismatches, dropped records, or trace contamination.
+
+### runtime-evidence-async-identity-correctness (bugfix) — 2026-08-06
+
+Completed all five tasks. Automatic async completion now uses the exact prepared callback handle,
+and Thread constructors bind the handle to the actual Thread object. Future, CompletableFuture,
+and ForkJoinTask cancellation keeps the original result object and releases a pre-start reservation
+once. Direct parameter facts are read at each predicate branch. Unavailable or unsafe required facts
+make the execution incomplete with a source-located gap.
+
+One generic label normalizer and artifact guard remove Java construction, enum-type, and helper-role
+terms without Mega-specific rules. Release commit `d9a1d4cc7c38a604b41ce91ade069ffe3ca50de2`
+passed source-free activation, five complete Mega graphs, and 600,000 decisions at 1,000 RPS with
+0.054% p95 overhead and zero errors, mismatches, dropped records, or trace contamination.

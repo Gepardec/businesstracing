@@ -450,6 +450,56 @@
       "task": "Task 4",
       "date": "2026-08-06",
       "completedAt": "2026-08-06T17:40:51Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Use exact callback identity as the submission handle",
+      "rationale": "Stack order is not stable during synchronous nested callbacks.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Track original future objects by identity",
+      "rationale": "Wrapping changes observable application behavior.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Read direct parameters at each predicate branch",
+      "rationale": "Entry values become stale after reassignment and repeated evaluation.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Mark unavailable required facts as runtime gaps",
+      "rationale": "Exact explanations must not guess or hide missing evidence.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 5,
+      "decision": "Normalize Java terms with generic rules",
+      "rationale": "Mega must validate the general mechanism, not shape it.",
+      "task": "Task 4",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
     }
   ]
 }
