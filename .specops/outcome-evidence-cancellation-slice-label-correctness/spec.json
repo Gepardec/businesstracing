@@ -1,10 +1,10 @@
 {
   "id": "outcome-evidence-cancellation-slice-label-correctness",
   "type": "bugfix",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-06T21:05:22Z",
-  "updated": "2026-08-06T21:29:11Z",
+  "updated": "2026-08-06T21:43:43Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": { "name": "codex" },
@@ -36,6 +36,26 @@
         "taskCoverage": 9
       },
       "evaluatedAt": "2026-08-06T21:05:22Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-06T21:43:43Z"
     }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 4300,
+    "filesChanged": 38,
+    "linesAdded": 1303,
+    "linesRemoved": 82,
+    "tasksCompleted": 4,
+    "acceptanceCriteriaVerified": 39,
+    "specDurationMinutes": 38
   }
 }

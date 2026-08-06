@@ -178,3 +178,17 @@ call roles, so unrelated business uses of `validator` keep their meaning.
 Release commit `9690240f3810a043f52af5af65d17818c4473cfb` passed source-free activation, five
 complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.077% p95 overhead and zero errors,
 mismatches, dropped records, or trace contamination.
+
+### outcome-evidence-cancellation-slice-label-correctness (bugfix) — 2026-08-06
+
+Completed all four tasks. Terminal observations merge staged receiver facts with the typed result,
+and explanations show non-result facts as business reasons. Activation fingerprints exact supported
+cancellation callers from compiled application output without scanning dependency artifacts.
+
+The analyzer uses attributed platform mutation contracts and source-proven mutation summaries.
+Ignored read-only calls stay outside the result slice. Unknown effects on returned references create
+source-located gaps. Validation helper labels use proven roles; other receivers remain distinct.
+
+Release commit `8e62f243850c06fbd16d57c0c807c4177d91c9df` passed source-free activation, five
+complete Mega graphs from 420 source files, and 600,000 decisions at 1,000 RPS with 0.051% p95
+overhead and zero errors, mismatches, drops, or contamination.

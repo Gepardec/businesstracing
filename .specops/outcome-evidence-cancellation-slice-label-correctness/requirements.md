@@ -128,7 +128,7 @@ application-specific rule.
 
 - [x] Focused engine, agent, Maven plugin, and external activation contracts pass.
 - [x] Mega Backend produces five complete generic graphs.
-- [ ] The 600-second, 1,000-RPS gate has zero result changes, contamination, and silent record loss.
+- [x] The 600-second, 1,000-RPS gate has zero result changes, contamination, and silent record loss.
 
 ## Acceptance Criteria
 
@@ -139,4 +139,4 @@ application-specific rule.
   unverified dependency classes.
 - [x] Static graphs contain proven result dependencies only; unknown relevant effects are gaps.
 - [x] Label cleanup uses proven helper roles and preserves other receivers.
-- [ ] Standard, external, Mega, and long release gates pass.
+- [x] Standard, external, Mega, and long release gates pass.

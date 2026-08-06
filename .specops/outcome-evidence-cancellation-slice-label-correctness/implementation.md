@@ -2,6 +2,10 @@
 
 ## Summary
 
+All four review defects are fixed. Terminal observations retain available receiver facts. Activation
+includes exact cancellation callers from compiled application output. Static slicing includes only
+proven writes and reports unknown result effects. Helper labels use proven roles and other receivers
+keep their business meaning.
 
 ## Phase 1 Context Summary
 
@@ -48,6 +52,7 @@
 
 | Blocker | Resolution | Impact | Task |
 | --- | --- | --- | --- |
+| The sandbox did not permit writes to the home Maven repository. | Re-ran verification with the approved Maven access. | No product or test change. | 4 |
 
 ## Documentation Review
 
@@ -57,6 +62,7 @@
   exact cancellation caller selection, and receiver-preserving labels.
 - `docs/runtime-integration.md` and `docs/maven-plugin.md` define the application-output fingerprint
   boundary and the terminal evidence merge.
+- `docs/release-evidence.md` records the clean release result at commit `8e62f24`.
 
 ## Session Log
 
@@ -85,3 +91,15 @@
 - 2026-08-06: Standard verification passed. The short 1,000-RPS run completed 5,000 decisions with
   zero errors, mismatches, drops, or contamination and 0.162% p95 overhead. The external release
   integration passed. PostgreSQL was skipped because no connection was configured.
+- 2026-08-06: Task 4 completed. Commit `8e62f243850c06fbd16d57c0c807c4177d91c9df`
+  passed the clean release gate. Mega produced five complete graphs from 420 source files. The long
+  run completed 600,000 decisions at 1,000 RPS with 0.051% p95 overhead and zero errors,
+  mismatches, drops, or contamination.
+
+## Final Evaluation
+
+- Root cause accuracy: 10/10. Each production defect maps to one false-before-fix contract.
+- Fix completeness: 10/10. Runtime, agent, analyzer, plugin, docs, and activation integration agree.
+- Regression safety: 9/10. Five complete Mega graphs and the original application results remain
+  stable; six reviewed labels changed because the generic renderer is more precise.
+- Test verification: 10/10. Focused, standard, external, Mega, and clean long-load gates pass.

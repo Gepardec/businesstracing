@@ -500,6 +500,46 @@
       "task": "Task 4",
       "date": "2026-08-06",
       "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Merge staged evidence at the terminal observation",
+      "rationale": "A complete explanation must not discard an available result-relevant receiver fact.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Scan compiled application output for exact cancellation callers",
+      "rationale": "A separate controller needs an activation fingerprint, but dependency artifacts must stay outside the transform boundary.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Build result slices from proven writes",
+      "rationale": "Reading a value does not prove that a call changed the returned decision; unknown relevant effects need a gap.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Shorten validation labels only from proven helper roles",
+      "rationale": "A global method-name rule removes valid distinctions between business receivers.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
     }
   ]
 }

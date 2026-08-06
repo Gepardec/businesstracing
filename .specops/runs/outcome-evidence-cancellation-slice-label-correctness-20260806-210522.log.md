@@ -1,9 +1,9 @@
 ---
 specId: "outcome-evidence-cancellation-slice-label-correctness"
 startedAt: "2026-08-06T21:05:22Z"
-completedAt: null
-finalStatus: "running"
-phases: [1, 2, 3]
+completedAt: "2026-08-06T21:43:43Z"
+finalStatus: "completed"
+phases: [1, 2, 3, 4]
 ---
 
 ## Phase 1: Context
@@ -55,6 +55,19 @@ phases: [1, 2, 3]
   capability documents, and run `./scripts/verify.sh`.
 - Result: Passed. The short 1,000-RPS run completed 5,000 decisions with zero errors, mismatches,
   drops, or contamination and 0.162% p95 overhead. External activation passed.
+
+## Phase 4: Completion
+
+### [21:43:43] Step 1: Capture clean release evidence
+
+- Action: Run `./scripts/verify-release.sh` from committed head `8e62f24`.
+- Result: `RELEASE_GATE_OK`. Mega produced five complete graphs. The 600-second run completed
+  600,000 decisions with zero errors, mismatches, drops, or contamination and 0.051% p95 overhead.
+
+### [21:43:43] Step 2: Complete SpecOps records
+
+- Action: Close all criteria and update evaluation, metrics, memory, and release documents.
+- Result: 39 of 39 specification and task checkboxes pass.
 
 ### [21:18:00] Task 1: Freeze the four regressions
 

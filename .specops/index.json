@@ -128,10 +128,10 @@
   {
     "id": "outcome-evidence-cancellation-slice-label-correctness",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "codex",
-    "updated": "2026-08-06T21:29:11Z",
+    "updated": "2026-08-06T21:43:43Z",
     "partOf": "generic-java-fachtracing"
   }
 ]

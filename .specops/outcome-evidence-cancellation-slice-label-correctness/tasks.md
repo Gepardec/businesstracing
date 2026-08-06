@@ -92,7 +92,7 @@
 
 ## Task 4: Verify, document, commit, and push
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 2 and 3
 **Priority:** High
@@ -101,9 +101,9 @@
 
 **Acceptance Criteria:**
 
-- [ ] Standard, external, Mega, and 600-second gates pass.
-- [ ] Specs, docs, generated graphs, memory, and release evidence match the code.
-- [ ] All changes are committed and pushed to PR #5.
+- [x] Standard, external, Mega, and 600-second gates pass.
+- [x] Specs, docs, generated graphs, memory, and release evidence match the code.
+- [x] All changes are committed and pushed to PR #5.
 
 **Files to Modify:**
 
@@ -114,14 +114,14 @@
 
 **Tests Required:**
 
-- [ ] `./scripts/verify.sh`
-- [ ] Mega Backend conformance
-- [ ] `./scripts/release-gate.sh` or the repository's clean long-gate command
+- [x] `./scripts/verify.sh`
+- [x] Mega Backend conformance
+- [x] `./scripts/verify-release.sh`
 
 ## Progress Tracking
 
 - Total Tasks: 4
-- Completed: 3
-- In Progress: 1
+- Completed: 4
+- In Progress: 0
 - Blocked: 0
 - Pending: 0
