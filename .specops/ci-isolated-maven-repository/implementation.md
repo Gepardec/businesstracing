@@ -19,6 +19,7 @@ Tasks 1 and 2 are complete. Task 3 is in progress.
 
 - Use one POSIX resolver and preserve the existing release environment variable.
 - Give the explicit verification override precedence over the release override.
+- Normalize repeated separators because macOS `TMPDIR` ends with `/`.
 
 ## Verification
 

@@ -9,6 +9,9 @@ repository path with this precedence:
 2. `FACHTRACING_RELEASE_MAVEN_REPOSITORY` for the clean release workspace.
 3. `$HOME/.m2/repository` for normal local and CI Maven use.
 
+The resolver removes repeated path separators before consumers compare Maven-generated classpaths.
+This handles the trailing slash in the macOS `TMPDIR` value without changing spaces or symlinks.
+
 `verify.sh`, `verify-mega-backend.sh`, `verify-postgres.sh`, and `verify-release-gates.sh` read this
 path once and build all manual classpaths from it. Maven commands keep their existing repository
 configuration.
@@ -18,6 +21,7 @@ configuration.
 - Use a small POSIX shell resolver so all verification entry points share one rule.
 - Keep the current release environment variable for compatibility.
 - Add a separate explicit override for direct verification and focused testing.
+- Normalize repeated separators before classpath validation.
 - Test the resolver without Maven or network access.
 
 ## Failure Behavior

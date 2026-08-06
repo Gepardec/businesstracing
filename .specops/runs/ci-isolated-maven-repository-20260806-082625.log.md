@@ -60,3 +60,10 @@ phases: [1, 2]
 - Result: PASS. The first run exposed a stale pinned SLF4J transitive version. Replacing manual
   transitive lists with Maven-resolved classpaths fixed that hidden cache dependency. The final run
   passed with source-free external activation and zero load-test correctness failures.
+
+### [08:44:00] Step 4: Correct macOS path normalization
+
+- Action: Trace the clean release wrapper after a silent classpath assertion exit.
+- Result: macOS `TMPDIR` ended with `/`, so the release repository contained a repeated separator
+  while Maven emitted a normalized classpath. The resolver now normalizes separators, and the
+  focused test includes this exact case.
