@@ -27,6 +27,10 @@
 
 | # | Decision | Rationale | Task | Date |
 | --- | --- | --- | --- | --- |
+| 1 | Observe the returned stage with `whenComplete` | Stage completion is the generic signal that a callback was skipped. | 2 | 2026-08-06 |
+| 2 | Apply one cancel pass to every fingerprinted class | Cancel can occur in a method that has no graph probe. | 2 | 2026-08-06 |
+| 3 | Spill catalog operands into typed local slots | One method supports each exact callback position without stack guesses. | 2 | 2026-08-06 |
+| 4 | Lower validation helpers from syntax and call role | A global word rule can change valid domain meaning. | 3 | 2026-08-06 |
 
 ## Deviations from Design
 
@@ -40,7 +44,11 @@
 
 ## Documentation Review
 
-Pending.
+- `docs/java-capabilities.json`: added receiver, skipped-stage, external-cancel, and call-role contracts.
+- `docs/runtime-integration.md`: documented stage completion, arbitrary callback positions,
+  fingerprinted cancel sites, and receiver evidence.
+- `docs/supported-java-constructs.md`: documented the same supported subsets and gap behavior.
+- `docs/release-evidence.md`: recorded the clean release result.
 
 ## Session Log
 
@@ -60,3 +68,20 @@ Pending.
   validate-only call role. Mega produces five complete graphs with no target-specific rule.
 - Task 4 scope: run all release gates, update capability and runtime documents, record evidence,
   close all acceptance criteria, and commit the complete change.
+- 2026-08-06: Task 4 completed. Commit `9690240f3810a043f52af5af65d17818c4473cfb`
+  passed the clean release gate. It completed 600,000 records at 1,000 RPS with 0.077% p95
+  overhead and zero errors, mismatches, drops, or contamination. External activation and five
+  complete Mega graphs also passed.
+
+## Final Evaluation
+
+- Functionality: 10/10. Each review example has a passing executable contract.
+- Code quality: 9/10. The change uses exact catalog metadata, fingerprints, and atomic state.
+- Test coverage: 10/10. Focused, standard, external, Mega, and long-load gates pass.
+- Spec compliance: 10/10. No finding was closed by documentation alone.
+
+## Summary
+
+All four tasks are complete. Stage completion closes skipped reservations. Cancellation works from
+unselected methods in fingerprinted classes. Every catalog callback position works. Receiver facts
+are exact or have a gap, and label cleanup keeps valid domain words.

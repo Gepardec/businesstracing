@@ -68,11 +68,11 @@ keeps legitimate domain words in business labels.
 
 ## Definition of Done
 
-- [ ] Independent tests cover skipped unary, recovery, and binary stage callbacks.
-- [ ] Independent tests cover direct and unsupported method receivers.
-- [ ] A cancel call in a method with no graph binding releases the queued reservation.
-- [ ] An explicit-executor binary stage method is instrumented and records the exact path.
-- [ ] A legitimate `validator` business label is unchanged, and technical helper labels stay clean.
-- [ ] External source-free activation and all five Mega graphs pass.
-- [ ] Standard verification and the 600-second 1,000-RPS gate pass with zero result changes,
+- [x] Independent tests cover skipped unary, recovery, and binary stage callbacks.
+- [x] Independent tests cover direct and unsupported method receivers.
+- [x] A cancel call in a method with no graph binding releases the queued reservation.
+- [x] An explicit-executor binary stage method is instrumented and records the exact path.
+- [x] A legitimate `validator` business label is unchanged, and technical helper labels stay clean.
+- [x] External source-free activation and all five Mega graphs pass.
+- [x] Standard verification and the 600-second 1,000-RPS gate pass with zero result changes,
   contamination, or silent record loss.

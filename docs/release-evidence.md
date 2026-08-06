@@ -101,3 +101,18 @@ application database or Mega credentials. It also supports a manual dispatch.
 - Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
 - Latency: 15,020.250 us baseline p95; 15,028.416 us enabled p95; 0.054% overhead
 - Gate result: `RELEASE_GATE_OK`
+
+## Stage lifecycle, receiver evidence, and label correction
+
+- Release gate commit: `9690240f3810a043f52af5af65d17818c4473cfb`
+- Java: OpenJDK 21.0.2
+- Maven: 3.9.16
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Capability matrix SHA-256: `08aa943171917dc9953bef579e85cdfa00fe6eed06d9f51ec1d7405ddaedee72`
+- Runtime proof: skipped stage callbacks, arbitrary catalog callback positions, external cancel
+  sites, and direct method-receiver evidence
+- Mega result: five complete graphs from 420 source files
+- Long run: 60-second baseline and 600 seconds enabled at 1,000 RPS
+- Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
+- Latency: 15,027.791 us baseline p95; 15,039.333 us enabled p95; 0.077% overhead
+- Gate result: `RELEASE_GATE_OK`

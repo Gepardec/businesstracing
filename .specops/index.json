@@ -119,10 +119,10 @@
   {
     "id": "stage-lifecycle-evidence-label-correctness",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "codex",
-    "updated": "2026-08-06T20:08:41Z",
+    "updated": "2026-08-06T20:40:44Z",
     "partOf": "generic-java-fachtracing"
   }
 ]

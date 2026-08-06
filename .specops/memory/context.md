@@ -164,3 +164,17 @@ One generic label normalizer and artifact guard remove Java construction, enum-t
 terms without Mega-specific rules. Release commit `d9a1d4cc7c38a604b41ce91ade069ffe3ca50de2`
 passed source-free activation, five complete Mega graphs, and 600,000 decisions at 1,000 RPS with
 0.054% p95 overhead and zero errors, mismatches, dropped records, or trace contamination.
+
+### stage-lifecycle-evidence-label-correctness (bugfix) — 2026-08-06
+
+Completed all four tasks. Returned CompletionStage objects now release a reservation when normal
+or exceptional completion skips the callback. Typed operand spilling supports every exact callback
+position. One fingerprinted class pass observes cancel calls in methods without graph probes.
+
+Direct method-parameter receivers create exact predicate or return evidence. Unsupported value
+receivers create source-located gaps. Validation helper cleanup uses new-object and validate-only
+call roles, so unrelated business uses of `validator` keep their meaning.
+
+Release commit `9690240f3810a043f52af5af65d17818c4473cfb` passed source-free activation, five
+complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.077% p95 overhead and zero errors,
+mismatches, dropped records, or trace contamination.

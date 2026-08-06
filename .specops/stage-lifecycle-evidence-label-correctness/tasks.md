@@ -81,7 +81,7 @@
 
 ## Task 4: Run release conformance and close the specification
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Tasks 2 and 3
 **Priority:** High
@@ -90,8 +90,8 @@
 
 **Acceptance Criteria:**
 
-- [ ] Standard, external, Mega, and long-load checks pass.
-- [ ] Spec, docs, memory, and release evidence match the implementation.
+- [x] Standard, external, Mega, and long-load checks pass.
+- [x] Spec, docs, memory, and release evidence match the implementation.
 
 **Files to Modify:**
 
@@ -102,13 +102,13 @@
 
 **Tests Required:**
 
-- [ ] `./scripts/verify.sh`
-- [ ] 600-second 1,000-RPS release gate
+- [x] `./scripts/verify.sh`
+- [x] 600-second 1,000-RPS release gate
 
 ## Progress Tracking
 
 - Total Tasks: 4
-- Completed: 3
-- In Progress: 1
+- Completed: 4
+- In Progress: 0
 - Blocked: 0
 - Pending: 0
