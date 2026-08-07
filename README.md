@@ -33,6 +33,9 @@ launcher, plugin block, or path assembly is required. See the copyable
 many modules. When repository and source-link settings are present, the same goal also writes
 revision-pinned developer JSON that another tool can visualize.
 
+See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
+generates from its own Maven plugin policy.
+
 See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
 delivery, JDBC, upgrade, and rollback flow.
 

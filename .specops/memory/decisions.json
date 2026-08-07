@@ -610,6 +610,26 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T08:00:07Z"
+    },
+    {
+      "specId": "self-dogfood-business-tracing",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Use Plexus Utils 3.6.1 instead of 4.0.3",
+      "rationale": "It is the newest stable release that keeps the required Xpp3Dom API and fixes the advisory.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T08:48:18Z"
+    },
+    {
+      "specId": "self-dogfood-business-tracing",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Treat partial configuration as a documented projection limit",
+      "rationale": "The self-generated result graph contains enabled and disabled returns but omits the direct thrown validation path.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T08:48:18Z"
     }
   ]
 }

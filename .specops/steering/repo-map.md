@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T08:00:07Z"
-_sourceHash: "841f25deb895a1762f4879d0e76c78d3f03d523f7927cf7dd6c43fe631f0f4c9"
+_generatedAt: "2026-08-07T08:49:48Z"
+_sourceHash: "a4c746245036581f23dc748d07184dccbe5e1ef16d3081e9e58f7dc80008d015"
 ---
 
 ## Project Structure Map
@@ -127,7 +127,7 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (27 files)
+#### fachtracing-maven-plugin/ (28 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
@@ -138,6 +138,7 @@ fachtracing/
 - `src/main/java/at/gepardec/fachtracing/maven/SourceInputResolver.java`
   - project, external, and source-artifact discovery
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
+  - self-traced developer graph export policy
 - `src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
 - `src/test/resources/it/basic/` — external-style one-off and lifecycle Maven fixtures
 - `src/test/resources/it/reactor/` — two-module JPMS implementation-resolution fixture
@@ -151,10 +152,11 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### docs/ (7 files)
+#### docs/ (13 files)
 
 - `performance-results.md`
 - `maven-plugin.md`
+- `self-tracing.md`
 - `supported-java-constructs.md`
 - `plantuml/decision-record-model.puml`
 - `plantuml/explanation-flow.puml`
@@ -167,7 +169,7 @@ fachtracing/
 - `src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java`
 - `src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java`
 - `src/test/resources/oracles/` — five immutable reviewed semantic graph oracles
-- `generated/` — five structural/semantic artifacts and one runtime explanation/execution pair
+- `target/generated/` — five structural/semantic artifacts and one runtime explanation/execution pair
 - `selection.md`, `README.md`, and `conformance-report.md`
 
 #### root
@@ -175,6 +177,6 @@ fachtracing/
 - `AGENTS.md`
 - `README.md`
 - `pom.xml`
-- `scripts/verify.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
+- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
 - `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
 - `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`
