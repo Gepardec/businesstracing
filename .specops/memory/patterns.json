@@ -3,7 +3,7 @@
   "decisionCategories": [
     {
       "category": "reference-application-isolation",
-      "count": 1,
+      "count": 2,
       "pattern": "Keep pinned brownfield knowledge in conformance artifacts; production gains only target-neutral construct support."
     },
     {

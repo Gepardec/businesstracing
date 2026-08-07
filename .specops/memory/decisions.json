@@ -750,6 +750,16 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T12:35:12Z"
+    },
+    {
+      "specId": "spring-petclinic-conformance",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Use three PetClinic decisions with increasing analysis depth",
+      "rationale": "The sequence teaches simple predicates, domain control flow, and explicit framework-boundary gaps.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:31:57Z"
     }
   ]
 }

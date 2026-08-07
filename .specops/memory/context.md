@@ -309,3 +309,15 @@ mutations use their first argument as the changed subject and exclude it from th
 The focused static analyzer contract and the exact pull-request gate passed. The final load run
 processed 5,000 decisions with 0.253% p95 overhead and zero errors, mismatches, drops, or
 contamination. Five Mega graphs from 420 sources remained complete.
+
+### spring-petclinic-conformance (feature) — 2026-08-07
+
+Completed all three tasks. The project now uses pinned canonical Spring PetClinic source as a
+small teaching and conformance corpus. Three annotation-only changes produce a complete entity
+predicate graph, a complete domain lookup graph, and an application workflow with five explicit
+framework or persistence proof gaps.
+
+The harness compares three immutable semantic oracles, keeps generated diagrams under `target/`,
+and runs in pull-request and release gates. Its isolation test scans every production module,
+including JDBC storage. The graph report explains what Fachtracing proves and where it stops. The
+full local pull-request gate passed with both external corpora.
