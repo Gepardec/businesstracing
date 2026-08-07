@@ -186,6 +186,14 @@
     "updated": "2026-08-07T09:56:05Z"
   },
   {
+    "id": "context-aware-operation-labels",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T11:53:37Z"
+  },
+  {
     "id": "conditional-alias-method-reference-effects",
     "type": "bugfix",
     "status": "completed",
@@ -200,6 +208,14 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T11:25:35Z"
+  },
+  {
+    "id": "context-label-symbol-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T12:35:12Z"
   },
   {
     "id": "review-followup-correctness",

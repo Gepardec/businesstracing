@@ -19,7 +19,7 @@ checks that every entry names an executable contract and appears in this documen
 - `unsupported-async-boundary-gap`, `java17-java21-projects`
 - `owned-external-jpms-source`, `owned-automatic-module-source`
 - `try-with-resources`, `resource-close-result-gap`, `pattern-matching`, `sealed-types`, `nested-classes`, `method-references`
-- `business-java-vocabulary`, `call-role-label-lowering`, `receiver-preserving-call-label`
+- `business-java-vocabulary`, `call-role-label-lowering`, `receiver-preserving-call-label`, `context-aware-operation-label`
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
@@ -35,10 +35,12 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Method receiver evidence | Records a direct parameter receiver for result-relevant value calls, including direct Boolean return expressions. An unsupported explicit value receiver creates a source-located gap |
 | Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
 | Local initialization and assignment | Retained only when it can influence a return |
+| Context-aware operation label | Uses declared-type context for short locals and generic collection names, and renders generic `set` and `add` operations with their receivers and operands |
 | Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only |
 | Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies, including queue and deque operations such as `offer` |
 | Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument. An unconditional non-identity assignment removes that relation. A conditional assignment merges branch roots and active definitions; an unproved result-relevant write creates a located gap |
 | Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
+
 | Direct method call | Follows a source-available callee and includes its relevant slice |
 | Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |
 | Proxy or `ServiceLoader` dispatch | Uses the instrumented implementation entry to select one proven source candidate; proxy mechanics and provider classes stay outside business output |
@@ -59,6 +61,12 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
 | Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location |
+
+The context-aware operation-label contract compiles independent scheduling, pricing, access-control,
+and inventory sources. It uses attributed declaration symbols and types for `var`, generic types,
+and identifiers that shadow another declaration. Supported static `Collections` and `Arrays`
+mutations name their first argument as the changed object. The contract does not depend on a
+reference-application package or class.
 
 ## Project and compiler boundary
 
@@ -127,7 +135,8 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 - Generic label normalization and the artifact guard remove Java construction and enum-type
   vocabulary. Helper cleanup uses new-object and validate-only call roles. Other `validate` calls
   keep their business receiver, so different validator roles remain distinct. The renderer does not
-  use a global method-name rule.
+  use a global method-name rule. A one-letter reference local uses its useful declared type, and a
+  generic two-argument setter states the receiver, property, and value.
 
 The boundary stays fail-closed. Complex binary control flow, result-relevant resource-close logic
 without source, ambiguous reflection, unsupported asynchronous APIs, and unowned modular sources

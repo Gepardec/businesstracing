@@ -2,7 +2,7 @@
 
 ## Task 1: Merge and resolve
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** None
 **Priority:** High
@@ -11,9 +11,9 @@
 
 **Acceptance Criteria:**
 
-- [ ] Current `origin/main` is merged without unresolved files.
-- [ ] Analyzer, test, documentation, and SpecOps changes from both sides are retained.
-- [ ] The two pre-existing unsupported cases are not changed.
+- [x] Current `origin/main` is merged without unresolved files.
+- [x] Analyzer, test, documentation, and SpecOps changes from both sides are retained.
+- [x] The two pre-existing unsupported cases are not changed.
 
 **Files to Modify:**
 
@@ -29,7 +29,7 @@
 
 ## Task 2: Verify and publish
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** M
 **Dependencies:** Task 1
 **Priority:** High
@@ -45,7 +45,7 @@
 ## Progress
 
 - Total: 2
-- Completed: 0
+- Completed: 1
 - In Progress: 1
-- Pending: 1
+- Pending: 0
 - Blocked: 0

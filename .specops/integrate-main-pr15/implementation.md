@@ -23,6 +23,8 @@
 
 | # | Decision | Rationale | Task | Timestamp |
 | --- | --- | --- | --- | --- |
+| 1 | Resolve analyzer overlap by import and helper union. | The two branches change independent semantics in one class and both executable contract groups must remain. | 1 | 2026-08-07T13:00:33Z |
+| 2 | Regenerate aggregate SpecOps files by union. | Indexes, decisions, patterns, and context are derived from all completed specs; selecting one side would lose valid history. | 1 | 2026-08-07T13:00:33Z |
 
 ## Deviations from Design
 
@@ -40,3 +42,6 @@
 
 - 2026-08-07T12:55:30Z: Started integration work. PR #15 is conflicting with current `main`.
 - 2026-08-07T12:56:18Z: Phase 1 and Phase 2 gates pass. Task 1 is in progress.
+- 2026-08-07T13:00:33Z: Task 1 completed. All conflicts are resolved by semantic union. The
+  combined analyzer contract passes, and both excluded pre-existing probes remain unchanged. Task 2
+  is in progress.

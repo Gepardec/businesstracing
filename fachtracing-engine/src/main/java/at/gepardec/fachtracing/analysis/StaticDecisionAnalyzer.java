@@ -25,6 +25,7 @@ import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ParenthesizedTree;
+import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
@@ -49,6 +50,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -591,10 +593,7 @@ public final class StaticDecisionAnalyzer {
                 ExecutableElement executable) {
             String owner = ((TypeElement) executable.getEnclosingElement()).getQualifiedName().toString();
             String method = executable.getSimpleName().toString();
-            if (Set.of("java.util.Collections", "java.util.Arrays").contains(owner)
-                    && Set.of("sort", "parallelSort", "fill", "copy", "swap", "reverse", "rotate",
-                            "shuffle", "replaceAll", "setAll", "parallelSetAll").contains(method)
-                    && !call.getArguments().isEmpty()) {
+            if (isStaticPlatformMutation(executable) && !call.getArguments().isEmpty()) {
                 return stateRoots(call.getArguments().getFirst());
             }
             if (!isPlatformReceiverMutation(owner, method)
@@ -604,6 +603,16 @@ public final class StaticDecisionAnalyzer {
             if (receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
                     ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind())) return Set.of();
             return stateRoots(member.getExpression());
+        }
+
+        private static boolean isStaticPlatformMutation(ExecutableElement executable) {
+            if (!(executable.getEnclosingElement() instanceof TypeElement owner)
+                    || !executable.getModifiers().contains(Modifier.STATIC)) return false;
+            return Set.of("java.util.Collections", "java.util.Arrays")
+                    .contains(owner.getQualifiedName().toString())
+                    && Set.of("sort", "parallelSort", "fill", "copy", "swap", "reverse", "rotate",
+                            "shuffle", "replaceAll", "setAll", "parallelSetAll")
+                    .contains(executable.getSimpleName().toString());
         }
 
         private Set<String> platformMutationRoots(
@@ -1224,6 +1233,7 @@ public final class StaticDecisionAnalyzer {
             private final Set<VariableTree> transparentLoopAliases =
                     Collections.newSetFromMap(new IdentityHashMap<>());
             private final Map<String, String> validationHelperRoles = new LinkedHashMap<>();
+            private final Map<Element, String> localSubjects = new LinkedHashMap<>();
 
             private FlowScanner(
                     MethodLocation location,
@@ -1369,6 +1379,8 @@ public final class StaticDecisionAnalyzer {
 
             @Override public Void visitVariable(VariableTree node, Void unused) {
                 if (transparentLoopAliases.contains(node)) return null;
+                Element variable = attributedElement(node);
+                if (variable != null) localSubjects.put(variable, variableSubject(node));
                 if (node.getInitializer() == null || !relevant(node.getInitializer(), slice, dependencies)) {
                     return super.visitVariable(node, unused);
                 }
@@ -1475,7 +1487,7 @@ public final class StaticDecisionAnalyzer {
                 if (!platformWrites.isEmpty()) {
                     scan(node.getArguments(), unused);
                     String mutation = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
-                            invocationLabel(node, executable), node, null);
+                            platformMutationLabel(node, executable), node, null);
                     advance(mutation);
                     return null;
                 }
@@ -2286,7 +2298,7 @@ public final class StaticDecisionAnalyzer {
             }
 
             private String derivationLabel(VariableTree variable) {
-                String subject = words(variable.getName().toString());
+                String subject = variableSubject(variable);
                 Tree initializer = variable.getInitializer();
                 if (initializer.getKind() == Tree.Kind.NEW_CLASS) return "initialize " + subject;
                 if (containsImplementationSyntax(initializer)) return "derive " + subject;
@@ -2316,12 +2328,153 @@ public final class StaticDecisionAnalyzer {
                         String role = validationHelperRoles.get(identifier.getName().toString());
                         if (role != null) return "evaluate " + role;
                     }
+                    String mutation = directMutationLabel(call, method, member);
+                    if (mutation != null) return mutation;
                     if (method.startsWith("set") && method.length() > 3) {
-                        String receiver = expression(member.getExpression()).replaceFirst("^new\\s+", "");
+                        String receiver = receiverSubject(member.getExpression()).replaceFirst("^new\\s+", "");
                         return "set " + receiver + " " + words(method.substring(3));
                     }
                 }
                 return "evaluate " + words(method);
+            }
+
+            private String platformMutationLabel(
+                    MethodInvocationTree call, ExecutableElement executable) {
+                String method = executable.getSimpleName().toString();
+                if (!(call.getMethodSelect() instanceof MemberSelectTree member)) {
+                    return invocationLabel(call, executable);
+                }
+                String direct = directMutationLabel(call, method, member);
+                if (direct != null) return direct;
+                boolean staticMutation = isStaticPlatformMutation(executable)
+                        && !call.getArguments().isEmpty();
+                Tree receiverTree = staticMutation
+                        ? call.getArguments().getFirst() : member.getExpression();
+                String receiver = receiverSubject(receiverTree);
+                String arguments = call.getArguments().stream()
+                        .skip(staticMutation ? 1 : 0)
+                        .map(this::mutationArgument).collect(Collectors.joining(" and "));
+                if (arguments.isBlank()) return words(method) + " " + receiver;
+                if (method.startsWith("add") || method.startsWith("offer") || method.equals("push")) {
+                    return words(method) + " " + arguments + " to " + receiver;
+                }
+                if (method.startsWith("remove") || method.startsWith("poll") || method.equals("pop")) {
+                    return words(method) + " " + arguments + " from " + receiver;
+                }
+                return words(method) + " " + receiver + " with " + arguments;
+            }
+
+            private String directMutationLabel(
+                    MethodInvocationTree call, String method, MemberSelectTree member) {
+                if (method.equals("set") && call.getArguments().size() == 2) {
+                    return "set " + receiverSubject(member.getExpression()) + " "
+                            + mutationArgument(call.getArguments().get(0)) + " to "
+                            + mutationArgument(call.getArguments().get(1));
+                }
+                if (method.equals("add") && call.getArguments().size() == 1) {
+                    return "add " + mutationArgument(call.getArguments().getFirst()) + " to "
+                            + receiverSubject(member.getExpression());
+                }
+                return null;
+            }
+
+            private String mutationArgument(Tree argument) {
+                if (!containsImplementationSyntax(argument)) return expression(argument);
+                TreePath path = TreePath.getPath(location.unit(), argument);
+                TypeMirror mirror = path == null ? null : trees.getTypeMirror(path);
+                Element element = mirror == null ? null : types.asElement(mirror);
+                if (element instanceof TypeElement type) return words(type.getSimpleName().toString());
+                return "value";
+            }
+
+            private String receiverSubject(Tree receiver) {
+                if (receiver instanceof IdentifierTree identifier) {
+                    Element variable = attributedElement(receiver);
+                    String subject = localSubjects.get(variable);
+                    if (subject != null) return subject;
+                    if (variable != null && Set.of(ElementKind.FIELD, ElementKind.PARAMETER,
+                            ElementKind.LOCAL_VARIABLE, ElementKind.RESOURCE_VARIABLE,
+                            ElementKind.EXCEPTION_PARAMETER, ElementKind.BINDING_VARIABLE)
+                            .contains(variable.getKind())) {
+                        return variableSubject(identifier.getName().toString(), variable.asType(), null);
+                    }
+                }
+                return expression(receiver);
+            }
+
+            private String variableSubject(VariableTree variable) {
+                Element element = attributedElement(variable);
+                TypeMirror attributedType = element == null ? null : element.asType();
+                return variableSubject(variable.getName().toString(), attributedType, variable.getType());
+            }
+
+            private String variableSubject(String name, TypeMirror attributedType, Tree syntaxType) {
+                String namedSubject = words(name);
+                if ((attributedType != null && attributedType.getKind().isPrimitive())
+                        || (attributedType == null && syntaxType != null
+                        && syntaxType.getKind() == Tree.Kind.PRIMITIVE_TYPE)) {
+                    return name.length() == 1 ? "item" : namedSubject;
+                }
+                String subject = attributedType == null
+                        ? typeSubject(syntaxType) : typeSubject(attributedType);
+                String elementSubject = null;
+                if (attributedType instanceof DeclaredType declared
+                        && declared.getTypeArguments().size() == 1) {
+                    elementSubject = typeSubject(declared.getTypeArguments().getFirst());
+                } else if (syntaxType instanceof ParameterizedTypeTree parameterized
+                        && parameterized.getTypeArguments().size() == 1) {
+                    elementSubject = typeSubject(parameterized.getTypeArguments().getFirst());
+                }
+                if (namedSubject.equals(subject)
+                        && Set.of("collection", "deque", "iterable", "list", "queue", "set")
+                        .contains(subject)
+                        && elementSubject != null) {
+                    if (!Set.of("object", "value", "var").contains(elementSubject)) {
+                        return elementSubject + " " + subject;
+                    }
+                }
+                if (Set.of("object", "value", "var").contains(subject)) {
+                    return name.length() == 1 ? "item" : namedSubject;
+                }
+                String compactType = subject.replace(" ", "");
+                boolean typeAbbreviation = name.length() <= 4 && name.length() < compactType.length()
+                        && isOrderedSubsequence(name.toLowerCase(Locale.ROOT), compactType);
+                return name.length() == 1 || typeAbbreviation ? subject : namedSubject;
+            }
+
+            private Element attributedElement(Tree tree) {
+                TreePath path = TreePath.getPath(location.unit(), tree);
+                return path == null ? null : trees.getElement(path);
+            }
+
+            private boolean isOrderedSubsequence(String candidate, String value) {
+                int candidateIndex = 0;
+                for (int valueIndex = 0;
+                     candidateIndex < candidate.length() && valueIndex < value.length();
+                     valueIndex++) {
+                    if (candidate.charAt(candidateIndex) == value.charAt(valueIndex)) candidateIndex++;
+                }
+                return candidateIndex == candidate.length();
+            }
+
+            private String typeSubject(Tree typeTree) {
+                return simpleTypeSubject(typeTree == null ? "value" : typeTree.toString());
+            }
+
+            private String typeSubject(TypeMirror typeMirror) {
+                if (typeMirror instanceof ArrayType array) return typeSubject(array.getComponentType());
+                Element type = types.asElement(typeMirror);
+                if (type instanceof TypeElement declared) {
+                    return words(declared.getSimpleName().toString());
+                }
+                return simpleTypeSubject(typeMirror.toString());
+            }
+
+            private String simpleTypeSubject(String rawType) {
+                String type = rawType.replaceAll("<.*>", "").replace("[]", "");
+                int packageSeparator = type.lastIndexOf('.');
+                if (packageSeparator >= 0) type = type.substring(packageSeparator + 1);
+                return words(type);
             }
 
             private boolean isPredicateOperation(MethodInvocationTree invocation) {

@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T12:34:38Z"
-_sourceHash: "4fb79cb7d0f2679df590e52dc7fb75a01cffcfc65f6a01b4bd10f9eab9003a0d"
+_generatedAt: "2026-08-07T12:59:06Z"
+_sourceHash: "7fced547dd8539ce3dfe1a1b1c98bc4a7fc309ec9a695f035313caa5d30b0031"
 ---
 
 ## Project Structure Map
