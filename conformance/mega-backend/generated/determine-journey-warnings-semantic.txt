@@ -41,40 +41,61 @@ node 38: PREDICATE | warning exists
 node 39: COMPUTATION | create journey warning
 node 40: COMPUTATION | journey warning
 node 41: COMPUTATION | set journey warning date
-node 42: COMPUTATION | invalid working location in journey rule
-node 43: COMPUTATION | derive sorted project entries
-node 44: COMPUTATION | warnings
-node 45: COMPUTATION | evaluate has journey entries
-node 46: COMPUTATION | evaluate is task
-node 47: COMPUTATION | evaluate is journey
-node 48: PREDICATE | task equals reisen
-node 49: PREDICATE | is not journey task
-node 50: PREDICATE | does not have journey entries sorted project entries
-node 51: CHOICE | for each project entry in sorted project entries
-node 52: COMPUTATION | evaluate is journey
-node 53: PREDICATE | task equals reisen
-node 54: PREDICATE | task is journey project entry task
-node 55: COMPUTATION | derive journey direction
-node 56: PREDICATE | journey direction equals back
-node 57: COMPUTATION | set working location to main
-node 58: PREDICATE | journey direction equals to
-node 59: PREDICATE | journey direction equals further
-node 60: COMPUTATION | set working location to project entry working location
-node 61: PREDICATE | project entry working location does not equal working location
-node 62: COMPUTATION | create journey warning
-node 63: COMPUTATION | journey warning
-node 64: COMPUTATION | set journey warning date
-node 65: COMPUTATION | location relevant set journey rule
-node 66: COMPUTATION | warnings
-node 67: CHOICE | for each project entry in project entries
-node 68: PREDICATE | project entry work location is project relevant
-node 69: PREDICATE | none of warnings match item date equals project entry date
-node 70: COMPUTATION | create journey warning
-node 71: COMPUTATION | journey warning
-node 72: COMPUTATION | set journey warning date
-node 73: COMPUTATION | derive calculated warnings
-node 74: COMPUTATION | evaluate add to journey warnings
-node 75: OUTCOME | Stop
+node 42: COMPUTATION | evaluate add
+node 43: COMPUTATION | evaluate add
+node 44: COMPUTATION | invalid working location in journey rule
+node 45: COMPUTATION | derive sorted project entries
+node 46: COMPUTATION | warnings
+node 47: COMPUTATION | evaluate has journey entries
+node 48: COMPUTATION | evaluate is task
+node 49: COMPUTATION | evaluate is journey
+node 50: PREDICATE | task equals reisen
+node 51: PREDICATE | is not journey task
+node 52: PREDICATE | does not have journey entries sorted project entries
+node 53: CHOICE | for each project entry in sorted project entries
+node 54: COMPUTATION | evaluate is journey
+node 55: PREDICATE | task equals reisen
+node 56: PREDICATE | task is journey project entry task
+node 57: COMPUTATION | derive journey direction
+node 58: PREDICATE | journey direction equals back
+node 59: COMPUTATION | set working location to main
+node 60: PREDICATE | journey direction equals to
+node 61: PREDICATE | journey direction equals further
+node 62: COMPUTATION | set working location to project entry working location
+node 63: PREDICATE | project entry working location does not equal working location
+node 64: COMPUTATION | create journey warning
+node 65: COMPUTATION | journey warning
+node 66: COMPUTATION | set journey warning date
+node 67: COMPUTATION | evaluate add
+node 68: COMPUTATION | evaluate add
+node 69: COMPUTATION | location relevant set journey rule
+node 70: COMPUTATION | warnings
+node 71: CHOICE | for each project entry in project entries
+node 72: PREDICATE | project entry work location is project relevant
+node 73: PREDICATE | none of warnings match item date equals project entry date
+node 74: COMPUTATION | create journey warning
+node 75: COMPUTATION | journey warning
+node 76: COMPUTATION | set journey warning date
+node 77: COMPUTATION | evaluate add
+node 78: COMPUTATION | evaluate add
+node 79: COMPUTATION | derive calculated warnings
+node 80: COMPUTATION | evaluate add to journey warnings
+node 81: COMPUTATION | evaluate text for warning type
+node 82: COMPUTATION | evaluate message template
+node 83: DISPATCH | select applicable decision rule
+node 84: COMPUTATION | journey warning type rule
+node 85: COMPUTATION | time warning type rule
+node 86: DISPATCH | select applicable decision rule
+node 87: COMPUTATION | journey warning type rule
+node 88: COMPUTATION | time warning type rule
+node 89: COMPUTATION | evaluate add
+node 90: COMPUTATION | derive journey warning
+node 91: PREDICATE | journey warning is present
+node 92: COMPUTATION | evaluate add all
+node 93: COMPUTATION | evaluate add all
+node 94: COMPUTATION | evaluate add
+node 95: COMPUTATION | evaluate sort
+node 96: OUTCOME | Stop
 edge 1 -> 2 | next
 edge 2 -> 3 | next
 edge 3 -> 4 | selected rule
@@ -129,55 +150,79 @@ edge 37 -> 38 | next
 edge 38 -> 39 | true
 edge 39 -> 40 | next
 edge 40 -> 41 | next
-edge 41 -> 10 | next entry
+edge 41 -> 42 | next
+edge 42 -> 43 | result
+edge 43 -> 10 | next entry
 edge 38 -> 10 | next entry
-edge 3 -> 42 | selected rule
-edge 42 -> 43 | next
-edge 43 -> 44 | next
+edge 3 -> 44 | selected rule
 edge 44 -> 45 | next
 edge 45 -> 46 | next
 edge 46 -> 47 | next
 edge 47 -> 48 | next
-edge 48 -> 49 | true
-edge 48 -> 49 | false
-edge 49 -> 50 | true
-edge 49 -> 50 | false
+edge 48 -> 49 | next
+edge 49 -> 50 | next
+edge 50 -> 51 | true
 edge 50 -> 51 | false
-edge 51 -> 52 | item
-edge 52 -> 53 | next
-edge 53 -> 54 | true
-edge 53 -> 54 | false
-edge 54 -> 55 | true
-edge 55 -> 56 | next
+edge 51 -> 52 | true
+edge 51 -> 52 | false
+edge 52 -> 53 | false
+edge 53 -> 54 | item
+edge 54 -> 55 | next
+edge 55 -> 56 | true
+edge 55 -> 56 | false
 edge 56 -> 57 | true
-edge 58 -> 59 | false
 edge 57 -> 58 | next
-edge 56 -> 58 | false
-edge 58 -> 60 | true
-edge 59 -> 60 | true
-edge 60 -> 61 | next
-edge 59 -> 61 | false
-edge 54 -> 61 | false
+edge 58 -> 59 | true
+edge 60 -> 61 | false
+edge 59 -> 60 | next
+edge 58 -> 60 | false
+edge 60 -> 62 | true
 edge 61 -> 62 | true
 edge 62 -> 63 | next
-edge 63 -> 64 | next
-edge 64 -> 51 | next item
-edge 61 -> 51 | next item
-edge 3 -> 65 | selected rule
+edge 61 -> 63 | false
+edge 56 -> 63 | false
+edge 63 -> 64 | true
+edge 64 -> 65 | next
 edge 65 -> 66 | next
 edge 66 -> 67 | next
-edge 68 -> 69 | true
-edge 67 -> 68 | item
-edge 69 -> 70 | true
+edge 67 -> 68 | result
+edge 68 -> 53 | next item
+edge 63 -> 53 | next item
+edge 3 -> 69 | selected rule
+edge 69 -> 70 | next
 edge 70 -> 71 | next
-edge 71 -> 72 | next
-edge 72 -> 67 | next item
-edge 68 -> 67 | next item
-edge 69 -> 67 | next item
-edge 10 -> 73 | no
-edge 50 -> 73 | true
-edge 51 -> 73 | done
-edge 67 -> 73 | done
-edge 73 -> 74 | next
-edge 27 -> 75 | fails
-edge 74 -> 75 | returns warnings
+edge 72 -> 73 | true
+edge 71 -> 72 | item
+edge 73 -> 74 | true
+edge 74 -> 75 | next
+edge 75 -> 76 | next
+edge 76 -> 77 | next
+edge 77 -> 78 | result
+edge 78 -> 71 | next item
+edge 72 -> 71 | next item
+edge 73 -> 71 | next item
+edge 10 -> 79 | no
+edge 52 -> 79 | true
+edge 53 -> 79 | done
+edge 71 -> 79 | done
+edge 79 -> 80 | next
+edge 80 -> 81 | next
+edge 81 -> 82 | next
+edge 82 -> 83 | next
+edge 83 -> 84 | selected rule
+edge 83 -> 85 | selected rule
+edge 84 -> 86 | result
+edge 85 -> 86 | result
+edge 86 -> 87 | selected rule
+edge 86 -> 88 | selected rule
+edge 87 -> 89 | result
+edge 88 -> 89 | result
+edge 89 -> 90 | next
+edge 90 -> 91 | next
+edge 91 -> 92 | true
+edge 92 -> 93 | next
+edge 91 -> 94 | false
+edge 93 -> 95 | next
+edge 94 -> 95 | next
+edge 27 -> 96 | fails
+edge 95 -> 96 | returns warnings

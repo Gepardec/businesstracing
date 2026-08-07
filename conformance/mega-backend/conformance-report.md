@@ -2,7 +2,7 @@
 
 Status: **passed**
 Pinned source: `Gepardec/mega-backend@782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
-Run date: 2026-07-24, Java 21
+Run date: 2026-08-07, Java 21
 
 ## Reproduction and isolation
 
@@ -22,7 +22,7 @@ are the same artifacts used by non-Mega applications.
 | --- | --- | ---: | ---: | --- |
 | Authorize clarification resolution | Month end | 18 | 30 | Complete, exact atomic oracle match |
 | Detect overlapping time entries | Time warnings | 6 | 9 | Complete, exact atomic oracle match |
-| Determine journey warnings | Journey orchestration | 75 | 106 | Complete, exact atomic oracle match; indexed iteration is business-safe |
+| Determine journey warnings | Journey orchestration | 96 | 130 | Complete, exact atomic oracle match; indexed iteration and result-changing helper mutations are business-safe |
 | Determine project activity in month | Projects | 8 | 9 | Complete, exact atomic oracle match |
 | Validate journey direction | Journey validation | 22 | 34 | Complete, exact atomic oracle match |
 
@@ -61,6 +61,8 @@ raw null, and representative Java implementation terms. Meaningful optionality i
   per-call-site runtime dispatch correlation;
 - collection-building decisions and recursively typed collection results without arbitrary
   object stringification;
+- standard JDK deque and collection mutations plus source helper mutations through direct local
+  aliases, with every controlling predicate retained;
 - business-facing strategy labels and technical projection removal based on source structure;
 - execution diagrams that infer unprobed computation segments between observed business nodes.
 

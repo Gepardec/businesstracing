@@ -28,6 +28,10 @@ public final class StaticDecisionAnalyzerTest {
         bindsCompleteBooleanPredicatesToExactEdges();
         excludesResultIndependentWork();
         excludesIgnoredReadsAndReportsUnknownEffects();
+        preservesDequeOfferMutation();
+        preservesLocalAliasMutation();
+        invalidatesReassignedLocalAliases();
+        reportsUnknownPlatformEffects();
         usesProvenValidationRolesWithoutGlobalReceiverRemoval();
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
@@ -263,6 +267,43 @@ public final class StaticDecisionAnalyzerTest {
                 : unknown.diagnostics();
         assert unknown.graph().nodes().stream().noneMatch(node ->
                 node.businessLabel().contains("evaluate update")) : unknown.graph().nodes();
+    }
+
+    private static void preservesLocalAliasMutation() {
+        var alias = analyzeLabel("slicing/ResultSlicePolicy.java", "local alias mutation");
+        assert alias.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : alias;
+        String aliasLabels = alias.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert aliasLabels.contains("age is below 24") : aliasLabels;
+        assert aliasLabels.contains("add alias reason") : aliasLabels;
+    }
+
+    private static void preservesDequeOfferMutation() {
+        var deque = analyzeLabel("slicing/ResultSlicePolicy.java", "deque offer mutation");
+        assert deque.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : deque;
+        String dequeLabels = deque.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert dequeLabels.contains("age is below 24") : dequeLabels;
+        assert dequeLabels.contains("offer") : dequeLabels;
+    }
+
+    private static void invalidatesReassignedLocalAliases() {
+        var invalidated = analyzeLabel("slicing/ResultSlicePolicy.java", "invalidated local alias");
+        assert invalidated.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : invalidated;
+        assert invalidated.graph().nodes().stream().noneMatch(node ->
+                node.businessLabel().contains("age is below 24")) : invalidated.graph().nodes();
+    }
+
+    private static void reportsUnknownPlatformEffects() {
+        var unknown = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
+        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                : unknown;
+        assert unknown.graph().coverageGaps().stream().anyMatch(gap ->
+                gap.description().contains("side effect"))
+                : unknown.graph().coverageGaps();
+        assert unknown.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0)
+                : unknown.diagnostics();
     }
 
     private static void usesProvenValidationRolesWithoutGlobalReceiverRemoval() {

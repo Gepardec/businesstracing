@@ -42,40 +42,61 @@ diamond "warning exists" as n38
 rectangle "create journey warning" as n39
 rectangle "journey warning" as n40
 rectangle "set journey warning date" as n41
-rectangle "invalid working location in journey rule" as n42
-rectangle "derive sorted project entries" as n43
-rectangle "warnings" as n44
-rectangle "evaluate has journey entries" as n45
-rectangle "evaluate is task" as n46
-rectangle "evaluate is journey" as n47
-diamond "task equals reisen" as n48
-diamond "is not journey task" as n49
-diamond "does not have journey entries sorted project entries" as n50
-diamond "for each project entry in sorted project entries" as n51
-rectangle "evaluate is journey" as n52
-diamond "task equals reisen" as n53
-diamond "task is journey project entry task" as n54
-rectangle "derive journey direction" as n55
-diamond "journey direction equals back" as n56
-rectangle "set working location to main" as n57
-diamond "journey direction equals to" as n58
-diamond "journey direction equals further" as n59
-rectangle "set working location to project entry working location" as n60
-diamond "project entry working location does not equal working location" as n61
-rectangle "create journey warning" as n62
-rectangle "journey warning" as n63
-rectangle "set journey warning date" as n64
-rectangle "location relevant set journey rule" as n65
-rectangle "warnings" as n66
-diamond "for each project entry in project entries" as n67
-diamond "project entry work location is project relevant" as n68
-diamond "none of warnings match item date equals project entry date" as n69
-rectangle "create journey warning" as n70
-rectangle "journey warning" as n71
-rectangle "set journey warning date" as n72
-rectangle "derive calculated warnings" as n73
-rectangle "evaluate add to journey warnings" as n74
-usecase "Stop" as n75
+rectangle "evaluate add" as n42
+rectangle "evaluate add" as n43
+rectangle "invalid working location in journey rule" as n44
+rectangle "derive sorted project entries" as n45
+rectangle "warnings" as n46
+rectangle "evaluate has journey entries" as n47
+rectangle "evaluate is task" as n48
+rectangle "evaluate is journey" as n49
+diamond "task equals reisen" as n50
+diamond "is not journey task" as n51
+diamond "does not have journey entries sorted project entries" as n52
+diamond "for each project entry in sorted project entries" as n53
+rectangle "evaluate is journey" as n54
+diamond "task equals reisen" as n55
+diamond "task is journey project entry task" as n56
+rectangle "derive journey direction" as n57
+diamond "journey direction equals back" as n58
+rectangle "set working location to main" as n59
+diamond "journey direction equals to" as n60
+diamond "journey direction equals further" as n61
+rectangle "set working location to project entry working location" as n62
+diamond "project entry working location does not equal working location" as n63
+rectangle "create journey warning" as n64
+rectangle "journey warning" as n65
+rectangle "set journey warning date" as n66
+rectangle "evaluate add" as n67
+rectangle "evaluate add" as n68
+rectangle "location relevant set journey rule" as n69
+rectangle "warnings" as n70
+diamond "for each project entry in project entries" as n71
+diamond "project entry work location is project relevant" as n72
+diamond "none of warnings match item date equals project entry date" as n73
+rectangle "create journey warning" as n74
+rectangle "journey warning" as n75
+rectangle "set journey warning date" as n76
+rectangle "evaluate add" as n77
+rectangle "evaluate add" as n78
+rectangle "derive calculated warnings" as n79
+rectangle "evaluate add to journey warnings" as n80
+rectangle "evaluate text for warning type" as n81
+rectangle "evaluate message template" as n82
+diamond "select applicable decision rule" as n83
+rectangle "journey warning type rule" as n84
+rectangle "time warning type rule" as n85
+diamond "select applicable decision rule" as n86
+rectangle "journey warning type rule" as n87
+rectangle "time warning type rule" as n88
+rectangle "evaluate add" as n89
+rectangle "derive journey warning" as n90
+diamond "journey warning is present" as n91
+rectangle "evaluate add all" as n92
+rectangle "evaluate add all" as n93
+rectangle "evaluate add" as n94
+rectangle "evaluate sort" as n95
+usecase "Stop" as n96
 n1 -[#9E9E9E,dashed]-> n2 : next
 n2 -[#9E9E9E,dashed]-> n3 : next
 n3 -[#2E7D32,thickness=3]-> n4 : selected rule
@@ -130,56 +151,80 @@ n37 -[#9E9E9E,dashed]-> n38 : next
 n38 -[#9E9E9E,dashed]-> n39 : true
 n39 -[#9E9E9E,dashed]-> n40 : next
 n40 -[#9E9E9E,dashed]-> n41 : next
-n41 -[#9E9E9E,dashed]-> n10 : next entry
+n41 -[#9E9E9E,dashed]-> n42 : next
+n42 -[#9E9E9E,dashed]-> n43 : result
+n43 -[#9E9E9E,dashed]-> n10 : next entry
 n38 -[#9E9E9E,dashed]-> n10 : next entry
-n3 -[#2E7D32,thickness=3]-> n42 : selected rule
-n42 -[#2E7D32,thickness=3]-> n43 : next
-n43 -[#2E7D32,thickness=3]-> n44 : next
+n3 -[#2E7D32,thickness=3]-> n44 : selected rule
 n44 -[#2E7D32,thickness=3]-> n45 : next
 n45 -[#2E7D32,thickness=3]-> n46 : next
 n46 -[#2E7D32,thickness=3]-> n47 : next
 n47 -[#2E7D32,thickness=3]-> n48 : next
-n48 -[#2E7D32,thickness=3]-> n49 : true
-n48 -[#9E9E9E,dashed]-> n49 : false
-n49 -[#2E7D32,thickness=3]-> n50 : true
-n49 -[#9E9E9E,dashed]-> n50 : false
+n48 -[#2E7D32,thickness=3]-> n49 : next
+n49 -[#2E7D32,thickness=3]-> n50 : next
+n50 -[#2E7D32,thickness=3]-> n51 : true
 n50 -[#9E9E9E,dashed]-> n51 : false
-n51 -[#9E9E9E,dashed]-> n52 : item
-n52 -[#9E9E9E,dashed]-> n53 : next
-n53 -[#9E9E9E,dashed]-> n54 : true
-n53 -[#9E9E9E,dashed]-> n54 : false
-n54 -[#9E9E9E,dashed]-> n55 : true
-n55 -[#9E9E9E,dashed]-> n56 : next
+n51 -[#2E7D32,thickness=3]-> n52 : true
+n51 -[#9E9E9E,dashed]-> n52 : false
+n52 -[#9E9E9E,dashed]-> n53 : false
+n53 -[#9E9E9E,dashed]-> n54 : item
+n54 -[#9E9E9E,dashed]-> n55 : next
+n55 -[#9E9E9E,dashed]-> n56 : true
+n55 -[#9E9E9E,dashed]-> n56 : false
 n56 -[#9E9E9E,dashed]-> n57 : true
-n58 -[#9E9E9E,dashed]-> n59 : false
 n57 -[#9E9E9E,dashed]-> n58 : next
-n56 -[#9E9E9E,dashed]-> n58 : false
-n58 -[#9E9E9E,dashed]-> n60 : true
-n59 -[#9E9E9E,dashed]-> n60 : true
-n60 -[#9E9E9E,dashed]-> n61 : next
-n59 -[#9E9E9E,dashed]-> n61 : false
-n54 -[#9E9E9E,dashed]-> n61 : false
+n58 -[#9E9E9E,dashed]-> n59 : true
+n60 -[#9E9E9E,dashed]-> n61 : false
+n59 -[#9E9E9E,dashed]-> n60 : next
+n58 -[#9E9E9E,dashed]-> n60 : false
+n60 -[#9E9E9E,dashed]-> n62 : true
 n61 -[#9E9E9E,dashed]-> n62 : true
 n62 -[#9E9E9E,dashed]-> n63 : next
-n63 -[#9E9E9E,dashed]-> n64 : next
-n64 -[#9E9E9E,dashed]-> n51 : next item
-n61 -[#9E9E9E,dashed]-> n51 : next item
-n3 -[#2E7D32,thickness=3]-> n65 : selected rule
-n65 -[#2E7D32,thickness=3]-> n66 : next
-n66 -[#2E7D32,thickness=3]-> n67 : next
-n68 -[#9E9E9E,dashed]-> n69 : true
-n67 -[#9E9E9E,dashed]-> n68 : item
-n69 -[#9E9E9E,dashed]-> n70 : true
-n70 -[#9E9E9E,dashed]-> n71 : next
-n71 -[#9E9E9E,dashed]-> n72 : next
-n72 -[#9E9E9E,dashed]-> n67 : next item
-n68 -[#9E9E9E,dashed]-> n67 : next item
-n69 -[#9E9E9E,dashed]-> n67 : next item
-n10 -[#9E9E9E,dashed]-> n73 : no
-n50 -[#2E7D32,thickness=3]-> n73 : true
-n51 -[#9E9E9E,dashed]-> n73 : done
-n67 -[#2E7D32,thickness=3]-> n73 : done
-n73 -[#2E7D32,thickness=3]-> n74 : next
-n27 -[#9E9E9E,dashed]-> n75 : fails
-n74 -[#2E7D32,thickness=3]-> n75 : returns warnings
+n61 -[#9E9E9E,dashed]-> n63 : false
+n56 -[#9E9E9E,dashed]-> n63 : false
+n63 -[#9E9E9E,dashed]-> n64 : true
+n64 -[#9E9E9E,dashed]-> n65 : next
+n65 -[#9E9E9E,dashed]-> n66 : next
+n66 -[#9E9E9E,dashed]-> n67 : next
+n67 -[#9E9E9E,dashed]-> n68 : result
+n68 -[#9E9E9E,dashed]-> n53 : next item
+n63 -[#9E9E9E,dashed]-> n53 : next item
+n3 -[#2E7D32,thickness=3]-> n69 : selected rule
+n69 -[#2E7D32,thickness=3]-> n70 : next
+n70 -[#2E7D32,thickness=3]-> n71 : next
+n72 -[#9E9E9E,dashed]-> n73 : true
+n71 -[#9E9E9E,dashed]-> n72 : item
+n73 -[#9E9E9E,dashed]-> n74 : true
+n74 -[#9E9E9E,dashed]-> n75 : next
+n75 -[#9E9E9E,dashed]-> n76 : next
+n76 -[#9E9E9E,dashed]-> n77 : next
+n77 -[#9E9E9E,dashed]-> n78 : result
+n78 -[#9E9E9E,dashed]-> n71 : next item
+n72 -[#9E9E9E,dashed]-> n71 : next item
+n73 -[#9E9E9E,dashed]-> n71 : next item
+n10 -[#9E9E9E,dashed]-> n79 : no
+n52 -[#2E7D32,thickness=3]-> n79 : true
+n53 -[#9E9E9E,dashed]-> n79 : done
+n71 -[#2E7D32,thickness=3]-> n79 : done
+n79 -[#2E7D32,thickness=3]-> n80 : next
+n80 -[#2E7D32,thickness=3]-> n81 : next
+n81 -[#2E7D32,thickness=3]-> n82 : next
+n82 -[#2E7D32,thickness=3]-> n83 : next
+n83 -[#2E7D32,thickness=3]-> n84 : selected rule
+n83 -[#9E9E9E,dashed]-> n85 : selected rule
+n84 -[#2E7D32,thickness=3]-> n86 : result
+n85 -[#9E9E9E,dashed]-> n86 : result
+n86 -[#2E7D32,thickness=3]-> n87 : selected rule
+n86 -[#9E9E9E,dashed]-> n88 : selected rule
+n87 -[#2E7D32,thickness=3]-> n89 : result
+n88 -[#9E9E9E,dashed]-> n89 : result
+n89 -[#2E7D32,thickness=3]-> n90 : next
+n90 -[#2E7D32,thickness=3]-> n91 : next
+n91 -[#9E9E9E,dashed]-> n92 : true
+n92 -[#9E9E9E,dashed]-> n93 : next
+n91 -[#2E7D32,thickness=3]-> n94 : false
+n93 -[#9E9E9E,dashed]-> n95 : next
+n94 -[#2E7D32,thickness=3]-> n95 : next
+n27 -[#9E9E9E,dashed]-> n96 : fails
+n95 -[#2E7D32,thickness=3]-> n96 : returns warnings
 @enduml

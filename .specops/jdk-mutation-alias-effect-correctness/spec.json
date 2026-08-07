@@ -1,0 +1,37 @@
+{
+  "id": "jdk-mutation-alias-effect-correctness",
+  "type": "bugfix",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-07T06:30:51Z",
+  "updated": "2026-08-07T06:33:22Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "codex" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "reason": "It introduced the call-effect and source-mutation summaries corrected here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": ["generic-java-extractor-completion", "generic-application-readiness"],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T06:33:22Z"
+    }
+  }
+}

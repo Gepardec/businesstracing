@@ -42,40 +42,61 @@ diamond "warning exists" as n38
 rectangle "create journey warning" as n39
 rectangle "journey warning" as n40
 rectangle "set journey warning date" as n41
-rectangle "invalid working location in journey rule" as n42
-rectangle "derive sorted project entries" as n43
-rectangle "warnings" as n44
-rectangle "evaluate has journey entries" as n45
-rectangle "evaluate is task" as n46
-rectangle "evaluate is journey" as n47
-diamond "task equals reisen" as n48
-diamond "is not journey task" as n49
-diamond "does not have journey entries sorted project entries" as n50
-diamond "for each project entry in sorted project entries" as n51
-rectangle "evaluate is journey" as n52
-diamond "task equals reisen" as n53
-diamond "task is journey project entry task" as n54
-rectangle "derive journey direction" as n55
-diamond "journey direction equals back" as n56
-rectangle "set working location to main" as n57
-diamond "journey direction equals to" as n58
-diamond "journey direction equals further" as n59
-rectangle "set working location to project entry working location" as n60
-diamond "project entry working location does not equal working location" as n61
-rectangle "create journey warning" as n62
-rectangle "journey warning" as n63
-rectangle "set journey warning date" as n64
-rectangle "location relevant set journey rule" as n65
-rectangle "warnings" as n66
-diamond "for each project entry in project entries" as n67
-diamond "project entry work location is project relevant" as n68
-diamond "none of warnings match item date equals project entry date" as n69
-rectangle "create journey warning" as n70
-rectangle "journey warning" as n71
-rectangle "set journey warning date" as n72
-rectangle "derive calculated warnings" as n73
-rectangle "evaluate add to journey warnings" as n74
-usecase "Stop" as n75
+rectangle "evaluate add" as n42
+rectangle "evaluate add" as n43
+rectangle "invalid working location in journey rule" as n44
+rectangle "derive sorted project entries" as n45
+rectangle "warnings" as n46
+rectangle "evaluate has journey entries" as n47
+rectangle "evaluate is task" as n48
+rectangle "evaluate is journey" as n49
+diamond "task equals reisen" as n50
+diamond "is not journey task" as n51
+diamond "does not have journey entries sorted project entries" as n52
+diamond "for each project entry in sorted project entries" as n53
+rectangle "evaluate is journey" as n54
+diamond "task equals reisen" as n55
+diamond "task is journey project entry task" as n56
+rectangle "derive journey direction" as n57
+diamond "journey direction equals back" as n58
+rectangle "set working location to main" as n59
+diamond "journey direction equals to" as n60
+diamond "journey direction equals further" as n61
+rectangle "set working location to project entry working location" as n62
+diamond "project entry working location does not equal working location" as n63
+rectangle "create journey warning" as n64
+rectangle "journey warning" as n65
+rectangle "set journey warning date" as n66
+rectangle "evaluate add" as n67
+rectangle "evaluate add" as n68
+rectangle "location relevant set journey rule" as n69
+rectangle "warnings" as n70
+diamond "for each project entry in project entries" as n71
+diamond "project entry work location is project relevant" as n72
+diamond "none of warnings match item date equals project entry date" as n73
+rectangle "create journey warning" as n74
+rectangle "journey warning" as n75
+rectangle "set journey warning date" as n76
+rectangle "evaluate add" as n77
+rectangle "evaluate add" as n78
+rectangle "derive calculated warnings" as n79
+rectangle "evaluate add to journey warnings" as n80
+rectangle "evaluate text for warning type" as n81
+rectangle "evaluate message template" as n82
+diamond "select applicable decision rule" as n83
+rectangle "journey warning type rule" as n84
+rectangle "time warning type rule" as n85
+diamond "select applicable decision rule" as n86
+rectangle "journey warning type rule" as n87
+rectangle "time warning type rule" as n88
+rectangle "evaluate add" as n89
+rectangle "derive journey warning" as n90
+diamond "journey warning is present" as n91
+rectangle "evaluate add all" as n92
+rectangle "evaluate add all" as n93
+rectangle "evaluate add" as n94
+rectangle "evaluate sort" as n95
+usecase "Stop" as n96
 n1 --> n2 : next
 n2 --> n3 : next
 n3 --> n4 : selected rule
@@ -130,56 +151,80 @@ n37 --> n38 : next
 n38 --> n39 : true
 n39 --> n40 : next
 n40 --> n41 : next
-n41 --> n10 : next entry
+n41 --> n42 : next
+n42 --> n43 : result
+n43 --> n10 : next entry
 n38 --> n10 : next entry
-n3 --> n42 : selected rule
-n42 --> n43 : next
-n43 --> n44 : next
+n3 --> n44 : selected rule
 n44 --> n45 : next
 n45 --> n46 : next
 n46 --> n47 : next
 n47 --> n48 : next
-n48 --> n49 : true
-n48 --> n49 : false
-n49 --> n50 : true
-n49 --> n50 : false
+n48 --> n49 : next
+n49 --> n50 : next
+n50 --> n51 : true
 n50 --> n51 : false
-n51 --> n52 : item
-n52 --> n53 : next
-n53 --> n54 : true
-n53 --> n54 : false
-n54 --> n55 : true
-n55 --> n56 : next
+n51 --> n52 : true
+n51 --> n52 : false
+n52 --> n53 : false
+n53 --> n54 : item
+n54 --> n55 : next
+n55 --> n56 : true
+n55 --> n56 : false
 n56 --> n57 : true
-n58 --> n59 : false
 n57 --> n58 : next
-n56 --> n58 : false
-n58 --> n60 : true
-n59 --> n60 : true
-n60 --> n61 : next
-n59 --> n61 : false
-n54 --> n61 : false
+n58 --> n59 : true
+n60 --> n61 : false
+n59 --> n60 : next
+n58 --> n60 : false
+n60 --> n62 : true
 n61 --> n62 : true
 n62 --> n63 : next
-n63 --> n64 : next
-n64 --> n51 : next item
-n61 --> n51 : next item
-n3 --> n65 : selected rule
+n61 --> n63 : false
+n56 --> n63 : false
+n63 --> n64 : true
+n64 --> n65 : next
 n65 --> n66 : next
 n66 --> n67 : next
-n68 --> n69 : true
-n67 --> n68 : item
-n69 --> n70 : true
+n67 --> n68 : result
+n68 --> n53 : next item
+n63 --> n53 : next item
+n3 --> n69 : selected rule
+n69 --> n70 : next
 n70 --> n71 : next
-n71 --> n72 : next
-n72 --> n67 : next item
-n68 --> n67 : next item
-n69 --> n67 : next item
-n10 --> n73 : no
-n50 --> n73 : true
-n51 --> n73 : done
-n67 --> n73 : done
-n73 --> n74 : next
-n27 --> n75 : fails
-n74 --> n75 : returns warnings
+n72 --> n73 : true
+n71 --> n72 : item
+n73 --> n74 : true
+n74 --> n75 : next
+n75 --> n76 : next
+n76 --> n77 : next
+n77 --> n78 : result
+n78 --> n71 : next item
+n72 --> n71 : next item
+n73 --> n71 : next item
+n10 --> n79 : no
+n52 --> n79 : true
+n53 --> n79 : done
+n71 --> n79 : done
+n79 --> n80 : next
+n80 --> n81 : next
+n81 --> n82 : next
+n82 --> n83 : next
+n83 --> n84 : selected rule
+n83 --> n85 : selected rule
+n84 --> n86 : result
+n85 --> n86 : result
+n86 --> n87 : selected rule
+n86 --> n88 : selected rule
+n87 --> n89 : result
+n88 --> n89 : result
+n89 --> n90 : next
+n90 --> n91 : next
+n91 --> n92 : true
+n92 --> n93 : next
+n91 --> n94 : false
+n93 --> n95 : next
+n94 --> n95 : next
+n27 --> n96 : fails
+n95 --> n96 : returns warnings
 @enduml

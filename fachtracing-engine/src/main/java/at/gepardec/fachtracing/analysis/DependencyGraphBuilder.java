@@ -32,6 +32,7 @@ public final class DependencyGraphBuilder {
         var returns = new ArrayList<ReturnTree>();
         var effectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
         var possibleEffectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
+        var aliases = new LocalAliasResolver();
 
         new TreeScanner<Void, Tree>() {
             @Override public Void scan(Tree tree, Tree parent) {
@@ -40,13 +41,17 @@ public final class DependencyGraphBuilder {
             }
 
             @Override public Void visitVariable(VariableTree node, Tree parent) {
-                if (node.getInitializer() != null) definitions.put(node.getName().toString(), node.getInitializer());
+                if (node.getInitializer() != null) {
+                    definitions.put(node.getName().toString(), node.getInitializer());
+                    aliases.assign(node.getName().toString(), node.getInitializer());
+                }
                 return super.visitVariable(node, parent);
             }
 
             @Override public Void visitAssignment(AssignmentTree node, Tree parent) {
                 if (node.getVariable() instanceof IdentifierTree identifier) {
                     definitions.put(identifier.getName().toString(), node.getExpression());
+                    aliases.assign(identifier.getName().toString(), node.getExpression());
                 }
                 return super.visitAssignment(node, parent);
             }
@@ -65,10 +70,10 @@ public final class DependencyGraphBuilder {
 
             @Override public Void visitMethodInvocation(MethodInvocationTree node, Tree parent) {
                 CallEffects effects = callEffects.apply(node);
-                effects.provenWrites().forEach(identifier ->
-                        effectsByIdentifier.computeIfAbsent(identifier, ignored -> new ArrayList<>()).add(node));
-                effects.possibleWrites().forEach(identifier ->
-                        possibleEffectsByIdentifier.computeIfAbsent(identifier, ignored -> new ArrayList<>()).add(node));
+                effects.provenWrites().forEach(identifier -> aliases.resolve(identifier).forEach(root ->
+                        effectsByIdentifier.computeIfAbsent(root, ignored -> new ArrayList<>()).add(node)));
+                effects.possibleWrites().forEach(identifier -> aliases.resolve(identifier).forEach(root ->
+                        possibleEffectsByIdentifier.computeIfAbsent(root, ignored -> new ArrayList<>()).add(node)));
                 return super.visitMethodInvocation(node, parent);
             }
         }.scan(method, null);

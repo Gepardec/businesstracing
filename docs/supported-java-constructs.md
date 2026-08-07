@@ -7,7 +7,8 @@ checks that every entry names an executable contract and appears in this documen
 
 - `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
 - `complex-boolean-exact-path`, `predicate-operand-evidence`, `predicate-site-evidence`, `method-receiver-evidence`, `terminal-outcome-evidence`, `incomplete-exact-path-gap`
-- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
+- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `unknown-jdk-effect-gap`
+- `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
@@ -34,8 +35,9 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Method receiver evidence | Records a direct parameter receiver for result-relevant value calls, including direct Boolean return expressions. An unsupported explicit value receiver creates a source-located gap |
 | Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
 | Local initialization and assignment | Retained only when it can influence a return |
-| Result slice call effects | Includes only source-proven or attributed platform writes. A read-only ignored call does not become a business cause |
-| Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies |
+| Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only |
+| Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies, including queue and deque operations such as `offer` |
+| Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument; a later non-identity assignment removes the alias relation |
 | Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
 | Direct method call | Follows a source-available callee and includes its relevant slice |
 | Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |

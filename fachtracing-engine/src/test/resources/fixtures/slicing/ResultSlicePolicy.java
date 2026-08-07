@@ -2,6 +2,12 @@ package fixtures.slicing;
 
 import at.gepardec.fachtracing.api.FachTracing;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Deque;
+import java.util.List;
+
 public final class ResultSlicePolicy {
     interface UnknownMutator {
         void update(Customer customer);
@@ -46,5 +52,48 @@ public final class ResultSlicePolicy {
         CreditValidator creditValidator = new CreditValidator();
         return fraudValidator.validate(amount) && creditValidator.validate(amount);
     }
-}
 
+    @FachTracing("deque offer mutation")
+    public boolean dequeOfferMutation(int age) {
+        Deque<String> reasons = new ArrayDeque<>();
+        if (age < 24) {
+            reasons.offer("age");
+        }
+        return reasons.isEmpty();
+    }
+
+    @FachTracing("local alias mutation")
+    public boolean localAliasMutation(int age) {
+        List<String> reasons = new ArrayList<>();
+        addAliasReason(reasons, age);
+        return reasons.isEmpty();
+    }
+
+    private void addAliasReason(List<String> target, int age) {
+        List<String> alias = target;
+        if (age < 24) {
+            alias.add("age");
+        }
+    }
+
+    @FachTracing("invalidated local alias")
+    public boolean invalidatedAlias(int age) {
+        List<String> reasons = new ArrayList<>();
+        addDetachedReason(reasons, age);
+        return reasons.isEmpty();
+    }
+
+    private void addDetachedReason(List<String> target, int age) {
+        List<String> alias = target;
+        alias = new ArrayList<>();
+        if (age < 24) {
+            alias.add("age");
+        }
+    }
+
+    @FachTracing("unknown platform effect")
+    public boolean unknownPlatformEffect(Date date, long epoch) {
+        date.setTime(epoch);
+        return date.getTime() > 0;
+    }
+}

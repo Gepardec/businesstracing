@@ -40,40 +40,61 @@ flowchart LR
     n39["create journey warning"]
     n40["journey warning"]
     n41["set journey warning date"]
-    n42["invalid working location in journey rule"]
-    n43["derive sorted project entries"]
-    n44["warnings"]
-    n45["evaluate has journey entries"]
-    n46["evaluate is task"]
-    n47["evaluate is journey"]
-    n48{"task equals reisen"}
-    n49{"is not journey task"}
-    n50{"does not have journey entries sorted project entries"}
-    n51{"for each project entry in sorted project entries"}
-    n52["evaluate is journey"]
-    n53{"task equals reisen"}
-    n54{"task is journey project entry task"}
-    n55["derive journey direction"]
-    n56{"journey direction equals back"}
-    n57["set working location to main"]
-    n58{"journey direction equals to"}
-    n59{"journey direction equals further"}
-    n60["set working location to project entry working location"]
-    n61{"project entry working location does not equal working location"}
-    n62["create journey warning"]
-    n63["journey warning"]
-    n64["set journey warning date"]
-    n65["location relevant set journey rule"]
-    n66["warnings"]
-    n67{"for each project entry in project entries"}
-    n68{"project entry work location is project relevant"}
-    n69{"none of warnings match item date equals project entry date"}
-    n70["create journey warning"]
-    n71["journey warning"]
-    n72["set journey warning date"]
-    n73["derive calculated warnings"]
-    n74["evaluate add to journey warnings"]
-    n75(["Stop"])
+    n42["evaluate add"]
+    n43["evaluate add"]
+    n44["invalid working location in journey rule"]
+    n45["derive sorted project entries"]
+    n46["warnings"]
+    n47["evaluate has journey entries"]
+    n48["evaluate is task"]
+    n49["evaluate is journey"]
+    n50{"task equals reisen"}
+    n51{"is not journey task"}
+    n52{"does not have journey entries sorted project entries"}
+    n53{"for each project entry in sorted project entries"}
+    n54["evaluate is journey"]
+    n55{"task equals reisen"}
+    n56{"task is journey project entry task"}
+    n57["derive journey direction"]
+    n58{"journey direction equals back"}
+    n59["set working location to main"]
+    n60{"journey direction equals to"}
+    n61{"journey direction equals further"}
+    n62["set working location to project entry working location"]
+    n63{"project entry working location does not equal working location"}
+    n64["create journey warning"]
+    n65["journey warning"]
+    n66["set journey warning date"]
+    n67["evaluate add"]
+    n68["evaluate add"]
+    n69["location relevant set journey rule"]
+    n70["warnings"]
+    n71{"for each project entry in project entries"}
+    n72{"project entry work location is project relevant"}
+    n73{"none of warnings match item date equals project entry date"}
+    n74["create journey warning"]
+    n75["journey warning"]
+    n76["set journey warning date"]
+    n77["evaluate add"]
+    n78["evaluate add"]
+    n79["derive calculated warnings"]
+    n80["evaluate add to journey warnings"]
+    n81["evaluate text for warning type"]
+    n82["evaluate message template"]
+    n83{"select applicable decision rule"}
+    n84["journey warning type rule"]
+    n85["time warning type rule"]
+    n86{"select applicable decision rule"}
+    n87["journey warning type rule"]
+    n88["time warning type rule"]
+    n89["evaluate add"]
+    n90["derive journey warning"]
+    n91{"journey warning is present"}
+    n92["evaluate add all"]
+    n93["evaluate add all"]
+    n94["evaluate add"]
+    n95["evaluate sort"]
+    n96(["Stop"])
     n1 -->|"next"| n2
     n2 -->|"next"| n3
     n3 -->|"selected rule"| n4
@@ -128,55 +149,79 @@ flowchart LR
     n38 -->|"true"| n39
     n39 -->|"next"| n40
     n40 -->|"next"| n41
-    n41 -->|"next entry"| n10
+    n41 -->|"next"| n42
+    n42 -->|"result"| n43
+    n43 -->|"next entry"| n10
     n38 -->|"next entry"| n10
-    n3 -->|"selected rule"| n42
-    n42 -->|"next"| n43
-    n43 -->|"next"| n44
+    n3 -->|"selected rule"| n44
     n44 -->|"next"| n45
     n45 -->|"next"| n46
     n46 -->|"next"| n47
     n47 -->|"next"| n48
-    n48 -->|"true"| n49
-    n48 -->|"false"| n49
-    n49 -->|"true"| n50
-    n49 -->|"false"| n50
+    n48 -->|"next"| n49
+    n49 -->|"next"| n50
+    n50 -->|"true"| n51
     n50 -->|"false"| n51
-    n51 -->|"item"| n52
-    n52 -->|"next"| n53
-    n53 -->|"true"| n54
-    n53 -->|"false"| n54
-    n54 -->|"true"| n55
-    n55 -->|"next"| n56
+    n51 -->|"true"| n52
+    n51 -->|"false"| n52
+    n52 -->|"false"| n53
+    n53 -->|"item"| n54
+    n54 -->|"next"| n55
+    n55 -->|"true"| n56
+    n55 -->|"false"| n56
     n56 -->|"true"| n57
-    n58 -->|"false"| n59
     n57 -->|"next"| n58
-    n56 -->|"false"| n58
-    n58 -->|"true"| n60
-    n59 -->|"true"| n60
-    n60 -->|"next"| n61
-    n59 -->|"false"| n61
-    n54 -->|"false"| n61
+    n58 -->|"true"| n59
+    n60 -->|"false"| n61
+    n59 -->|"next"| n60
+    n58 -->|"false"| n60
+    n60 -->|"true"| n62
     n61 -->|"true"| n62
     n62 -->|"next"| n63
-    n63 -->|"next"| n64
-    n64 -->|"next item"| n51
-    n61 -->|"next item"| n51
-    n3 -->|"selected rule"| n65
+    n61 -->|"false"| n63
+    n56 -->|"false"| n63
+    n63 -->|"true"| n64
+    n64 -->|"next"| n65
     n65 -->|"next"| n66
     n66 -->|"next"| n67
-    n68 -->|"true"| n69
-    n67 -->|"item"| n68
-    n69 -->|"true"| n70
+    n67 -->|"result"| n68
+    n68 -->|"next item"| n53
+    n63 -->|"next item"| n53
+    n3 -->|"selected rule"| n69
+    n69 -->|"next"| n70
     n70 -->|"next"| n71
-    n71 -->|"next"| n72
-    n72 -->|"next item"| n67
-    n68 -->|"next item"| n67
-    n69 -->|"next item"| n67
-    n10 -->|"no"| n73
-    n50 -->|"true"| n73
-    n51 -->|"done"| n73
-    n67 -->|"done"| n73
-    n73 -->|"next"| n74
-    n27 -->|"fails"| n75
-    n74 -->|"returns warnings"| n75
+    n72 -->|"true"| n73
+    n71 -->|"item"| n72
+    n73 -->|"true"| n74
+    n74 -->|"next"| n75
+    n75 -->|"next"| n76
+    n76 -->|"next"| n77
+    n77 -->|"result"| n78
+    n78 -->|"next item"| n71
+    n72 -->|"next item"| n71
+    n73 -->|"next item"| n71
+    n10 -->|"no"| n79
+    n52 -->|"true"| n79
+    n53 -->|"done"| n79
+    n71 -->|"done"| n79
+    n79 -->|"next"| n80
+    n80 -->|"next"| n81
+    n81 -->|"next"| n82
+    n82 -->|"next"| n83
+    n83 -->|"selected rule"| n84
+    n83 -->|"selected rule"| n85
+    n84 -->|"result"| n86
+    n85 -->|"result"| n86
+    n86 -->|"selected rule"| n87
+    n86 -->|"selected rule"| n88
+    n87 -->|"result"| n89
+    n88 -->|"result"| n89
+    n89 -->|"next"| n90
+    n90 -->|"next"| n91
+    n91 -->|"true"| n92
+    n92 -->|"next"| n93
+    n91 -->|"false"| n94
+    n93 -->|"next"| n95
+    n94 -->|"next"| n95
+    n27 -->|"fails"| n96
+    n95 -->|"returns warnings"| n96

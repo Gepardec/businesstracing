@@ -478,7 +478,7 @@ public final class StaticDecisionAnalyzer {
                 return mergeEffects(callbackEffects,
                         new DependencyGraphBuilder.CallEffects(proven, possible));
             }
-            if (isSupportedLibraryOperation(executable)) return callbackEffects;
+            if (isProvenReadOnlyLibraryOperation(executable)) return callbackEffects;
             return mergeEffects(callbackEffects,
                     new DependencyGraphBuilder.CallEffects(Set.of(), possibleReferenceRoots(caller, call)));
         }
@@ -533,7 +533,10 @@ public final class StaticDecisionAnalyzer {
             boolean collection = owner.startsWith("java.util.") && Set.of(
                     "add", "addAll", "remove", "removeAll", "removeIf", "retainAll", "clear",
                     "set", "replace", "replaceAll", "sort", "put", "putAll", "putIfAbsent",
-                    "compute", "computeIfAbsent", "computeIfPresent", "merge", "setValue")
+                    "compute", "computeIfAbsent", "computeIfPresent", "merge", "setValue",
+                    "offer", "offerFirst", "offerLast", "addFirst", "addLast", "push", "pop",
+                    "poll", "pollFirst", "pollLast", "removeFirst", "removeLast", "drainTo",
+                    "next", "previous", "forEachRemaining")
                     .contains(method);
             boolean mutableText = (owner.equals("java.lang.StringBuilder")
                     || owner.equals("java.lang.StringBuffer"))
@@ -619,10 +622,26 @@ public final class StaticDecisionAnalyzer {
             var receiverUnknown = new boolean[1];
             var parameterWrites = new LinkedHashSet<Integer>();
             var parameterUnknown = new LinkedHashSet<Integer>();
+            var aliases = new LocalAliasResolver();
 
             new TreePathScanner<Void, Void>() {
+                @Override public Void visitVariable(VariableTree node, Void unused) {
+                    if (node.getInitializer() != null) {
+                        aliases.assign(node.getName().toString(), node.getInitializer());
+                    }
+                    return super.visitVariable(node, unused);
+                }
+
                 @Override public Void visitAssignment(AssignmentTree node, Void unused) {
-                    mark(node.getVariable(), true);
+                    if (node.getVariable() instanceof IdentifierTree identifier) {
+                        if (fields.contains(identifier.getName().toString())) {
+                            mark(node.getVariable(), true);
+                        } else {
+                            aliases.assign(identifier.getName().toString(), node.getExpression());
+                        }
+                    } else {
+                        mark(node.getVariable(), true);
+                    }
                     return super.visitAssignment(node, unused);
                 }
 
@@ -652,13 +671,15 @@ public final class StaticDecisionAnalyzer {
                 }
 
                 private void markName(String name, boolean proven) {
-                    Integer parameter = parameters.get(name);
-                    if (parameter != null) {
-                        (proven ? parameterWrites : parameterUnknown).add(parameter);
-                    } else if (name.equals("this") || name.equals("super") || fields.contains(name)) {
-                        if (proven) receiverWrite[0] = true;
-                        else receiverUnknown[0] = true;
-                    }
+                    aliases.resolve(name).forEach(root -> {
+                        Integer parameter = parameters.get(root);
+                        if (parameter != null) {
+                            (proven ? parameterWrites : parameterUnknown).add(parameter);
+                        } else if (root.equals("this") || root.equals("super") || fields.contains(root)) {
+                            if (proven) receiverWrite[0] = true;
+                            else receiverUnknown[0] = true;
+                        }
+                    });
                 }
             }.scan(new TreePath(location.path(), location.method().getBody()), null);
 
@@ -716,19 +737,65 @@ public final class StaticDecisionAnalyzer {
                 String predecessor,
                 boolean root,
                 Set<ExecutableElement> activeMethods) {
+            return extract(location, predecessor, root, activeMethods, Set.of());
+        }
+
+        private Extraction extract(
+                MethodLocation location,
+                String predecessor,
+                boolean root,
+                Set<ExecutableElement> activeMethods,
+                Set<String> effectRoots) {
             Element methodElement = trees.getElement(location.path());
             if (methodElement instanceof ExecutableElement executable && !activeMethods.add(executable)) {
                 return new Extraction(predecessor, List.of(new Tail(predecessor, "result")));
             }
             var dependencies = new DependencyGraphBuilder().build(
                     location.method(), call -> callEffects(location, call));
-            Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies);
+            Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies, effectRoots);
             Set<Tree> unknownResultEffects = unknownResultEffects(location, dependencies, slice);
             var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
                     unknownResultEffects, predecessor);
             flow.scan(new TreePath(location.path(), location.method().getBody()), null);
             if (methodElement instanceof ExecutableElement executable) activeMethods.remove(executable);
             return new Extraction(flow.lastNode(), flow.exits());
+        }
+
+        private Set<String> calleeEffectRoots(
+                MethodLocation callee,
+                MethodInvocationTree call,
+                DependencyGraphBuilder.MethodDependencies callerDependencies,
+                Set<Tree> callerSlice) {
+            Set<String> dependentNames = new LinkedHashSet<>();
+            callerSlice.forEach(tree -> dependentNames.addAll(DependencyGraphBuilder.collectIdentifiers(tree)));
+            Set<String> relevantCallerRoots = callerDependencies.effectsByIdentifier().entrySet().stream()
+                    .filter(entry -> dependentNames.contains(entry.getKey()))
+                    .filter(entry -> entry.getValue().stream().anyMatch(effect -> effect == call))
+                    .map(Map.Entry::getKey).collect(Collectors.toSet());
+            if (relevantCallerRoots.isEmpty()) return Set.of();
+
+            MutationSummary summary = mutationSummary(callee);
+            var roots = new LinkedHashSet<String>();
+            Set<String> receiverRoots = call.getMethodSelect() instanceof MemberSelectTree member
+                    ? stateRoots(member.getExpression()) : Set.of("this");
+            if (summary.receiverWrite() && !Collections.disjoint(receiverRoots, relevantCallerRoots)) {
+                roots.add("this");
+                Element element = trees.getElement(callee.path());
+                if (element instanceof ExecutableElement executable) {
+                    executable.getEnclosingElement().getEnclosedElements().stream()
+                            .filter(member -> member.getKind() == ElementKind.FIELD)
+                            .map(member -> member.getSimpleName().toString()).forEach(roots::add);
+                }
+            }
+            for (Integer index : summary.parameterWrites()) {
+                if (index >= 0 && index < callee.method().getParameters().size()
+                        && index < call.getArguments().size()
+                        && !Collections.disjoint(
+                                stateRoots(call.getArguments().get(index)), relevantCallerRoots)) {
+                    roots.add(callee.method().getParameters().get(index).getName().toString());
+                }
+            }
+            return Set.copyOf(roots);
         }
 
         @SuppressWarnings("unused")
@@ -1279,6 +1346,14 @@ public final class StaticDecisionAnalyzer {
                     addCoverageGap(node, "reflected decision target cannot be reconstructed from constants");
                     return null;
                 }
+                Set<String> platformWrites = platformMutationRoots(location, node, executable);
+                if (!platformWrites.isEmpty()) {
+                    scan(node.getArguments(), unused);
+                    String mutation = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                            invocationLabel(node, executable), node, null);
+                    advance(mutation);
+                    return null;
+                }
                 if (isSupportedLibraryOperation(executable)) return super.visitMethodInvocation(node, unused);
 
                 scan(node.getMethodSelect(), unused);
@@ -1297,7 +1372,8 @@ public final class StaticDecisionAnalyzer {
                         String call = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                                 invocationLabel(node, executable), node, null);
                         advance(call);
-                        Extraction linked = extract(callee, call, false, activeMethods);
+                        Extraction linked = extract(callee, call, false, activeMethods,
+                                calleeEffectRoots(callee, node, dependencies, slice));
                         frontier = linked.exits();
                     } else if (callee == null) {
                         BytecodeDecisionAnalyzer.Result fallback = new BytecodeDecisionAnalyzer().analyze(
@@ -2595,6 +2671,60 @@ public final class StaticDecisionAnalyzer {
         if (!(owner instanceof TypeElement type)) return false;
         String qualifiedName = type.getQualifiedName().toString();
         if (qualifiedName.startsWith("java.") || qualifiedName.startsWith("javax.")) return true;
+        return isSupportedRecordOperation(executable, type);
+    }
+
+    private static boolean isProvenReadOnlyLibraryOperation(ExecutableElement executable) {
+        Element owner = executable.getEnclosingElement();
+        if (!(owner instanceof TypeElement type)) return false;
+        String qualifiedName = type.getQualifiedName().toString();
+        String method = executable.getSimpleName().toString();
+        if (qualifiedName.equals("java.lang.String")
+                || qualifiedName.equals("java.lang.Boolean")
+                || qualifiedName.equals("java.lang.Byte")
+                || qualifiedName.equals("java.lang.Short")
+                || qualifiedName.equals("java.lang.Integer")
+                || qualifiedName.equals("java.lang.Long")
+                || qualifiedName.equals("java.lang.Float")
+                || qualifiedName.equals("java.lang.Double")
+                || qualifiedName.equals("java.lang.Character")
+                || qualifiedName.equals("java.lang.Math")
+                || qualifiedName.equals("java.lang.StrictMath")
+                || qualifiedName.equals("java.lang.Thread") && Set.of(
+                        "start", "startVirtualThread", "join", "currentThread", "isVirtual",
+                        "isAlive", "threadId", "getName").contains(method)
+                || qualifiedName.equals("java.lang.Iterable") && method.equals("forEach")
+                || qualifiedName.startsWith("java.time.")
+                || qualifiedName.equals("java.math.BigInteger")
+                || qualifiedName.equals("java.math.BigDecimal")
+                || qualifiedName.startsWith("java.util.stream.")
+                || qualifiedName.equals("java.util.Optional")
+                || qualifiedName.equals("java.util.OptionalInt")
+                || qualifiedName.equals("java.util.OptionalLong")
+                || qualifiedName.equals("java.util.OptionalDouble")) return true;
+        if (qualifiedName.startsWith("java.util.") && Set.of(
+                "size", "isEmpty", "indexOf", "lastIndexOf", "peek", "peekFirst", "peekLast", "element",
+                "first", "last", "keySet", "values", "entrySet", "iterator", "listIterator",
+                "spliterator", "stream", "parallelStream", "getTime", "before", "after",
+                "compareTo", "of", "ofEntries",
+                "copyOf", "forEach", "forEachOrdered")
+                .contains(method)) return true;
+        if (qualifiedName.equals("java.util.Objects") && Set.of(
+                "isNull", "nonNull", "requireNonNull", "toIdentityString")
+                .contains(method)) return true;
+        if (qualifiedName.equals("java.util.Arrays") && Set.of(
+                "asList", "binarySearch", "compare", "compareUnsigned", "copyOf", "copyOfRange",
+                "deepEquals", "deepHashCode", "deepToString", "equals", "hashCode", "mismatch",
+                "stream", "toString").contains(method)) return true;
+        if (qualifiedName.equals("java.util.Collections") && Set.of(
+                "binarySearch", "disjoint", "enumeration", "frequency", "indexOfSubList",
+                "lastIndexOfSubList", "list", "max", "min", "nCopies", "singleton",
+                "singletonList", "singletonMap", "unmodifiableCollection", "unmodifiableList",
+                "unmodifiableMap", "unmodifiableSet").contains(method)) return true;
+        return isSupportedRecordOperation(executable, type);
+    }
+
+    private static boolean isSupportedRecordOperation(ExecutableElement executable, TypeElement type) {
         if (type.getKind() != ElementKind.RECORD) return false;
         String method = executable.getSimpleName().toString();
         if (method.equals("equals") && executable.getParameters().size() == 1) return true;
