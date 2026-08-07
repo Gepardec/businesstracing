@@ -10,7 +10,7 @@ checks that every entry names an executable contract and appears in this documen
 - `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `conditional-local-alias-effect-gap`, `conditional-local-alias-definition`, `unknown-jdk-effect-gap`
 - `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
-- `lambdas-and-streams`, `method-reference-callback-mutation`, `wrapped-method-reference-callback-mutation`, `mutating-predicate-method-reference-gap`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
+- `lambdas-and-streams`, `method-reference-callback-mutation`, `wrapped-method-reference-callback-mutation`, `local-method-reference-callback-mutation`, `mutating-predicate-method-reference-gap`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
 - `source-unavailable-call`, `jakarta-platform-operation`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
@@ -57,7 +57,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Pattern matching | Retains result-relevant type patterns and their bound business facts |
 | Sealed type dispatch | Includes each source-visible permitted implementation as a candidate |
 | Nested class call | Resolves and expands source-visible nested-class decision logic |
-| Direct method reference | Resolves and expands a source-visible referenced decision method. Direct, parenthesized, and cast bound mutating callbacks use the same receiver-effect contract as a normal call and show the source-to-target transfer. A platform mutator Boolean used as a predicate callback keeps the mutation but creates a located gap for its unsupported outcome topology |
+| Direct method reference | Resolves and expands a source-visible referenced decision method. Direct, parenthesized, cast, and local-variable bound mutating callbacks use the same receiver-effect contract as a normal call and show the source-to-target transfer. A platform mutator Boolean used as a predicate callback keeps the mutation but creates a located gap for its unsupported outcome topology |
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
 | Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location |

@@ -1,0 +1,39 @@
+{
+  "id": "implicit-field-local-callback-correctness",
+  "type": "bugfix",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-07T13:08:48Z",
+  "updated": "2026-08-07T13:08:48Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-07T13:08:48Z"
+    }
+  },
+  "specDependencies": [
+    {
+      "specId": "review-followup-correctness",
+      "reason": "This fix extends the completed branch and callback effect proof.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "conditional-alias-method-reference-effects",
+    "integrate-main-pr15"
+  ]
+}

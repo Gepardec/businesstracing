@@ -240,5 +240,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T13:13:12Z"
+  },
+  {
+    "id": "implicit-field-local-callback-correctness",
+    "type": "bugfix",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T13:08:48Z"
   }
 ]
