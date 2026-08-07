@@ -259,6 +259,17 @@ Plexus Utils moved to the advisory-free compatible release 3.6.1, and Maven JAR 
 
 Completed one task. Mermaid and PlantUML now omit the exact `next` arrow label while preserving meaningful outcomes such as `next item`. The graph contract, opaque edge IDs, serialized outcomes, and execution-path logic remain unchanged. Focused renderer contracts, self-tracing, and repository integrity passed.
 
+### context-aware-operation-labels (bugfix) — 2026-08-07
+
+Completed all four tasks. Static labels now use attributed declaration types for short abbreviations,
+generic element types for container-named locals, and receiver plus operand context for attributed
+platform mutations. The production rules contain no Hogajama package or class knowledge.
+
+Four independent scheduling, pricing, access-control, and inventory applications pass. The complete
+Hogajama audit contains none of the known context-free forms. The exact pull-request gate passes with
+the external-release fixture and five complete Mega decisions from 420 source files. The short load
+processed 5,000 decisions with 0.216% p95 overhead and zero errors, mismatches, drops, or contamination.
+
 ### fix-jakarta-platform-call-completeness (bugfix) — 2026-08-07
 
 Completed one task. Static analysis now classifies `jakarta.*` owners as platform operations, in
@@ -310,3 +321,30 @@ now gets one gap decision and no contradictory no-result-effect decision.
 The focused analyzer contract, full pull-request gate, and all five pinned Mega graphs passed. The
 runtime proof selected all three strategy implementations, and the short load completed 5,000
 decisions at 1,000 RPS with no errors, mismatches, drops, or contamination.
+
+### context-label-symbol-correctness (bugfix) — 2026-08-07
+
+Completed all three tasks. Context-aware labels now bind local and receiver subjects to attributed
+compiler symbols and type mirrors. This preserves inferred `var` types and prevents a local subject
+from leaking to a field with the same spelling. Supported static `Collections` and `Arrays`
+mutations use their first argument as the changed subject and exclude it from the operand list.
+
+The focused static analyzer contract and the exact pull-request gate passed. The final load run
+processed 5,000 decisions with 0.253% p95 overhead and zero errors, mismatches, drops, or
+contamination. Five Mega graphs from 420 sources remained complete.
+
+### spring-petclinic-conformance (feature) — 2026-08-07
+
+Completed all three tasks. The project now uses pinned canonical Spring PetClinic source as a
+small teaching and conformance corpus. Three annotation-only changes produce a complete entity
+predicate graph, a complete domain lookup graph, and an application workflow with five explicit
+framework or persistence proof gaps.
+
+The harness compares three immutable semantic oracles, keeps generated diagrams under `target/`,
+and runs in pull-request and release gates. Its isolation test scans every production module,
+including JDBC storage. The graph report explains what Fachtracing proves and where it stops. The
+full local pull-request gate passed with both external corpora.
+
+### developer-graph-json-schema (feature) — 2026-08-07
+
+Completed both tasks. Fachtracing now generates closed JSON Schema Draft 2020-12 documents for developer graph V1 and V2 through a public Java API. Maven writes and links one matching schema beside the developer JSON, removes stale schema output safely, and documents the exact frontend handoff. The focused consumer contract and full repository verifier passed.

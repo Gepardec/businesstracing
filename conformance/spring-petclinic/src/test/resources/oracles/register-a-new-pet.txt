@@ -1,0 +1,41 @@
+decision: register a new pet
+completeness: INCOMPLETE
+node 1: ENTRY | Start
+node 2: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+node 3: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+node 4: COVERAGE_GAP | analysis incomplete: binary method contains an unsupported call, monitor, switch, or dynamic instruction
+node 5: PREDICATE | result has errors
+node 6: OUTCOME | Stop
+node 7: CHOICE | select decision result path
+node 8: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+node 9: COMPUTATION | evaluate is duplicate pet name violation
+node 10: COMPUTATION | derive message as ex message
+node 11: PREDICATE | message exists
+node 12: PREDICATE | message to lower case contains unique_owner_pet_name
+node 13: PREDICATE | is not duplicate pet name violation ex
+node 14: COMPUTATION | decision cannot continue
+node 15: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+edge 1 -> 2 | unresolved
+edge 2 -> 3 | unresolved
+edge 3 -> 4 | unresolved
+edge 4 -> 5 | next
+edge 5 -> 6 | true; returns views pets create or update form
+edge 5 -> 7 | false
+edge 7 -> 8 | unresolved
+edge 7 -> 9 | alternative result 1
+edge 9 -> 10 | next
+edge 11 -> 12 | true
+edge 10 -> 11 | next
+edge 12 -> 13 | true
+edge 11 -> 13 | false
+edge 12 -> 13 | false
+edge 13 -> 14 | true
+edge 14 -> 6 | fails
+edge 13 -> 15 | unresolved
+edge 15 -> 6 | returns views pets create or update form
+edge 8 -> 6 | returns redirect:/owners/{ownerId}
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision
+gap: binary method contains an unsupported call, monitor, switch, or dynamic instruction affects the decision
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision

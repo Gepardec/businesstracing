@@ -8,6 +8,7 @@ inclusion: always
 
 - Java library and analysis tooling designed to remain independent of application frameworks.
 - The reference application is `Gepardec/mega-backend` at commit `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`, using Java 21, Maven, Quarkus 3.37.1, CDI, and both layered and DDD/hexagonal code.
+- The teaching corpus is `spring-projects/spring-petclinic` at commit `88e37c15cf6fc8490b01bc3e8e2c800cec1ac272`, using Java 17 source, Maven, Spring Boot, Spring MVC, and Spring Data JPA.
 - Java 21 is the initial validation baseline; broader Java-version compatibility remains a separate compatibility decision.
 - Static analysis builds the reusable business-logic model; lightweight runtime instrumentation resolves actual execution paths and polymorphic calls.
 - Persistence is accessed through an adapter so the core trace protocol does not depend on a specific database.
@@ -21,5 +22,5 @@ inclusion: always
 
 ## Quality & Testing
 
-- Tests must cover analysis of representative Java control flow from `mega-backend`, runtime path correlation, polymorphic dispatch, serialization compatibility, and performance at 1,000 application requests per second.
+- Tests must cover representative Java control flow from both pinned external corpora, runtime path correlation, polymorphic dispatch, serialization compatibility, and performance at 1,000 application requests per second.
 - Performance validation must measure host-application overhead rather than only raw trace serialization throughput.

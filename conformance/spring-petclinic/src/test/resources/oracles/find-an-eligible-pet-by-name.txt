@@ -1,0 +1,27 @@
+decision: find an eligible pet by name
+completeness: COMPLETE
+node 1: ENTRY | Start
+node 2: CHOICE | for each pet in pets
+node 3: COMPUTATION | derive comp name as pet name
+node 4: PREDICATE | comp name exists
+node 5: PREDICATE | comp name equals ignore case name
+node 6: COMPUTATION | evaluate is new
+node 7: PREDICATE | value is absent
+node 8: PREDICATE | not ignore new
+node 9: PREDICATE | not pet is new
+node 10: OUTCOME | Stop
+edge 1 -> 2 | next
+edge 2 -> 3 | item
+edge 4 -> 5 | true
+edge 3 -> 4 | next
+edge 5 -> 6 | true
+edge 6 -> 7 | next
+edge 8 -> 9 | false
+edge 7 -> 8 | true
+edge 7 -> 8 | false
+edge 8 -> 10 | true; returns pet
+edge 9 -> 10 | true; returns pet
+edge 9 -> 2 | next item
+edge 4 -> 2 | next item
+edge 5 -> 2 | next item
+edge 2 -> 10 | done; returns absent

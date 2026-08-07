@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T11:52:03Z"
-_sourceHash: "a3a24ca9ac55f0debd2e09daa129148c7bcf81fe967af21dbb588537abe8fb57"
+_generatedAt: "2026-08-07T13:17:43Z"
+_sourceHash: "6b3e678f70a2186f0a5e0403141646599a2a6056e38b59e890a4b51324f61c8a"
 ---
 
 ## Project Structure Map
@@ -37,6 +37,11 @@ fachtracing/
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
     conformance-report.md
+  conformance/spring-petclinic/
+    annotation-overlay.patch
+    src/test/java/at/gepardec/fachtracing/conformance/
+    src/test/resources/oracles/
+    conformance-report.md
   docs/plantuml/
   scripts/
 ```
@@ -54,7 +59,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (67 files)
+#### fachtracing-engine/ (70 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -83,8 +88,12 @@ fachtracing/
   - flow-ordered direct reference alias roots for result-effect analysis
 - `src/main/java/at/gepardec/fachtracing/analysis/CancellationBoundaryScanner.java`
   - exact supported cancellation call-site discovery
+- `src/main/java/at/gepardec/fachtracing/analysis/CaughtThrowResolver.java`
+  - attributed compatible local catch resolution
 - `src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
   - `public final class StaticDecisionAnalyzer`
+- `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`
+  - use-site local reaching definitions
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessStatementRenderer.java`
   - `public final class BusinessStatementRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/DecisionExplanationProjector.java`
@@ -103,6 +112,8 @@ fachtracing/
   - shared observed-path edge resolution
 - `src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java`
   - `public final class DeveloperGraphExporter`
+- `src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphJsonSchema.java`
+  - `public final class DeveloperGraphJsonSchema`
 - `src/main/java/at/gepardec/fachtracing/mermaid/MermaidRenderer.java`
   - `public final class MermaidRenderer`
 - `src/main/java/at/gepardec/fachtracing/runtime/InvocationContext.java`
@@ -178,11 +189,20 @@ fachtracing/
 - `target/generated/` — five structural/semantic artifacts and one runtime explanation/execution pair
 - `selection.md`, `README.md`, and `conformance-report.md`
 
+#### conformance/spring-petclinic/ (10 files)
+
+- `annotation-overlay.patch` — three test-only annotations for the pinned canonical source
+- `src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicConformanceTest.java`
+- `src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java`
+- `src/test/resources/oracles/` — three immutable reviewed semantic graph oracles
+- `target/generated/` — disposable structural and semantic graph output
+- `selection.md`, `README.md`, and `conformance-report.md`
+
 #### root
 
 - `AGENTS.md`
 - `README.md`
 - `pom.xml`
-- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
+- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, `verify-spring-petclinic.sh`, and `verify-release.sh`
 - `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
 - `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`

@@ -41,8 +41,8 @@ node 38: PREDICATE | warning exists
 node 39: COMPUTATION | create journey warning
 node 40: COMPUTATION | journey warning
 node 41: COMPUTATION | set journey warning date
-node 42: COMPUTATION | evaluate add
-node 43: COMPUTATION | evaluate add
+node 42: COMPUTATION | add warning to new journey warning warning types
+node 43: COMPUTATION | add create journey warning with cur entry and warning to warnings
 node 44: COMPUTATION | invalid working location in journey rule
 node 45: COMPUTATION | derive sorted project entries
 node 46: COMPUTATION | warnings
@@ -66,8 +66,8 @@ node 63: PREDICATE | project entry working location does not equal working locat
 node 64: COMPUTATION | create journey warning
 node 65: COMPUTATION | journey warning
 node 66: COMPUTATION | set journey warning date
-node 67: COMPUTATION | evaluate add
-node 68: COMPUTATION | evaluate add
+node 67: COMPUTATION | add warning to new journey warning warning types
+node 68: COMPUTATION | add create journey warning with project entry and invalid working location to warnings
 node 69: COMPUTATION | location relevant set journey rule
 node 70: COMPUTATION | warnings
 node 71: CHOICE | for each project entry in project entries
@@ -76,8 +76,8 @@ node 73: PREDICATE | none of warnings match item date equals project entry date
 node 74: COMPUTATION | create journey warning
 node 75: COMPUTATION | journey warning
 node 76: COMPUTATION | set journey warning date
-node 77: COMPUTATION | evaluate add
-node 78: COMPUTATION | evaluate add
+node 77: COMPUTATION | add location relevant set to new journey warning warning types
+node 78: COMPUTATION | add create journey warning project entry to warnings
 node 79: COMPUTATION | derive calculated warnings
 node 80: COMPUTATION | evaluate add to journey warnings
 node 81: COMPUTATION | evaluate text for warning type
@@ -88,13 +88,13 @@ node 85: COMPUTATION | time warning type rule
 node 86: DISPATCH | select applicable decision rule
 node 87: COMPUTATION | journey warning type rule
 node 88: COMPUTATION | time warning type rule
-node 89: COMPUTATION | evaluate add
+node 89: COMPUTATION | add text for warning type warning type to new journey warning warnings
 node 90: COMPUTATION | derive journey warning
 node 91: PREDICATE | journey warning is present
-node 92: COMPUTATION | evaluate add all
-node 93: COMPUTATION | evaluate add all
-node 94: COMPUTATION | evaluate add
-node 95: COMPUTATION | evaluate sort
+node 92: COMPUTATION | add all new journey warning warnings to journey warning entry warnings
+node 93: COMPUTATION | add all new journey warning warning types to journey warning entry warning types
+node 94: COMPUTATION | add new journey warning to warnings
+node 95: COMPUTATION | sort warnings with comparator
 node 96: OUTCOME | Stop
 edge 1 -> 2 | next
 edge 2 -> 3 | next

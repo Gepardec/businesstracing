@@ -39,9 +39,21 @@ jobs:
         run: |
           git clone -q https://github.com/Gepardec/mega-backend.git "${{ runner.temp }}/fachtracing-mega-backend"
           git -C "${{ runner.temp }}/fachtracing-mega-backend" checkout -q 782cdec8dfe5b4062eb5c1859e6a9e53afe02770
+      - name: Restore pinned Spring PetClinic source
+        id: petclinic-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/fachtracing-spring-petclinic
+          key: spring-petclinic-${{ runner.os }}-88e37c15cf6fc8490b01bc3e8e2c800cec1ac272
+      - name: Prepare pinned Spring PetClinic source
+        if: steps.petclinic-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -q https://github.com/spring-projects/spring-petclinic.git "${{ runner.temp }}/fachtracing-spring-petclinic"
+          git -C "${{ runner.temp }}/fachtracing-spring-petclinic" checkout -q 88e37c15cf6fc8490b01bc3e8e2c800cec1ac272
       - name: Run cached pull-request verification
         env:
           MEGA_BACKEND_DIR: ${{ runner.temp }}/fachtracing-mega-backend
+          SPRING_PETCLINIC_DIR: ${{ runner.temp }}/fachtracing-spring-petclinic
         run: ./scripts/verify-pr.sh
 
   release-gate:
@@ -56,7 +68,20 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Run standard, external, Mega Backend, and 1,000-RPS gates
+      - name: Restore pinned Spring PetClinic source
+        id: release-petclinic-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/fachtracing-spring-petclinic
+          key: spring-petclinic-${{ runner.os }}-88e37c15cf6fc8490b01bc3e8e2c800cec1ac272
+      - name: Prepare pinned Spring PetClinic source
+        if: steps.release-petclinic-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -q https://github.com/spring-projects/spring-petclinic.git "${{ runner.temp }}/fachtracing-spring-petclinic"
+          git -C "${{ runner.temp }}/fachtracing-spring-petclinic" checkout -q 88e37c15cf6fc8490b01bc3e8e2c800cec1ac272
+      - name: Run standard, external, Mega Backend, PetClinic, and 1,000-RPS gates
+        env:
+          SPRING_PETCLINIC_DIR: ${{ runner.temp }}/fachtracing-spring-petclinic
         run: ./scripts/verify-release.sh
 
   postgres:
