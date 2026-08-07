@@ -174,17 +174,56 @@ roots independently of their location.
 - [x] Run the focused Maven plugin executable contract.
 - [x] Run `./scripts/verify.sh`.
 
+---
+
+### Task 5: Make processor fixture compilation deterministic
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** Task 4
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Stop Java 21 from discovering the fixture processor before its implementation class is compiled.
+
+**Implementation Steps:**
+
+1. Reproduce the clean fixture failure with Maven on Java 21.
+2. Disable processing only while the processor module compiles itself.
+3. Verify that the application still loads and executes the completed processor.
+4. Run the complete pull-request verifier.
+
+**Acceptance Criteria:**
+
+- [x] The processor module compiles from a clean state on Java 21.
+- [x] The application still generates `GeneratedApprovalPolicy.java`.
+- [x] Per-module and aggregate Fachtracing graphs still contain the generated decision.
+- [x] The complete pull-request verifier passes on Java 21.
+
+**Files to Modify:**
+
+- `fachtracing-maven-plugin/src/test/resources/it/annotation-processor/processor/pom.xml`
+- `.specops/annotation-processor-output-analysis/*`
+
+**Tests Required:**
+
+- [x] Run the clean annotation-processor fixture with Maven on Java 21.
+- [x] Run `./scripts/verify-pr.sh` with Maven on Java 21.
+
 ## Implementation Order
 
 1. Task 1 freezes the defect.
 2. Task 2 implements and tests the fix.
 3. Task 3 documents and verifies the general boundary.
 4. Task 4 closes the two review gaps before release.
+5. Task 5 fixes the Java 21 CI-only fixture bootstrap failure.
 
 ## Progress Tracking
 
-- Total Tasks: 4
-- Completed: 4
+- Total Tasks: 5
+- Completed: 5
 - In Progress: 0
 - Blocked: 0
 - Pending: 0

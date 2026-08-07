@@ -630,6 +630,16 @@
       "task": "Task 4",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T09:20:07Z"
+    },
+    {
+      "specId": "annotation-processor-output-analysis",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Disable processing while the fixture processor compiles itself",
+      "rationale": "Java 21 discovers service providers during compilation, before the fixture processor implementation exists.",
+      "task": "Task 5",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T09:29:15Z"
     }
   ]
 }

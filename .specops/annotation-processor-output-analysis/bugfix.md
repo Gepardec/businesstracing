@@ -111,6 +111,8 @@ inputs. Do not claim source support for AST-only transformations that produce no
   module-name value from the analysis compiler model.
 - WHEN the compiler uses a generated source directory outside the Maven build directory THE SYSTEM
   SHALL preserve generated provenance for developer graph V2.
+- WHEN the fixture processor module compiles on Java 21 THE SYSTEM SHALL disable annotation
+  processing until the processor class exists.
 
 ### Unchanged Behavior
 
@@ -132,6 +134,7 @@ inputs. Do not claim source support for AST-only transformations that produce no
 - [x] Standard repository verification passes.
 - [x] The complete set of supported `javac` processor-only arguments is removed.
 - [x] Configured generated source roots keep generated provenance outside the build directory.
+- [x] The annotation-processor fixture compiles from a clean state on Java 21.
 
 ## Team Conventions
 

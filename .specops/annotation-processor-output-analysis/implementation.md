@@ -2,12 +2,14 @@
 
 ## Summary
 
-Completed four tasks across two versions. The Maven adapter accepts projects that use annotation
+Completed five tasks across three versions. The Maven adapter accepts projects that use annotation
 processors, removes all Java 21 processor-only compiler controls from the analysis model, and keeps
 `-proc:none` in the private compiler task. Both Maven goals now use one generated-source discovery
 rule for developer provenance, including configured roots outside the Maven build directory. A real
-two-module processor fixture proves generated Java extraction through both Maven goals. Focused and
-standard verification pass. No new dependency or design deviation occurred.
+two-module processor fixture proves generated Java extraction through both Maven goals. The fixture
+processor disables processing only while it compiles itself, so clean builds behave consistently on
+Java 21 and later releases. Focused, standard, and complete PR verification pass. No new dependency
+or production-code change occurred.
 
 ## Phase 1 Context Summary
 
@@ -40,6 +42,8 @@ standard verification pass. No new dependency or design deviation occurred.
   the AST-only attribution limit.
 - Version 2 review: Both Maven documents remain accurate after location-independent generated-root
   provenance and complete Java 21 processor-option sanitization.
+- Version 3 CI review: No user documentation changed. The correction only affects bootstrap of the
+  test processor module.
 - `README.md`: Checked. It does not describe effective compiler-model details and needs no change.
 - `AGENTS.md`: Checked. No project instruction changed.
 
@@ -86,3 +90,12 @@ standard verification pass. No new dependency or design deviation occurred.
   was skipped because no connection is configured.
 - 2026-08-07T09:20:07Z: Version 2 implementation evaluation passed. Documentation, memory, metrics,
   repository map, and the run log were refreshed.
+- 2026-08-07T09:26:36Z: Reopened version 3 after the Java 21 pull-request job reproduced a clean
+  processor-module bootstrap failure. Task 5 anchor: disable processing only for compilation of the
+  processor implementation, then prove the application still executes it. No production code or
+  dependency changes are required.
+- 2026-08-07T09:29:15Z: Task 5 completed. The focused clean fixture and `./scripts/verify-pr.sh`
+  pass under Java 21. The application generates `GeneratedApprovalPolicy.java`; both Maven goal
+  paths extract its decision. External release activation and all five Mega graphs pass. The short
+  load completed 5,000 decisions at 1,000 RPS with 0.269% p95 overhead and zero errors, mismatches,
+  drops, or contamination. PostgreSQL was skipped because no connection is configured.

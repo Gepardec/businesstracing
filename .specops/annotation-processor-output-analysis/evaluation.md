@@ -65,3 +65,26 @@
 - Failures: None. PostgreSQL was skipped because no connection was configured.
 
 **Verdict:** PASS — 4 of 4 dimensions passed.
+
+### Iteration 3
+
+**Evaluated at:** 2026-08-07T09:29:15Z
+**Spec type:** bugfix
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Root Cause Accuracy | A clean Java 21 reproduction fails while compiling `decision-processor` because its copied service descriptor names an implementation class that is not compiled yet. The processor POM now uses `proc=none`. | Local Maven used Java 26, which hid the Java 21 discovery behavior; future fixture checks must set the required Java runtime explicitly. | 10 | 7 | Pass |
+| Fix Completeness | Processing is disabled only in the processor module. The application keeps `proc=full`, loads the compiled processor artifact, and generates the annotated source. | The fixture intentionally tests classpath processors; modular processor packaging remains outside this fixture. | 10 | 7 | Pass |
+| Regression Safety | No production code changed. Per-module and aggregate graph checks still find the generated business condition. | The explicit child-module compiler block adds small fixture configuration duplication. | 9 | 7 | Pass |
+| Test Verification | The clean fixture and complete PR gate pass with Maven on Java 21. External activation, five complete Mega graphs, and the short load gate pass. | PostgreSQL was skipped because no connection is configured; this fixture fix does not touch storage. | 10 | 7 | Pass |
+
+**Test Exercise Results:**
+
+- Tests run: yes
+- Test commands: clean annotation-processor fixture and `./scripts/verify-pr.sh` on Java 21
+- Pass count: All scripted gates passed
+- Fail count: 0
+- Failures: None. PostgreSQL was skipped because no connection was configured.
+
+**Verdict:** PASS — 4 of 4 dimensions passed.

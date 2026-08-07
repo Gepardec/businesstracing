@@ -68,6 +68,10 @@ The fixture contains a small processor module and an application module. Maven c
 processor, generates an annotated Java decision in the application, registers the generated source
 root, and then runs aggregate Fachtracing analysis in the same reactor session.
 
+The processor module disables annotation processing while it compiles its own implementation. The
+application module enables processing and loads the completed processor artifact. This keeps the
+fixture deterministic on Java 21 and later Java releases.
+
 ## Security Considerations
 
 - Data classification: Public build metadata and test source.

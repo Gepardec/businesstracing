@@ -3,7 +3,7 @@
     "id": "generic-tracing-walking-skeleton",
     "type": "feature",
     "status": "completed",
-    "version": 2,
+    "version": 3,
     "author": "lucostus",
     "updated": "2026-07-24T10:30:55Z",
     "partOf": "generic-java-fachtracing"
@@ -167,6 +167,6 @@
     "status": "completed",
     "version": 2,
     "author": "lucostus",
-    "updated": "2026-08-07T09:20:07Z"
+    "updated": "2026-08-07T09:29:15Z"
   }
 ]
