@@ -672,6 +672,36 @@
       "completedAt": "2026-08-07T08:48:18Z"
     },
     {
+      "specId": "context-aware-operation-labels",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Derive operation labels from attributed source structure",
+      "rationale": "Type, receiver, generic element, and operand context work across unknown applications without a reference-application dictionary.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:53:37Z"
+    },
+    {
+      "specId": "context-aware-operation-labels",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Limit ordered type-abbreviation expansion to four characters",
+      "rationale": "This supports names such as gc, cmp, and comp without replacing an already meaningful local such as warning.",
+      "task": "Task 3",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:53:37Z"
+    },
+    {
+      "specId": "context-aware-operation-labels",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Approve brownfield oracle changes only after topology stays stable",
+      "rationale": "The intended change improves operation labels; node counts, edge counts, and completeness must remain unchanged.",
+      "task": "Task 4",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:53:37Z"
+    },
+    {
       "specId": "fix-jakarta-platform-call-completeness",
       "specType": "bugfix",
       "number": 1,
@@ -740,6 +770,36 @@
       "task": "Task 1",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T12:56:31Z"
+    },
+    {
+      "specId": "context-label-symbol-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Bind label subjects to attributed compiler elements and type mirrors",
+      "rationale": "Compiler identity separates equal spellings by scope and exposes the inferred type behind var.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:35:12Z"
+    },
+    {
+      "specId": "context-label-symbol-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Use one static utility mutation classifier for slicing and labels",
+      "rationale": "Effect roots and business labels must name the same changed object.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:35:12Z"
+    },
+    {
+      "specId": "spring-petclinic-conformance",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Use three PetClinic decisions with increasing analysis depth",
+      "rationale": "The sequence teaches simple predicates, domain control flow, and explicit framework-boundary gaps.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:31:57Z"
     }
   ]
 }

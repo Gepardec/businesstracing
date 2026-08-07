@@ -39,3 +39,12 @@ configuration.
 - The legacy dependency direction is `rest -> service -> db`; legacy `domain` code remains isolated.
 - New `hexagon` code follows DDD and ports-and-adapters boundaries.
 - Existing source paths are reference inputs; Fachtracing remains a separate, framework-neutral library unless an integration task explicitly changes the reference repository.
+
+## Spring PetClinic Teaching Corpus
+
+- Source: `spring-projects/spring-petclinic`
+- Reviewed commit: `88e37c15cf6fc8490b01bc3e8e2c800cec1ac272`
+- Stack: Java 17 source, Maven, Spring Boot, Spring MVC, and Spring Data JPA
+- Production Java files at the reviewed commit: 30
+
+This smaller corpus explains generic extraction with three increasing levels of detail. Two source-visible decisions must be complete. One controller workflow must retain explicit gaps for result-relevant compiled framework and persistence effects. PetClinic-specific knowledge must remain in its conformance harness.

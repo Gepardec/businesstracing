@@ -3,7 +3,7 @@
   "decisionCategories": [
     {
       "category": "reference-application-isolation",
-      "count": 1,
+      "count": 2,
       "pattern": "Keep pinned brownfield knowledge in conformance artifacts; production gains only target-neutral construct support."
     },
     {
@@ -45,6 +45,11 @@
       "category": "build-artifact-boundary",
       "count": 1,
       "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
+    },
+    {
+      "category": "source-context-labeling",
+      "count": 2,
+      "pattern": "Derive business labels from attributed symbols, inferred types, receivers, generic elements, mutation targets, and operand structure; do not add reference-application vocabulary to production."
     },
     {
       "category": "platform-operation-classification",
@@ -99,9 +104,11 @@
         "fix-jakarta-platform-call-completeness",
         "conditional-alias-method-reference-effects",
         "fix-hogarama-aggregate-completeness",
-        "explicit-opaque-library-boundaries"
+        "explicit-opaque-library-boundaries",
+        "context-aware-operation-labels",
+        "context-label-symbol-correctness"
       ],
-      "count": 11
+      "count": 13
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -125,18 +132,18 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries"],
-      "count": 10
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness"],
+      "count": 12
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries"],
-      "count": 9
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness"],
+      "count": 11
     },
     {
       "file": "docs/java-capabilities.json",
-      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries"],
-      "count": 6
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels"],
+      "count": 7
     },
     {
       "file": "docs/maven-plugin.md",
@@ -197,6 +204,16 @@
     {
       "file": "scripts/verify-repository-integrity.sh",
       "specs": ["generic-application-readiness", "self-dogfood-business-tracing"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java",
+      "specs": ["stage-lifecycle-evidence-label-correctness", "context-aware-operation-labels"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/test/resources/fixtures/labels/ContextAwareLabelPolicy.java",
+      "specs": ["context-aware-operation-labels", "context-label-symbol-correctness"],
       "count": 2
     }
   ]

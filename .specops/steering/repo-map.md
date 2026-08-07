@@ -37,6 +37,11 @@ fachtracing/
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
     conformance-report.md
+  conformance/spring-petclinic/
+    annotation-overlay.patch
+    src/test/java/at/gepardec/fachtracing/conformance/
+    src/test/resources/oracles/
+    conformance-report.md
   docs/plantuml/
   scripts/
 ```
@@ -180,11 +185,20 @@ fachtracing/
 - `target/generated/` — five structural/semantic artifacts and one runtime explanation/execution pair
 - `selection.md`, `README.md`, and `conformance-report.md`
 
+#### conformance/spring-petclinic/ (10 files)
+
+- `annotation-overlay.patch` — three test-only annotations for the pinned canonical source
+- `src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicConformanceTest.java`
+- `src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java`
+- `src/test/resources/oracles/` — three immutable reviewed semantic graph oracles
+- `target/generated/` — disposable structural and semantic graph output
+- `selection.md`, `README.md`, and `conformance-report.md`
+
 #### root
 
 - `AGENTS.md`
 - `README.md`
 - `pom.xml`
-- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
+- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, `verify-spring-petclinic.sh`, and `verify-release.sh`
 - `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
 - `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`
