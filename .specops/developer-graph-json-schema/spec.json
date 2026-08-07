@@ -1,0 +1,55 @@
+{
+  "id": "developer-graph-json-schema",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T12:43:13Z",
+  "updated": "2026-08-07T12:55:38Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "developer-graph-json-export",
+    "maven-developer-graph-export"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 7
+      },
+      "evaluatedAt": "2026-08-07T12:43:13Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 8,
+        "codeQuality": 7,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-07T12:55:03Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3905,
+    "filesChanged": 18,
+    "linesAdded": 1079,
+    "linesRemoved": 12,
+    "tasksCompleted": 2,
+    "acceptanceCriteriaVerified": 19,
+    "specDurationMinutes": 13
+  }
+}
