@@ -37,6 +37,7 @@
     {"id":"lambdas-and-streams","status":"supported","contract":"StaticDecisionAnalyzerTest.streamPredicatesStayBusinessFacing"},
     {"id":"method-reference-callback-mutation","status":"supported","contract":"StaticDecisionAnalyzerTest.preservesConditionalAliasAndMethodReferenceEffects"},
     {"id":"wrapped-method-reference-callback-mutation","status":"supported","contract":"StaticDecisionAnalyzerTest.preservesConditionalAliasAndMethodReferenceEffects"},
+    {"id":"local-method-reference-callback-mutation","status":"supported","contract":"StaticDecisionAnalyzerTest.preservesConditionalAliasAndMethodReferenceEffects"},
     {"id":"mutating-predicate-method-reference-gap","status":"explicit-gap","contract":"StaticDecisionAnalyzerTest.preservesConditionalAliasAndMethodReferenceEffects"},
     {"id":"try-with-resources","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsTryWithResourcesIndependently"},
     {"id":"resource-close-result-gap","status":"explicit-gap","contract":"StaticDecisionAnalyzerTest.reportsResultRelevantResourceFailureIndependently"},

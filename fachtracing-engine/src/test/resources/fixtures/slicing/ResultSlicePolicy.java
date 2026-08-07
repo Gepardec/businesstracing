@@ -8,8 +8,11 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public final class ResultSlicePolicy {
+    private final List<String> targetField = new ArrayList<>();
+
     interface UnknownMutator {
         void update(Customer customer);
     }
@@ -125,6 +128,15 @@ public final class ResultSlicePolicy {
         return alias.isEmpty();
     }
 
+    @FachTracing("implicit field alias read")
+    public boolean implicitFieldAliasRead(boolean detached) {
+        List<String> alias = targetField;
+        if (detached) {
+            alias = new ArrayList<>();
+        }
+        return alias.isEmpty();
+    }
+
     @FachTracing("cast method reference mutation")
     public boolean castMethodReferenceMutation(List<String> candidates) {
         List<String> accepted = new ArrayList<>();
@@ -136,6 +148,13 @@ public final class ResultSlicePolicy {
     public boolean predicateMethodReferenceMutation(List<String> candidates) {
         List<String> accepted = new ArrayList<>();
         return candidates.stream().anyMatch(accepted::add);
+    }
+
+    @FachTracing("local predicate callback mutation")
+    public boolean localPredicateCallbackMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        Predicate<String> predicate = accepted::add;
+        return candidates.stream().anyMatch(predicate);
     }
 
     @FachTracing("unknown platform effect")

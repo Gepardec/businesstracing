@@ -510,6 +510,32 @@ public final class StaticDecisionAnalyzerTest {
             failures.add("mutating predicate reference remained false complete: "
                     + predicateReference.graph());
         }
+
+        var implicitField = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "implicit field alias read");
+        String implicitFieldLabels = implicitField.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        if (implicitField.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
+                || !implicitFieldLabels.contains("target field")
+                || !implicitFieldLabels.contains("detached")) {
+            failures.add("conditional alias read lost an implicit field: "
+                    + implicitField.graph());
+        }
+
+        var localCallback = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "local predicate callback mutation");
+        String localCallbackLabels = localCallback.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        boolean localCallbackGap = localCallback.graph().completeness()
+                == BusinessDecisionGraph.Completeness.INCOMPLETE
+                && localCallbackLabels.contains("add candidates to accepted")
+                && localCallback.graph().coverageGaps().stream().anyMatch(gap ->
+                        gap.description().contains("Boolean result"))
+                && localCallback.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0);
+        if (!localCallbackGap) {
+            failures.add("local predicate callback remained false complete: "
+                    + localCallback.graph());
+        }
         assert failures.isEmpty() : failures;
     }
 

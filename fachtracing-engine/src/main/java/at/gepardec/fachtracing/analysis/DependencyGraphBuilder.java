@@ -7,8 +7,10 @@ import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.IfTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
 
@@ -28,12 +30,21 @@ public final class DependencyGraphBuilder {
     public MethodDependencies build(
             MethodTree method,
             Function<MethodInvocationTree, CallEffects> callEffects) {
+        return build(method, Set.of(), (call, definitions) -> callEffects.apply(call));
+    }
+
+    /** Extracts dependencies with attributed names that can identify caller-visible state. */
+    public MethodDependencies build(
+            MethodTree method,
+            Set<String> attributedStateRoots,
+            CallEffectResolver callEffects) {
         var definitions = new LocalDefinitionResolver();
         var identifiers = new IdentityHashMap<Tree, Set<String>>();
         var parents = new IdentityHashMap<Tree, Tree>();
         var returns = new ArrayList<ReturnTree>();
         var effectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
         var possibleEffectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
+        var invocationUsesByDefinition = new IdentityHashMap<Tree, List<MethodInvocationTree>>();
         var aliases = new LocalAliasResolver();
 
         new TreeScanner<Void, Tree>() {
@@ -73,7 +84,8 @@ public final class DependencyGraphBuilder {
                 aliases.replaceWith(LocalAliasResolver.merge(List.of(thenState, elseState)));
                 definitions.replaceWith(LocalDefinitionResolver.mergeBranches(
                         definitionsBefore, thenDefinitions, elseDefinitions,
-                        branchDependentAliases(method, definitionsBefore, thenState, elseState)));
+                        branchDependentAliases(method, attributedStateRoots,
+                                definitionsBefore, thenState, elseState)));
                 return null;
             }
 
@@ -90,7 +102,9 @@ public final class DependencyGraphBuilder {
             }
 
             @Override public Void visitMethodInvocation(MethodInvocationTree node, Tree parent) {
-                CallEffects effects = callEffects.apply(node);
+                Map<String, List<Tree>> activeDefinitions = definitions.snapshot();
+                recordInvocationDefinitionUses(node, activeDefinitions, invocationUsesByDefinition);
+                CallEffects effects = callEffects.resolve(node, activeDefinitions);
                 effects.provenWrites().forEach(identifier -> {
                     LocalAliasResolver.Resolution resolution = aliases.resolution(identifier);
                     resolution.provedRoots().forEach(root -> effectsByIdentifier
@@ -122,11 +136,39 @@ public final class DependencyGraphBuilder {
         possibleEffectsByIdentifier.forEach((name, effects) ->
                 immutablePossibleEffects.put(name, List.copyOf(effects)));
         return new MethodDependencies(method, returns, activeDefinitions, identifiers, parents,
-                immutableEffects, immutablePossibleEffects);
+                immutableEffects, immutablePossibleEffects, invocationUsesByDefinition);
+    }
+
+    private static void recordInvocationDefinitionUses(
+            MethodInvocationTree invocation,
+            Map<String, List<Tree>> definitions,
+            Map<Tree, List<MethodInvocationTree>> invocationUsesByDefinition) {
+        for (Tree argument : invocation.getArguments()) {
+            Tree unwrapped = unwrap(argument);
+            if (!(unwrapped instanceof IdentifierTree identifier)) continue;
+            for (Tree definition : definitions.getOrDefault(identifier.getName().toString(), List.of())) {
+                invocationUsesByDefinition.computeIfAbsent(definition, ignored -> new ArrayList<>())
+                        .add(invocation);
+            }
+        }
+    }
+
+    private static Tree unwrap(Tree tree) {
+        Tree current = tree;
+        while (true) {
+            if (current instanceof ParenthesizedTree parenthesized) {
+                current = parenthesized.getExpression();
+            } else if (current instanceof TypeCastTree cast) {
+                current = cast.getExpression();
+            } else {
+                return current;
+            }
+        }
     }
 
     private static Set<String> branchDependentAliases(
             MethodTree method,
+            Set<String> attributedStateRoots,
             LocalDefinitionResolver before,
             LocalAliasResolver thenState,
             LocalAliasResolver elseState) {
@@ -134,6 +176,7 @@ public final class DependencyGraphBuilder {
         method.getParameters().forEach(parameter -> knownStateRoots.add(parameter.getName().toString()));
         knownStateRoots.add("this");
         knownStateRoots.add("super");
+        knownStateRoots.addAll(attributedStateRoots);
         var aliases = new LinkedHashSet<>(LocalAliasResolver.changedBindings(thenState, elseState));
         aliases.removeIf(alias -> {
             var roots = new LinkedHashSet<>(thenState.resolution(alias).allRoots());
@@ -158,6 +201,13 @@ public final class DependencyGraphBuilder {
         public static CallEffects none() { return new CallEffects(Set.of(), Set.of()); }
     }
 
+    /** Resolves call effects with the local definitions that are active at the call site. */
+    @FunctionalInterface
+    public interface CallEffectResolver {
+        /** Returns proven and possible writes for one call. */
+        CallEffects resolve(MethodInvocationTree call, Map<String, List<Tree>> activeDefinitions);
+    }
+
     /** Compiler-tree dependence input for backward slicing. */
     public record MethodDependencies(
             MethodTree method,
@@ -166,7 +216,8 @@ public final class DependencyGraphBuilder {
             Map<Tree, Set<String>> identifierUses,
             Map<Tree, Tree> parents,
             Map<String, List<Tree>> effectsByIdentifier,
-            Map<String, List<Tree>> possibleEffectsByIdentifier) {
+            Map<String, List<Tree>> possibleEffectsByIdentifier,
+            Map<Tree, List<MethodInvocationTree>> invocationUsesByDefinition) {
         /** Creates defensive collections while retaining tree object identity. */
         public MethodDependencies {
             returns = List.copyOf(returns);
@@ -178,6 +229,10 @@ public final class DependencyGraphBuilder {
             parents = Map.copyOf(parents);
             effectsByIdentifier = Map.copyOf(effectsByIdentifier);
             possibleEffectsByIdentifier = Map.copyOf(possibleEffectsByIdentifier);
+            var immutableUses = new IdentityHashMap<Tree, List<MethodInvocationTree>>();
+            invocationUsesByDefinition.forEach((definition, uses) ->
+                    immutableUses.put(definition, List.copyOf(uses)));
+            invocationUsesByDefinition = Collections.unmodifiableMap(immutableUses);
         }
     }
 
