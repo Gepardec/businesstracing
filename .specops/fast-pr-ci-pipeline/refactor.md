@@ -42,14 +42,14 @@ fast change feedback from the clean release proof.
 
 ## Acceptance Criteria
 
-- [ ] A workflow contract fails against the old pull-request release layout.
-- [ ] Pull requests select only the cached fast gate and PostgreSQL job.
-- [ ] Main, release tags, schedule, and manual events select the full release gate.
-- [ ] Superseded pull-request runs use `cancel-in-progress`.
-- [ ] Fast verification uses Maven and pinned Mega checkout caches.
-- [ ] Mega conformance can reuse a completed root build without changing its default standalone use.
-- [ ] Standard verification and pinned Mega conformance pass.
-- [ ] Workflow documentation explains fast versus full evidence.
+- [x] A workflow contract fails against the old pull-request release layout.
+- [x] Pull requests select only the cached fast gate and PostgreSQL job.
+- [x] Main, release tags, schedule, and manual events select the full release gate.
+- [x] Superseded pull-request runs use `cancel-in-progress`.
+- [x] Fast verification uses Maven and pinned Mega checkout caches.
+- [x] Mega conformance can reuse a completed root build without changing its default standalone use.
+- [x] Standard verification and pinned Mega conformance pass.
+- [x] Workflow documentation explains fast versus full evidence.
 
 ## Scope Assessment
 

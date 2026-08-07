@@ -33,8 +33,8 @@
     },
     {
       "category": "release-gate-integrity",
-      "count": 3,
-      "pattern": "Capture producer output before presentation, preserve its exact status, give required checks a bounded verified time budget, and print success only after every release sub-gate passes."
+      "count": 4,
+      "pattern": "Separate fast cached feedback from clean release proof, preserve exact status, give required checks a bounded verified time budget, and print success only after every required sub-gate passes."
     },
     {
       "category": "static-effect-proof",
@@ -105,8 +105,8 @@
     },
     {
       "file": "scripts/verify.sh",
-      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository"],
-      "count": 5
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository", "fast-pr-ci-pipeline"],
+      "count": 6
     }
   ]
 }

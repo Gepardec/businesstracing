@@ -560,6 +560,36 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T07:09:58Z"
+    },
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Separate fast PR evidence from full release evidence",
+      "rationale": "A 660-second measurement cannot give two-to-three-minute pull-request feedback.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:41:08Z"
+    },
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Cache dependencies and pinned source only",
+      "rationale": "This reduces setup time without accepting stale graphs or Fachtracing binaries.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:41:08Z"
+    },
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "specType": "refactor",
+      "number": 3,
+      "decision": "Cancel only superseded pull-request runs",
+      "rationale": "Obsolete feedback can stop, but release evidence must run to completion.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:41:08Z"
     }
   ]
 }

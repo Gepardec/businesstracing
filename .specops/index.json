@@ -146,10 +146,10 @@
   {
     "id": "fast-pr-ci-pipeline",
     "type": "refactor",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-07T07:29:28Z",
+    "updated": "2026-08-07T07:41:08Z",
     "partOf": "generic-java-fachtracing"
   }
 ]

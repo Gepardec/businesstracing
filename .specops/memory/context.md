@@ -208,3 +208,10 @@ parameter mutations.
 Release commit `e5365f26bdbb52a12f9bb571dcaf8e0e128fc7d4` passed source-free activation, five
 complete Mega graphs from 420 source files, and 600,000 decisions at 1,000 RPS with 0.059% p95
 overhead and zero errors, mismatches, drops, or contamination.
+
+### fast-pr-ci-pipeline (refactor) — 2026-08-07
+
+Completed all three tasks. Pull requests now use cached Maven dependencies and an immutable pinned
+Mega checkout for standard, external activation, short-load, five-graph Mega, and PostgreSQL checks.
+The cold hosted PR job passed in 3 minutes 12 seconds. The unchanged clean 600-second release gate
+runs on `main`, version tags, nightly schedules, and manual dispatches.

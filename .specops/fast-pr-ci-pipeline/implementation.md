@@ -30,3 +30,29 @@
 - 2026-08-07 07:36 UTC: Added the fast wrapper, opt-in Mega build reuse, cached PR job, full-gate
   event routing, and PR-only cancellation. Both workflow contracts pass. Task 2 is complete and
   Task 3 is in progress.
+- 2026-08-07 07:40 UTC: Local fast verification passed in about 74 seconds. It produced five
+  complete Mega graphs and 5,000 traced decisions with zero errors, mismatches, drops, or
+  contamination.
+- 2026-08-07 07:40 UTC: The first hosted run passed. The cold PR job took 3 minutes 12 seconds,
+  including runner and cache setup; its verification step took 2 minutes 51 seconds. PostgreSQL
+  passed in 55 seconds, and the full release job was correctly skipped.
+
+## Phase 3 Completion Summary
+
+Completed all three tasks. The implementation adds a cached pull-request path and keeps the clean,
+600-second release proof on trusted release events. It changes 16 files, adds two executable POSIX
+scripts, and has no design deviation. Local and hosted verification passed.
+
+## Summary
+
+All three tasks are complete. Pull requests now run the standard, external activation, short load,
+five-graph Mega, and PostgreSQL checks without the 600-second release measurement. The full isolated
+gate still runs for `main`, version tags, nightly schedules, and manual runs. The cold hosted PR gate
+passed in 3 minutes 12 seconds, compared with the prior approximately 15-minute path.
+
+## Documentation Review
+
+| File | Status | Result |
+| --- | --- | --- |
+| `docs/release-evidence.md` | Updated | Explains cached PR evidence and isolated full-release evidence. |
+| `README.md` | Up-to-date | It does not describe CI event routing. |
