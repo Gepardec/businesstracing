@@ -188,10 +188,10 @@
   {
     "id": "conditional-alias-method-reference-effects",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-07T11:28:15Z"
+    "updated": "2026-08-07T11:53:56Z"
   },
   {
     "id": "fix-jakarta-platform-call-completeness",

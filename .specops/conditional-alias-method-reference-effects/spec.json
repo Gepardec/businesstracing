@@ -1,10 +1,10 @@
 {
   "id": "conditional-alias-method-reference-effects",
   "type": "bugfix",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-07T11:25:46Z",
-  "updated": "2026-08-07T11:28:15Z",
+  "updated": "2026-08-07T11:53:56Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -25,6 +25,17 @@
         "taskCoverage": 8
       },
       "evaluatedAt": "2026-08-07T11:25:46Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T11:53:56Z"
     }
   },
   "specDependencies": [
@@ -37,5 +48,14 @@
   "relatedSpecs": [
     "outcome-evidence-cancellation-slice-label-correctness",
     "generic-java-extractor-completion"
-  ]
+  ],
+  "metrics": {
+    "durationMinutes": 28,
+    "specArtifactTokensEstimate": 6266,
+    "filesChanged": 21,
+    "linesAdded": 1034,
+    "linesRemoved": 60,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 6
+  }
 }

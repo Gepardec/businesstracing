@@ -2,6 +2,11 @@
 
 ## Summary
 
+Completed the conditional-alias and bound method-reference effect fix. Conditional branch merges
+now preserve possible external roots and fail closed. Bound collection method references now show
+their source-to-target transfer. The focused analyzer contract, the full local pull-request gate,
+and both required hosted checks pass.
+
 ## Phase 1 Context Summary
 
 - Config: SpecOps 1.8.0 defaults; `.specops.json` is absent; task tracking and spec review are off.
@@ -23,6 +28,15 @@
 - Tasks: Add failing tests, implement the shared effect correction, then verify and publish.
 - Dependencies: No new package; the required prior effect-model spec is completed.
 
+## Phase 3 Completion Summary
+
+- Added failing contracts for both reported false-complete graphs before production edits.
+- Added proved and possible alias roots with conservative `if` branch merging.
+- Reused normal receiver mutation contracts for bound method-reference callbacks.
+- Added capability IDs and updated the supported Java construct guide.
+- Kept direct aliases, detached aliases, lambdas, predicate references, and five Mega graphs stable.
+- Passed the full local pull-request gate and hosted `pr-gate` and `postgres` checks.
+
 ## Decision Log
 
 | # | Decision | Rationale | Task | Timestamp |
@@ -34,13 +48,20 @@
 
 | Planned | Actual | Reason | Task |
 | --- | --- | --- | --- |
+| Static analyzer changes only | Added a separate shutdown timing correction after the first hosted run | Current `main` left only 100 ms for worker cancellation. The loaded hosted runner failed the same bounded-shutdown contract twice. | 3 |
 
 ## Blockers Encountered
 
 | Blocker | Resolution | Impact | Task |
 | --- | --- | --- | --- |
+| The first hosted `pr-gate` failed twice in the existing bounded-shutdown contract. | Reserved half of the configured shutdown bound for cancellation, passed the protocol test 20 times, and reran the full gate. | One separate corrective commit; no analyzer scope change. | 3 |
 
 ## Documentation Review
+
+- `README.md`: Checked. No update is required because setup and configuration did not change.
+- `docs/supported-java-constructs.md`: Updated with conditional alias and bound callback behavior.
+- `docs/java-capabilities.json`: Updated with executable capability contracts for both fixes.
+- `docs/maven-plugin.md`: Checked. No update is required because Maven goal behavior did not change.
 
 ## Session Log
 
@@ -63,3 +84,11 @@
   and five complete Mega graphs from 420 source files. The short load had 0.604% p95 overhead and
   zero errors, mismatches, drops, or contamination. PostgreSQL was skipped because no connection
   was configured.
+- 2026-08-07T11:40:00Z: Merged current `main` to resolve the draft pull request conflict. The
+  focused analyzer contract and full local pull-request gate passed after the merge.
+- 2026-08-07T11:46:11Z: The hosted PR gate failed twice in the bounded delivery shutdown contract
+  from current `main`. Both failures occurred after the analyzer and capability stages passed.
+- 2026-08-07T11:51:00Z: Reserved half of the shutdown bound for worker cancellation. The affected
+  protocol test passed 20 consecutive runs, and the full local pull-request gate passed again.
+- 2026-08-07T11:53:56Z: Task 3 completed. Draft PR #11 is published. Hosted `pr-gate` and
+  `postgres` checks pass; the release-only job is correctly skipped for pull requests.

@@ -89,7 +89,7 @@ with existing mutation contracts.
 
 ### Task 3: Verify, document, and publish
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 2
 **Priority:** High
@@ -111,8 +111,8 @@ push, open the pull request, and verify hosted CI.
 
 - [x] Documentation states the supported alias and callback boundary.
 - [x] Local pull-request verification passes.
-- [ ] The branch is committed, pushed, and has a pull request.
-- [ ] Required hosted CI checks pass.
+- [x] The branch is committed, pushed, and has a pull request.
+- [x] Required hosted CI checks pass.
 
 **Files to Modify:**
 
@@ -125,7 +125,7 @@ push, open the pull request, and verify hosted CI.
 **Tests Required:**
 
 - [x] `scripts/verify-pr.sh` passes.
-- [ ] Required GitHub Actions checks pass.
+- [x] Required GitHub Actions checks pass.
 
 ## Implementation Order
 
@@ -136,7 +136,7 @@ push, open the pull request, and verify hosted CI.
 ## Progress Tracking
 
 - Total Tasks: 3
-- Completed: 2
-- In Progress: 1
+- Completed: 3
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

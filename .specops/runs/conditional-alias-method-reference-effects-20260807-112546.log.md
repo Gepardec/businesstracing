@@ -1,9 +1,9 @@
 ---
 specId: "conditional-alias-method-reference-effects"
 startedAt: "2026-08-07T11:25:46Z"
-completedAt: null
-finalStatus: "running"
-phases: [1, 2, 3]
+completedAt: "2026-08-07T11:53:56Z"
+finalStatus: "completed"
+phases: [1, 2, 3, 4]
 ---
 
 # Run Log: Conditional Alias and Method-Reference Effects
@@ -50,3 +50,27 @@ phases: [1, 2, 3]
 ### [11:36:57] Step 4: Record local pull-request verification
 
 - Result: PASS. Five Mega graphs are complete; the short load completed 5,000 decisions with zero correctness or delivery failures.
+
+### [11:40:00] Step 5: Merge current main and publish
+
+- Action: Preserved both documentation and SpecOps index additions during the merge, reran the
+  focused analyzer contract and full local gate, then pushed draft PR #11.
+- Result: The branch became mergeable and GitHub Actions started.
+
+### [11:46:11] Step 6: Correct the hosted shutdown failure
+
+- Result: The hosted analyzer stages and PostgreSQL job passed, but the existing bounded-shutdown
+  contract failed twice because current `main` reserved only 100 ms for worker cancellation.
+- Action: Kept the correction in a separate commit, reserved half of the configured bound for
+  cancellation, passed 20 protocol-test iterations, and passed the full local gate.
+
+## Phase 4: Finalize
+
+### [11:53:56] Step 1: Evaluate and complete
+
+- Result: PASS. All implementation-evaluation dimensions meet the 7/10 threshold.
+- Result: Hosted `pr-gate` and `postgres` checks pass. The pull-request release job is skipped by
+  design.
+- Action: Completed all three tasks, six acceptance criteria, memory, metrics, documentation
+  review, and the run record. The repository map remains fresh because the source-file set did not
+  change.

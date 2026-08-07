@@ -142,12 +142,12 @@ platform and source mutation contracts used for normal calls.
 
 ## Acceptance Criteria
 
-- [ ] Regression Risk Analysis is complete for the high severity.
-- [ ] Both false-complete regressions have failing pre-fix tests.
-- [ ] Conditional aliases preserve all possible external roots or create a coverage gap.
-- [ ] Bound mutating method-reference callbacks preserve result-relevant transfers.
-- [ ] All Must-Test unchanged behaviors pass.
-- [ ] No new dependency or target-specific rule is added.
+- [x] Regression Risk Analysis is complete for the high severity.
+- [x] Both false-complete regressions have failing pre-fix tests.
+- [x] Conditional aliases preserve all possible external roots or create a coverage gap.
+- [x] Bound mutating method-reference callbacks preserve result-relevant transfers.
+- [x] All Must-Test unchanged behaviors pass.
+- [x] No new dependency or target-specific rule is added.
 
 ## Team Conventions
 
