@@ -16,6 +16,7 @@ public final class SpringPetClinicIsolationTest {
                 root.resolve("fachtracing-engine/src/main"),
                 root.resolve("fachtracing-agent/src/main"),
                 root.resolve("fachtracing-maven-plugin/src/main"),
+                root.resolve("fachtracing-storage-jdbc/src/main"),
                 root.resolve("pom.xml"));
         for (Path path : guarded) {
             if (Files.isDirectory(path)) {

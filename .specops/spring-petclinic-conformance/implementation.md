@@ -92,3 +92,11 @@ The full pull-request gate passed. It included all project tests, external relea
 | `.specops/steering/product.md` | Updated | Records both external corpora as validation inputs. |
 | `.specops/steering/tech.md` | Updated | Records the PetClinic stack and test duty. |
 | `.specops/steering/reference-application.md` | Updated | Records the pin, purpose, and proof boundary. |
+
+## Review Remediation
+
+### 2026-08-07 — Complete production isolation coverage
+
+- Review found that the isolation test did not scan the JDBC storage module.
+- Added `fachtracing-storage-jdbc/src/main` to the guarded production paths.
+- The focused PetClinic and repository integrity gates passed after the correction.

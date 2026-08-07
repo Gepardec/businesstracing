@@ -1,7 +1,7 @@
 ---
 specId: "spring-petclinic-conformance"
 startedAt: "2026-08-07T12:15:55Z"
-completedAt: "2026-08-07T12:31:57Z"
+completedAt: "2026-08-07T12:49:29Z"
 finalStatus: "completed"
 phases: [1, 2, 3, 4]
 ---
@@ -65,3 +65,9 @@ phases: [1, 2, 3, 4]
 - Result: All three tasks and 23 acceptance or test criteria passed.
 - Edit: project memory and repository map.
 - Result: Specification status changed to completed.
+
+### [12:49:29] Step 2: Address review feedback
+
+- Finding: The isolation test omitted the JDBC storage production module.
+- Edit: Added `fachtracing-storage-jdbc/src/main` to the guarded paths.
+- Result: PetClinic conformance and repository integrity passed.

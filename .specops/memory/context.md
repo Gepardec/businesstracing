@@ -296,5 +296,6 @@ predicate graph, a complete domain lookup graph, and an application workflow wit
 framework or persistence proof gaps.
 
 The harness compares three immutable semantic oracles, keeps generated diagrams under `target/`,
-and runs in pull-request and release gates. The graph report explains what Fachtracing proves and
-where it stops. The full local pull-request gate passed with both external corpora.
+and runs in pull-request and release gates. Its isolation test scans every production module,
+including JDBC storage. The graph report explains what Fachtracing proves and where it stops. The
+full local pull-request gate passed with both external corpora.
