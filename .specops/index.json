@@ -200,5 +200,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T11:25:35Z"
+  },
+  {
+    "id": "spring-petclinic-conformance",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T12:31:57Z"
   }
 ]

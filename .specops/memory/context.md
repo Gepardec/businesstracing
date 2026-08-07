@@ -287,3 +287,14 @@ Draft PR #11 passed the hosted pull-request and PostgreSQL checks. A separate sh
 commit reserves half of the configured close bound for cancellation after the prior 100 ms reserve
 failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
 local runs and the complete local gate.
+
+### spring-petclinic-conformance (feature) — 2026-08-07
+
+Completed all three tasks. The project now uses pinned canonical Spring PetClinic source as a
+small teaching and conformance corpus. Three annotation-only changes produce a complete entity
+predicate graph, a complete domain lookup graph, and an application workflow with five explicit
+framework or persistence proof gaps.
+
+The harness compares three immutable semantic oracles, keeps generated diagrams under `target/`,
+and runs in pull-request and release gates. The graph report explains what Fachtracing proves and
+where it stops. The full local pull-request gate passed with both external corpora.

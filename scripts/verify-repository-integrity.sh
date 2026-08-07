@@ -31,6 +31,7 @@ require_tracked scripts/verify-pr.sh
 require_tracked scripts/verify-release.sh
 require_tracked scripts/verify-release-gates.sh
 require_tracked scripts/verify-mega-backend.sh
+require_tracked scripts/verify-spring-petclinic.sh
 require_tracked scripts/verify-postgres.sh
 require_tracked .github/workflows/verify.yml
 require_tracked conformance/mega-backend/README.md
@@ -40,10 +41,19 @@ require_tracked conformance/mega-backend/conformance-report.md
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java
 require_tracked conformance/mega-backend/src/test/resources/oracles/README.md
+require_tracked conformance/spring-petclinic/README.md
+require_tracked conformance/spring-petclinic/selection.md
+require_tracked conformance/spring-petclinic/annotation-overlay.patch
+require_tracked conformance/spring-petclinic/conformance-report.md
+require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicConformanceTest.java
+require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java
+require_tracked conformance/spring-petclinic/src/test/resources/oracles/README.md
 require_tracked docs/self-tracing.md
 
 test -z "$(git ls-files conformance/mega-backend/generated)" \
   || fail "generated Mega artifacts must not be tracked: use conformance/mega-backend/target/generated"
+test -z "$(git ls-files conformance/spring-petclinic/generated)" \
+  || fail "generated PetClinic artifacts must not be tracked: use conformance/spring-petclinic/target/generated"
 
 for oracle in \
   authorize-clarification-resolution \
@@ -72,6 +82,21 @@ check_hash 0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38 \
   conformance/mega-backend/src/test/resources/oracles/determine-project-activity-in-month.txt
 check_hash 1684955f4aa81930040a8d9df919be77df0f953f1fd4a419d70b6621a9f6c36e \
   conformance/mega-backend/src/test/resources/oracles/validate-journey-direction.txt
+
+for oracle in \
+  determine-whether-an-entity-is-new \
+  find-an-eligible-pet-by-name \
+  register-a-new-pet
+do
+  require_tracked "conformance/spring-petclinic/src/test/resources/oracles/$oracle.txt"
+done
+
+check_hash 72c426152fd2e4aea025d4758da7d85faf3b7a1ac47824ba9f56d83df247b5b0 \
+  conformance/spring-petclinic/src/test/resources/oracles/determine-whether-an-entity-is-new.txt
+check_hash ccb613cd380454d5aaf939c210adab10d40e89fdbda312fe985a436bc13bed9d \
+  conformance/spring-petclinic/src/test/resources/oracles/find-an-eligible-pet-by-name.txt
+check_hash 888019a73253cb98abad87b79867da763bc833abe002e386fb6dad572c8e9a85 \
+  conformance/spring-petclinic/src/test/resources/oracles/register-a-new-pet.txt
 
 for spec_file in .specops/*/spec.json
 do

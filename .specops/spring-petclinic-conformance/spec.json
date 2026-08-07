@@ -1,0 +1,55 @@
+{
+  "id": "spring-petclinic-conformance",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T12:15:55Z",
+  "updated": "2026-08-07T12:31:57Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "generic-application-readiness",
+    "untrack-mega-generated-artifacts"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T12:19:57Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 9,
+        "codeQuality": 9,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-07T12:31:57Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 4700,
+    "filesChanged": 34,
+    "linesAdded": 1204,
+    "linesRemoved": 7,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 23,
+    "specDurationMinutes": 16
+  }
+}
