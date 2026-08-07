@@ -63,7 +63,10 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location |
 
 The context-aware operation-label contract compiles independent scheduling, pricing, access-control,
-and inventory sources. The contract does not depend on a reference-application package or class.
+and inventory sources. It uses attributed declaration symbols and types for `var`, generic types,
+and identifiers that shadow another declaration. Supported static `Collections` and `Arrays`
+mutations name their first argument as the changed object. The contract does not depend on a
+reference-application package or class.
 
 ## Project and compiler boundary
 

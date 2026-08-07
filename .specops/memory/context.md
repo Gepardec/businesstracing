@@ -298,3 +298,14 @@ Draft PR #11 passed the hosted pull-request and PostgreSQL checks. A separate sh
 commit reserves half of the configured close bound for cancellation after the prior 100 ms reserve
 failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
 local runs and the complete local gate.
+
+### context-label-symbol-correctness (bugfix) — 2026-08-07
+
+Completed all three tasks. Context-aware labels now bind local and receiver subjects to attributed
+compiler symbols and type mirrors. This preserves inferred `var` types and prevents a local subject
+from leaking to a field with the same spelling. Supported static `Collections` and `Arrays`
+mutations use their first argument as the changed subject and exclude it from the operand list.
+
+The focused static analyzer contract and the exact pull-request gate passed. The final load run
+processed 5,000 decisions with 0.253% p95 overhead and zero errors, mismatches, drops, or
+contamination. Five Mega graphs from 420 sources remained complete.

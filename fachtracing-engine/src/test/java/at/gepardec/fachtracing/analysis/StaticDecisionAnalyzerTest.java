@@ -139,7 +139,39 @@ public final class StaticDecisionAnalyzerTest {
         assert !labels.contains("list") : labels;
     }
 
+    private static void usesAttributedTypeForInferredLocalLabels() {
+        var result = analyzeLabel("labels/ContextAwareLabelPolicy.java", "inferred calendar");
+        List<String> labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert labels.contains("gregorian calendar") : labels;
+        assert labels.contains("set gregorian calendar hour of day to 0") : labels;
+        assert !labels.contains("item") : labels;
+        assert labels.stream().noneMatch(label -> label.startsWith("set item ")) : labels;
+    }
+
+    private static void usesMutatedArgumentForStaticUtilityLabels() {
+        List<String> sortLabels = analyzeLabel("labels/ContextAwareLabelPolicy.java", "static sort")
+                .graph().nodes().stream().map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert sortLabels.contains("sort warnings") : sortLabels;
+        assert !sortLabels.contains("sort collections with warnings") : sortLabels;
+
+        List<String> fillLabels = analyzeLabel("labels/ContextAwareLabelPolicy.java", "static fill")
+                .graph().nodes().stream().map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert fillLabels.contains("fill buffer with value") : fillLabels;
+        assert !fillLabels.contains("fill arrays with buffer and value") : fillLabels;
+    }
+
+    private static void keepsReceiverSubjectsBoundToTheirDeclaration() {
+        List<String> labels = analyzeLabel("labels/ContextAwareLabelPolicy.java", "scoped receiver")
+                .graph().nodes().stream().map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert labels.contains("add sensor to deque") : labels;
+        assert !labels.contains("add sensor to calendar") : labels;
+    }
+
     private static void appliesContextRulesAcrossIndependentApplications() {
+        usesAttributedTypeForInferredLocalLabels();
+        usesMutatedArgumentForStaticUtilityLabels();
+        keepsReceiverSubjectsBoundToTheirDeclaration();
         assertApplicationLabels(
                 "crossapp/scheduling/ScheduleApplication.java",
                 List.of("gregorian calendar", "set gregorian calendar hour of day to hour"),
