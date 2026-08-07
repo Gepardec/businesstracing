@@ -49,7 +49,8 @@ public final class MermaidRenderer {
                 visitedNodes.add(aliases.get(edge.toNodeId()));
             }
             output.append("    ").append(aliases.get(edge.fromNodeId())).append(" -->");
-            if (!edge.outcome().isBlank()) output.append("|\"").append(escape(edge.outcome())).append("\"|");
+            String outcome = displayOutcome(edge.outcome());
+            if (!outcome.isBlank()) output.append("|\"").append(escape(outcome)).append("\"|");
             output.append(' ').append(aliases.get(edge.toNodeId())).append('\n');
         }
         if (graph.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE) {
@@ -68,6 +69,10 @@ public final class MermaidRenderer {
             output.append("    classDef visited stroke-width:3px\n");
         }
         return output.toString();
+    }
+
+    private static String displayOutcome(String outcome) {
+        return outcome.equals("next") ? "" : outcome;
     }
 
     private static String node(String alias, BusinessDecisionGraph.NodeKind kind, String label) {

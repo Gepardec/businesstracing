@@ -254,3 +254,7 @@ results and states that the current result slice omits the direct thrown validat
 
 Plexus Utils moved to the advisory-free compatible release 3.6.1, and Maven JAR Plugin moved to
 3.5.1. Exact dependency checks and the full repository verifier passed.
+
+### omit-next-diagram-labels (feature) — 2026-08-07
+
+Completed one task. Mermaid and PlantUML now omit the exact `next` arrow label while preserving meaningful outcomes such as `next item`. The graph contract, opaque edge IDs, serialized outcomes, and execution-path logic remain unchanged. Focused renderer contracts, self-tracing, and repository integrity passed.

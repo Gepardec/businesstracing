@@ -1,0 +1,55 @@
+{
+  "id": "omit-next-diagram-labels",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T09:53:06Z",
+  "updated": "2026-08-07T09:56:05Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "mermaid-diagram-rendering",
+    "self-dogfood-business-tracing"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T09:53:06Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 10,
+        "designFidelity": 10,
+        "codeQuality": 9,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-07T09:56:05Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 1900,
+    "filesChanged": 9,
+    "linesAdded": 60,
+    "linesRemoved": 8,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 9,
+    "specDurationMinutes": 4
+  }
+}

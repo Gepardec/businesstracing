@@ -176,5 +176,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T08:50:17Z"
+  },
+  {
+    "id": "omit-next-diagram-labels",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T09:56:05Z"
   }
 ]
