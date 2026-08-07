@@ -1,0 +1,41 @@
+{
+  "id": "conditional-alias-method-reference-effects",
+  "type": "bugfix",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-07T11:25:46Z",
+  "updated": "2026-08-07T11:28:15Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-07T11:25:46Z"
+    }
+  },
+  "specDependencies": [
+    {
+      "specId": "jdk-mutation-alias-effect-correctness",
+      "reason": "It introduced the direct-alias and explicit-effect model corrected here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "outcome-evidence-cancellation-slice-label-correctness",
+    "generic-java-extractor-completion"
+  ]
+}

@@ -7,10 +7,10 @@ checks that every entry names an executable contract and appears in this documen
 
 - `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
 - `complex-boolean-exact-path`, `predicate-operand-evidence`, `predicate-site-evidence`, `method-receiver-evidence`, `terminal-outcome-evidence`, `incomplete-exact-path-gap`
-- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `unknown-jdk-effect-gap`
+- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `conditional-local-alias-effect-gap`, `unknown-jdk-effect-gap`
 - `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
-- `lambdas-and-streams`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
+- `lambdas-and-streams`, `method-reference-callback-mutation`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
 - `source-unavailable-call`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
@@ -37,7 +37,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Local initialization and assignment | Retained only when it can influence a return |
 | Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only |
 | Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies, including queue and deque operations such as `offer` |
-| Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument; a later non-identity assignment removes the alias relation |
+| Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument. An unconditional non-identity assignment removes that relation. A conditional assignment merges branch roots; an unproved result-relevant write creates a located gap |
 | Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
 | Direct method call | Follows a source-available callee and includes its relevant slice |
 | Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |
@@ -55,7 +55,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Pattern matching | Retains result-relevant type patterns and their bound business facts |
 | Sealed type dispatch | Includes each source-visible permitted implementation as a candidate |
 | Nested class call | Resolves and expands source-visible nested-class decision logic |
-| Direct method reference | Resolves and expands a source-visible referenced decision method |
+| Direct method reference | Resolves and expands a source-visible referenced decision method. A bound mutating callback such as `accepted::add` uses the same receiver-effect contract as a normal call and shows the source-to-target transfer |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
 | Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location |
 
