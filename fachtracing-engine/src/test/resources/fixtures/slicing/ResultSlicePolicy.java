@@ -108,6 +108,30 @@ public final class ResultSlicePolicy {
         }
     }
 
+    @FachTracing("conditional alias mutation")
+    public boolean conditionalAliasMutation(boolean detached, int age) {
+        List<String> reasons = new ArrayList<>();
+        addConditionalAliasReason(reasons, detached, age);
+        return reasons.isEmpty();
+    }
+
+    private void addConditionalAliasReason(List<String> target, boolean detached, int age) {
+        List<String> alias = target;
+        if (detached) {
+            alias = new ArrayList<>();
+        }
+        if (age < 24) {
+            alias.add("young");
+        }
+    }
+
+    @FachTracing("method reference mutation")
+    public boolean methodReferenceMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        candidates.stream().forEach(accepted::add);
+        return !accepted.isEmpty();
+    }
+
     @FachTracing("unknown platform effect")
     public boolean unknownPlatformEffect(Date date, long epoch) {
         date.setTime(epoch);

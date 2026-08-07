@@ -497,17 +497,67 @@ public final class StaticDecisionAnalyzer {
             var proven = new LinkedHashSet<String>();
             var possible = new LinkedHashSet<String>();
             for (Tree argument : call.getArguments()) {
-                if (!(argument instanceof LambdaExpressionTree lambda)) continue;
-                new TreeScanner<Void, Void>() {
-                    @Override public Void visitMethodInvocation(MethodInvocationTree nested, Void unused) {
-                        DependencyGraphBuilder.CallEffects effects = callEffects(caller, nested);
-                        proven.addAll(effects.provenWrites());
-                        possible.addAll(effects.possibleWrites());
-                        return super.visitMethodInvocation(nested, unused);
-                    }
-                }.scan((Tree) lambda.getBody(), null);
+                if (argument instanceof LambdaExpressionTree lambda) {
+                    new TreeScanner<Void, Void>() {
+                        @Override public Void visitMethodInvocation(MethodInvocationTree nested, Void unused) {
+                            DependencyGraphBuilder.CallEffects effects = callEffects(caller, nested);
+                            proven.addAll(effects.provenWrites());
+                            possible.addAll(effects.possibleWrites());
+                            return super.visitMethodInvocation(nested, unused);
+                        }
+                    }.scan((Tree) lambda.getBody(), null);
+                } else if (argument instanceof MemberReferenceTree reference) {
+                    DependencyGraphBuilder.CallEffects effects = memberReferenceEffects(caller, call, reference);
+                    proven.addAll(effects.provenWrites());
+                    possible.addAll(effects.possibleWrites());
+                }
             }
             return new DependencyGraphBuilder.CallEffects(proven, possible);
+        }
+
+        private DependencyGraphBuilder.CallEffects memberReferenceEffects(
+                MethodLocation caller,
+                MethodInvocationTree callback,
+                MemberReferenceTree reference) {
+            TreePath path = TreePath.getPath(caller.unit(), reference);
+            Element called = path == null ? null : trees.getElement(path);
+            Set<String> callbackInputs = callbackInputRoots(callback);
+            if (!(called instanceof ExecutableElement executable)) {
+                var possible = new LinkedHashSet<>(callbackInputs);
+                possible.addAll(memberReferenceReceiverRoots(caller, reference));
+                return new DependencyGraphBuilder.CallEffects(Set.of(), possible);
+            }
+            Set<String> platformWrites = platformMutationRoots(caller, reference, executable);
+            if (!platformWrites.isEmpty()) {
+                return new DependencyGraphBuilder.CallEffects(platformWrites, Set.of());
+            }
+            MethodLocation callee = index.methods().get(executable);
+            if (callee != null && callee.method().getBody() != null) {
+                MutationSummary summary = mutationSummary(callee);
+                Set<String> receiverRoots = memberReferenceReceiverRoots(caller, reference);
+                var proven = new LinkedHashSet<String>();
+                var possible = new LinkedHashSet<String>();
+                boolean unboundReceiver = receiverRoots.isEmpty()
+                        && !executable.getModifiers().contains(Modifier.STATIC);
+                if (summary.receiverWrite()) {
+                    if (unboundReceiver) possible.addAll(callbackInputs);
+                    else proven.addAll(receiverRoots);
+                }
+                if (summary.receiverUnknown()) {
+                    if (unboundReceiver) possible.addAll(callbackInputs);
+                    else possible.addAll(receiverRoots);
+                }
+                if (!summary.parameterWrites().isEmpty() || !summary.parameterUnknown().isEmpty()) {
+                    possible.addAll(callbackInputs);
+                }
+                return new DependencyGraphBuilder.CallEffects(proven, possible);
+            }
+            if (isProvenReadOnlyLibraryOperation(executable)) {
+                return DependencyGraphBuilder.CallEffects.none();
+            }
+            var possible = new LinkedHashSet<>(callbackInputs);
+            possible.addAll(memberReferenceReceiverRoots(caller, reference));
+            return new DependencyGraphBuilder.CallEffects(Set.of(), possible);
         }
 
         private static DependencyGraphBuilder.CallEffects mergeEffects(
@@ -532,6 +582,26 @@ public final class StaticDecisionAnalyzer {
                     && !call.getArguments().isEmpty()) {
                 return stateRoots(call.getArguments().getFirst());
             }
+            if (!isPlatformReceiverMutation(owner, method)
+                    || !(call.getMethodSelect() instanceof MemberSelectTree member)) return Set.of();
+            TreePath receiverPath = TreePath.getPath(caller.unit(), member.getExpression());
+            Element receiver = receiverPath == null ? null : trees.getElement(receiverPath);
+            if (receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
+                    ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind())) return Set.of();
+            return stateRoots(member.getExpression());
+        }
+
+        private Set<String> platformMutationRoots(
+                MethodLocation caller,
+                MemberReferenceTree reference,
+                ExecutableElement executable) {
+            String owner = ((TypeElement) executable.getEnclosingElement()).getQualifiedName().toString();
+            String method = executable.getSimpleName().toString();
+            if (!isPlatformReceiverMutation(owner, method)) return Set.of();
+            return memberReferenceReceiverRoots(caller, reference);
+        }
+
+        private static boolean isPlatformReceiverMutation(String owner, String method) {
             boolean collection = owner.startsWith("java.util.") && Set.of(
                     "add", "addAll", "remove", "removeAll", "removeIf", "retainAll", "clear",
                     "set", "replace", "replaceAll", "sort", "put", "putAll", "putIfAbsent",
@@ -548,13 +618,31 @@ public final class StaticDecisionAnalyzer {
                     && (method.startsWith("set") || method.startsWith("compareAndSet")
                     || method.startsWith("getAnd") || method.startsWith("increment")
                     || method.startsWith("decrement") || method.startsWith("addAnd"));
-            if (!(collection || mutableText || atomic)
-                    || !(call.getMethodSelect() instanceof MemberSelectTree member)) return Set.of();
-            TreePath receiverPath = TreePath.getPath(caller.unit(), member.getExpression());
-            Element receiver = receiverPath == null ? null : trees.getElement(receiverPath);
+            return collection || mutableText || atomic;
+        }
+
+        private Set<String> memberReferenceReceiverRoots(
+                MethodLocation caller, MemberReferenceTree reference) {
+            Tree qualifier = reference.getQualifierExpression();
+            TreePath path = TreePath.getPath(caller.unit(), qualifier);
+            Element receiver = path == null ? null : trees.getElement(path);
             if (receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
                     ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind())) return Set.of();
-            return stateRoots(member.getExpression());
+            return stateRoots(qualifier);
+        }
+
+        private static Set<String> callbackInputRoots(MethodInvocationTree callback) {
+            if (!(callback.getMethodSelect() instanceof MemberSelectTree member)) return Set.of();
+            return stateRoots(callbackSource(member.getExpression()));
+        }
+
+        private static Tree callbackSource(Tree receiver) {
+            if (receiver instanceof MethodInvocationTree pipeline
+                    && pipeline.getMethodSelect() instanceof MemberSelectTree select
+                    && Set.of("stream", "parallelStream").contains(select.getIdentifier().toString())) {
+                return select.getExpression();
+            }
+            return receiver;
         }
 
         private Set<String> mapSummaryRoots(
@@ -647,6 +735,18 @@ public final class StaticDecisionAnalyzer {
                     return super.visitAssignment(node, unused);
                 }
 
+                @Override public Void visitIf(IfTree node, Void unused) {
+                    scan(node.getCondition(), unused);
+                    LocalAliasResolver before = aliases.copy();
+                    scan(node.getThenStatement(), unused);
+                    LocalAliasResolver thenState = aliases.copy();
+                    aliases.replaceWith(before);
+                    if (node.getElseStatement() != null) scan(node.getElseStatement(), unused);
+                    LocalAliasResolver elseState = aliases.copy();
+                    aliases.replaceWith(LocalAliasResolver.merge(List.of(thenState, elseState)));
+                    return null;
+                }
+
                 @Override public Void visitCompoundAssignment(CompoundAssignmentTree node, Void unused) {
                     mark(node.getVariable(), true);
                     return super.visitCompoundAssignment(node, unused);
@@ -673,15 +773,23 @@ public final class StaticDecisionAnalyzer {
                 }
 
                 private void markName(String name, boolean proven) {
-                    aliases.resolve(name).forEach(root -> {
-                        Integer parameter = parameters.get(root);
-                        if (parameter != null) {
-                            (proven ? parameterWrites : parameterUnknown).add(parameter);
-                        } else if (root.equals("this") || root.equals("super") || fields.contains(root)) {
-                            if (proven) receiverWrite[0] = true;
-                            else receiverUnknown[0] = true;
-                        }
-                    });
+                    LocalAliasResolver.Resolution resolution = aliases.resolution(name);
+                    if (proven) {
+                        resolution.provedRoots().forEach(root -> markRoot(root, true));
+                        resolution.possibleRoots().forEach(root -> markRoot(root, false));
+                    } else {
+                        resolution.allRoots().forEach(root -> markRoot(root, false));
+                    }
+                }
+
+                private void markRoot(String root, boolean proven) {
+                    Integer parameter = parameters.get(root);
+                    if (parameter != null) {
+                        (proven ? parameterWrites : parameterUnknown).add(parameter);
+                    } else if (root.equals("this") || root.equals("super") || fields.contains(root)) {
+                        if (proven) receiverWrite[0] = true;
+                        else receiverUnknown[0] = true;
+                    }
                 }
             }.scan(new TreePath(location.path(), location.method().getBody()), null);
 
@@ -1529,6 +1637,13 @@ public final class StaticDecisionAnalyzer {
                 }
                 TypeElement owner = (TypeElement) executable.getEnclosingElement();
                 if (isDecisionFreeValueAccess(executable, owner)) return null;
+                Set<String> platformWrites = platformMutationRoots(location, node, executable);
+                if (!platformWrites.isEmpty()) {
+                    String mutation = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                            memberReferenceMutationLabel(node, executable), node, null);
+                    advance(mutation);
+                    return null;
+                }
                 MethodLocation callee = index.methods().get(executable);
                 if (callee == null) {
                     if (!isSupportedLibraryOperation(executable)) {
@@ -1547,6 +1662,18 @@ public final class StaticDecisionAnalyzer {
                 Extraction linked = extract(callee, call, false, activeMethods);
                 frontier = linked.exits();
                 return null;
+            }
+
+            private String memberReferenceMutationLabel(
+                    MemberReferenceTree reference, ExecutableElement executable) {
+                Tree parent = dependencies.parents().get(reference);
+                String target = expression(reference.getQualifierExpression());
+                if (parent instanceof MethodInvocationTree callback
+                        && callback.getMethodSelect() instanceof MemberSelectTree select) {
+                    String source = expression(callbackSource(select.getExpression()));
+                    return words(executable.getSimpleName().toString()) + " " + source + " to " + target;
+                }
+                return words(executable.getSimpleName().toString()) + " " + target;
             }
 
             @Override public Void visitReturn(ReturnTree node, Void unused) {

@@ -700,6 +700,26 @@
       "task": "Task 3",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T11:49:35Z"
+    },
+    {
+      "specId": "conditional-alias-method-reference-effects",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Merge alias roots by proof certainty",
+      "rationale": "A root is proved only when every branch preserves it; every other reachable root must remain possible so unsupported result effects fail closed.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:53:56Z"
+    },
+    {
+      "specId": "conditional-alias-method-reference-effects",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Reuse receiver mutation contracts for bound method references",
+      "rationale": "A bound callback and an equivalent normal call change the same receiver state and must use one effect classifier.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:53:56Z"
     }
   ]
 }

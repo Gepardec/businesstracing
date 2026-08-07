@@ -32,6 +32,7 @@ public final class StaticDecisionAnalyzerTest {
         preservesDequeOfferMutation();
         preservesLocalAliasMutation();
         invalidatesReassignedLocalAliases();
+        preservesConditionalAliasAndMethodReferenceEffects();
         reportsUnknownPlatformEffects();
         usesProvenValidationRolesWithoutGlobalReceiverRemoval();
         followsDirectCallsAcrossDomains();
@@ -297,6 +298,28 @@ public final class StaticDecisionAnalyzerTest {
                 : invalidated;
         assert invalidated.graph().nodes().stream().noneMatch(node ->
                 node.businessLabel().contains("age is below 24")) : invalidated.graph().nodes();
+    }
+
+    private static void preservesConditionalAliasAndMethodReferenceEffects() {
+        var failures = new java.util.ArrayList<String>();
+        var conditional = analyzeLabel("slicing/ResultSlicePolicy.java", "conditional alias mutation");
+        boolean conditionalGap = conditional.graph().completeness()
+                == BusinessDecisionGraph.Completeness.INCOMPLETE
+                && conditional.graph().coverageGaps().stream().anyMatch(gap ->
+                        gap.description().contains("side effect"))
+                && conditional.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0);
+        if (!conditionalGap) {
+            failures.add("conditional alias remained false complete: " + conditional.graph());
+        }
+
+        var reference = analyzeLabel("slicing/ResultSlicePolicy.java", "method reference mutation");
+        String referenceLabels = reference.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        if (reference.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
+                || !referenceLabels.contains("add candidates to accepted")) {
+            failures.add("method reference transfer is absent: " + reference.graph());
+        }
+        assert failures.isEmpty() : failures;
     }
 
     private static void reportsUnknownPlatformEffects() {
