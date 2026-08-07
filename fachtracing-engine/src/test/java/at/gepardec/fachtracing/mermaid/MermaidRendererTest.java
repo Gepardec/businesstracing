@@ -14,6 +14,7 @@ public final class MermaidRendererTest {
 
     public static void main(String[] args) throws Exception {
         structuralAndExecutionSnapshotsAreStable();
+        redundantNextOutcomeIsHidden();
         incompleteCoverageAndEscapingAreVisible();
     }
 
@@ -27,6 +28,26 @@ public final class MermaidRendererTest {
         assert execution.contains("linkStyle 0,1,3 stroke-width:3px");
         assert execution.contains("linkStyle 2,4 stroke-dasharray:5 5");
         DecisionExplanationProjectorTest.assertNoTechnicalLanguage(structure + execution);
+    }
+
+    private static void redundantNextOutcomeIsHidden() {
+        var nodes = List.of(
+                new BusinessDecisionGraph.DecisionNode("entry", BusinessDecisionGraph.NodeKind.ENTRY,
+                        "Start", Map.of()),
+                new BusinessDecisionGraph.DecisionNode("first", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                        "first", Map.of()),
+                new BusinessDecisionGraph.DecisionNode("second", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                        "second", Map.of()));
+        var graph = new BusinessDecisionGraph("sequence", 1, "sequence", "entry", nodes,
+                List.of(
+                        new BusinessDecisionGraph.DecisionEdge("ordinary", "entry", "first", "next"),
+                        new BusinessDecisionGraph.DecisionEdge("iteration", "first", "second", "next item")),
+                BusinessDecisionGraph.Completeness.COMPLETE, List.of());
+
+        String diagram = new MermaidRenderer().structure(graph);
+        assert diagram.contains("n1 --> n2") : diagram;
+        assert !diagram.contains("|\"next\"|") : diagram;
+        assert diagram.contains("n2 -->|\"next item\"| n3") : diagram;
     }
 
     private static void incompleteCoverageAndEscapingAreVisible() {

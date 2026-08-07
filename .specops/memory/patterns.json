@@ -49,6 +49,21 @@
   ],
   "fileOverlaps": [
     {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/plantuml/PlantUmlRenderer.java",
+      "specs": ["generic-tracing-walking-skeleton", "omit-next-diagram-labels"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/plantuml/PlantUmlRendererTest.java",
+      "specs": ["generic-tracing-walking-skeleton", "omit-next-diagram-labels"],
+      "count": 2
+    },
+    {
+      "file": "docs/self-tracing.md",
+      "specs": ["self-dogfood-business-tracing", "omit-next-diagram-labels"],
+      "count": 2
+    },
+    {
       "file": "README.md",
       "specs": [
         "generic-tracing-walking-skeleton",

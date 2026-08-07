@@ -25,8 +25,8 @@ flowchart LR
     n2["derive has repository as repository url exists and not repository url is blank"]
     n3{"does not have repository"}
     n4(["Stop"])
-    n1 -->|"next"| n2
-    n2 -->|"next"| n3
+    n1 --> n2
+    n2 --> n3
     n3 -->|"true; returns optional empty"| n4
     n3 -->|"false; returns optional of new developer output repository root repository url source url template"| n4
 ```
