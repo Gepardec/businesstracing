@@ -3,62 +3,38 @@ package at.gepardec.fachtracing.developer;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /** Generates the formal JSON Schema for supported developer graph documents. */
 public final class DeveloperGraphJsonSchema {
     private static final String DIALECT = "https://json-schema.org/draft/2020-12/schema";
 
-    /** Generates a deterministic JSON Schema for one developer graph data-schema identifier. */
-    public String generate(String dataSchemaId) {
-        Objects.requireNonNull(dataSchemaId, "dataSchemaId");
-        return switch (dataSchemaId) {
-            case DeveloperGraphExporter.SCHEMA -> generate(false);
-            case DeveloperGraphExporter.SCHEMA_V2 -> generate(true);
-            default -> throw new IllegalArgumentException(
-                    "unsupported developer graph schema: " + dataSchemaId);
-        };
-    }
-
-    private static String generate(boolean multiOrigin) {
-        String dataSchemaId = multiOrigin
-                ? DeveloperGraphExporter.SCHEMA_V2
-                : DeveloperGraphExporter.SCHEMA;
-        String version = multiOrigin ? "v2" : "v1";
+    /** Generates the deterministic JSON Schema for the current developer graph contract. */
+    public String generate() {
         var output = new StringBuilder(8192);
         output.append("{\n");
         field(output, 1, "$schema", DIALECT, true);
-        field(output, 1, "$id", "urn:fachtracing:schema:developer-graph:" + version, true);
-        field(output, 1, "title", "Fachtracing developer graph " + version, true);
+        field(output, 1, "$id", "urn:fachtracing:schema:developer-graph:v1", true);
+        field(output, 1, "title", "Fachtracing developer graph v1", true);
         field(output, 1, "type", "object", true);
         booleanField(output, 1, "additionalProperties", false, true);
-        if (multiOrigin) {
-            arrayField(output, 1, "required",
-                    new String[]{"schema", "graph", "sourceOrigins", "sourceFiles"}, true);
-        } else {
-            arrayField(output, 1, "required",
-                    new String[]{"schema", "graph", "sourceRevision", "sourceFiles"}, true);
-        }
-        properties(output, dataSchemaId, multiOrigin);
+        arrayField(output, 1, "required",
+                new String[]{"schema", "graph", "sourceOrigins", "sourceFiles"}, true);
+        properties(output);
         output.append(",\n");
-        definitions(output, multiOrigin);
+        definitions(output);
         return output.append("\n}\n").toString();
     }
 
-    private static void properties(StringBuilder output, String dataSchemaId, boolean multiOrigin) {
+    private static void properties(StringBuilder output) {
         indent(output, 1).append("\"properties\": {\n");
         indent(output, 2).append("\"schema\": {\"const\": ");
-        string(output, dataSchemaId).append("},\n");
+        string(output, DeveloperGraphExporter.SCHEMA).append("},\n");
         ref(output, 2, "graph", "graph", true);
-        if (multiOrigin) {
-            indent(output, 2).append("\"sourceOrigins\": {\n");
-            indent(output, 3).append("\"type\": \"array\",\n");
-            indent(output, 3).append("\"minItems\": 1,\n");
-            indent(output, 3).append("\"items\": {\"$ref\": \"#/$defs/sourceOrigin\"}\n");
-            indent(output, 2).append("},\n");
-        } else {
-            ref(output, 2, "sourceRevision", "revision", true);
-        }
+        indent(output, 2).append("\"sourceOrigins\": {\n");
+        indent(output, 3).append("\"type\": \"array\",\n");
+        indent(output, 3).append("\"minItems\": 1,\n");
+        indent(output, 3).append("\"items\": {\"$ref\": \"#/$defs/sourceOrigin\"}\n");
+        indent(output, 2).append("},\n");
         indent(output, 2).append("\"sourceFiles\": {\n");
         indent(output, 3).append("\"type\": \"array\",\n");
         indent(output, 3).append("\"items\": {\"$ref\": \"#/$defs/sourceFile\"}\n");
@@ -66,7 +42,7 @@ public final class DeveloperGraphJsonSchema {
         indent(output, 1).append('}');
     }
 
-    private static void definitions(StringBuilder output, boolean multiOrigin) {
+    private static void definitions(StringBuilder output) {
         indent(output, 1).append("\"$defs\": {\n");
         graphDefinition(output);
         output.append(",\n");
@@ -76,15 +52,13 @@ public final class DeveloperGraphJsonSchema {
         output.append(",\n");
         coverageGapDefinition(output);
         output.append(",\n");
-        sourceDefinition(output, multiOrigin);
+        sourceDefinition(output);
         output.append(",\n");
-        sourceFileDefinition(output, multiOrigin);
+        sourceFileDefinition(output);
         output.append(",\n");
         revisionDefinition(output);
-        if (multiOrigin) {
-            output.append(",\n");
-            sourceOriginDefinition(output);
-        }
+        output.append(",\n");
+        sourceOriginDefinition(output);
         output.append('\n');
         indent(output, 1).append('}');
     }
@@ -137,15 +111,10 @@ public final class DeveloperGraphJsonSchema {
         definitionEnd(output);
     }
 
-    private static void sourceDefinition(StringBuilder output, boolean multiOrigin) {
-        if (multiOrigin) {
-            definitionStart(output, "source",
-                    "originId", "path", "line", "column", "syntaxKind", "sha256");
-            stringProperty(output, 4, "originId", true, true);
-        } else {
-            definitionStart(output, "source",
-                    "path", "line", "column", "syntaxKind", "sha256", "url");
-        }
+    private static void sourceDefinition(StringBuilder output) {
+        definitionStart(output, "source",
+                "originId", "path", "line", "column", "syntaxKind", "sha256");
+        stringProperty(output, 4, "originId", true, true);
         stringProperty(output, 4, "path", true, true);
         integerProperty(output, 4, "line", null, true);
         integerProperty(output, 4, "column", null, true);
@@ -155,13 +124,9 @@ public final class DeveloperGraphJsonSchema {
         definitionEnd(output);
     }
 
-    private static void sourceFileDefinition(StringBuilder output, boolean multiOrigin) {
-        if (multiOrigin) {
-            definitionStart(output, "sourceFile", "originId", "path", "sha256");
-            stringProperty(output, 4, "originId", true, true);
-        } else {
-            definitionStart(output, "sourceFile", "path", "sha256");
-        }
+    private static void sourceFileDefinition(StringBuilder output) {
+        definitionStart(output, "sourceFile", "originId", "path", "sha256");
+        stringProperty(output, 4, "originId", true, true);
         stringProperty(output, 4, "path", true, true);
         sha256Property(output, 4, "sha256", false);
         definitionEnd(output);

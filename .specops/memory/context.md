@@ -325,3 +325,10 @@ full local pull-request gate passed with both external corpora.
 ### developer-graph-json-schema (feature) — 2026-08-07
 
 Completed both tasks. Fachtracing now generates closed JSON Schema Draft 2020-12 documents for developer graph V1 and V2 through a public Java API. Maven writes and links one matching schema beside the developer JSON, removes stale schema output safely, and documents the exact frontend handoff. The focused consumer contract and full repository verifier passed.
+
+### unify-developer-graph-contract (refactor) — 2026-08-07
+
+Completed both tasks. Fachtracing now publishes one developer graph contract. V1 uses
+`sourceOrigins` and `originId` for one or many source origins. The SourceRevision convenience API
+delegates through one Git origin, the schema generator has one no-argument method, and Maven always
+writes one V1 schema artifact. The exact local pull-request gate passed with both external corpora.

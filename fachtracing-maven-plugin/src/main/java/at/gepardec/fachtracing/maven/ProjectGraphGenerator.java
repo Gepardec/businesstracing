@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 /** Maven-independent generation pipeline used by the Mojo and executable contracts. */
 final class ProjectGraphGenerator {
     private static final String DEVELOPER_SCHEMA_V1 = "fachtracing-developer-graph-v1.schema.json";
-    private static final String DEVELOPER_SCHEMA_V2 = "fachtracing-developer-graph-v2.schema.json";
+    private static final String LEGACY_DEVELOPER_SCHEMA_V2 = "fachtracing-developer-graph-v2.schema.json";
 
     private final StaticDecisionAnalyzer analyzer = new StaticDecisionAnalyzer();
     private final DeveloperGraphExporter developerJson = new DeveloperGraphExporter();
@@ -125,7 +125,6 @@ final class ProjectGraphGenerator {
         DeveloperGraphExporter.SourceRevision revision = developerOutput
                 .map(DeveloperOutput::capture).orElse(null);
         DeveloperGraphExporter.SourceCatalog sourceCatalog = developerOutput
-                .filter(output -> !output.externalOrigins().isEmpty())
                 .map(output -> output.catalog(revision)).orElse(null);
 
         Files.createDirectories(outputDirectory);
@@ -136,15 +135,10 @@ final class ProjectGraphGenerator {
                         result -> slug(result.graph().decisionLabel()), HashMap::new, Collectors.counting()));
         var index = new StringBuilder("# Fachtracing decision graphs\n\n");
         if (revision != null) {
-            String dataSchemaId = sourceCatalog == null
-                    ? DeveloperGraphExporter.SCHEMA
-                    : DeveloperGraphExporter.SCHEMA_V2;
-            String schemaName = sourceCatalog == null ? DEVELOPER_SCHEMA_V1 : DEVELOPER_SCHEMA_V2;
-            Files.writeString(outputDirectory.resolve(schemaName),
-                    developerSchema.generate(dataSchemaId), StandardCharsets.UTF_8);
-            index.append("Developer JSON Schema: [")
-                    .append(sourceCatalog == null ? "V1" : "V2")
-                    .append("](").append(schemaName).append(")\n\n");
+            Files.writeString(outputDirectory.resolve(DEVELOPER_SCHEMA_V1),
+                    developerSchema.generate(), StandardCharsets.UTF_8);
+            index.append("Developer JSON Schema: [V1](")
+                    .append(DEVELOPER_SCHEMA_V1).append(")\n\n");
         }
         var incomplete = new ArrayList<String>();
 
@@ -168,9 +162,7 @@ final class ProjectGraphGenerator {
                     .append("[PlantUML](").append(plantUmlName).append(')');
             if (revision != null) {
                 Files.writeString(outputDirectory.resolve(developerJsonName),
-                        sourceCatalog == null
-                                ? developerJson.export(analysis, revision)
-                                : developerJson.export(analysis, sourceCatalog),
+                        developerJson.export(analysis, sourceCatalog),
                         StandardCharsets.UTF_8);
                 index.append(" · [Developer JSON](").append(developerJsonName).append(')');
             }
@@ -192,7 +184,8 @@ final class ProjectGraphGenerator {
                 String name = file.getFileName().toString();
                 if (name.equals("index.md") || name.endsWith("-structure.mmd")
                         || name.endsWith("-structure.puml") || name.endsWith("-developer.json")
-                        || name.equals(DEVELOPER_SCHEMA_V1) || name.equals(DEVELOPER_SCHEMA_V2)) {
+                        || name.equals(DEVELOPER_SCHEMA_V1)
+                        || name.equals(LEGACY_DEVELOPER_SCHEMA_V2)) {
                     Files.delete(file);
                 }
             }

@@ -70,19 +70,17 @@ PlantUML and Mermaid are formats for business diagrams. Developer tools can use 
 `fachtracing-developer-graph/v1` JSON data format. It contains `nodes`, `edges`, stable opaque IDs,
 coverage gaps, and developer source data.
 
-The Maven plugin writes a matching `fachtracing-developer-graph-v1.schema.json` or
-`fachtracing-developer-graph-v2.schema.json` file when developer JSON is enabled. Give the frontend
-developer the `*-developer.json` file and this schema file. The schema uses JSON Schema Draft
-2020-12, so a frontend build can validate the data or generate local types from it.
+The Maven plugin writes `fachtracing-developer-graph-v1.schema.json` when developer JSON is enabled.
+Give the frontend developer the `*-developer.json` file and this schema file. The one V1 contract
+supports one or more source origins. The schema uses JSON Schema Draft 2020-12, so a frontend build
+can validate the data or generate local types from it.
 
-You can also generate either schema directly from Java code:
+You can also generate the schema directly from Java code:
 
 ```java
-import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
 
-String schema = new DeveloperGraphJsonSchema().generate(
-        DeveloperGraphExporter.SCHEMA_V2);
+String schema = new DeveloperGraphJsonSchema().generate();
 ```
 
 Capture Git source data from a clean working tree. Supply a source-browser URL template:

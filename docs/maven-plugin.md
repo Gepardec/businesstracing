@@ -184,28 +184,23 @@ Developer JSON is opt-in because source browsers need repository-specific URLs. 
 ```
 
 The plugin then adds `<decision>-developer.json` and links it from `index.md`. It also writes and links
-one matching formal schema:
-
-- `fachtracing-developer-graph-v1.schema.json` for a single Git origin
-- `fachtracing-developer-graph-v2.schema.json` for Git, local, generated, or Maven origins
+one matching formal schema: `fachtracing-developer-graph-v1.schema.json`.
 
 Give the frontend developer the `*-developer.json` file and the matching schema file. Both files use
 UTF-8. The schema uses JSON Schema Draft 2020-12. All `$ref` values are local, so frontend tools can
 validate the graph or generate types without a Fachtracing schema server.
 
-A single Git origin keeps the compatible `fachtracing-developer-graph/v1` format. A graph with local,
-generated, or Maven sources uses `fachtracing-developer-graph/v2`. V2 lists `sourceOrigins` and gives
-each source an `originId`. Only Git sources get a commit-pinned `url`. External and generated sources
-never get a false Git URL. A graph tool can render `graph.nodes` and `graph.edges` in both versions.
+The `fachtracing-developer-graph/v1` contract lists `sourceOrigins` and gives each source an
+`originId`. One Git origin is the normal single-repository case. The same contract also supports
+local, generated, and Maven sources. Only Git sources get a commit-pinned `url`. External and
+generated sources never get a false Git URL.
 
 Library integrations can generate the same schema without the Maven plugin:
 
 ```java
-import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
 
-String schema = new DeveloperGraphJsonSchema().generate(
-        DeveloperGraphExporter.SCHEMA_V2);
+String schema = new DeveloperGraphJsonSchema().generate();
 ```
 
 For one-off use, pass the same settings as properties:
@@ -218,7 +213,7 @@ mvn compile \
 ```
 
 The Git worktree must be clean. The plugin records the full `HEAD` commit and verifies each Git source
-fingerprint against both the current file and the file blob in that commit. V2 verifies external
+fingerprint against both the current file and the file blob in that commit. V1 verifies external
 source content against the analysis fingerprint and records Maven archive checksums. It fails if only
 one setting is present, the worktree is dirty, a Git source is absent from the commit, or source
 content does not match the analysis.

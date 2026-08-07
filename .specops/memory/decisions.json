@@ -780,6 +780,26 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T12:55:38Z"
+    },
+    {
+      "specId": "unify-developer-graph-contract",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Use the multi-origin shape as the only V1 developer graph contract",
+      "rationale": "There is no released consumer, and a one-entry sourceOrigins list represents the normal single-repository case without a second schema.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:30:55Z"
+    },
+    {
+      "specId": "unify-developer-graph-contract",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Keep the old V2 schema filename only as an exact cleanup target",
+      "rationale": "Existing generated directories must not retain a false contract artifact, but V2 is not a supported Java or JSON contract.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:30:55Z"
     }
   ]
 }

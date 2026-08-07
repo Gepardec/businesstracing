@@ -3,7 +3,7 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T13:05:06Z"
+_generatedAt: "2026-08-07T13:30:55Z"
 _sourceHash: "948b751950a1c9d6d9c35c6c929824874119575c5016a737feef12be5e2a7867"
 ---
 

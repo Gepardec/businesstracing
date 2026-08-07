@@ -232,5 +232,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T12:55:38Z"
+  },
+  {
+    "id": "unify-developer-graph-contract",
+    "type": "refactor",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T13:30:55Z"
   }
 ]
