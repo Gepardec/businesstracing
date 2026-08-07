@@ -322,6 +322,22 @@ The focused analyzer contract, full pull-request gate, and all five pinned Mega 
 runtime proof selected all three strategy implementations, and the short load completed 5,000
 decisions at 1,000 RPS with no errors, mismatches, drops, or contamination.
 
+### fix-hogarama-aggregate-completeness (bugfix) — 2026-08-07
+
+Completed one task. The analyzer now uses exact first-match classpath origin to keep reference-returning dependency-JAR operations outside the application decision boundary. Instance operations keep an opaque receiver effect, so source-visible predicates that configure fluent query and options objects remain in the result slice. Boolean archive calls are transparent only inside explicit source control conditions.
+
+Direct Boolean dependency decisions and application class-directory binaries remain fail-closed. Strict analysis of the real Hogarama reactor reports `getAllDataMaxNumber` and `getAllWateringDataMaxNumber` as complete. Five Mega graphs, external release, Java capabilities, and the full pull-request gate passed. The short load completed 5,000 decisions with zero errors, mismatches, drops, or contamination.
+
+### explicit-opaque-library-boundaries (feature) — 2026-08-07
+
+Completed one task. Dependency JARs are fail-closed by default. Users can declare exact resolved
+technical-library artifacts, while unselected dependencies, direct binary Boolean decisions, and
+application class directories remain incomplete.
+
+The real Hogarama proof fails strictly without a selection and passes with its three technical
+artifacts selected. Focused contracts, Java capabilities, self-tracing, external release, five
+complete Mega graphs, and the full pull-request gate passed with zero load correctness failures.
+
 ### context-label-symbol-correctness (bugfix) — 2026-08-07
 
 Completed all three tasks. Context-aware labels now bind local and receiver subjects to attributed

@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T13:17:43Z"
-_sourceHash: "6b3e678f70a2186f0a5e0403141646599a2a6056e38b59e890a4b51324f61c8a"
+_generatedAt: "2026-08-07T13:27:49Z"
+_sourceHash: "da473860fb4ad9ba4f9c6d82b5d34e939c91a37c7ee248ae02e799bac3fdc3c2"
 ---
 
 ## Project Structure Map
@@ -59,7 +59,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (70 files)
+#### fachtracing-engine/ (72 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -74,6 +74,8 @@ fachtracing/
   - `public enum LanguageVersionMode`
 - `src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java`
   - `public final class BackwardDecisionSlicer`
+- `src/main/java/at/gepardec/fachtracing/analysis/BinaryTypeOriginResolver.java`
+  - cached first-match classpath origin for exact binary types
 - `src/main/java/at/gepardec/fachtracing/analysis/BytecodeDecisionAnalyzer.java`
   - `public final class BytecodeDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java`
@@ -86,6 +88,8 @@ fachtracing/
   - `public final class DependencyGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java`
   - flow-ordered direct reference alias roots for result-effect analysis
+- `src/main/java/at/gepardec/fachtracing/analysis/OpaqueLibraryBoundary.java`
+  - exact caller-declared technical dependency archive boundary
 - `src/main/java/at/gepardec/fachtracing/analysis/CancellationBoundaryScanner.java`
   - exact supported cancellation call-site discovery
 - `src/main/java/at/gepardec/fachtracing/analysis/CaughtThrowResolver.java`
@@ -143,7 +147,7 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (28 files)
+#### fachtracing-maven-plugin/ (29 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
@@ -151,6 +155,8 @@ fachtracing/
   - aggregate reactor analysis and activation-bundle generation
 - `src/main/java/at/gepardec/fachtracing/maven/MavenCompilerModelResolver.java`
   - effective Maven compiler and JPMS model
+- `src/main/java/at/gepardec/fachtracing/maven/OpaqueLibraryArtifactResolver.java`
+  - exact Maven coordinate to compile-classpath archive mapping
 - `src/main/java/at/gepardec/fachtracing/maven/SourceInputResolver.java`
   - project, external, and source-artifact discovery
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
