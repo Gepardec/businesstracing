@@ -1,0 +1,26 @@
+decision: register a new pet
+completeness: INCOMPLETE
+node 1: ENTRY | Start
+node 2: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+node 3: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+node 4: COVERAGE_GAP | analysis incomplete: binary method contains an unsupported call, monitor, switch, or dynamic instruction
+node 5: PREDICATE | result has errors
+node 6: OUTCOME | Stop
+node 7: CHOICE | select decision result path
+node 8: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+node 9: COVERAGE_GAP | analysis incomplete: a possible side effect on the returned decision cannot be reconstructed
+edge 1 -> 2 | unresolved
+edge 2 -> 3 | unresolved
+edge 3 -> 4 | unresolved
+edge 4 -> 5 | next
+edge 5 -> 6 | true; returns views pets create or update form
+edge 5 -> 7 | false
+edge 7 -> 8 | unresolved
+edge 7 -> 9 | unresolved
+edge 9 -> 6 | returns views pets create or update form
+edge 8 -> 6 | returns redirect:/owners/{ownerId}
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision
+gap: binary method contains an unsupported call, monitor, switch, or dynamic instruction affects the decision
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision
+gap: a possible side effect on the returned decision cannot be reconstructed affects the decision

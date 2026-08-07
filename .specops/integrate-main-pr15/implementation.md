@@ -30,11 +30,13 @@
 
 | Planned | Actual | Reason | Task |
 | --- | --- | --- | --- |
+| One merge from current `main` | A second merge was required after PR #16 advanced `main` | The base branch changed after the first verified merge was pushed. | 2 |
 
 ## Blockers Encountered
 
 | Blocker | Resolution | Impact | Task |
 | --- | --- | --- | --- |
+| GitHub still reported PR #15 as conflicting after the first merge. | Fetched the new `main` head, merged its Spring PetClinic conformance suite, and reran the expanded gate. | One additional merge commit and conformance run. | 2 |
 
 ## Documentation Review
 
@@ -45,3 +47,6 @@
 - 2026-08-07T13:00:33Z: Task 1 completed. All conflicts are resolved by semantic union. The
   combined analyzer contract passes, and both excluded pre-existing probes remain unchanged. Task 2
   is in progress.
+- 2026-08-07T13:06:38Z: `main` advanced through PR #16 after the first merge. The second merge
+  retained the integration changes and added Spring PetClinic conformance. The expanded full gate
+  passes.

@@ -1,0 +1,24 @@
+diff --git a/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java b/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java
+index 6babed5..11cc24e 100644
+--- a/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java
++++ b/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java
+@@ -19,0 +20 @@ import java.io.Serializable;
++import at.gepardec.fachtracing.api.FachTracing;
+@@ -46,0 +48 @@ public class BaseEntity implements Serializable {
++	@FachTracing("determine whether an entity is new")
+diff --git a/src/main/java/org/springframework/samples/petclinic/owner/Owner.java b/src/main/java/org/springframework/samples/petclinic/owner/Owner.java
+index 480a7a6..3d4cb86 100644
+--- a/src/main/java/org/springframework/samples/petclinic/owner/Owner.java
++++ b/src/main/java/org/springframework/samples/petclinic/owner/Owner.java
+@@ -21,0 +22 @@ import java.util.Objects;
++import at.gepardec.fachtracing.api.FachTracing;
+@@ -134,0 +136 @@ public class Owner extends Person {
++	@FachTracing("find an eligible pet by name")
+diff --git a/src/main/java/org/springframework/samples/petclinic/owner/PetController.java b/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
+index 845c116..3b0920d 100644
+--- a/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
++++ b/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
+@@ -22,0 +23 @@ import java.util.Optional;
++import at.gepardec.fachtracing.api.FachTracing;
+@@ -107,0 +109 @@ class PetController {
++	@FachTracing("register a new pet")

@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T12:59:06Z"
-_sourceHash: "7fced547dd8539ce3dfe1a1b1c98bc4a7fc309ec9a695f035313caa5d30b0031"
+_generatedAt: "2026-08-07T13:04:02Z"
+_sourceHash: "97e8a18db195d8480bccd3222004e4c983e66d62deded3ef12fbcee1447c6409"
 ---
 
 ## Project Structure Map
@@ -33,6 +33,11 @@ fachtracing/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
   conformance/mega-backend/
+    annotation-overlay.patch
+    src/test/java/at/gepardec/fachtracing/conformance/
+    src/test/resources/oracles/
+    conformance-report.md
+  conformance/spring-petclinic/
     annotation-overlay.patch
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
@@ -176,11 +181,20 @@ fachtracing/
 - `target/generated/` — five structural/semantic artifacts and one runtime explanation/execution pair
 - `selection.md`, `README.md`, and `conformance-report.md`
 
+#### conformance/spring-petclinic/ (10 files)
+
+- `annotation-overlay.patch` — three test-only annotations for the pinned canonical source
+- `src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicConformanceTest.java`
+- `src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java`
+- `src/test/resources/oracles/` — three immutable reviewed semantic graph oracles
+- `target/generated/` — disposable structural and semantic graph output
+- `selection.md`, `README.md`, and `conformance-report.md`
+
 #### root
 
 - `AGENTS.md`
 - `README.md`
 - `pom.xml`
-- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
+- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, `verify-spring-petclinic.sh`, and `verify-release.sh`
 - `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
 - `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`

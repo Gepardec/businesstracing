@@ -218,6 +218,14 @@
     "updated": "2026-08-07T12:35:12Z"
   },
   {
+    "id": "spring-petclinic-conformance",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T12:49:29Z"
+  },
+  {
     "id": "review-followup-correctness",
     "type": "bugfix",
     "status": "completed",
