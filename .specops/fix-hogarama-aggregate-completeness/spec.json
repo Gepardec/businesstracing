@@ -1,0 +1,55 @@
+{
+  "id": "fix-hogarama-aggregate-completeness",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T12:08:44Z",
+  "updated": "2026-08-07T12:21:17Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "codex"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "fix-jakarta-platform-call-completeness",
+    "conditional-alias-method-reference-effects"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-07T12:08:44Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T12:21:17Z"
+    }
+  },
+  "metrics": {
+    "durationMinutes": 22,
+    "specArtifactTokensEstimate": 4300,
+    "filesChanged": 18,
+    "linesAdded": 750,
+    "linesRemoved": 3,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 6
+  }
+}

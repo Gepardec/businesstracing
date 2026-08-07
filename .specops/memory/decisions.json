@@ -732,6 +732,46 @@
       "completedAt": "2026-08-07T11:53:56Z"
     },
     {
+      "specId": "fix-hogarama-aggregate-completeness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Use exact classpath origin for external archive operations",
+      "rationale": "Classpath origin is target-neutral ownership evidence and keeps application class-directory binaries fail-closed.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:21:17Z"
+    },
+    {
+      "specId": "fix-hogarama-aggregate-completeness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Trust archive Boolean calls only at source control predicates",
+      "rationale": "The source call site already defines the graph branch, but a direct returned Boolean dependency call can still hide business logic.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:21:17Z"
+    },
+    {
+      "specId": "explicit-opaque-library-boundaries",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Make opaque dependency trust empty by default",
+      "rationale": "Packaging in a JAR does not prove that code is free of business decisions.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:56:31Z"
+    },
+    {
+      "specId": "explicit-opaque-library-boundaries",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Resolve Maven coordinates to exact compile-classpath archive paths",
+      "rationale": "Maven owns artifact identity, while the engine must remain build-tool independent.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:56:31Z"
+    },
+    {
       "specId": "context-label-symbol-correctness",
       "specType": "bugfix",
       "number": 1,

@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 import org.apache.maven.plugins.annotations.Component;
@@ -60,6 +61,10 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
     @Parameter(property = "fachtracing.sourceDependencies")
     private List<String> sourceDependencies;
 
+    /** Exact groupId:artifactId values whose resolved compile JARs are trusted technical boundaries. */
+    @Parameter(property = "fachtracing.opaqueLibraryArtifacts")
+    private List<String> opaqueLibraryArtifacts;
+
     /** Explicit named or automatic module ownership for aggregate external source inputs. */
     @Parameter
     private List<ExternalModuleOwnershipConfiguration> externalModuleOwnership;
@@ -110,9 +115,11 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
             List<ApplicationSourceBoundary.ResolutionSource> externalSources = externalSources(artifacts);
             ApplicationSourceBoundary boundary = boundary(
                     projects, additionalEntryHost(projects), entrySources, externalSources);
+            OpaqueLibraryBoundary opaqueLibraries = OpaqueLibraryArtifactResolver.resolve(
+                    projects, opaqueLibraryArtifacts);
             List<DeveloperGraphExporter.SourceOrigin> origins = sourceOrigins(projects, artifacts);
             var result = new ProjectGraphGenerator().generate(
-                    boundary, charset, outputDirectory.toPath(), failOnIncomplete,
+                    boundary, opaqueLibraries, charset, outputDirectory.toPath(), failOnIncomplete,
                     developerOutput(origins));
             writeActivationBundle(projects, boundary, result);
             getLog().info("Generated " + result.graphCount()

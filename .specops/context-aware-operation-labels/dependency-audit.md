@@ -29,4 +29,3 @@ Java 21 is the project baseline. This label-only change does not change the runt
 ## Allowed Advisories
 
 None.
-
