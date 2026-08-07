@@ -1,0 +1,61 @@
+{
+  "id": "conditional-alias-method-reference-effects",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T11:25:46Z",
+  "updated": "2026-08-07T11:53:56Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-07T11:25:46Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T11:53:56Z"
+    }
+  },
+  "specDependencies": [
+    {
+      "specId": "jdk-mutation-alias-effect-correctness",
+      "reason": "It introduced the direct-alias and explicit-effect model corrected here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "outcome-evidence-cancellation-slice-label-correctness",
+    "generic-java-extractor-completion"
+  ],
+  "metrics": {
+    "durationMinutes": 28,
+    "specArtifactTokensEstimate": 6266,
+    "filesChanged": 21,
+    "linesAdded": 1034,
+    "linesRemoved": 60,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 6
+  }
+}

@@ -4,6 +4,7 @@ import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
+import com.sun.source.tree.IfTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.ReturnTree;
@@ -56,6 +57,18 @@ public final class DependencyGraphBuilder {
                 return super.visitAssignment(node, parent);
             }
 
+            @Override public Void visitIf(IfTree node, Tree parent) {
+                scan(node.getCondition(), node);
+                LocalAliasResolver before = aliases.copy();
+                scan(node.getThenStatement(), node);
+                LocalAliasResolver thenState = aliases.copy();
+                aliases.replaceWith(before);
+                if (node.getElseStatement() != null) scan(node.getElseStatement(), node);
+                LocalAliasResolver elseState = aliases.copy();
+                aliases.replaceWith(LocalAliasResolver.merge(List.of(thenState, elseState)));
+                return null;
+            }
+
             @Override public Void visitCompoundAssignment(CompoundAssignmentTree node, Tree parent) {
                 if (node.getVariable() instanceof IdentifierTree identifier) {
                     definitions.put(identifier.getName().toString(), node);
@@ -70,8 +83,13 @@ public final class DependencyGraphBuilder {
 
             @Override public Void visitMethodInvocation(MethodInvocationTree node, Tree parent) {
                 CallEffects effects = callEffects.apply(node);
-                effects.provenWrites().forEach(identifier -> aliases.resolve(identifier).forEach(root ->
-                        effectsByIdentifier.computeIfAbsent(root, ignored -> new ArrayList<>()).add(node)));
+                effects.provenWrites().forEach(identifier -> {
+                    LocalAliasResolver.Resolution resolution = aliases.resolution(identifier);
+                    resolution.provedRoots().forEach(root -> effectsByIdentifier
+                            .computeIfAbsent(root, ignored -> new ArrayList<>()).add(node));
+                    resolution.possibleRoots().forEach(root -> possibleEffectsByIdentifier
+                            .computeIfAbsent(root, ignored -> new ArrayList<>()).add(node));
+                });
                 effects.possibleWrites().forEach(identifier -> aliases.resolve(identifier).forEach(root ->
                         possibleEffectsByIdentifier.computeIfAbsent(root, ignored -> new ArrayList<>()).add(node)));
                 return super.visitMethodInvocation(node, parent);
