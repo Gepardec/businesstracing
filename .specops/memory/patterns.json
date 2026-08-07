@@ -47,6 +47,11 @@
       "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
     },
     {
+      "category": "platform-operation-classification",
+      "count": 1,
+      "pattern": "Classify equivalent current and legacy platform namespaces at one boundary while unsupported application binary logic stays fail-closed."
+    },
+    {
       "category": "static-relevance-audit",
       "count": 1,
       "pattern": "Bound descendant relevance to sliced expressions and record included, excluded, and unresolved source decisions outside business output."
@@ -91,9 +96,10 @@
         "generic-java-extractor-completion",
         "release-explanation-async-correctness",
         "jdk-mutation-alias-effect-correctness",
+        "fix-jakarta-platform-call-completeness",
         "explainable-relevance-and-polymorphic-dispatch"
       ],
-      "count": 8
+      "count": 9
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -107,13 +113,18 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "explainable-relevance-and-polymorphic-dispatch"],
-      "count": 7
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "explainable-relevance-and-polymorphic-dispatch"],
+      "count": 8
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "explainable-relevance-and-polymorphic-dispatch"],
-      "count": 6
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "explainable-relevance-and-polymorphic-dispatch"],
+      "count": 7
+    },
+    {
+      "file": "docs/java-capabilities.json",
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness"],
+      "count": 3
     },
     {
       "file": "docs/maven-plugin.md",

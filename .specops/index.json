@@ -186,6 +186,14 @@
     "updated": "2026-08-07T09:56:05Z"
   },
   {
+    "id": "fix-jakarta-platform-call-completeness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T11:25:35Z"
+  },
+  {
     "id": "explainable-relevance-and-polymorphic-dispatch",
     "type": "feature",
     "status": "completed",

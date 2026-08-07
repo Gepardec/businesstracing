@@ -53,6 +53,7 @@ public final class StaticDecisionAnalyzerTest {
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
         usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
         analyzesEveryAnnotatedEntry();
+        supportsJakartaPlatformOperations();
         treatsPlatformValueOperationsAsDecisionFacts();
         supportsCollectionFactsAndRecordEquality();
         followsStrategiesThatMutateReturnedCollectionsInsideLambdas();
@@ -1034,6 +1035,62 @@ public final class StaticDecisionAnalyzerTest {
         assert results.stream().map(result -> result.graph().decisionLabel()).distinct().count() == 2 : results;
         assert results.stream().allMatch(result ->
                 result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE) : results;
+    }
+
+    private static void supportsJakartaPlatformOperations() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-jakarta-platform-");
+            Path platformSource = root.resolve("platform-source/jakarta/ws/rs/core/Response.java");
+            Path platformClasses = root.resolve("platform-classes");
+            Path entry = root.resolve("entry-source/entry/JakartaResponsePolicy.java");
+            Files.createDirectories(platformSource.getParent());
+            Files.createDirectories(platformClasses);
+            Files.createDirectories(entry.getParent());
+            Files.writeString(platformSource, """
+                    package jakarta.ws.rs.core;
+                    public final class Response {
+                        public static Builder ok(Object entity) { return new Builder(); }
+                        public static final class Builder {
+                            public Response build() { return new Response(); }
+                        }
+                    }
+                    """);
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", platformClasses.toString(), platformSource.toString());
+            assert compilation == 0 : "could not compile the Jakarta platform fixture";
+            Files.writeString(entry, """
+                    package entry;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import jakarta.ws.rs.core.Response;
+                    public final class JakartaResponsePolicy {
+                        @FachTracing("getAllDataMaxNumber")
+                        public Response getAllDataMaxNumber(boolean onlyDataFromToday, Object data) {
+                            Object selected = data;
+                            if (onlyDataFromToday) selected = "today data";
+                            return Response.ok(selected).build();
+                        }
+                        @FachTracing("getAllWateringDataMaxNumber")
+                        public Response getAllWateringDataMaxNumber(boolean onlyDataFromToday, Object data) {
+                            Object selected = data;
+                            if (onlyDataFromToday) selected = "today watering data";
+                            return Response.ok(selected).build();
+                        }
+                    }
+                    """);
+            var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                    List.of(entry), List.of(CLASSPATH.getFirst(), platformClasses)));
+            assert results.size() == 2 : results;
+            assert results.stream().allMatch(result ->
+                    result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE) : results;
+            assert results.stream().allMatch(result -> result.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().contains("only data from today"))) : results;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
     }
 
     private static void treatsPlatformValueOperationsAsDecisionFacts() {

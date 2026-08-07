@@ -259,6 +259,18 @@ Plexus Utils moved to the advisory-free compatible release 3.6.1, and Maven JAR 
 
 Completed one task. Mermaid and PlantUML now omit the exact `next` arrow label while preserving meaningful outcomes such as `next item`. The graph contract, opaque edge IDs, serialized outcomes, and execution-path logic remain unchanged. Focused renderer contracts, self-tracing, and repository integrity passed.
 
+### fix-jakarta-platform-call-completeness (bugfix) — 2026-08-07
+
+Completed one task. Static analysis now classifies `jakarta.*` owners as platform operations, in
+the same boundary as `java.*` and `javax.*`. Source-unavailable Jakarta response-builder calls no
+longer create false business-decision coverage gaps. The source predicate stays in each graph, and
+unsupported application binary logic stays incomplete.
+
+A binary-only regression fixture covers both reported graph names. The focused analyzer contract,
+full Maven suite, Java capability verifier, repository integrity verifier, and full pull-request
+gate passed. Five Mega graphs were complete, and the short load had zero errors, mismatches, drops,
+or contamination.
+
 ### explainable-relevance-and-polymorphic-dispatch (feature) — 2026-08-07
 
 Completed four tasks. The analyzer now uses expression-bounded relevance, so a relevant control
