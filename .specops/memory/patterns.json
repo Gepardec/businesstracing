@@ -23,7 +23,7 @@
     },
     {
       "category": "build-tool-adapter",
-      "count": 5,
+      "count": 6,
       "pattern": "Let the build tool provide source roots, resolved classpaths, explicit module ownership, and repository settings, while the engine owns graph and provenance contracts."
     },
     {
@@ -45,6 +45,11 @@
       "category": "build-artifact-boundary",
       "count": 1,
       "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
+    },
+    {
+      "category": "wire-contract-schema",
+      "count": 1,
+      "pattern": "Generate formal wire schemas in the engine, derive closed values from production Java enums, and let build-tool adapters publish the matching artifact."
     }
   ],
   "fileOverlaps": [
@@ -72,9 +77,10 @@
         "maven-developer-graph-export",
         "reactor-wide-implementation-resolution",
         "generic-java-extractor-completion",
-        "self-dogfood-business-tracing"
+        "self-dogfood-business-tracing",
+        "developer-graph-json-schema"
       ],
-      "count": 7
+      "count": 8
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
@@ -111,8 +117,8 @@
     },
     {
       "file": "docs/maven-plugin.md",
-      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "annotation-processor-output-analysis"],
-      "count": 4
+      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "annotation-processor-output-analysis", "developer-graph-json-schema"],
+      "count": 5
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java",
@@ -136,8 +142,8 @@
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java",
-      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "self-dogfood-business-tracing"],
-      "count": 4
+      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "self-dogfood-business-tracing", "developer-graph-json-schema"],
+      "count": 5
     },
     {
       "file": "fachtracing-maven-plugin/pom.xml",

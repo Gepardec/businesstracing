@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T09:53:33Z"
-_sourceHash: "8ec191d14aa6b6081e8c2f8105fa2584e56d1e62dd672f1767ffc9bea8840a3f"
+_generatedAt: "2026-08-07T12:55:38Z"
+_sourceHash: "0c3c74be9c3c77ee523d92a3729ff312a49104a47eca9191b58a82430def9879"
 ---
 
 ## Project Structure Map
@@ -54,7 +54,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (65 files)
+#### fachtracing-engine/ (66 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -99,6 +99,8 @@ fachtracing/
   - shared observed-path edge resolution
 - `src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java`
   - `public final class DeveloperGraphExporter`
+- `src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphJsonSchema.java`
+  - `public final class DeveloperGraphJsonSchema`
 - `src/main/java/at/gepardec/fachtracing/mermaid/MermaidRenderer.java`
   - `public final class MermaidRenderer`
 - `src/main/java/at/gepardec/fachtracing/runtime/InvocationContext.java`

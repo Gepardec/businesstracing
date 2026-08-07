@@ -670,6 +670,26 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T08:48:18Z"
+    },
+    {
+      "specId": "developer-graph-json-schema",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Use an explicit schema generator and derive closed enums from Java types",
+      "rationale": "The exporter has conditional hand-written JSON, so reflection cannot recover its full contract. Java-derived enums remove the highest-risk copied closed sets.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:55:38Z"
+    },
+    {
+      "specId": "developer-graph-json-schema",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Write one shared matching schema per Maven invocation",
+      "rationale": "All graphs in one invocation use the same provenance mode. One schema avoids duplicate artifacts and gives frontend developers one stable handoff file.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:55:38Z"
     }
   ]
 }

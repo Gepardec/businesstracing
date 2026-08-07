@@ -258,3 +258,7 @@ Plexus Utils moved to the advisory-free compatible release 3.6.1, and Maven JAR 
 ### omit-next-diagram-labels (feature) — 2026-08-07
 
 Completed one task. Mermaid and PlantUML now omit the exact `next` arrow label while preserving meaningful outcomes such as `next item`. The graph contract, opaque edge IDs, serialized outcomes, and execution-path logic remain unchanged. Focused renderer contracts, self-tracing, and repository integrity passed.
+
+### developer-graph-json-schema (feature) — 2026-08-07
+
+Completed both tasks. Fachtracing now generates closed JSON Schema Draft 2020-12 documents for developer graph V1 and V2 through a public Java API. Maven writes and links one matching schema beside the developer JSON, removes stale schema output safely, and documents the exact frontend handoff. The focused consumer contract and full repository verifier passed.
