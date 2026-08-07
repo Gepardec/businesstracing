@@ -75,10 +75,10 @@ Optional `includeProjects` and `excludeProjects` lists use exact `groupId:artifa
 filter Maven's effective selection. An include value that is not in that selection causes a failure.
 The existing `analyze` goal remains available for per-module output.
 
-The aggregate goal supports the same `additionalSourceRoots`, `additionalEntrySourceRoots`, and
-`sourceDependencies` settings as the module goal. You can also set these lists with the matching
-`fachtracing.*` command-line properties. In a reactor with a POM execution root, an additional entry
-root uses the first selected non-POM project's compiler context.
+The aggregate goal supports the same `additionalSourceRoots`, `additionalEntrySourceRoots`,
+`sourceDependencies`, and `opaqueLibraryArtifacts` settings as the module goal. You can also set
+these lists with the matching `fachtracing.*` command-line properties. In a reactor with a POM
+execution root, an additional entry root uses the first selected non-POM project's compiler context.
 External sources in a JPMS closure must have explicit module ownership. The analyzer rejects an
 unowned external source in a modular closure.
 
@@ -171,6 +171,40 @@ Set `fachtracing.sourceExtractionDirectory` to change the cache directory. A nor
 removes the default cache. Source archives can contain private source code. Protect the Maven local
 repository, build directory, CI artifacts, and developer JSON according to the source owner's access
 rules.
+
+## Explicit technical library boundaries
+
+Source-unavailable dependency code is decision-bearing by default. Thus, a result-relevant call into
+an unselected dependency JAR creates a coverage gap. Use `opaqueLibraryArtifacts` only for technical
+libraries whose internal decisions must stay outside the business graph:
+
+```xml
+<configuration>
+  <opaqueLibraryArtifacts>
+    <opaqueLibraryArtifact>com.acme.persistence:query-api</opaqueLibraryArtifact>
+    <opaqueLibraryArtifact>org.apache.commons:commons-lang3</opaqueLibraryArtifact>
+  </opaqueLibraryArtifacts>
+</configuration>
+```
+
+Each value must use exact `groupId:artifactId` form. The plugin maps the value to the exact resolved
+JAR paths that occur on the selected projects' compile classpaths. It does not use package prefixes
+or artifact-name patterns. An invalid coordinate, a missing artifact, a runtime-only artifact, or a
+class directory causes the goal to fail before graph extraction.
+
+You can set the same list for one-off use:
+
+```sh
+mvn compile \
+  -Dfachtracing.failOnIncomplete=true \
+  -Dfachtracing.opaqueLibraryArtifacts=com.acme.persistence:query-api,org.apache.commons:commons-lang3 \
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
+```
+
+Selection is an explicit trust declaration. Do not select an artifact that contains business rules.
+A selected reference-returning operation is opaque, and source-visible receiver controls remain in
+the graph. A selected Boolean call is opaque only when the source call is already a control
+predicate. A direct binary Boolean decision stays fail-closed.
 
 ## Developer JSON and source links
 
