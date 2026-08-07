@@ -25,6 +25,7 @@ public final class DecisionRecordProtocolTest {
         timedOutUncooperativeSaveIsUnknownAndStopsDelivery();
         shutdownDrainsAcceptedRecords();
         shutdownAccountsForInterruptedInFlightRetry();
+        shutdownPreservesMostOfLongGracefulBound();
         shutdownIsBoundedWhenRepositoryIgnoresInterruption();
     }
 
@@ -215,6 +216,42 @@ public final class DecisionRecordProtocolTest {
         assert !delivery.workerAlive();
         assert counters.accepted() == 1 && counters.dropped() == 0 && counters.unknown() == 1 : counters;
         assert counters.unresolvedAccepted() == 0 : counters;
+    }
+
+    private static void shutdownPreservesMostOfLongGracefulBound() throws Exception {
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var persisted = new AtomicInteger();
+        var repository = new DecisionRecordRepository() {
+            @Override public DecisionRecordId save(DecisionRecord record) { return record.id(); }
+            @Override public Optional<DecisionRecord> findById(DecisionRecordId id) { return Optional.empty(); }
+            @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
+                entered.countDown();
+                try { release.await(); }
+                catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                persisted.incrementAndGet();
+            }
+        };
+        var delivery = new DecisionRecordDelivery(repository, 2,
+                DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN, 0, Duration.ZERO,
+                Duration.ofHours(1), Duration.ofSeconds(3));
+        assert delivery.offer(envelope("grace-record", "grace-execution", Instant.now()));
+        assert entered.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        var releaser = Thread.ofPlatform().daemon(true).start(() -> {
+            try { Thread.sleep(1_800); }
+            catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
+            finally { release.countDown(); }
+        });
+        delivery.close();
+        releaser.join();
+        var counters = delivery.counters();
+        assert !delivery.workerAlive();
+        assert persisted.get() == 1 : persisted;
+        assert counters.accepted() == 1 && counters.saved() == 1 : counters;
+        assert counters.unknown() == 0 && counters.unresolvedAccepted() == 0 : counters;
     }
 
     private static void timedOutUncooperativeSaveIsUnknownAndStopsDelivery() throws Exception {
