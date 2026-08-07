@@ -45,8 +45,8 @@ The analyzer can report `COMPLETE` while it omits a result-relevant input:
 - [x] Both regressions fail before production changes.
 - [x] The implicit field remains in the complete result graph.
 - [x] The local callback keeps its mutation transfer and reports an incomplete Boolean-result gap.
-- [ ] Existing analyzer and Mega contracts pass.
-- [ ] No dependency is added.
+- [x] Existing analyzer and Mega contracts pass.
+- [x] No dependency is added.
 
 ## Team Conventions
 

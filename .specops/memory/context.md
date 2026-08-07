@@ -364,3 +364,13 @@ checks pass, and GitHub reports PR #15 as mergeable.
 ### developer-graph-json-schema (feature) — 2026-08-07
 
 Completed both tasks. Fachtracing now generates closed JSON Schema Draft 2020-12 documents for developer graph V1 and V2 through a public Java API. Maven writes and links one matching schema beside the developer JSON, removes stale schema output safely, and documents the exact frontend handoff. The focused consumer contract and full repository verifier passed.
+
+### implicit-field-local-callback-correctness (bugfix) — 2026-08-07
+
+Completed all four tasks. Conditional aliases now retain attributed implicit fields. Callback
+arguments stored in locals resolve against active definitions, preserve their source-to-target
+mutation transfer, and report a located gap when a platform mutator Boolean controls a predicate.
+
+Two focused regressions, Java capabilities, two full local pull-request gates, five Mega graphs,
+and hosted `pr-gate` and `postgres` checks pass. Current `main` is integrated, and PR #15 is
+mergeable.

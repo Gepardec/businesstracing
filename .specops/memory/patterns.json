@@ -38,8 +38,8 @@
     },
     {
       "category": "static-effect-proof",
-      "count": 3,
-      "pattern": "Treat namespace support and purity as separate proofs; merge reachable alias definitions, normalize equivalent callback syntax, and report an exact gap for unproved result-relevant effects."
+      "count": 4,
+      "pattern": "Treat namespace support and purity as separate proofs; keep attributed state roots, merge reachable alias and callback definitions, and report an exact gap for unproved result-relevant effects."
     },
     {
       "category": "build-artifact-boundary",
@@ -119,9 +119,10 @@
         "explicit-opaque-library-boundaries",
         "context-aware-operation-labels",
         "context-label-symbol-correctness",
-        "integrate-main-pr15"
+        "integrate-main-pr15",
+        "implicit-field-local-callback-correctness"
       ],
-      "count": 15
+      "count": 16
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -135,8 +136,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
-      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness"],
-      "count": 6
+      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness", "implicit-field-local-callback-correctness"],
+      "count": 7
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java",
@@ -145,18 +146,18 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15"],
-      "count": 14
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness"],
+      "count": 15
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15"],
-      "count": 13
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness"],
+      "count": 14
     },
     {
       "file": "docs/java-capabilities.json",
-      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "integrate-main-pr15"],
-      "count": 9
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "integrate-main-pr15", "implicit-field-local-callback-correctness"],
+      "count": 10
     },
     {
       "file": "docs/maven-plugin.md",

@@ -268,9 +268,9 @@
   {
     "id": "implicit-field-local-callback-correctness",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-07T13:08:48Z"
+    "updated": "2026-08-07T13:31:23Z"
   }
 ]

@@ -870,6 +870,26 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T12:55:38Z"
+    },
+    {
+      "specId": "implicit-field-local-callback-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Supply field names from attributed analysis",
+      "rationale": "The analyzer owns compiler attribution, while the dependency builder owns branch state.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:31:23Z"
+    },
+    {
+      "specId": "implicit-field-local-callback-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Resolve callback locals from active definitions at each invocation",
+      "rationale": "A local callback can have branch-dependent definitions, so effect proof must use the definition state at its use site.",
+      "task": "Task 3",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:31:23Z"
     }
   ]
 }

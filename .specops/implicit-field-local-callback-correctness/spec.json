@@ -1,10 +1,10 @@
 {
   "id": "implicit-field-local-callback-correctness",
   "type": "bugfix",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-07T13:08:48Z",
-  "updated": "2026-08-07T13:08:48Z",
+  "updated": "2026-08-07T13:31:23Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": { "name": "lucostus" },
@@ -23,6 +23,17 @@
         "taskCoverage": 10
       },
       "evaluatedAt": "2026-08-07T13:08:48Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T13:31:23Z"
     }
   },
   "specDependencies": [
@@ -35,5 +46,14 @@
   "relatedSpecs": [
     "conditional-alias-method-reference-effects",
     "integrate-main-pr15"
-  ]
+  ],
+  "metrics": {
+    "durationMinutes": 23,
+    "specArtifactTokensEstimate": 1600,
+    "filesChanged": 15,
+    "linesAdded": 475,
+    "linesRemoved": 29,
+    "tasksCompleted": 4,
+    "acceptanceCriteriaVerified": 5
+  }
 }

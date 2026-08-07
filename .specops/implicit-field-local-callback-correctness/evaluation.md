@@ -18,4 +18,16 @@
 
 ## Implementation Evaluation
 
-Not evaluated.
+### Iteration 1
+
+**Evaluated at:** 2026-08-07T13:31:23Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Root Cause Accuracy | Pre-fix tests reproduced both false-complete graphs. Each fix changes the identified state-root or callback-definition boundary. | The callback case needed both effect resolution and a definition-to-use-site link. | 10 | 7 | Pass |
+| Fix Completeness | The field graph is complete with `target field`; the local predicate graph keeps `add candidates to accepted` and has a Boolean-result gap. | Exact platform mutator predicate topology remains an explicit gap. | 10 | 7 | Pass |
+| Regression Safety | Focused analyzer tests, Java capabilities, two full local gates, and five Mega graphs pass after semantic main integration. | `main` advanced twice and required repeated union verification. | 9 | 7 | Pass |
+| Test Verification | Hosted `pr-gate` and `postgres` pass, and GitHub reports the PR as mergeable. | The release-only job is skipped by design for pull requests. | 10 | 7 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed.

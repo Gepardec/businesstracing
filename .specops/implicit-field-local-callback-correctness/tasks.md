@@ -39,21 +39,21 @@
 
 ## Task 4: Verify and publish
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Tasks 2 and 3
 **Priority:** High
 
 **Acceptance Criteria:**
 
-- [ ] Focused and full local checks pass.
-- [ ] The fix is pushed to PR #15.
-- [ ] Required hosted checks pass.
+- [x] Focused and full local checks pass.
+- [x] The fix is pushed to PR #15.
+- [x] Required hosted checks pass.
 
 ## Progress
 
 - Total: 4
-- Completed: 3
-- In Progress: 1
+- Completed: 4
+- In Progress: 0
 - Pending: 0
 - Blocked: 0
