@@ -862,13 +862,17 @@ public final class StaticDecisionAnalyzer {
             }
             var dependencies = new DependencyGraphBuilder().build(
                     location.method(), call -> callEffects(location, call));
-            Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies, effectRoots);
-            AnalysisDecisionAuditor.excludedConstructs(location.method(), dependencies, slice).forEach(tree ->
+            Set<ThrowTree> locallyCaughtThrows = CaughtThrowResolver.resolve(
+                    location.path(), dependencies.throwStatements(), dependencies.parents(), trees, types);
+            Set<Tree> slice = new BackwardDecisionSlicer().slice(
+                    dependencies, effectRoots, locallyCaughtThrows);
+            Set<Tree> unknownResultEffects = unknownResultEffects(location, dependencies, slice);
+            AnalysisDecisionAuditor.excludedConstructs(
+                    location.method(), dependencies, slice, unknownResultEffects).forEach(tree ->
                     builder.addAnalysisDecision(
                             AnalysisManifest.AnalysisAction.EXCLUDED,
                             AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT,
                             mapping(location, tree), List.of(), ""));
-            Set<Tree> unknownResultEffects = unknownResultEffects(location, dependencies, slice);
             var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
                     unknownResultEffects, predecessor);
             flow.scan(new TreePath(location.path(), location.method().getBody()), null);

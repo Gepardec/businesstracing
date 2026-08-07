@@ -26,15 +26,17 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 “technical”; work disappears only when it cannot affect the decision result. A construct is
 relevant when it is in the result slice, contains a sliced construct, or is inside a sliced
 expression. Unrelated work in the body of a relevant branch does not become relevant only because
-the branch controls a return. The slice keeps every assignment to a result-dependent local across
-alternative branches. It also keeps each source `throw` as a terminal failure path. If a local has
-later assignments, its seed initializer stays implicit in the business graph.
+the branch controls a return. The slice keeps each assignment that can reach a result-dependent
+use across alternative branches and removes an assignment that a later sequential assignment
+overwrites. A source `throw` is a terminal failure path only when a compatible local catch does not
+handle its protected path. If a local has later assignments, its seed initializer stays implicit in the
+business graph.
 
 `AnalysisManifest.analysisDecisions()` explains this selection for developer tools. An included
 source construct has the opaque graph node ID and an inclusion reason. An excluded graph-eligible
 construct has its source location, no node ID, and reason `NO_RESULT_EFFECT`. An unresolved construct
-has a gap node ID and reason `UNRESOLVED_RELEVANCE`. This audit data does not enter the business graph
-or runtime activation JSON.
+has a gap node ID and reason `UNRESOLVED_RELEVANCE`; it does not also get a no-result-effect decision.
+This audit data does not enter the business graph or runtime activation JSON.
 
 | Construct | Walking-skeleton behavior |
 | --- | --- |

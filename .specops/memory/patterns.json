@@ -53,8 +53,8 @@
     },
     {
       "category": "static-relevance-audit",
-      "count": 1,
-      "pattern": "Bound descendant relevance to sliced expressions and record included, excluded, and unresolved source decisions outside business output."
+      "count": 2,
+      "pattern": "Bound relevance to sliced expressions and use-site definitions, keep only compatible escaping failures, and make included, excluded, and unresolved source decisions mutually consistent outside business output."
     }
   ],
   "fileOverlaps": [
@@ -98,9 +98,10 @@
         "jdk-mutation-alias-effect-correctness",
         "fix-jakarta-platform-call-completeness",
         "explainable-relevance-and-polymorphic-dispatch",
-        "conditional-alias-method-reference-effects"
+        "conditional-alias-method-reference-effects",
+        "result-relevance-review-findings"
       ],
-      "count": 10
+      "count": 11
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -114,8 +115,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
-      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "explainable-relevance-and-polymorphic-dispatch"],
-      "count": 6
+      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
+      "count": 7
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java",
@@ -124,13 +125,28 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "explainable-relevance-and-polymorphic-dispatch", "conditional-alias-method-reference-effects"],
-      "count": 9
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "explainable-relevance-and-polymorphic-dispatch", "conditional-alias-method-reference-effects", "result-relevance-review-findings"],
+      "count": 10
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "explainable-relevance-and-polymorphic-dispatch", "conditional-alias-method-reference-effects"],
-      "count": 8
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "explainable-relevance-and-polymorphic-dispatch", "conditional-alias-method-reference-effects", "result-relevance-review-findings"],
+      "count": 9
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java",
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java",
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/test/resources/fixtures/slicing/ResultSlicePolicy.java",
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
+      "count": 2
     },
     {
       "file": "docs/java-capabilities.json",

@@ -31,6 +31,8 @@ public final class StaticDecisionAnalyzerTest {
         excludesIgnoredReadsAndReportsUnknownEffects();
         excludesReadOnlyEnumQueriesWithoutCoverageGaps();
         preservesEveryBranchDefinitionAndFailurePath();
+        excludesOverwrittenDefinitions();
+        excludesCaughtResultIndependentThrows();
         preservesDequeOfferMutation();
         preservesLocalAliasMutation();
         invalidatesReassignedLocalAliases();
@@ -274,6 +276,18 @@ public final class StaticDecisionAnalyzerTest {
                 : unknown.diagnostics();
         assert unknown.graph().nodes().stream().noneMatch(node ->
                 node.businessLabel().contains("evaluate update")) : unknown.graph().nodes();
+        var gapMappings = unknown.graph().coverageGaps().stream()
+                .map(gap -> unknown.manifest().sourceMappings().get(gap.nodeId()))
+                .filter(java.util.Objects::nonNull).toList();
+        assert !gapMappings.isEmpty() : unknown.manifest().sourceMappings();
+        for (AnalysisManifest.SourceMapping gap : gapMappings) {
+            assert unknown.manifest().analysisDecisions().stream().noneMatch(decision ->
+                    decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                            && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
+                            && decision.source().equals(gap.source())
+                            && decision.line() == gap.line())
+                    : gap + " / " + unknown.manifest().analysisDecisions();
+        }
     }
 
     private static void excludesReadOnlyEnumQueriesWithoutCoverageGaps() {
@@ -298,6 +312,28 @@ public final class StaticDecisionAnalyzerTest {
         assert labels.contains("set allowed to false") : labels;
         assert labels.contains("decision cannot continue") : labels;
         assert !labels.contains("derive allowed as false") : labels;
+    }
+
+    private static void excludesOverwrittenDefinitions() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "overwritten decision assignment");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("set decision to approved") : labels;
+        assert !labels.contains("audit") : labels;
+    }
+
+    private static void excludesCaughtResultIndependentThrows() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "caught audit failure");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert result.graph().nodes().stream().noneMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.CHOICE) : result.graph().nodes();
+        assert !labels.contains("audit") : labels;
+        assert !labels.contains("alternative decision result") : labels;
     }
 
     private static void preservesLocalAliasMutation() {

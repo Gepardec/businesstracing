@@ -14,6 +14,7 @@ import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -29,7 +30,10 @@ public final class DependencyGraphBuilder {
             MethodTree method,
             Function<MethodInvocationTree, CallEffects> callEffects) {
         var definitions = new LinkedHashMap<String, Tree>();
+        var assignedNames = new LinkedHashSet<String>();
         var definitionHistory = new LinkedHashMap<String, List<Tree>>();
+        var localNames = new LinkedHashSet<String>();
+        method.getParameters().forEach(parameter -> localNames.add(parameter.getName().toString()));
         var identifiers = new IdentityHashMap<Tree, Set<String>>();
         var parents = new IdentityHashMap<Tree, Tree>();
         var returns = new ArrayList<ReturnTree>();
@@ -45,6 +49,7 @@ public final class DependencyGraphBuilder {
             }
 
             @Override public Void visitVariable(VariableTree node, Tree parent) {
+                localNames.add(node.getName().toString());
                 if (node.getInitializer() != null) {
                     definitions.put(node.getName().toString(), node.getInitializer());
                     aliases.assign(node.getName().toString(), node.getInitializer());
@@ -55,6 +60,7 @@ public final class DependencyGraphBuilder {
             @Override public Void visitAssignment(AssignmentTree node, Tree parent) {
                 if (node.getVariable() instanceof IdentifierTree identifier) {
                     definitions.put(identifier.getName().toString(), node.getExpression());
+                    assignedNames.add(identifier.getName().toString());
                     definitionHistory.computeIfAbsent(identifier.getName().toString(), ignored -> new ArrayList<>())
                             .add(node.getExpression());
                     aliases.assign(identifier.getName().toString(), node.getExpression());
@@ -77,6 +83,7 @@ public final class DependencyGraphBuilder {
             @Override public Void visitCompoundAssignment(CompoundAssignmentTree node, Tree parent) {
                 if (node.getVariable() instanceof IdentifierTree identifier) {
                     definitions.put(identifier.getName().toString(), node);
+                    assignedNames.add(identifier.getName().toString());
                     definitionHistory.computeIfAbsent(identifier.getName().toString(), ignored -> new ArrayList<>())
                             .add(node);
                 }
@@ -122,11 +129,17 @@ public final class DependencyGraphBuilder {
         Map<String, List<Tree>> immutablePossibleEffects = new LinkedHashMap<>();
         possibleEffectsByIdentifier.forEach((name, effects) ->
                 immutablePossibleEffects.put(name, List.copyOf(effects)));
-        Map<String, List<Tree>> immutableDefinitions = new LinkedHashMap<>();
+        var nonLocalDefinitions = new LinkedHashMap<String, List<Tree>>();
+        definitionHistory.forEach((name, history) -> {
+            if (!localNames.contains(name)) nonLocalDefinitions.put(name, List.copyOf(history));
+        });
+        var immutableDefinitions = new LinkedHashMap<String, List<Tree>>();
         definitions.forEach((name, latest) -> immutableDefinitions.put(name,
                 List.copyOf(definitionHistory.getOrDefault(name, List.of(latest)))));
+        Map<Tree, Map<String, List<Tree>>> reachingDefinitions =
+                ReachingDefinitionIndex.build(method, assignedNames, nonLocalDefinitions);
         return new MethodDependencies(method, returns, throwStatements, definitions, immutableDefinitions,
-                identifiers, parents, immutableEffects, immutablePossibleEffects);
+                identifiers, parents, immutableEffects, immutablePossibleEffects, reachingDefinitions);
     }
 
     /** Classified writes for one attributed call. */
@@ -153,7 +166,23 @@ public final class DependencyGraphBuilder {
             Map<Tree, Set<String>> identifierUses,
             Map<Tree, Tree> parents,
             Map<String, List<Tree>> effectsByIdentifier,
-            Map<String, List<Tree>> possibleEffectsByIdentifier) {
+            Map<String, List<Tree>> possibleEffectsByIdentifier,
+            Map<Tree, Map<String, List<Tree>>> reachingDefinitions) {
+        /** Preserves the previous flat-history construction contract. */
+        public MethodDependencies(
+                MethodTree method,
+                List<ReturnTree> returns,
+                List<ThrowTree> throwStatements,
+                Map<String, Tree> definitions,
+                Map<String, List<Tree>> definitionHistory,
+                Map<Tree, Set<String>> identifierUses,
+                Map<Tree, Tree> parents,
+                Map<String, List<Tree>> effectsByIdentifier,
+                Map<String, List<Tree>> possibleEffectsByIdentifier) {
+            this(method, returns, throwStatements, definitions, definitionHistory, identifierUses, parents,
+                    effectsByIdentifier, possibleEffectsByIdentifier, legacyIndex(method, definitionHistory));
+        }
+
         /** Creates defensive collections while retaining tree object identity. */
         public MethodDependencies {
             returns = List.copyOf(returns);
@@ -164,6 +193,26 @@ public final class DependencyGraphBuilder {
             parents = Map.copyOf(parents);
             effectsByIdentifier = Map.copyOf(effectsByIdentifier);
             possibleEffectsByIdentifier = Map.copyOf(possibleEffectsByIdentifier);
+            Map<Tree, Map<String, List<Tree>>> immutableReaching = new IdentityHashMap<>();
+            reachingDefinitions.forEach((tree, snapshot) -> {
+                var immutableSnapshot = new LinkedHashMap<String, List<Tree>>();
+                snapshot.forEach((name, history) -> immutableSnapshot.put(name, List.copyOf(history)));
+                immutableReaching.put(tree, Collections.unmodifiableMap(immutableSnapshot));
+            });
+            reachingDefinitions = Collections.unmodifiableMap(immutableReaching);
+        }
+
+        private static Map<Tree, Map<String, List<Tree>>> legacyIndex(
+                MethodTree method,
+                Map<String, List<Tree>> definitionHistory) {
+            Map<Tree, Map<String, List<Tree>>> result = new IdentityHashMap<>();
+            new TreeScanner<Void, Void>() {
+                @Override public Void scan(Tree tree, Void unused) {
+                    if (tree != null) result.put(tree, definitionHistory);
+                    return super.scan(tree, unused);
+                }
+            }.scan(method, null);
+            return result;
         }
     }
 

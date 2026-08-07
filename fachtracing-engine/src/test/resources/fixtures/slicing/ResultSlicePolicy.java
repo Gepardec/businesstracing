@@ -76,6 +76,33 @@ public final class ResultSlicePolicy {
         return allowed;
     }
 
+    @FachTracing("overwritten decision assignment")
+    public boolean overwrittenDecisionAssignment(boolean approved) {
+        boolean decision;
+        decision = auditDecision(approved);
+        decision = approved;
+        return decision;
+    }
+
+    private boolean auditDecision(boolean approved) {
+        if (approved) {
+            return false;
+        }
+        return true;
+    }
+
+    @FachTracing("caught audit failure")
+    public boolean caughtAuditFailure(boolean approved, boolean audit) {
+        try {
+            if (audit) {
+                throw new IllegalStateException();
+            }
+        } catch (IllegalStateException ignored) {
+            recordAudit(0);
+        }
+        return approved;
+    }
+
     private void recordAudit(int age) {
         int ignoredAge = age + 1;
     }

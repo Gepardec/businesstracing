@@ -730,6 +730,26 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T11:53:56Z"
+    },
+    {
+      "specId": "result-relevance-review-findings",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Keep conservative flat assignment history for non-local state while indexing local definitions by use site",
+      "rationale": "Field writes can affect later receiver calls and must not be removed as overwritten local values.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:07:46Z"
+    },
+    {
+      "specId": "result-relevance-review-findings",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Use compiler-attributed thrown and catch types before filtering throw sinks",
+      "rationale": "The presence of an unrelated catch does not make a thrown exception non-terminal.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:07:46Z"
     }
   ]
 }

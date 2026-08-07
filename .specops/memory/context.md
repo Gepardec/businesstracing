@@ -298,3 +298,15 @@ Draft PR #11 passed the hosted pull-request and PostgreSQL checks. A separate sh
 commit reserves half of the configured close bound for cancellation after the prior 100 ms reserve
 failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
 local runs and the complete local gate.
+
+### result-relevance-review-findings (bugfix) — 2026-08-07
+
+Completed one task. Local definitions now resolve at each use site, so an unconditional later
+assignment removes stale work while alternative branch definitions remain. Non-local state writes
+keep conservative history because later receiver logic can read them. Compiler-attributed catch
+compatibility removes only locally handled throws from terminal sinks. An unresolved result effect
+now gets one gap decision and no contradictory no-result-effect decision.
+
+The focused analyzer contract, full pull-request gate, and all five pinned Mega graphs passed. The
+runtime proof selected all three strategy implementations, and the short load completed 5,000
+decisions at 1,000 RPS with no errors, mismatches, drops, or contamination.

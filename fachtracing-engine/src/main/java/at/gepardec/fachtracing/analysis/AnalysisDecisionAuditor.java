@@ -16,14 +16,25 @@ final class AnalysisDecisionAuditor {
     static List<Tree> excludedConstructs(
             MethodTree method,
             DependencyGraphBuilder.MethodDependencies dependencies,
-            Set<Tree> slice) {
+            Set<Tree> slice,
+            Set<Tree> unresolved) {
         if (method.getBody() == null) return List.of();
         var excluded = new ArrayList<Tree>();
+        Set<Tree> unresolvedContainers = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        for (Tree tree : unresolved) {
+            Tree current = tree;
+            while (current != null && current != method) {
+                unresolvedContainers.add(current);
+                current = dependencies.parents().get(current);
+            }
+        }
         new TreeScanner<Void, Void>() {
             @Override public Void scan(Tree tree, Void unused) {
                 if (tree == null) return null;
+                if (unresolved.contains(tree)) return null;
                 if (graphEligible(tree)
-                        && !DecisionRelevance.isRelevant(tree, slice, dependencies)) {
+                        && !DecisionRelevance.isRelevant(tree, slice, dependencies)
+                        && !unresolvedContainers.contains(tree)) {
                     excluded.add(tree);
                     return null;
                 }
