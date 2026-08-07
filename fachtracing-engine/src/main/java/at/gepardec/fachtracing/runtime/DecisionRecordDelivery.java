@@ -143,7 +143,12 @@ public final class DecisionRecordDelivery implements AutoCloseable {
             } catch (RuntimeException failure) {
                 if (attempt == maxRetries) { counters.dropped.incrementAndGet(); return true; }
                 counters.retried.incrementAndGet();
-                try { Thread.sleep(retryDelayMillis); }
+                try {
+                    if (!awaitRetryDelay()) {
+                        counters.dropped.incrementAndGet();
+                        return false;
+                    }
+                }
                 catch (InterruptedException interrupted) {
                     counters.dropped.incrementAndGet();
                     Thread.currentThread().interrupt();
@@ -152,6 +157,19 @@ public final class DecisionRecordDelivery implements AutoCloseable {
             }
         }
         return true;
+    }
+
+    private boolean awaitRetryDelay() throws InterruptedException {
+        if (retryDelayMillis == 0) return running.get();
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(retryDelayMillis);
+        synchronized (lifecycle) {
+            while (running.get()) {
+                long remaining = deadline - System.nanoTime();
+                if (remaining <= 0) return true;
+                TimeUnit.NANOSECONDS.timedWait(lifecycle, remaining);
+            }
+            return false;
+        }
     }
 
     private void stopDelivery() {
@@ -185,13 +203,27 @@ public final class DecisionRecordDelivery implements AutoCloseable {
             throw new IllegalStateException("delivery worker cannot close itself");
         }
         synchronized (lifecycle) { running.set(false); lifecycle.notifyAll(); }
-        worker.interrupt();
         boolean interrupted = false;
         long deadline = System.nanoTime() + shutdownTimeoutNanos;
+        long interruptReserve = Math.min(TimeUnit.MILLISECONDS.toNanos(100),
+                Math.max(1, shutdownTimeoutNanos / 4));
+        long gracefulDeadline = deadline - interruptReserve;
+        while (worker.isAlive() && System.nanoTime() < gracefulDeadline) {
+            long remaining = gracefulDeadline - System.nanoTime();
+            try { worker.join(Math.max(1, TimeUnit.NANOSECONDS.toMillis(remaining))); }
+            catch (InterruptedException ignored) {
+                interrupted = true;
+                break;
+            }
+        }
+        if (worker.isAlive()) worker.interrupt();
         while (worker.isAlive() && System.nanoTime() < deadline) {
             long remaining = deadline - System.nanoTime();
             try { worker.join(Math.max(1, TimeUnit.NANOSECONDS.toMillis(remaining))); }
-            catch (InterruptedException ignored) { interrupted = true; worker.interrupt(); }
+            catch (InterruptedException ignored) {
+                interrupted = true;
+                worker.interrupt();
+            }
         }
         drainAsDropped();
         if (interrupted) Thread.currentThread().interrupt();

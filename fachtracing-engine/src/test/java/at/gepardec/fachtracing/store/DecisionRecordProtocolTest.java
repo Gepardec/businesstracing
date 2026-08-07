@@ -23,6 +23,7 @@ public final class DecisionRecordProtocolTest {
         retriesOutsideTheApplicationThreadWithCounters();
         timedOutRetriesAreAccountedAsDropped();
         timedOutUncooperativeSaveIsUnknownAndStopsDelivery();
+        shutdownDrainsAcceptedRecords();
         shutdownAccountsForInterruptedInFlightRetry();
         shutdownIsBoundedWhenRepositoryIgnoresInterruption();
     }
@@ -122,6 +123,44 @@ public final class DecisionRecordProtocolTest {
             assert counters.accepted() == 1 && counters.retried() == 1 && counters.dropped() == 1 : counters;
             assert counters.unresolvedAccepted() == 0 : counters;
         }
+    }
+
+    private static void shutdownDrainsAcceptedRecords() throws Exception {
+        var entered = new java.util.concurrent.CountDownLatch(1);
+        var release = new java.util.concurrent.CountDownLatch(1);
+        var persisted = new AtomicInteger();
+        var repository = new DecisionRecordRepository() {
+            @Override public DecisionRecordId save(DecisionRecord record) { return record.id(); }
+            @Override public Optional<DecisionRecord> findById(DecisionRecordId id) { return Optional.empty(); }
+            @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
+                entered.countDown();
+                boolean interrupted = false;
+                while (release.getCount() > 0) {
+                    try { release.await(); }
+                    catch (InterruptedException ignored) { interrupted = true; }
+                }
+                if (interrupted) Thread.currentThread().interrupt();
+                persisted.incrementAndGet();
+            }
+        };
+        var delivery = new DecisionRecordDelivery(repository, 2,
+                DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN, 0, Duration.ZERO);
+        assert delivery.offer(envelope("drain-record-1", "drain-execution-1", Instant.now()));
+        assert entered.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        assert delivery.offer(envelope("drain-record-2", "drain-execution-2", Instant.now()));
+        var releaser = Thread.ofPlatform().daemon(true).start(() -> {
+            try { Thread.sleep(100); }
+            catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
+            release.countDown();
+        });
+        delivery.close();
+        releaser.join();
+        var counters = delivery.counters();
+        assert !delivery.workerAlive();
+        assert persisted.get() == 2 : persisted;
+        assert counters.accepted() == 2 && counters.saved() == 2 : counters;
+        assert counters.dropped() == 0 && counters.unknown() == 0 : counters;
+        assert counters.unresolvedAccepted() == 0 : counters;
     }
 
     private static void shutdownAccountsForInterruptedInFlightRetry() throws Exception {

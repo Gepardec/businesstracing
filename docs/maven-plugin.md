@@ -140,9 +140,11 @@ Maven repository mirrors, credentials, and offline mode apply. In offline mode, 
 must already be in the local repository. A missing artifact causes a deterministic failure.
 
 The analyzer reads the effective `maven-compiler-plugin` configuration for each project. It keeps
-the encoding, release or equal source/target level, analysis-safe `compilerArgs`, preview and
-parameter flags, generated source root, module descriptor, and module path. It rejects different
-source and target levels, forked compiler executables, and legacy free-form compiler arguments.
+the encoding, language-selection mode, analysis-safe `compilerArgs`, preview and parameter flags,
+generated source root, module descriptor, and module path. An explicit `release` stays a
+`--release` setting. Equal `source` and `target` values stay `-source` and `-target` settings. The
+analyzer rejects different source and target levels, forked compiler executables, and legacy
+free-form compiler arguments.
 
 Maven must run annotation processors during `compile`. Fachtracing does not execute them again. It
 removes processor paths, processor names, processor options, and the Maven processing mode from its

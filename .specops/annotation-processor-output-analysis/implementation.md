@@ -2,14 +2,15 @@
 
 ## Summary
 
-Completed five tasks across three versions. The Maven adapter accepts projects that use annotation
+Completed six tasks across four versions. The Maven adapter accepts projects that use annotation
 processors, removes all Java 21 processor-only compiler controls from the analysis model, and keeps
 `-proc:none` in the private compiler task. Both Maven goals now use one generated-source discovery
 rule for developer provenance, including configured roots outside the Maven build directory. A real
 two-module processor fixture proves generated Java extraction through both Maven goals. The fixture
 processor disables processing only while it compiles itself, so clean builds behave consistently on
-Java 21 and later releases. Focused, standard, and complete PR verification pass. No new dependency
-or production-code change occurred.
+Java 21 and later releases. Maven `source` and `target` now keep their running-JDK API surface, while
+an explicit `release` remains strict. Focused, standard, and complete PR verification pass. No new
+dependency was added.
 
 ## Phase 1 Context Summary
 
@@ -44,6 +45,8 @@ or production-code change occurred.
   provenance and complete Java 21 processor-option sanitization.
 - Version 3 CI review: No user documentation changed. The correction only affects bootstrap of the
   test processor module.
+- Version 4 review: `docs/maven-plugin.md` now states the difference between Maven `release` and
+  `source` plus `target` during attribution.
 - `README.md`: Checked. It does not describe effective compiler-model details and needs no change.
 - `AGENTS.md`: Checked. No project instruction changed.
 
@@ -99,3 +102,13 @@ or production-code change occurred.
   paths extract its decision. External release activation and all five Mega graphs pass. The short
   load completed 5,000 decisions at 1,000 RPS with 0.269% p95 overhead and zero errors, mismatches,
   drops, or contamination. PostgreSQL was skipped because no connection is configured.
+- 2026-08-07T09:45:08Z: Reopened version 4 after Hogajama generated sources failed to resolve
+  `javax.annotation.processing.Generated`. Task 6 anchor: preserve Maven `source` and `target` as
+  `-source` and `-target`, keep explicit `release` strict, and prove attribution through the real
+  compiler task. No dependency is required.
+- 2026-08-07T09:53:33Z: Task 6 completed. The focused analyzer and resolver contracts pass. The
+  two-module fixture compiles generated Java with Java 8 `source` and `target`, including
+  `javax.annotation.processing.Generated`, and aggregate extraction succeeds. The complete PR
+  verifier passes all five Mega graphs and 5,000 decisions at 1,000 RPS with 0.251% p95 overhead
+  and zero errors, mismatches, drops, or contamination. PostgreSQL was skipped because no
+  connection is configured.

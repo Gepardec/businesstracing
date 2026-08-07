@@ -32,7 +32,9 @@ public final class DecisionProcessor extends AbstractProcessor {
 
                         import at.gepardec.fachtracing.api.FachTracing;
                         import example.application.DecisionRequest;
+                        import javax.annotation.processing.Generated;
 
+                        @Generated("example.processor.DecisionProcessor")
                         public final class GeneratedApprovalPolicy {
                             @FachTracing("generated approval")
                             public String approve(DecisionRequest request) {

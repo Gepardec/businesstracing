@@ -642,6 +642,16 @@
       "completedAt": "2026-08-07T09:29:15Z"
     },
     {
+      "specId": "annotation-processor-output-analysis",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Preserve Maven language-selection semantics during attribution",
+      "rationale": "Maven source and target expose the running JDK API, while release restricts the API to the selected Java version.",
+      "task": "Task 6",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T09:53:33Z"
+    },
+    {
       "specId": "self-dogfood-business-tracing",
       "specType": "feature",
       "number": 1,

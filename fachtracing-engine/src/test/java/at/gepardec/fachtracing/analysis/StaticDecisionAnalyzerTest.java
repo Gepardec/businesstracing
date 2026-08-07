@@ -38,6 +38,7 @@ public final class StaticDecisionAnalyzerTest {
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
+        supportsGeneratedJdkTypesWithSourceTargetMode();
         supportsConnectedMixedModularAndNonModularProjects();
         supportsOwnedExternalNamedModuleSources();
         supportsOwnedExternalAutomaticModuleSources();
@@ -463,6 +464,42 @@ public final class StaticDecisionAnalyzerTest {
         } finally {
             if (secondRoot != null) deleteTree(secondRoot);
             if (firstRoot != null) deleteTree(firstRoot);
+        }
+    }
+
+    private static void supportsGeneratedJdkTypesWithSourceTargetMode() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-generated-source-target-");
+            Path source = root.resolve("generated/GeneratedPolicy.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package generated;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import javax.annotation.processing.Generated;
+                    @Generated("example.processor.DecisionProcessor")
+                    public final class GeneratedPolicy {
+                        @FachTracing("generated source-target decision")
+                        public boolean decide(int age) { return age >= 18; }
+                    }
+                    """);
+            var compiler = ApplicationSourceBoundary.CompilerModel.sourceTarget(
+                    StandardCharsets.UTF_8, "8", List.of(), List.of());
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "generated", List.of(source), List.of(source), CLASSPATH,
+                            compiler, List.of())), List.of());
+
+            var result = new StaticDecisionAnalyzer().analyze(boundary);
+
+            assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                    : result.diagnostics();
+            assert compiler.languageOptions().equals(List.of("-source", "8", "-target", "8"))
+                    : compiler;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
         }
     }
 
