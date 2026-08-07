@@ -38,8 +38,8 @@
     },
     {
       "category": "static-effect-proof",
-      "count": 1,
-      "pattern": "Treat namespace support and purity as separate proofs; map direct aliases to state roots and report an exact gap for unproved result-relevant effects."
+      "count": 2,
+      "pattern": "Treat namespace support and purity as separate proofs; merge alias roots by certainty, reuse equivalent callback mutation contracts, and report an exact gap for unproved result-relevant effects."
     },
     {
       "category": "build-artifact-boundary",
@@ -50,6 +50,11 @@
       "category": "source-context-labeling",
       "count": 1,
       "pattern": "Derive business labels from attributed type, receiver, generic element, and operand structure; do not add reference-application vocabulary to production."
+    },
+    {
+      "category": "platform-operation-classification",
+      "count": 1,
+      "pattern": "Classify equivalent current and legacy platform namespaces at one boundary while unsupported application binary logic stays fail-closed."
     }
   ],
   "fileOverlaps": [
@@ -91,9 +96,11 @@
         "generic-java-extractor-completion",
         "release-explanation-async-correctness",
         "jdk-mutation-alias-effect-correctness",
+        "fix-jakarta-platform-call-completeness",
+        "conditional-alias-method-reference-effects",
         "context-aware-operation-labels"
       ],
-      "count": 8
+      "count": 10
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -106,14 +113,29 @@
       "count": 3
     },
     {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
+      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects"],
+      "count": 5
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java",
+      "specs": ["jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects"],
+      "count": 2
+    },
+    {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "context-aware-operation-labels"],
-      "count": 7
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "context-aware-operation-labels"],
+      "count": 9
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "context-aware-operation-labels"],
-      "count": 6
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "context-aware-operation-labels"],
+      "count": 8
+    },
+    {
+      "file": "docs/java-capabilities.json",
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "context-aware-operation-labels"],
+      "count": 5
     },
     {
       "file": "docs/maven-plugin.md",

@@ -269,3 +269,32 @@ Four independent scheduling, pricing, access-control, and inventory applications
 Hogajama audit contains none of the known context-free forms. The exact pull-request gate passes with
 the external-release fixture and five complete Mega decisions from 420 source files. The short load
 processed 5,000 decisions with 0.216% p95 overhead and zero errors, mismatches, drops, or contamination.
+
+### fix-jakarta-platform-call-completeness (bugfix) — 2026-08-07
+
+Completed one task. Static analysis now classifies `jakarta.*` owners as platform operations, in
+the same boundary as `java.*` and `javax.*`. Source-unavailable Jakarta response-builder calls no
+longer create false business-decision coverage gaps. The source predicate stays in each graph, and
+unsupported application binary logic stays incomplete.
+
+A binary-only regression fixture covers both reported graph names. The focused analyzer contract,
+full Maven suite, Java capability verifier, repository integrity verifier, and full pull-request
+gate passed. Five Mega graphs were complete, and the short load had zero errors, mismatches, drops,
+or contamination.
+
+### conditional-alias-method-reference-effects (bugfix) — 2026-08-07
+
+Completed all three tasks. Local alias resolution now keeps proved and possible roots and merges
+`if` branches conservatively. A conditional reassignment can no longer erase a reachable external
+root and cause a false complete graph. Unproved result effects use the existing source-located
+coverage gap.
+
+Bound mutating method-reference callbacks reuse normal receiver mutation contracts. A callback
+such as `accepted::add` now keeps the input collection, target collection, transfer, and returned
+predicate in a complete graph. Direct aliases, detached aliases, lambda callbacks, predicate
+references, and five Mega graphs remain stable.
+
+Draft PR #11 passed the hosted pull-request and PostgreSQL checks. A separate shutdown timing
+commit reserves half of the configured close bound for cancellation after the prior 100 ms reserve
+failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
+local runs and the complete local gate.

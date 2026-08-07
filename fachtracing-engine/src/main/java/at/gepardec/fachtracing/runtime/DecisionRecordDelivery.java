@@ -205,8 +205,8 @@ public final class DecisionRecordDelivery implements AutoCloseable {
         synchronized (lifecycle) { running.set(false); lifecycle.notifyAll(); }
         boolean interrupted = false;
         long deadline = System.nanoTime() + shutdownTimeoutNanos;
-        long interruptReserve = Math.min(TimeUnit.MILLISECONDS.toNanos(100),
-                Math.max(1, shutdownTimeoutNanos / 4));
+        // Keep half of the bound for cancellation and worker termination on loaded hosts.
+        long interruptReserve = Math.max(1, shutdownTimeoutNanos / 2);
         long gracefulDeadline = deadline - interruptReserve;
         while (worker.isAlive() && System.nanoTime() < gracefulDeadline) {
             long remaining = gracefulDeadline - System.nanoTime();

@@ -192,5 +192,21 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T11:53:37Z"
+  },
+  {
+    "id": "conditional-alias-method-reference-effects",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T11:53:56Z"
+  },
+  {
+    "id": "fix-jakarta-platform-call-completeness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T11:25:35Z"
   }
 ]
