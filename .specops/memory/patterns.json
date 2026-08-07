@@ -38,8 +38,8 @@
     },
     {
       "category": "static-effect-proof",
-      "count": 2,
-      "pattern": "Treat namespace support and purity as separate proofs; merge alias roots by certainty, reuse equivalent callback mutation contracts, and report an exact gap for unproved result-relevant effects."
+      "count": 3,
+      "pattern": "Treat namespace support and purity as separate proofs; merge reachable alias definitions, normalize equivalent callback syntax, and report an exact gap for unproved result-relevant effects."
     },
     {
       "category": "build-artifact-boundary",
@@ -92,9 +92,10 @@
         "release-explanation-async-correctness",
         "jdk-mutation-alias-effect-correctness",
         "fix-jakarta-platform-call-completeness",
-        "conditional-alias-method-reference-effects"
+        "conditional-alias-method-reference-effects",
+        "review-followup-correctness"
       ],
-      "count": 9
+      "count": 10
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -108,28 +109,28 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
-      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects"],
-      "count": 5
+      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness"],
+      "count": 6
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java",
-      "specs": ["jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects"],
-      "count": 2
+      "specs": ["jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects"],
-      "count": 8
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness"],
+      "count": 9
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects"],
-      "count": 7
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness"],
+      "count": 8
     },
     {
       "file": "docs/java-capabilities.json",
-      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects"],
-      "count": 4
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness"],
+      "count": 5
     },
     {
       "file": "docs/maven-plugin.md",

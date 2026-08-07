@@ -200,5 +200,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T11:25:35Z"
+  },
+  {
+    "id": "review-followup-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T12:34:38Z"
   }
 ]

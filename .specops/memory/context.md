@@ -287,3 +287,16 @@ Draft PR #11 passed the hosted pull-request and PostgreSQL checks. A separate sh
 commit reserves half of the configured close bound for cancellation after the prior 100 ms reserve
 failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
 local runs and the complete local gate.
+
+### review-followup-correctness (bugfix) — 2026-08-07
+
+Completed all four tasks. Branch-dependent alias definitions now retain each reachable
+result-relevant value. The join is limited to aliases that reach known state, which keeps the five
+reviewed Mega graph counts stable. Direct, parenthesized, and cast method-reference callbacks keep
+their receiver effects. A mutating Boolean callback used as a predicate keeps its transfer and adds
+a source-located coverage gap.
+
+Shutdown reserves at most 500 ms for cancellation, so long bounds keep most time for graceful
+delivery and short bounds remain bounded. Analyzer commit `cbd0fa4` and shutdown commit `b371d19`
+are published in draft PR #15. The full local pull-request gate and hosted `pr-gate` and `postgres`
+checks pass.
