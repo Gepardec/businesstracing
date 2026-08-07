@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T07:41:08Z"
-_sourceHash: "ac1329451a15d30e82814744db9b62f13fff52c7c0a385d9556dbbdc68cadf86"
+_generatedAt: "2026-08-07T08:00:07Z"
+_sourceHash: "841f25deb895a1762f4879d0e76c78d3f03d523f7927cf7dd6c43fe631f0f4c9"
 ---
 
 ## Project Structure Map
@@ -36,7 +36,6 @@ fachtracing/
     annotation-overlay.patch
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
-    generated/
     conformance-report.md
   docs/plantuml/
   scripts/

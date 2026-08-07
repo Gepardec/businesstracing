@@ -49,5 +49,5 @@ CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -Xmx3g -cp "$CP" \
   at.gepardec.fachtracing.conformance.MegaBackendConformanceTest \
   "$ROOT" "$WORKTREE" "$WORKTREE/target/conformance-classpath.txt" \
-  "$ROOT/conformance/mega-backend/generated" \
+  "$ROOT/conformance/mega-backend/target/generated" \
   "$ROOT/conformance/mega-backend/src/test/resources/oracles" "$OVERLAY_CLASSES"

@@ -590,6 +590,26 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T07:41:08Z"
+    },
+    {
+      "specId": "untrack-mega-generated-artifacts",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Track reviewed oracle inputs and ignore reproducible output",
+      "rationale": "Expected semantics require review and stable hashes, but regenerated diagrams and explanations create stale review noise.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T08:00:07Z"
+    },
+    {
+      "specId": "untrack-mega-generated-artifacts",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Use Maven target for conformance output",
+      "rationale": "The standard build-output directory is already ignored and keeps generated evidence available after each run.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T08:00:07Z"
     }
   ]
 }

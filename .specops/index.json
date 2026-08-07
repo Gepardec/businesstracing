@@ -151,5 +151,14 @@
     "author": "lucostus",
     "updated": "2026-08-07T07:41:08Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "untrack-mega-generated-artifacts",
+    "type": "refactor",
+    "status": "completed",
+    "version": 1,
+    "author": "codex",
+    "updated": "2026-08-07T08:00:07Z",
+    "partOf": "generic-java-fachtracing"
   }
 ]

@@ -10,7 +10,7 @@ Run date: 2026-08-07, Java 21
 worktree, compiles the application, applies only `annotation-overlay.patch`, scans production
 source and generic configuration for forbidden reference hints, analyzes all 420 main Java source
 files, compares immutable semantic oracles exactly, executes a real polymorphic decision, and
-writes the reviewed artifacts under `generated/`.
+writes reproducible artifacts under `target/generated/`.
 
 Mega-specific revision, paths, annotations, invocation data, and expectations exist only in this
 conformance harness. The analyzer, agent, typed-value protocol, explanation projector, and renderer
@@ -39,12 +39,15 @@ selected-rule edges, the one atomic early-return predicate actually evaluated, a
 entry through dispatch, the three selected strategy edges, evaluated early-return route, and final
 collection outcome; alternatives remain dashed.
 
-Artifacts:
+Artifacts produced by each local or CI run:
 
-- `generated/determine-journey-warnings-explanation.txt`
-- `generated/determine-journey-warnings-execution.puml` and `.mmd`
-- five `generated/*-structure.puml` and `*-structure.mmd` graphs
-- five `generated/*-semantic.txt` normalized comparison outputs
+- `target/generated/determine-journey-warnings-explanation.txt`
+- `target/generated/determine-journey-warnings-execution.puml` and `.mmd`
+- five `target/generated/*-structure.puml` and `*-structure.mmd` graphs
+- five `target/generated/*-semantic.txt` normalized comparison outputs
+
+These files are reproducible build output and are not version-controlled. The independently
+reviewed semantic inputs remain under `src/test/resources/oracles/` and are protected by hashes.
 
 Every graph has exactly one `Start` and one `Stop`, and every path converges on that shared Stop.
 Return edges state the returned business expression. Every graph label and generated business

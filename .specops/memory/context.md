@@ -216,3 +216,11 @@ Mega checkout for standard, external activation, short-load, five-graph Mega, an
 The warm hosted PR job passed in 2 minutes 5 seconds; the first cold run took 3 minutes 12 seconds.
 The unchanged clean 600-second release gate runs on `main`, version tags, nightly schedules, and
 manual dispatches.
+
+### untrack-mega-generated-artifacts (refactor) — 2026-08-07
+
+Completed all three tasks. The five reviewed Mega semantic oracles remain tracked and protected by
+immutable hashes. The 18 reproducible diagrams, normalized comparison files, and execution files
+now use `conformance/mega-backend/target/generated` and stay outside Git. Repository integrity
+prevents a later commit of the former generated-output path. Standalone Mega conformance and the
+complete pull-request gate passed with all five graphs complete.

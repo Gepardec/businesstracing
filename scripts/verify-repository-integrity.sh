@@ -40,6 +40,9 @@ require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/c
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java
 require_tracked conformance/mega-backend/src/test/resources/oracles/README.md
 
+test -z "$(git ls-files conformance/mega-backend/generated)" \
+  || fail "generated Mega artifacts must not be tracked: use conformance/mega-backend/target/generated"
+
 for oracle in \
   authorize-clarification-resolution \
   detect-overlapping-time-entries \

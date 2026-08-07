@@ -40,6 +40,11 @@
       "category": "static-effect-proof",
       "count": 1,
       "pattern": "Treat namespace support and purity as separate proofs; map direct aliases to state roots and report an exact gap for unproved result-relevant effects."
+    },
+    {
+      "category": "build-artifact-boundary",
+      "count": 1,
+      "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
     }
   ],
   "fileOverlaps": [
@@ -107,6 +112,11 @@
       "file": "scripts/verify.sh",
       "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository", "fast-pr-ci-pipeline"],
       "count": 6
+    },
+    {
+      "file": "scripts/verify-mega-backend.sh",
+      "specs": ["fast-pr-ci-pipeline", "untrack-mega-generated-artifacts"],
+      "count": 2
     }
   ]
 }
