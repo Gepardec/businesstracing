@@ -12,3 +12,8 @@
 | 2026-07-31T08:44:26Z | runtime-decision-path-capture | dispatched | Wave 2; required walking-skeleton dependency is completed |
 | 2026-07-31T09:20:33Z | runtime-decision-path-capture | adapted | Added occurrence-aware short-circuit completion and the current main verification baseline |
 | 2026-07-31T09:39:13Z | runtime-decision-path-capture | completed | Exact paths, failed executions, nested dispatch, compound fallback, and load verification passed |
+| 2026-07-31T11:42:37Z | generic-application-readiness | completed | All 11 readiness tasks and the clean-clone 600-second release gate passed; initiative completed |
+| 2026-08-05T07:25:12Z | generic-application-readiness | reopened | Version 4 corrects restart-safe execution identity, unknown delivery outcomes, overload descriptors, and mixed JPMS boundaries. |
+| 2026-08-05T08:16:38Z | generic-application-readiness | completed | Version 4 passed focused contracts, five pinned Mega graphs, and the clean-clone 600,000-decision release gate. |
+| 2026-08-05T08:40:07Z | generic-java-extractor-completion | dispatched | Wave 4 follow-up for remaining generic Java extractor, runtime, JPMS, database, and CI coverage. |
+| 2026-08-05T20:16:37Z | generic-java-extractor-completion | completed | All 12 tasks, PostgreSQL 18.4, five Mega graphs, and the clean-clone 600,000-decision gate passed; initiative completed. |

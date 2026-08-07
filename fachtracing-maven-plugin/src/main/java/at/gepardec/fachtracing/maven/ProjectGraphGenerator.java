@@ -1,6 +1,9 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.AnalysisRequest;
+import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
@@ -70,18 +73,54 @@ final class ProjectGraphGenerator {
         Objects.requireNonNull(developerOutput, "developerOutput");
         if (rootSourceFiles.isEmpty() || sourceFiles.isEmpty()) {
             removePriorArtifacts(outputDirectory);
-            return new GenerationResult(0, 0, true);
+            return new GenerationResult(0, 0, true, List.of());
         }
 
         var analyses = analyzer.analyzeAll(
                 new AnalysisRequest(sourceFiles, classpath, charset, rootSourceFiles));
+        return write(analyses, charset, outputDirectory, failOnIncomplete, developerOutput);
+    }
+
+    GenerationResult generate(
+            ApplicationSourceBoundary boundary,
+            Charset outputCharset,
+            Path outputDirectory,
+            boolean failOnIncomplete) throws IOException, IncompleteGraphException {
+        return generate(boundary, outputCharset, outputDirectory, failOnIncomplete, Optional.empty());
+    }
+
+    GenerationResult generate(
+            ApplicationSourceBoundary boundary,
+            Charset outputCharset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
+        Objects.requireNonNull(boundary, "boundary");
+        Objects.requireNonNull(developerOutput, "developerOutput");
+        if (boundary.entrySourceFiles().isEmpty()) {
+            removePriorArtifacts(outputDirectory);
+            return new GenerationResult(0, 0, true, List.of());
+        }
+        return write(analyzer.analyzeAll(boundary), outputCharset, outputDirectory,
+                failOnIncomplete, developerOutput);
+    }
+
+    private GenerationResult write(
+            List<at.gepardec.fachtracing.analysis.AnalysisManifest.AnalysisResult> analyses,
+            Charset charset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
         if (analyses.isEmpty()) {
             removePriorArtifacts(outputDirectory);
-            return new GenerationResult(0, 0, true);
+            return new GenerationResult(0, 0, true, List.of());
         }
 
         DeveloperGraphExporter.SourceRevision revision = developerOutput
                 .map(DeveloperOutput::capture).orElse(null);
+        DeveloperGraphExporter.SourceCatalog sourceCatalog = developerOutput
+                .filter(output -> !output.externalOrigins().isEmpty())
+                .map(output -> output.catalog(revision)).orElse(null);
 
         Files.createDirectories(outputDirectory);
         removePriorArtifacts(outputDirectory);
@@ -94,6 +133,11 @@ final class ProjectGraphGenerator {
 
         for (var analysis : analyses) {
             BusinessDecisionGraph graph = analysis.graph();
+            List<String> artifactViolations = new BusinessArtifactGuard().violations(graph);
+            if (!artifactViolations.isEmpty()) {
+                throw new IllegalStateException("business graph contains technical iteration output: "
+                        + artifactViolations);
+            }
             String base = slug(graph.decisionLabel());
             if (slugCounts.get(base) > 1) base += "-" + graph.graphId().substring(0, 8);
             String mermaidName = base + "-structure.mmd";
@@ -107,7 +151,10 @@ final class ProjectGraphGenerator {
                     .append("[PlantUML](").append(plantUmlName).append(')');
             if (revision != null) {
                 Files.writeString(outputDirectory.resolve(developerJsonName),
-                        developerJson.export(analysis, revision), StandardCharsets.UTF_8);
+                        sourceCatalog == null
+                                ? developerJson.export(analysis, revision)
+                                : developerJson.export(analysis, sourceCatalog),
+                        StandardCharsets.UTF_8);
                 index.append(" · [Developer JSON](").append(developerJsonName).append(')');
             }
             index.append('\n');
@@ -118,7 +165,7 @@ final class ProjectGraphGenerator {
         Files.writeString(outputDirectory.resolve("index.md"), index.toString(), charset);
 
         if (failOnIncomplete && !incomplete.isEmpty()) throw new IncompleteGraphException(incomplete);
-        return new GenerationResult(analyses.size(), incomplete.size(), false);
+        return new GenerationResult(analyses.size(), incomplete.size(), false, analyses);
     }
 
     private static void removePriorArtifacts(Path outputDirectory) throws IOException {
@@ -160,18 +207,42 @@ final class ProjectGraphGenerator {
                 .replace("[", "\\[").replace("]", "\\]");
     }
 
-    record GenerationResult(int graphCount, int incompleteCount, boolean skipped) { }
+    record GenerationResult(
+            int graphCount,
+            int incompleteCount,
+            boolean skipped,
+            List<AnalysisManifest.AnalysisResult> analyses) {
+        GenerationResult {
+            analyses = List.copyOf(analyses);
+        }
+    }
 
-    record DeveloperOutput(Path repositoryRoot, String repositoryUrl, String sourceUrlTemplate) {
+    record DeveloperOutput(
+            Path repositoryRoot,
+            String repositoryUrl,
+            String sourceUrlTemplate,
+            List<DeveloperGraphExporter.SourceOrigin> externalOrigins) {
+        DeveloperOutput(Path repositoryRoot, String repositoryUrl, String sourceUrlTemplate) {
+            this(repositoryRoot, repositoryUrl, sourceUrlTemplate, List.of());
+        }
+
         DeveloperOutput {
             Objects.requireNonNull(repositoryRoot, "repositoryRoot");
             requireText(repositoryUrl, "repositoryUrl");
             requireText(sourceUrlTemplate, "sourceUrlTemplate");
+            externalOrigins = List.copyOf(Objects.requireNonNull(externalOrigins, "externalOrigins"));
         }
 
         DeveloperGraphExporter.SourceRevision capture() {
             return DeveloperGraphExporter.SourceRevision.captureGit(
                     repositoryRoot, repositoryUrl, sourceUrlTemplate);
+        }
+
+        DeveloperGraphExporter.SourceCatalog catalog(DeveloperGraphExporter.SourceRevision revision) {
+            var origins = new ArrayList<DeveloperGraphExporter.SourceOrigin>();
+            origins.add(DeveloperGraphExporter.SourceOrigin.git("git", revision));
+            origins.addAll(externalOrigins);
+            return new DeveloperGraphExporter.SourceCatalog(origins);
         }
 
         private static void requireText(String value, String name) {

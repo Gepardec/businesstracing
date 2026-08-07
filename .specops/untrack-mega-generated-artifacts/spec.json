@@ -1,0 +1,57 @@
+{
+  "id": "untrack-mega-generated-artifacts",
+  "type": "refactor",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T07:54:14Z",
+  "updated": "2026-08-07T08:00:07Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "codex" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "reason": "It defines the Mega verification path that this refactor preserves.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": ["jdk-mutation-alias-effect-correctness"],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T07:54:14Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "behavioralPreservation": 10,
+        "refactorCorrectness": 10,
+        "regressionSafety": 9,
+        "scopeDiscipline": 10
+      },
+      "evaluatedAt": "2026-08-07T08:00:07Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 1900,
+    "filesChanged": 35,
+    "linesAdded": 375,
+    "linesRemoved": 1602,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 6,
+    "specDurationMinutes": 6
+  }
+}

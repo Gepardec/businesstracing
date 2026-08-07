@@ -3,8 +3,11 @@ package at.gepardec.fachtracing.performance;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
+import at.gepardec.fachtracing.model.DecisionRecordEnvelope;
+import at.gepardec.fachtracing.runtime.DecisionRecordDelivery;
 import at.gepardec.fachtracing.runtime.RuntimeCollector;
 import at.gepardec.fachtracing.runtime.TraceRuntime;
+import at.gepardec.fachtracing.store.DecisionRecordRepository;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,6 +72,10 @@ public final class FachtracingLoadTest {
         var drained = new AtomicInteger();
         var stopDrainer = new AtomicBoolean();
         RuntimeCollector collector = enabled ? collector() : new NoopCollector();
+        CountingRepository repository = new CountingRepository();
+        DecisionRecordDelivery delivery = enabled ? new DecisionRecordDelivery(
+                repository, 65_536, DecisionRecordDelivery.AdmissionPolicy.FAIL_OPEN,
+                3, java.time.Duration.ofMillis(1)) : null;
         TraceRuntime.configure(collector);
 
         Thread drainer = Thread.ofPlatform().name("fachtracing-load-drainer").start(() -> {
@@ -80,6 +87,9 @@ public final class FachtracingLoadTest {
                         String evidence = execution.observations().getFirst().evidence().get("value").canonicalValue();
                         if (!evidence.equals(execution.finalResult().canonicalValue())) contamination.incrementAndGet();
                     }
+                    boolean accepted = delivery.offer(new DecisionRecordEnvelope(
+                            execution.executionId(), execution, "load-boundary", Map.of(), "load-policy"));
+                    if (!accepted) contamination.incrementAndGet();
                 }, Thread::onSpinWait);
             }
         });
@@ -119,10 +129,17 @@ public final class FachtracingLoadTest {
         }
         stopDrainer.set(true);
         drainer.join(30_000);
+        if (delivery != null) delivery.close();
         int captured = enabled ? drained.get() : expected;
+        long deliveryLoss = delivery == null ? 0
+                : delivery.counters().accepted() - delivery.counters().saved();
+        if (delivery != null && repository.saved.get() != delivery.counters().saved()) {
+            contamination.incrementAndGet();
+        }
         Arrays.sort(latencies);
         return new Result(latencies, completed.get(),
-                errors.get(), mismatches.get(), expected - captured, contamination.get());
+                errors.get(), mismatches.get(), Math.toIntExact(expected - captured + deliveryLoss),
+                contamination.get());
     }
 
     private static int businessDecision(int invocation, int workMicros) {
@@ -213,5 +230,17 @@ public final class FachtracingLoadTest {
         @Override public void begin(String graphId, long graphVersion) { }
         @Override public void observe(String nodeId, String outcome, Object value) { }
         @Override public void complete(String nodeId, Object result) { }
+    }
+
+    private static final class CountingRepository implements DecisionRecordRepository {
+        private final AtomicLong attempts = new AtomicLong();
+        private final AtomicLong saved = new AtomicLong();
+        @Override public DecisionRecordId save(DecisionRecord record) { return record.id(); }
+        @Override public java.util.Optional<DecisionRecord> findById(DecisionRecordId id) { return java.util.Optional.empty(); }
+        @Override public void saveEnvelope(DecisionRecordEnvelope envelope) {
+            long attempt = attempts.incrementAndGet();
+            if (attempt % 1001 == 0) throw new IllegalStateException("fault window");
+            saved.incrementAndGet();
+        }
     }
 }

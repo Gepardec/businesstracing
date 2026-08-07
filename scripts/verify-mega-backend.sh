@@ -2,6 +2,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+MAVEN_REPOSITORY=$("$ROOT/scripts/maven-repository-path.sh")
 PIN=782cdec8dfe5b4062eb5c1859e6a9e53afe02770
 SOURCE=${MEGA_BACKEND_DIR:-/tmp/fachtracing-mega-backend}
 WORKTREE=$(mktemp -d /tmp/fachtracing-mega-conformance.XXXXXX)
@@ -16,7 +17,9 @@ git -C "$SOURCE" diff --quiet
 git -C "$SOURCE" diff --cached --quiet
 git -C "$SOURCE" worktree add --detach "$WORKTREE" "$PIN" >/dev/null
 
-mvn -q -f "$ROOT/pom.xml" package
+if [ "${FACHTRACING_SKIP_PROJECT_BUILD:-false}" != "true" ]; then
+  mvn -q -f "$ROOT/pom.xml" package
+fi
 mvn -q -f "$WORKTREE/pom.xml" -DskipTests test-compile
 mvn -q -f "$WORKTREE/pom.xml" dependency:build-classpath \
   -Dmdep.outputFile="$WORKTREE/target/conformance-classpath.txt" -DincludeScope=test
@@ -35,16 +38,16 @@ TEST_CLASSES="$ROOT/conformance/mega-backend/target/test-classes"
 mkdir -p "$TEST_CLASSES"
 JAVA_HOME_21=$(/usr/libexec/java_home -v 21)
 "$JAVA_HOME_21/bin/javac" --release 21 \
-  -cp "$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-agent/target/classes:$HOME/.m2/repository/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar" \
+  -cp "$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-agent/target/classes:$MAVEN_REPOSITORY/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar" \
   -d "$TEST_CLASSES" \
   "$ROOT/conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java" \
   "$ROOT/conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java"
 
-CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-agent/target/classes:$TEST_CLASSES:$HOME/.m2/repository/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-agent/target/classes:$TEST_CLASSES:$MAVEN_REPOSITORY/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$MAVEN_REPOSITORY/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -cp "$CP" \
   at.gepardec.fachtracing.conformance.ForbiddenReferenceTest "$ROOT"
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -Xmx3g -cp "$CP" \
   at.gepardec.fachtracing.conformance.MegaBackendConformanceTest \
   "$ROOT" "$WORKTREE" "$WORKTREE/target/conformance-classpath.txt" \
-  "$ROOT/conformance/mega-backend/generated" \
+  "$ROOT/conformance/mega-backend/target/generated" \
   "$ROOT/conformance/mega-backend/src/test/resources/oracles" "$OVERLAY_CLASSES"

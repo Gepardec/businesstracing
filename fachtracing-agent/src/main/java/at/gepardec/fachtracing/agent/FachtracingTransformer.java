@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.agent;
 
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.analysis.CancellationBoundaryScanner;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -8,6 +9,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Handle;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.security.MessageDigest;
@@ -22,34 +24,91 @@ import java.util.stream.Collectors;
  */
 public final class FachtracingTransformer implements ClassFileTransformer {
     private static final String RUNTIME = "at/gepardec/fachtracing/runtime/TraceRuntime";
-    private final AnalysisManifest manifest;
+    private final List<AnalysisManifest> manifests;
     private final Map<String, String> classFingerprints;
 
     public FachtracingTransformer(AnalysisManifest manifest, Map<String, String> classFingerprints) {
-        this.manifest = manifest;
+        this(List.of(manifest), classFingerprints);
+    }
+
+    /** Creates one class transformer for all disjoint method plans in an activation bundle. */
+    public FachtracingTransformer(List<AnalysisManifest> manifests, Map<String, String> classFingerprints) {
+        this.manifests = List.copyOf(manifests);
+        if (this.manifests.isEmpty()) throw new IllegalArgumentException("at least one manifest is required");
         this.classFingerprints = Map.copyOf(classFingerprints);
+        rejectOverlappingEntries(this.manifests);
     }
 
     @Override
     public byte[] transform(Module module, ClassLoader loader, String className, Class<?> classBeingRedefined,
                             ProtectionDomain protectionDomain, byte[] classfileBuffer) {
-        if (className == null || !isSelectedClass(className)) return null;
+        if (className == null) return null;
         String expected = classFingerprints.get(className);
         if (expected == null || !expected.equals(sha256(classfileBuffer))) return null;
         try {
-            ClassReader reader = new ClassReader(classfileBuffer);
-            ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-            reader.accept(new ProbeClassVisitor(writer, className), ClassReader.SKIP_FRAMES);
-            return writer.toByteArray();
+            byte[] transformed = classfileBuffer;
+            Map<MethodBinding, Set<MethodBinding>> lambdaTargets = lambdaTargets(classfileBuffer);
+            boolean changed = false;
+            for (AnalysisManifest manifest : manifests) {
+                if (!isSelectedClass(manifest, className)) continue;
+                ClassReader reader = new ClassReader(transformed);
+                ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                reader.accept(new ProbeClassVisitor(writer, className, manifest, lambdaTargets,
+                                methodMaxLocals(transformed)),
+                        ClassReader.SKIP_FRAMES);
+                transformed = writer.toByteArray();
+                changed = true;
+            }
+            if (CancellationBoundaryScanner.contains(transformed)) {
+                ClassReader cancellationReader = new ClassReader(transformed);
+                ClassWriter cancellationWriter = new ClassWriter(
+                        cancellationReader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                cancellationReader.accept(new CancellationClassVisitor(cancellationWriter), ClassReader.SKIP_FRAMES);
+                transformed = cancellationWriter.toByteArray();
+                changed = true;
+            }
+            return changed ? transformed : null;
         } catch (Throwable ignored) {
             return null;
         }
     }
 
+    private static final class CancellationClassVisitor extends ClassVisitor {
+        private CancellationClassVisitor(ClassVisitor delegate) { super(Opcodes.ASM9, delegate); }
+
+        @Override public MethodVisitor visitMethod(
+                int access, String name, String descriptor, String signature, String[] exceptions) {
+            return new MethodVisitor(Opcodes.ASM9,
+                    super.visitMethod(access, name, descriptor, signature, exceptions)) {
+                @Override public void visitMethodInsn(
+                        int opcode, String owner, String method, String methodDescriptor,
+                        boolean isInterface) {
+                    boolean cancellation = cancellationBoundary(owner, method, methodDescriptor);
+                    if (cancellation) mv.visitInsn(Opcodes.DUP2);
+                    super.visitMethodInsn(opcode, owner, method, methodDescriptor, isInterface);
+                    if (cancellation) {
+                        mv.visitMethodInsn(Opcodes.INVOKESTATIC, RUNTIME, "asyncFutureCancelled",
+                                "(Ljava/util/concurrent/Future;ZZ)Z", false);
+                    }
+                }
+            };
+        }
+    }
+
+    private static boolean cancellationBoundary(String owner, String name, String descriptor) {
+        return CancellationBoundaryScanner.matches(owner, name, descriptor);
+    }
+
     private boolean isSelectedClass(String className) {
+        return manifests.stream().anyMatch(manifest -> isSelectedClass(manifest, className));
+    }
+
+    private static boolean isSelectedClass(AnalysisManifest manifest, String className) {
         return manifest.probeSites().stream().anyMatch(site -> ownerMatches(className, site.ownerHint()))
                 || manifest.dispatchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
-                || manifest.branchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()));
+                || manifest.branchTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
+                || manifest.controlTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()))
+                || manifest.evidenceTargets().stream().anyMatch(target -> ownerMatches(className, target.ownerHint()));
     }
 
     boolean selects(String binaryClassName) {
@@ -60,12 +119,38 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         return internalName.replace('/', '.').replace('$', '.').equals(ownerHint);
     }
 
+    private static Map<MethodBinding, Integer> methodMaxLocals(byte[] bytecode) {
+        var result = new java.util.LinkedHashMap<MethodBinding, Integer>();
+        new ClassReader(bytecode).accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override public MethodVisitor visitMethod(
+                    int access, String name, String descriptor, String signature, String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM9) {
+                    @Override public void visitMaxs(int maxStack, int maxLocals) {
+                        result.put(new MethodBinding(name, descriptor), maxLocals);
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return Map.copyOf(result);
+    }
+
     private final class ProbeClassVisitor extends ClassVisitor {
         private final String className;
+        private final AnalysisManifest manifest;
+        private final Map<MethodBinding, Set<MethodBinding>> lambdaTargets;
+        private final Map<MethodBinding, Integer> methodMaxLocals;
 
-        private ProbeClassVisitor(ClassVisitor delegate, String className) {
+        private ProbeClassVisitor(
+                ClassVisitor delegate,
+                String className,
+                AnalysisManifest manifest,
+                Map<MethodBinding, Set<MethodBinding>> lambdaTargets,
+                Map<MethodBinding, Integer> methodMaxLocals) {
             super(Opcodes.ASM9, delegate);
             this.className = className;
+            this.manifest = manifest;
+            this.lambdaTargets = lambdaTargets;
+            this.methodMaxLocals = methodMaxLocals;
         }
 
         @Override
@@ -74,30 +159,54 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             MethodVisitor delegate = super.visitMethod(access, name, descriptor, signature, exceptions);
             List<AnalysisManifest.ProbeSite> sites = manifest.probeSites().stream()
                     .filter(site -> ownerMatches(className, site.ownerHint()))
-                    .filter(site -> memberMatches(name, site.memberHint()))
+                    .filter(site -> memberMatches(name, descriptor, site.memberHint(), site.descriptorHint()))
                     .toList();
             List<AnalysisManifest.DispatchTarget> targets = manifest.dispatchTargets().stream()
                     .filter(target -> ownerMatches(className, target.ownerHint()))
-                    .filter(target -> target.memberHint().equals(name))
+                    .filter(target -> memberMatches(
+                            name, descriptor, target.memberHint(), target.descriptorHint()))
                     .toList();
             List<AnalysisManifest.BranchTarget> branches = manifest.branchTargets().stream()
                     .filter(target -> ownerMatches(className, target.ownerHint()))
-                    .filter(target -> memberMatches(name, target.memberHint()))
+                    .filter(target -> memberMatches(
+                            name, descriptor, target.memberHint(), target.descriptorHint()))
                     .toList();
-            return sites.isEmpty() && targets.isEmpty() && branches.isEmpty() ? delegate
-                    : new ProbeMethodVisitor(delegate, access, descriptor, sites, targets, branches);
+            List<AnalysisManifest.ControlTarget> controls = manifest.controlTargets().stream()
+                    .filter(target -> ownerMatches(className, target.ownerHint()))
+                    .filter(target -> memberMatches(
+                            name, descriptor, target.memberHint(), target.descriptorHint()))
+                    .toList();
+            List<AnalysisManifest.EvidenceTarget> evidence = manifest.evidenceTargets().stream()
+                    .filter(target -> ownerMatches(className, target.ownerHint()))
+                    .filter(target -> memberMatches(
+                            name, descriptor, target.memberHint(), target.descriptorHint()))
+                    .toList();
+            return sites.isEmpty() && targets.isEmpty() && branches.isEmpty()
+                    && controls.isEmpty() && evidence.isEmpty() ? delegate
+                    : new ProbeMethodVisitor(delegate, access, descriptor, manifest,
+                            sites, targets, branches, controls, evidence,
+                            methodMaxLocals.getOrDefault(new MethodBinding(name, descriptor), 0));
         }
 
-        private boolean memberMatches(String bytecodeName, String memberHint) {
-            if (memberHint.equals(bytecodeName)) return true;
+        private boolean memberMatches(
+                String bytecodeName,
+                String bytecodeDescriptor,
+                String memberHint,
+                String descriptorHint) {
+            if (memberHint.equals(bytecodeName)) {
+                return descriptorHint.isBlank() || descriptorHint.equals(bytecodeDescriptor);
+            }
             if (!memberHint.endsWith("#lambda")) return false;
             String sourceMethod = memberHint.substring(0, memberHint.length() - "#lambda".length());
-            return bytecodeName.startsWith("lambda$" + sourceMethod + "$");
+            if (descriptorHint.isBlank()) return bytecodeName.startsWith("lambda$" + sourceMethod + "$");
+            return lambdaTargets.getOrDefault(new MethodBinding(sourceMethod, descriptorHint), Set.of())
+                    .contains(new MethodBinding(bytecodeName, bytecodeDescriptor));
         }
     }
 
     private final class ProbeMethodVisitor extends MethodVisitor {
         private final Type returnType;
+        private final AnalysisManifest manifest;
         private final Type[] argumentTypes;
         private final boolean staticMethod;
         private final List<AnalysisManifest.ProbeSite> predicates;
@@ -106,19 +215,30 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         private final List<AnalysisManifest.ProbeSite> dispatches;
         private final List<AnalysisManifest.DispatchTarget> targets;
         private final List<AnalysisManifest.BranchTarget> branches;
+        private final List<AnalysisManifest.ControlTarget> controls;
+        private final List<AnalysisManifest.EvidenceTarget> evidenceTargets;
         private final Label failureStart = new Label();
         private final Label failureEnd = new Label();
         private final Label failureHandler = new Label();
         private int predicateIndex;
         private int dispatchIndex;
         private int outcomeIndex;
+        private int previousOriginalOpcode = -1;
         private long sourceLine = -1;
+        private final Set<Label> visitedLabels = new java.util.HashSet<>();
+        private final int asyncHandleLocal;
+        private int nextAsyncLocal;
 
         private ProbeMethodVisitor(MethodVisitor delegate, int access, String descriptor,
+                                   AnalysisManifest manifest,
                                    List<AnalysisManifest.ProbeSite> sites,
                                    List<AnalysisManifest.DispatchTarget> targets,
-                                   List<AnalysisManifest.BranchTarget> branches) {
+                                   List<AnalysisManifest.BranchTarget> branches,
+                                   List<AnalysisManifest.ControlTarget> controls,
+                                   List<AnalysisManifest.EvidenceTarget> evidenceTargets,
+                                   int originalMaxLocals) {
             super(Opcodes.ASM9, delegate);
+            this.manifest = manifest;
             returnType = Type.getReturnType(descriptor);
             argumentTypes = Type.getArgumentTypes(descriptor);
             staticMethod = (access & Opcodes.ACC_STATIC) != 0;
@@ -128,13 +248,18 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             dispatches = sites.stream().filter(site -> site.kind() == AnalysisManifest.ProbeKind.DISPATCH).toList();
             this.targets = targets;
             this.branches = completeBranchGroups(branches);
+            this.controls = controls;
+            this.evidenceTargets = evidenceTargets;
+            this.asyncHandleLocal = originalMaxLocals;
+            this.nextAsyncLocal = originalMaxLocals + 1;
         }
 
         private List<AnalysisManifest.BranchTarget> completeBranchGroups(
                 List<AnalysisManifest.BranchTarget> candidates) {
             Map<String, Set<Integer>> expectedIndexes = new java.util.LinkedHashMap<>();
             for (int index = 0; index < predicates.size(); index++) {
-                expectedIndexes.computeIfAbsent(predicates.get(index).nodeId(), ignored -> new java.util.LinkedHashSet<>())
+                expectedIndexes.computeIfAbsent(predicates.get(index).nodeId(),
+                                ignored -> new java.util.LinkedHashSet<>())
                         .add(index);
             }
             Map<String, Set<Integer>> actualIndexes = candidates.stream().collect(Collectors.groupingBy(
@@ -158,14 +283,13 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                 push(manifest.graphId());
                 mv.visitLdcInsn(manifest.graphVersion());
                 invoke("begin", "(Ljava/lang/String;J)V");
-                captureArguments();
-                super.visitTryCatchBlock(failureStart, failureEnd, failureHandler, "java/lang/Throwable");
                 super.visitLabel(failureStart);
             }
             for (AnalysisManifest.DispatchTarget target : targets) {
+                pushGraph();
                 push(target.dispatchNodeId());
                 push(target.edgeId());
-                invoke("selectedEdge", "(Ljava/lang/String;Ljava/lang/String;)V");
+                invoke("selectedEdgeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V");
             }
         }
 
@@ -173,18 +297,48 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         public void visitLineNumber(int line, Label start) {
             sourceLine = line;
             super.visitLineNumber(line, start);
+            controls.stream().filter(target -> target.point() == AnalysisManifest.ControlPoint.LINE)
+                    .filter(target -> target.sourceLine() == line).forEach(this::emitControl);
         }
 
-        private void captureArguments() {
-            int local = staticMethod ? 0 : 1;
-            for (int index = 0; index < argumentTypes.length; index++) {
-                Type argument = argumentTypes[index];
-                push(entry.nodeId());
-                push("input " + (index + 1));
+        @Override
+        public void visitLabel(Label label) {
+            visitedLabels.add(label);
+            super.visitLabel(label);
+        }
+
+        private void emitReturnControls() {
+            controls.stream().filter(target -> target.point() == AnalysisManifest.ControlPoint.RETURN)
+                    .filter(target -> target.sourceLine() == sourceLine).forEach(target -> {
+                pushGraph();
+                push(target.nodeId());
+                push(target.edgeId());
+                invoke("edgeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V");
+            });
+        }
+
+        private void captureEvidenceArguments(String nodeId) {
+            for (AnalysisManifest.EvidenceTarget target : evidenceTargets) {
+                if (!target.nodeId().equals(nodeId)) continue;
+                if (target.argumentIndex() == -1) {
+                    pushGraph();
+                    push(target.evidenceLabel());
+                    invoke("exactPathUnavailableFor", "(Ljava/lang/String;JLjava/lang/String;)V");
+                    continue;
+                }
+                if (target.argumentIndex() >= argumentTypes.length) continue;
+                Type argument = argumentTypes[target.argumentIndex()];
+                pushGraph();
+                push(target.nodeId());
+                push(target.evidenceLabel());
+                int local = staticMethod ? 0 : 1;
+                for (int index = 0; index < target.argumentIndex(); index++) {
+                    local += argumentTypes[index].getSize();
+                }
                 mv.visitVarInsn(argument.getOpcode(Opcodes.ILOAD), local);
                 box(argument);
-                invoke("observe", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
-                local += argument.getSize();
+                invoke("observeEvidenceFor",
+                        "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
             }
         }
 
@@ -205,7 +359,14 @@ public final class FachtracingTransformer implements ClassFileTransformer {
 
         @Override
         public void visitJumpInsn(int opcode, org.objectweb.asm.Label label) {
-            if (opcode != Opcodes.GOTO && opcode != Opcodes.JSR && predicateIndex < predicates.size()
+            boolean constantBooleanBranch = (opcode == Opcodes.IFEQ || opcode == Opcodes.IFNE)
+                    && (previousOriginalOpcode == Opcodes.ICONST_0 || previousOriginalOpcode == Opcodes.ICONST_1);
+            if (opcode == Opcodes.GOTO && !visitedLabels.contains(label)) {
+                controls.stream().filter(target -> target.point() == AnalysisManifest.ControlPoint.CASE_EXIT)
+                        .filter(target -> target.sourceLine() == sourceLine).forEach(this::emitControl);
+            }
+            if (!constantBooleanBranch && opcode != Opcodes.GOTO && opcode != Opcodes.JSR
+                    && predicateIndex < predicates.size()
                     && matchesPredicateSite()) {
                 AnalysisManifest.ProbeSite predicate = predicates.get(predicateIndex++);
                 int currentPredicateIndex = predicateIndex - 1;
@@ -214,17 +375,85 @@ public final class FachtracingTransformer implements ClassFileTransformer {
                         .filter(target -> target.predicateIndex() == currentPredicateIndex)
                         .findFirst().orElse(null);
                 if (branch != null) {
+                    captureEvidenceArguments(predicate.nodeId());
+                    previousOriginalOpcode = opcode;
                     emitBranch(opcode, label, branch);
                     return;
                 }
-                emitLegacyPredicate(predicate);
+                emitExactPathGap(predicate);
             }
+            previousOriginalOpcode = opcode;
             super.visitJumpInsn(opcode, label);
         }
 
+        @Override
+        public void visitIntInsn(int opcode, int operand) {
+            previousOriginalOpcode = opcode;
+            super.visitIntInsn(opcode, operand);
+        }
+
+        @Override
+        public void visitVarInsn(int opcode, int variable) {
+            previousOriginalOpcode = opcode;
+            super.visitVarInsn(opcode, variable);
+        }
+
+        @Override
+        public void visitTypeInsn(int opcode, String type) {
+            previousOriginalOpcode = opcode;
+            super.visitTypeInsn(opcode, type);
+        }
+
+        @Override
+        public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+            previousOriginalOpcode = opcode;
+            super.visitFieldInsn(opcode, owner, name, descriptor);
+        }
+
+        @Override
+        public void visitLdcInsn(Object value) {
+            previousOriginalOpcode = Opcodes.LDC;
+            super.visitLdcInsn(value);
+        }
+
+        @Override
+        public void visitIincInsn(int variable, int increment) {
+            previousOriginalOpcode = Opcodes.IINC;
+            super.visitIincInsn(variable, increment);
+        }
+
+        @Override
+        public void visitInvokeDynamicInsn(String name, String descriptor,
+                                           org.objectweb.asm.Handle bootstrapMethodHandle,
+                                           Object... bootstrapMethodArguments) {
+            previousOriginalOpcode = Opcodes.INVOKEDYNAMIC;
+            super.visitInvokeDynamicInsn(name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
+        }
+
+        @Override
+        public void visitTableSwitchInsn(int minimum, int maximum, Label defaultTarget, Label... labels) {
+            previousOriginalOpcode = Opcodes.TABLESWITCH;
+            super.visitTableSwitchInsn(minimum, maximum, defaultTarget, labels);
+        }
+
+        @Override
+        public void visitLookupSwitchInsn(Label defaultTarget, int[] keys, Label[] labels) {
+            previousOriginalOpcode = Opcodes.LOOKUPSWITCH;
+            super.visitLookupSwitchInsn(defaultTarget, keys, labels);
+        }
+
+        private void emitControl(AnalysisManifest.ControlTarget target) {
+            pushGraph();
+            push(target.nodeId());
+            push(target.edgeId());
+            invoke("edgeFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V");
+        }
+
         private void emitBranch(int opcode, Label originalTarget, AnalysisManifest.BranchTarget branch) {
-            if (branch.completion() == AnalysisManifest.BranchCompletion.BOTH_OUTCOMES) {
-                emitExactBranch(opcode, originalTarget, branch);
+            if (branch.completion() == AnalysisManifest.BranchCompletion.BOTH_OUTCOMES
+                    || branch.completion() == AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED) {
+                emitExactBranch(opcode, originalTarget, branch,
+                        branch.completion() == AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED);
                 return;
             }
             String edgeId = branch.completion() == AnalysisManifest.BranchCompletion.JUMP_TRUE
@@ -234,35 +463,48 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             super.visitJumpInsn(opcode, edgeProbe);
             super.visitJumpInsn(Opcodes.GOTO, fallThrough);
             super.visitLabel(edgeProbe);
-            emitEdge(branch.nodeId(), edgeId);
+            emitEdge(branch.nodeId(), edgeId,
+                    branch.completion() == AnalysisManifest.BranchCompletion.JUMP_TRUE);
             super.visitJumpInsn(Opcodes.GOTO, originalTarget);
             super.visitLabel(fallThrough);
         }
 
         private void emitExactBranch(
-                int opcode, Label originalTarget, AnalysisManifest.BranchTarget branch) {
+                int opcode, Label originalTarget, AnalysisManifest.BranchTarget branch, boolean reversed) {
             Label falseProbe = new Label();
             Label fallThrough = new Label();
             super.visitJumpInsn(opcode, falseProbe);
-            emitEdge(branch.nodeId(), branch.trueEdgeId());
+            emitEdge(branch.nodeId(), reversed ? branch.falseEdgeId() : branch.trueEdgeId(), !reversed);
             super.visitJumpInsn(Opcodes.GOTO, fallThrough);
             super.visitLabel(falseProbe);
-            emitEdge(branch.nodeId(), branch.falseEdgeId());
+            emitEdge(branch.nodeId(), reversed ? branch.trueEdgeId() : branch.falseEdgeId(), reversed);
             super.visitJumpInsn(Opcodes.GOTO, originalTarget);
             super.visitLabel(fallThrough);
         }
 
         private void emitEdge(String nodeId, String edgeId) {
-            push(nodeId);
-            push(edgeId);
-            invoke("edge", "(Ljava/lang/String;Ljava/lang/String;)V");
+            emitEdge(nodeId, edgeId, false);
         }
 
-        private void emitLegacyPredicate(AnalysisManifest.ProbeSite predicate) {
-            push(predicate.nodeId());
-            push("evaluated");
-            mv.visitInsn(Opcodes.ACONST_NULL);
-            invoke("observe", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V");
+        private void emitEdge(String nodeId, String edgeId, boolean value) {
+            pushGraph();
+            push(nodeId);
+            push(edgeId);
+            mv.visitInsn(value ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
+            invoke("predicateFor", "(Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;Z)V");
+            if (value) {
+                controls.stream().filter(target ->
+                                target.point() == AnalysisManifest.ControlPoint.PREDICATE_TRUE)
+                        .filter(target -> target.sourceLine() == sourceLine).forEach(this::emitControl);
+            }
+        }
+
+        private void emitExactPathGap(AnalysisManifest.ProbeSite predicate) {
+            pushGraph();
+            push(predicate.sourceLine() > 0
+                    ? "exact Boolean path correlation is unavailable at source line " + predicate.sourceLine()
+                    : "exact Boolean path correlation is unavailable at an unknown source line");
+            invoke("exactPathUnavailableFor", "(Ljava/lang/String;JLjava/lang/String;)V");
         }
 
         private boolean matchesSourceLine(AnalysisManifest.ProbeSite site) {
@@ -279,42 +521,149 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                                     boolean isInterface) {
+            previousOriginalOpcode = opcode;
+            boolean threadStart = owner.equals("java/lang/Thread")
+                    && name.equals("start") && descriptor.equals("()V");
+            if (threadStart) mv.visitInsn(Opcodes.DUP);
+            AsyncInvocationCatalog.Binding async = AsyncInvocationCatalog.find(owner, name, descriptor).orElse(null);
+            PreparedAsync prepared = async == null ? null : prepareAsyncArgument(opcode, async);
+            boolean asyncPrepared = prepared != null;
+            if ((async == null && AsyncInvocationCatalog.isUnmatchedBoundary(owner, name, descriptor))
+                    || (async != null && !asyncPrepared)) {
+                push(owner.replace('/', '.') + "." + name);
+                invoke("unsupportedAsyncBoundary", "(Ljava/lang/String;)V");
+            }
             if ((opcode == Opcodes.INVOKEINTERFACE || opcode == Opcodes.INVOKEVIRTUAL)
                     && dispatchIndex < dispatches.size()) {
                 AnalysisManifest.ProbeSite next = dispatches.get(dispatchIndex);
-                boolean memberMatches = manifest.dispatchTargets().stream()
-                        .filter(target -> target.dispatchNodeId().equals(next.nodeId()))
-                        .anyMatch(target -> target.memberHint().equals(name));
+                boolean memberMatches = matchesSourceLine(next) && manifest.dispatchTargets().stream()
+                        .anyMatch(target -> target.dispatchNodeId().equals(next.nodeId()));
                 if (memberMatches) {
+                    pushGraph();
                     push(next.nodeId());
-                    invoke("expectDispatch", "(Ljava/lang/String;)V");
+                    invoke("expectDispatchFor", "(Ljava/lang/String;JLjava/lang/String;)V");
                     dispatchIndex++;
                 }
             }
             super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+            if (asyncPrepared && threadConstructor(async)) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitVarInsn(Opcodes.ALOAD, prepared.local());
+                invoke("asyncThreadCreated", "(Ljava/lang/Thread;Ljava/lang/Object;)V");
+            } else if (asyncPrepared) {
+                completeAsyncSubmission(prepared);
+            }
+            if (threadStart) {
+                invoke("asyncThreadStarted", "(Ljava/lang/Thread;)V");
+            }
         }
+
+        private PreparedAsync prepareAsyncArgument(int opcode, AsyncInvocationCatalog.Binding binding) {
+            Type[] arguments = Type.getArgumentTypes(binding.descriptor());
+            int callback = binding.callbackPosition();
+            if (threadConstructor(binding) && callback == arguments.length - 1) {
+                prepareAsync(binding, arguments[callback]);
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitVarInsn(Opcodes.ASTORE, asyncHandleLocal);
+                return new PreparedAsync(binding, asyncHandleLocal);
+            }
+            int[] argumentLocals = new int[arguments.length];
+            for (int index = 0; index < arguments.length; index++) {
+                argumentLocals[index] = allocate(arguments[index]);
+            }
+            for (int index = arguments.length - 1; index >= 0; index--) {
+                mv.visitVarInsn(arguments[index].getOpcode(Opcodes.ISTORE), argumentLocals[index]);
+            }
+            int receiverLocal = -1;
+            if (opcode != Opcodes.INVOKESTATIC) {
+                receiverLocal = allocate(Type.getObjectType(binding.owner()));
+                mv.visitVarInsn(Opcodes.ASTORE, receiverLocal);
+            }
+            mv.visitVarInsn(arguments[callback].getOpcode(Opcodes.ILOAD), argumentLocals[callback]);
+            prepareAsync(binding, arguments[callback]);
+            mv.visitInsn(Opcodes.DUP);
+            mv.visitVarInsn(Opcodes.ASTORE, asyncHandleLocal);
+            mv.visitVarInsn(arguments[callback].getOpcode(Opcodes.ISTORE), argumentLocals[callback]);
+            if (receiverLocal >= 0) mv.visitVarInsn(Opcodes.ALOAD, receiverLocal);
+            for (int index = 0; index < arguments.length; index++) {
+                mv.visitVarInsn(arguments[index].getOpcode(Opcodes.ILOAD), argumentLocals[index]);
+            }
+            return new PreparedAsync(binding, asyncHandleLocal);
+        }
+
+        private int allocate(Type type) {
+            int local = nextAsyncLocal;
+            nextAsyncLocal += type.getSize();
+            return local;
+        }
+
+        private void prepareAsync(AsyncInvocationCatalog.Binding binding, Type callbackType) {
+            String callbackDescriptor = callbackType.getDescriptor();
+            invoke(binding.wrapper().runtimeMethod(),
+                    "(" + callbackDescriptor + ")" + callbackDescriptor);
+        }
+
+        private void completeAsyncSubmission(PreparedAsync prepared) {
+            if (prepared.binding().stageResult()) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitVarInsn(Opcodes.ALOAD, prepared.local());
+                invoke("asyncStageSubmitted",
+                        "(Ljava/util/concurrent/CompletionStage;Ljava/lang/Object;)V");
+            } else if (prepared.binding().futureResult()) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitVarInsn(Opcodes.ALOAD, prepared.local());
+                invoke("asyncFutureSubmitted",
+                        "(Ljava/util/concurrent/Future;Ljava/lang/Object;)V");
+            } else {
+                mv.visitVarInsn(Opcodes.ALOAD, prepared.local());
+                invoke("asyncSubmissionSucceeded", "(Ljava/lang/Object;)V");
+            }
+        }
+
+
+        private boolean threadConstructor(AsyncInvocationCatalog.Binding binding) {
+            return binding.owner().equals("java/lang/Thread") && binding.method().equals("<init>");
+        }
+
+        private boolean reference(Type type) {
+            return type.getSort() == Type.OBJECT || type.getSort() == Type.ARRAY;
+        }
+
+        private record PreparedAsync(AsyncInvocationCatalog.Binding binding, int local) { }
 
         @Override
         public void visitInsn(int opcode) {
-            if (isReturn(opcode) && !outcomes.isEmpty()
-                    && (outcomes.size() == 1 || outcomeIndex < outcomes.size())) {
-                AnalysisManifest.ProbeSite outcome = outcomes.size() == 1
-                        ? outcomes.getFirst()
-                        : outcomes.get(outcomeIndex++);
+            previousOriginalOpcode = opcode;
+            if (isReturn(opcode)) emitReturnControls();
+            AnalysisManifest.ProbeSite outcome = isReturn(opcode) ? outcomeForCurrentReturn() : null;
+            if (outcome != null) {
+                captureEvidenceArguments(outcome.nodeId());
                 duplicateAndBox(opcode);
-                pushUnderResult(outcome.nodeId());
-                invoke("complete", "(Ljava/lang/String;Ljava/lang/Object;)V");
+                pushGraph();
+                push(outcome.nodeId());
+                invoke("completeFor", "(Ljava/lang/Object;Ljava/lang/String;JLjava/lang/String;)V");
             }
             super.visitInsn(opcode);
+        }
+
+        private AnalysisManifest.ProbeSite outcomeForCurrentReturn() {
+            if (outcomes.isEmpty()) return null;
+            List<AnalysisManifest.ProbeSite> exact = outcomes.stream()
+                    .filter(outcome -> outcome.sourceLine() == sourceLine).toList();
+            if (!exact.isEmpty()) return exact.getFirst();
+            if (outcomes.size() == 1) return outcomes.getFirst();
+            return outcomeIndex < outcomes.size() ? outcomes.get(outcomeIndex++) : null;
         }
 
         @Override
         public void visitMaxs(int maxStack, int maxLocals) {
             if (entry != null) {
+                super.visitTryCatchBlock(failureStart, failureEnd, failureHandler, "java/lang/Throwable");
                 super.visitLabel(failureEnd);
                 super.visitLabel(failureHandler);
                 mv.visitInsn(Opcodes.DUP);
-                invoke("fail", "(Ljava/lang/Throwable;)V");
+                pushGraph();
+                invoke("failFor", "(Ljava/lang/Throwable;Ljava/lang/String;J)V");
                 mv.visitInsn(Opcodes.ATHROW);
             }
             super.visitMaxs(maxStack, maxLocals);
@@ -346,11 +695,6 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             }
         }
 
-        private void pushUnderResult(String nodeId) {
-            push(nodeId);
-            mv.visitInsn(Opcodes.SWAP);
-        }
-
         private void box(String owner, String descriptor) {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, owner, "valueOf",
                     "(" + descriptor + ")L" + owner + ";", false);
@@ -358,6 +702,11 @@ public final class FachtracingTransformer implements ClassFileTransformer {
 
         private void push(String value) {
             mv.visitLdcInsn(value);
+        }
+
+        private void pushGraph() {
+            push(manifest.graphId());
+            mv.visitLdcInsn(manifest.graphVersion());
         }
 
         private void invoke(String name, String descriptor) {
@@ -368,6 +717,32 @@ public final class FachtracingTransformer implements ClassFileTransformer {
     private static AnalysisManifest.ProbeSite first(
             List<AnalysisManifest.ProbeSite> sites, AnalysisManifest.ProbeKind kind) {
         return sites.stream().filter(site -> site.kind() == kind).findFirst().orElse(null);
+    }
+
+    private static Map<MethodBinding, Set<MethodBinding>> lambdaTargets(byte[] classfileBuffer) {
+        var targets = new java.util.LinkedHashMap<MethodBinding, Set<MethodBinding>>();
+        new ClassReader(classfileBuffer).accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override public MethodVisitor visitMethod(
+                    int access, String name, String descriptor, String signature, String[] exceptions) {
+                MethodBinding source = new MethodBinding(name, descriptor);
+                return new MethodVisitor(Opcodes.ASM9) {
+                    @Override public void visitInvokeDynamicInsn(
+                            String dynamicName,
+                            String dynamicDescriptor,
+                            Handle bootstrapMethodHandle,
+                            Object... bootstrapMethodArguments) {
+                        if (!bootstrapMethodHandle.getOwner().equals("java/lang/invoke/LambdaMetafactory")) return;
+                        for (Object argument : bootstrapMethodArguments) {
+                            if (argument instanceof Handle handle && handle.getName().startsWith("lambda$")) {
+                                targets.computeIfAbsent(source, ignored -> new java.util.LinkedHashSet<>())
+                                        .add(new MethodBinding(handle.getName(), handle.getDesc()));
+                            }
+                        }
+                    }
+                };
+            }
+        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return targets;
     }
 
     private static boolean isReturn(int opcode) {
@@ -381,4 +756,22 @@ public final class FachtracingTransformer implements ClassFileTransformer {
             throw new IllegalStateException(impossible);
         }
     }
+
+    private static void rejectOverlappingEntries(List<AnalysisManifest> manifests) {
+        var owners = new java.util.LinkedHashMap<String, String>();
+        for (AnalysisManifest manifest : manifests) {
+            var keys = new java.util.LinkedHashSet<String>();
+            manifest.probeSites().stream().filter(site -> site.kind() == AnalysisManifest.ProbeKind.ENTRY)
+                    .forEach(site -> keys.add(site.ownerHint() + '#' + site.memberHint()
+                            + site.descriptorHint()));
+            for (String key : keys) {
+                String previous = owners.putIfAbsent(key, manifest.graphId());
+                if (previous != null && !previous.equals(manifest.graphId())) {
+                    throw new IllegalArgumentException("activation manifests contain duplicate entries at " + key);
+                }
+            }
+        }
+    }
+
+    private record MethodBinding(String name, String descriptor) { }
 }

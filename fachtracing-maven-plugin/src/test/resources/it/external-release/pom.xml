@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>example.external</groupId>
+  <artifactId>fachtracing-external-release</artifactId>
+  <version>1.0.0</version>
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <repositories>
+    <repository><id>fachtracing-rc</id><url>${fachtracing.repository}</url></repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository><id>fachtracing-rc-plugins</id><url>${fachtracing.repository}</url></pluginRepository>
+  </pluginRepositories>
+  <dependencies>
+    <dependency>
+      <groupId>example.rules</groupId><artifactId>external-rules</artifactId><version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId><artifactId>fachtracing-api</artifactId><version>0.1.0-rc.1</version>
+    </dependency>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId><artifactId>fachtracing-engine</artifactId><version>0.1.0-rc.1</version>
+    </dependency>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId><artifactId>fachtracing-agent</artifactId><version>0.1.0-rc.1</version>
+    </dependency>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId><artifactId>fachtracing-storage-jdbc</artifactId><version>0.1.0-rc.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.4.240</version>
+    </dependency>
+  </dependencies>
+</project>

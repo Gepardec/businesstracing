@@ -21,6 +21,8 @@ public final class DecisionGraphBuilder {
     private final Map<String, AnalysisManifest.SourceMapping> mappings = new LinkedHashMap<>();
     private final List<AnalysisManifest.ProbeSite> probes = new ArrayList<>();
     private final List<AnalysisManifest.DispatchTarget> dispatchTargets = new ArrayList<>();
+    private final List<ControlBinding> controlBindings = new ArrayList<>();
+    private final List<AnalysisManifest.EvidenceTarget> evidenceTargets = new ArrayList<>();
     private final Map<String, List<AnalysisManifest.BranchCompletion>> branchCompletions = new LinkedHashMap<>();
     private int nodeSequence;
     private int edgeSequence;
@@ -40,8 +42,22 @@ public final class DecisionGraphBuilder {
             AnalysisManifest.ProbeKind probeKind,
             String ownerHint,
             String memberHint) {
-        String nodeId = opaque("node", ++nodeSequence, kind.name(), label);
-        nodes.add(new BusinessDecisionGraph.DecisionNode(nodeId, kind, requireText(label, "label"), attributes));
+        return addNode(kind, label, attributes, source, probeKind, ownerHint, memberHint, "");
+    }
+
+    /** Adds a business node with an exact developer-only JVM member binding. */
+    public String addNode(
+            BusinessDecisionGraph.NodeKind kind,
+            String label,
+            Map<String, String> attributes,
+            AnalysisManifest.SourceMapping source,
+            AnalysisManifest.ProbeKind probeKind,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint) {
+        String businessLabel = BusinessLabelNormalizer.normalize(requireText(label, "label"));
+        String nodeId = opaque("node", ++nodeSequence, kind.name(), businessLabel);
+        nodes.add(new BusinessDecisionGraph.DecisionNode(nodeId, kind, businessLabel, attributes));
         if (source != null) {
             mappings.put(nodeId, new AnalysisManifest.SourceMapping(
                     nodeId, source.source(), source.line(), source.column(), source.treeKind()));
@@ -49,6 +65,7 @@ public final class DecisionGraphBuilder {
         if (probeKind != null) {
             probes.add(new AnalysisManifest.ProbeSite(nodeId, probeKind,
                     Objects.requireNonNullElse(ownerHint, ""), Objects.requireNonNullElse(memberHint, ""),
+                    Objects.requireNonNullElse(descriptorHint, ""),
                     source == null ? -1 : source.line()));
         }
         return nodeId;
@@ -67,7 +84,7 @@ public final class DecisionGraphBuilder {
             AnalysisManifest.ProbeKind probeKind,
             String ownerHint,
             String memberHint) {
-        addProbe(nodeId, probeKind, ownerHint, memberHint, mappings.get(nodeId));
+        addProbe(nodeId, probeKind, ownerHint, memberHint, "", mappings.get(nodeId));
     }
 
     /** Adds a probe for an existing node with provenance specific to this probe site. */
@@ -77,21 +94,82 @@ public final class DecisionGraphBuilder {
             String ownerHint,
             String memberHint,
             AnalysisManifest.SourceMapping source) {
+        addProbe(nodeId, probeKind, ownerHint, memberHint, "", source);
+    }
+
+    /** Adds a probe with an exact JVM descriptor. */
+    public void addProbe(
+            String nodeId,
+            AnalysisManifest.ProbeKind probeKind,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            AnalysisManifest.SourceMapping source) {
         probes.add(new AnalysisManifest.ProbeSite(nodeId, probeKind,
                 Objects.requireNonNullElse(ownerHint, ""), Objects.requireNonNullElse(memberHint, ""),
+                Objects.requireNonNullElse(descriptorHint, ""),
                 source == null ? -1 : source.line()));
     }
 
     /** Adds a developer-only implementation-entry binding for runtime dispatch correlation. */
     public void addDispatchTarget(String dispatchNodeId, String edgeId, String ownerHint, String memberHint) {
+        addDispatchTarget(dispatchNodeId, edgeId, ownerHint, memberHint, "");
+    }
+
+    /** Adds a dispatch target with an exact JVM descriptor. */
+    public void addDispatchTarget(
+            String dispatchNodeId,
+            String edgeId,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint) {
         dispatchTargets.add(new AnalysisManifest.DispatchTarget(
-                dispatchNodeId, edgeId, ownerHint, memberHint));
+                dispatchNodeId, edgeId, ownerHint, memberHint, descriptorHint));
     }
 
     /** Defines how the ordered bytecode jumps can complete one source predicate. */
     public void setBranchCompletions(
             String nodeId, List<AnalysisManifest.BranchCompletion> completions) {
         branchCompletions.put(Objects.requireNonNull(nodeId, "nodeId"), List.copyOf(completions));
+    }
+
+    /** Binds one source control-path line to its outgoing business edge. */
+    public void addControlTarget(
+            String nodeId,
+            String outcome,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine) {
+        addControlTarget(nodeId, outcome, ownerHint, memberHint, descriptorHint,
+                sourceLine, AnalysisManifest.ControlPoint.LINE);
+    }
+
+    /** Binds one bytecode control point to its outgoing business edge. */
+    public void addControlTarget(
+            String nodeId,
+            String outcome,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine,
+            AnalysisManifest.ControlPoint point) {
+        controlBindings.add(new ControlBinding(
+                nodeId, outcome, ownerHint, memberHint, descriptorHint, sourceLine, point));
+    }
+
+    /** Binds one result-relevant argument value to an existing predicate node. */
+    public void addEvidenceTarget(
+            String nodeId,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            int argumentIndex,
+            String evidenceLabel,
+            long sourceLine) {
+        var target = new AnalysisManifest.EvidenceTarget(
+                nodeId, ownerHint, memberHint, descriptorHint, argumentIndex, evidenceLabel, sourceLine);
+        if (!evidenceTargets.contains(target)) evidenceTargets.add(target);
     }
 
     /** Adds a visible completeness gap linked to its graph node. */
@@ -110,7 +188,8 @@ public final class DecisionGraphBuilder {
         var graph = new BusinessDecisionGraph(
                 graphId, 1, decisionLabel, entryNodeId, nodes, edges, completeness, gaps);
         var manifest = new AnalysisManifest(
-                graphId, 1, mappings, probes, dispatchTargets, branchTargets(), sourceFingerprints);
+                graphId, 1, mappings, probes, dispatchTargets, branchTargets(), controlTargets(),
+                evidenceTargets, sourceFingerprints);
         return new BuiltGraph(graph, manifest, List.copyOf(diagnostics));
     }
 
@@ -120,10 +199,10 @@ public final class DecisionGraphBuilder {
         var nodeIndexes = new LinkedHashMap<String, Integer>();
         for (AnalysisManifest.ProbeSite probe : probes) {
             if (probe.kind() != AnalysisManifest.ProbeKind.PREDICATE) continue;
-            String methodKey = probe.ownerHint() + "\u0000" + probe.memberHint();
+            String methodKey = probe.ownerHint() + "\u0000" + probe.memberHint()
+                    + "\u0000" + probe.descriptorHint();
             int predicateIndex = methodIndexes.getOrDefault(methodKey, 0);
             methodIndexes.put(methodKey, predicateIndex + 1);
-            if (probe.memberHint().endsWith("#lambda")) continue;
             int nodeIndex = nodeIndexes.getOrDefault(probe.nodeId(), 0);
             nodeIndexes.put(probe.nodeId(), nodeIndex + 1);
             List<AnalysisManifest.BranchCompletion> completions = branchCompletions.get(probe.nodeId());
@@ -139,12 +218,39 @@ public final class DecisionGraphBuilder {
             if (trueEdges.size() == 1 && falseEdges.size() == 1) {
                 targets.add(new AnalysisManifest.BranchTarget(
                         probe.nodeId(), trueEdges.getFirst().edgeId(), falseEdges.getFirst().edgeId(),
-                        probe.ownerHint(), probe.memberHint(), probe.sourceLine(), predicateIndex,
+                        probe.ownerHint(), probe.memberHint(), probe.descriptorHint(),
+                        probe.sourceLine(), predicateIndex,
                         completions.get(nodeIndex)));
             }
         }
         return List.copyOf(targets);
     }
+
+    private List<AnalysisManifest.ControlTarget> controlTargets() {
+        var targets = new ArrayList<AnalysisManifest.ControlTarget>();
+        for (ControlBinding binding : controlBindings) {
+            List<BusinessDecisionGraph.DecisionEdge> matches = edges.stream()
+                    .filter(edge -> edge.fromNodeId().equals(binding.nodeId()))
+                    .filter(edge -> edge.outcome().equals(binding.outcome())
+                            || edge.outcome().startsWith(binding.outcome() + ";"))
+                    .toList();
+            if (matches.size() == 1) {
+                targets.add(new AnalysisManifest.ControlTarget(
+                        binding.nodeId(), matches.getFirst().edgeId(), binding.ownerHint(), binding.memberHint(),
+                        binding.descriptorHint(), binding.sourceLine(), binding.point()));
+            }
+        }
+        return List.copyOf(targets);
+    }
+
+    private record ControlBinding(
+            String nodeId,
+            String outcome,
+            String ownerHint,
+            String memberHint,
+            String descriptorHint,
+            long sourceLine,
+            AnalysisManifest.ControlPoint point) { }
 
     private static boolean booleanOutcome(String outcome, String value) {
         return outcome.equals(value) || outcome.startsWith(value + ";");

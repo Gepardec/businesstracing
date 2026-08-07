@@ -39,8 +39,9 @@ public final class DecisionExplanationProjector {
                 continue;
             }
             var node = graph.node(observation.nodeId());
-            if (node.kind() == BusinessDecisionGraph.NodeKind.ENTRY
-                    || node.kind() == BusinessDecisionGraph.NodeKind.OUTCOME) continue;
+            if (node.kind() == BusinessDecisionGraph.NodeKind.ENTRY) continue;
+            if (node.kind() == BusinessDecisionGraph.NodeKind.OUTCOME
+                    && observation.evidence().keySet().stream().allMatch(key -> key.equals("result"))) continue;
             String observationKey = observation.nodeId() + "\u0000" + observation.outcome()
                     + "\u0000" + observation.evidence() + "\u0000" + observation.selectedEdgeId();
             if (!renderedObservations.add(observationKey)) continue;

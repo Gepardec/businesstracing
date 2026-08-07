@@ -1,0 +1,104 @@
+---
+specId: "ci-isolated-maven-repository"
+startedAt: "2026-08-06T08:26:25Z"
+completedAt: "2026-08-06T17:40:51Z"
+finalStatus: "passed"
+phases: [1, 2, 3, 4]
+---
+
+# SpecOps Run: CI Isolated Maven Repository
+
+## Phase 1: Understand Context
+
+**Started:** 2026-08-06T08:26:25Z
+
+### [08:26:25] Step 1: Inspect the failed check
+
+- Action: Use GitHub CLI to read PR #5 and run `31076074808` logs. Attempt GitHub connector PR
+  metadata access.
+- Result: The connector returned 404 for the private PR, so authenticated GitHub CLI supplied the
+  metadata and Actions log. The release job failed because manual classpaths read ASM from the
+  empty home repository instead of the isolated release repository.
+
+### [08:26:25] Step 2: Survey the blast radius
+
+- Action: Search every verification script for direct Maven repository paths.
+- Result: Standard, Mega, and PostgreSQL scripts contain hard-coded home repository paths. The
+  release load classpath already uses its isolated repository.
+
+## Phase 2: Convert Approved Plan
+
+**Started:** 2026-08-06T08:26:47Z
+
+### [08:26:47] Step 1: Generate and evaluate the specification
+
+- Action: Map the approved three-step plan to requirements, design, tasks, implementation context,
+  dependency audit, metadata, and evaluation.
+- Result: PASS. No dependency is added. The completed release-correctness specification satisfies
+  the required dependency gate.
+
+## Phase 3: Implementation
+
+**Started:** 2026-08-06T08:27:00Z
+
+### [08:27:00] Step 1: Start Task 1
+
+- Action: Set shared Maven repository resolution to In Progress.
+- Result: Specification evaluation and required dependency gates pass.
+
+### [08:31:00] Step 2: Complete Task 1 and start Task 2
+
+- Action: Add one POSIX repository resolver and use it in standard, Mega, PostgreSQL, and release
+  verification classpaths.
+- Result: The focused resolver contract passes default, release, and explicit override cases. No
+  consumer contains a direct home repository dependency path.
+
+### [08:37:00] Step 3: Complete Task 2 and start Task 3
+
+- Action: Run standard verification with Maven and all manual Java classpaths pointed at a fresh
+  isolated repository.
+- Result: PASS. The first run exposed a stale pinned SLF4J transitive version. Replacing manual
+  transitive lists with Maven-resolved classpaths fixed that hidden cache dependency. The final run
+  passed with source-free external activation and zero load-test correctness failures.
+
+### [08:44:00] Step 4: Correct macOS path normalization
+
+- Action: Trace the clean release wrapper after a silent classpath assertion exit.
+- Result: macOS `TMPDIR` ended with `/`, so the release repository contained a repeated separator
+  while Maven emitted a normalized classpath. The resolver now normalizes separators, and the
+  focused test includes this exact case.
+
+## Phase 4: Release Verification
+
+**Started:** 2026-08-06T08:44:00Z
+
+### [08:53:42] Step 1: Run final evidence
+
+- Action: Run the clean-clone release gate from commit
+  `defe774040f5a5604caffc15838519fd753c0db2`.
+- Result: PASS. Five Mega graphs are complete. The load gate completed 600,000 decisions at
+  1,000 RPS with 0.059% p95 overhead and zero errors, mismatches, drops, or contamination.
+
+### [08:53:42] Step 2: Complete SpecOps records
+
+- Action: Evaluate the implementation, record metrics and memory, refresh the repository map, and
+  complete the specification.
+- Result: All tasks and acceptance criteria pass. The implementation evaluation passed all four
+  dimensions.
+
+## Phase 5: Hosted Time-Budget Correction
+
+**Started:** 2026-08-06T17:30:33Z
+
+### [17:30:33] Step 1: Inspect the hosted cancellation
+
+- Action: Read the complete GitHub Actions log for run `31086887346`.
+- Result: PostgreSQL passed. GitHub canceled the release command at the workflow's exact 35-minute
+  limit. No verification command reported a failure before cancellation.
+
+### [17:40:51] Step 2: Complete Task 4
+
+- Action: Set a bounded 60-minute release-job limit and add a standard verification contract that
+  requires at least 50 minutes.
+- Result: The focused contract, repository integrity, and standard verification pass. The short
+  load check completed 5,000 decisions with zero correctness or isolation failures.

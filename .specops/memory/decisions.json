@@ -230,6 +230,386 @@
       "task": "Task 4",
       "date": "2026-07-31",
       "completedAt": "2026-07-31T09:36:45Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 16,
+      "decision": "Namespace execution IDs per collector process",
+      "rationale": "A UUID namespace plus a local sequence prevents restarts from reusing an execution ID while keeping generation independent of storage.",
+      "task": "Task 23",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 17,
+      "decision": "Represent an unconfirmed save as unknown",
+      "rationale": "Java interruption cannot prove that an uncooperative storage operation did not commit, so unknown is more accurate than dropped and stops further detached calls.",
+      "task": "Task 24",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 18,
+      "decision": "Bind runtime probes with JVM descriptors",
+      "rationale": "Owner and method name do not identify an overload. The descriptor also lets the transformer resolve only the lambda targets of the correct enclosing overload.",
+      "task": "Task 25",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-application-readiness",
+      "specType": "feature",
+      "number": 19,
+      "decision": "Select compiler mode from the graph-entry project",
+      "rationale": "A mixed reactor is not one synthetic named module set. Flat entries and named-module entries need separate valid compiler contexts.",
+      "task": "Task 26",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T08:16:38Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Lower compound Boolean expressions to atomic graph nodes",
+      "rationale": "Exact runtime paths require one edge per evaluated business fact, including short-circuit skips.",
+      "task": "Task 3",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Use source artifacts before a fail-closed ASM fallback",
+      "rationale": "Source keeps business vocabulary and semantics; bytecode is safe only in a small proven subset.",
+      "task": "Task 6",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Inject async wrappers at application call sites",
+      "rationale": "This avoids bootstrap instrumentation and removes manual wrapping for standard APIs.",
+      "task": "Task 7",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 4,
+      "decision": "Make module ownership an explicit source input",
+      "rationale": "A file path alone cannot be assigned safely to a named or automatic module.",
+      "task": "Task 8",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 5,
+      "decision": "Test JDBC against PostgreSQL without a production driver dependency",
+      "rationale": "A test-scope driver proves production database behavior while the adapter stays vendor-neutral.",
+      "task": "Task 9",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 6,
+      "decision": "Retain each proven atomic path and add a gap for each unproven atom",
+      "rationale": "Exact evidence stays useful, but the runtime never infers an edge for an atom that bytecode correlation cannot prove.",
+      "task": "Task 3",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 7,
+      "decision": "Model structured exits before graph projection",
+      "rationale": "Normal, return, throw, catch, and finally effects need one control-flow model before business-only rendering.",
+      "task": "Task 2",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 8,
+      "decision": "Select dynamic targets only from static candidates with runtime evidence",
+      "rationale": "A proxy, provider, or reflected member can select known logic, but an unknown or ambiguous target must stay a gap.",
+      "task": "Task 5",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 9,
+      "decision": "Limit bytecode extraction to fingerprinted side-effect-free methods",
+      "rationale": "A small ASM subset can prove result-relevant binary logic without exposing bytecode vocabulary or claiming unsupported behavior.",
+      "task": "Task 6",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "generic-java-extractor-completion",
+      "specType": "feature",
+      "number": 10,
+      "decision": "Keep the production JDBC adapter driver-neutral",
+      "rationale": "PostgreSQL proof uses a test-scope driver and an explicit integration command, while applications continue to supply a standard data source.",
+      "task": "Task 9",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T20:16:37Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Capture release producer output before presentation",
+      "rationale": "A separate temporary output capture preserves the producer status and still lets tee create readable evidence without hiding a failure.",
+      "task": "Task 2",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Bind typed evidence to proven predicate operands",
+      "rationale": "A static evidence plan records only a result-relevant fact at the node that uses it and prevents blanket annotated-method argument capture.",
+      "task": "Task 3",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Give each async reservation one atomic lifecycle",
+      "rationale": "Reserved, running, and released states make execution, rejection, and cancellation before start release the invocation exactly once.",
+      "task": "Task 4",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Identify standard async callbacks by exact JVM signature",
+      "rationale": "Owner, method, descriptor, and callback position prevent the transformer from wrapping a preceding stage, executor, or thread group.",
+      "task": "Task 5",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "release-explanation-async-correctness",
+      "specType": "bugfix",
+      "number": 5,
+      "decision": "Lower indexed collection loops before business projection",
+      "rationale": "Recognizing the canonical iteration shape keeps body decisions but removes counters, collection size checks, indexed access, and ordinal candidates.",
+      "task": "Task 6",
+      "date": "2026-08-05",
+      "completedAt": "2026-08-05T21:18:47Z"
+    },
+    {
+      "specId": "ci-isolated-maven-repository",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Resolve one Maven repository path for all verification scripts",
+      "rationale": "Manual Java classpaths must use the same repository that Maven populated in local and clean release runs.",
+      "task": "Task 1",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T08:53:42Z"
+    },
+    {
+      "specId": "ci-isolated-maven-repository",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Let Maven build transitive verification classpaths",
+      "rationale": "Resolved classpaths prevent a warm home cache from hiding stale pinned transitive versions such as SLF4J.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T08:53:42Z"
+    },
+    {
+      "specId": "ci-isolated-maven-repository",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Give the hosted release job a bounded 60-minute budget",
+      "rationale": "A cold macOS runner needs more than 35 minutes for clean builds, Mega analysis, and the required 600-second load gate.",
+      "task": "Task 4",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T17:40:51Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Use exact callback identity as the submission handle",
+      "rationale": "Stack order is not stable during synchronous nested callbacks.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Track original future objects by identity",
+      "rationale": "Wrapping changes observable application behavior.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Read direct parameters at each predicate branch",
+      "rationale": "Entry values become stale after reassignment and repeated evaluation.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Mark unavailable required facts as runtime gaps",
+      "rationale": "Exact explanations must not guess or hide missing evidence.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "runtime-evidence-async-identity-correctness",
+      "specType": "bugfix",
+      "number": 5,
+      "decision": "Normalize Java terms with generic rules",
+      "rationale": "Mega must validate the general mechanism, not shape it.",
+      "task": "Task 4",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T19:37:02Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Merge staged evidence at the terminal observation",
+      "rationale": "A complete explanation must not discard an available result-relevant receiver fact.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Scan compiled application output for exact cancellation callers",
+      "rationale": "A separate controller needs an activation fingerprint, but dependency artifacts must stay outside the transform boundary.",
+      "task": "Task 2",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Build result slices from proven writes",
+      "rationale": "Reading a value does not prove that a call changed the returned decision; unknown relevant effects need a gap.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
+    },
+    {
+      "specId": "outcome-evidence-cancellation-slice-label-correctness",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Shorten validation labels only from proven helper roles",
+      "rationale": "A global method-name rule removes valid distinctions between business receivers.",
+      "task": "Task 3",
+      "date": "2026-08-06",
+      "completedAt": "2026-08-06T21:43:43Z"
+    },
+    {
+      "specId": "jdk-mutation-alias-effect-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Separate platform support from proved purity",
+      "rationale": "A JDK namespace proves that the analyzer can render a call, but it does not prove that the call cannot change returned state.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:09:58Z"
+    },
+    {
+      "specId": "jdk-mutation-alias-effect-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Propagate direct local alias roots into effect slices",
+      "rationale": "A helper write through a proved direct reference identity must map to the caller argument and retain its controlling business logic.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:09:58Z"
+    },
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Separate fast PR evidence from full release evidence",
+      "rationale": "A 660-second measurement cannot give two-to-three-minute pull-request feedback.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:41:08Z"
+    },
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Cache dependencies and pinned source only",
+      "rationale": "This reduces setup time without accepting stale graphs or Fachtracing binaries.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:41:08Z"
+    },
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "specType": "refactor",
+      "number": 3,
+      "decision": "Cancel only superseded pull-request runs",
+      "rationale": "Obsolete feedback can stop, but release evidence must run to completion.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T07:41:08Z"
+    },
+    {
+      "specId": "untrack-mega-generated-artifacts",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Track reviewed oracle inputs and ignore reproducible output",
+      "rationale": "Expected semantics require review and stable hashes, but regenerated diagrams and explanations create stale review noise.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T08:00:07Z"
+    },
+    {
+      "specId": "untrack-mega-generated-artifacts",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Use Maven target for conformance output",
+      "rationale": "The standard build-output directory is already ignored and keeps generated evidence available after each run.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T08:00:07Z"
     }
   ]
 }

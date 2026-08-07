@@ -1,0 +1,94 @@
+diff --git a/src/main/java/com/gepardec/mega/domain/calculation/journey/JourneyDirectionValidator.java b/src/main/java/com/gepardec/mega/domain/calculation/journey/JourneyDirectionValidator.java
+index 4ed2da7..22e3dd1 100644
+--- a/src/main/java/com/gepardec/mega/domain/calculation/journey/JourneyDirectionValidator.java
++++ b/src/main/java/com/gepardec/mega/domain/calculation/journey/JourneyDirectionValidator.java
+@@ -1,6 +1,7 @@
+ package com.gepardec.mega.domain.calculation.journey;
+
++import at.gepardec.fachtracing.api.FachTracing;
+ import com.gepardec.mega.domain.model.monthlyreport.JourneyDirection;
+ import com.gepardec.mega.domain.model.monthlyreport.JourneyWarningType;
+
+ public class JourneyDirectionValidator {
+@@ -7,6 +8,7 @@ public class JourneyDirectionValidator {
+
+     private JourneyDirection formerDirection = null;
+
++    @FachTracing("validate journey direction")
+     public JourneyWarningType validate(JourneyDirection currentDirection, JourneyDirection nextDirection) {
+         JourneyWarningType warning = null;
+         switch (currentDirection) {
+diff --git a/src/main/java/com/gepardec/mega/domain/calculation/time/TimeOverlapCalculator.java b/src/main/java/com/gepardec/mega/domain/calculation/time/TimeOverlapCalculator.java
+index 67202d4..ea1f59e 100644
+--- a/src/main/java/com/gepardec/mega/domain/calculation/time/TimeOverlapCalculator.java
++++ b/src/main/java/com/gepardec/mega/domain/calculation/time/TimeOverlapCalculator.java
+@@ -1,5 +1,6 @@
+ package com.gepardec.mega.domain.calculation.time;
+
++import at.gepardec.fachtracing.api.FachTracing;
+ import com.gepardec.mega.domain.calculation.AbstractTimeWarningCalculationStrategy;
+ import com.gepardec.mega.domain.calculation.WarningCalculationStrategy;
+ import com.gepardec.mega.domain.model.monthlyreport.ProjectEntry;
+@@ -30,6 +31,7 @@ public class TimeOverlapCalculator extends AbstractTimeWarningCalculationStrategy implements WarningCalculationStrategy<TimeWarning> {
+         return new ArrayList<>(warningList);
+     }
+
++    @FachTracing("detect overlapping time entries")
+     private boolean isOverlapping(@NotNull ProjectEntry entryOne, @NotNull ProjectEntry entryTwo) {
+         if (entryOne.getToTime().equals(entryTwo.getFromTime())
+                 || entryOne.getFromTime().equals(entryTwo.getToTime())) {
+diff --git a/src/main/java/com/gepardec/mega/hexagon/monthend/domain/model/MonthEndClarification.java b/src/main/java/com/gepardec/mega/hexagon/monthend/domain/model/MonthEndClarification.java
+index 182899c..9434248 100644
+--- a/src/main/java/com/gepardec/mega/hexagon/monthend/domain/model/MonthEndClarification.java
++++ b/src/main/java/com/gepardec/mega/hexagon/monthend/domain/model/MonthEndClarification.java
+@@ -1,5 +1,6 @@
+ package com.gepardec.mega.hexagon.monthend.domain.model;
+
++import at.gepardec.fachtracing.api.FachTracing;
+ import com.gepardec.mega.hexagon.monthend.domain.error.MonthEndActorNotAuthorizedException;
+ import com.gepardec.mega.hexagon.monthend.domain.error.MonthEndClarificationClosedException;
+ import com.gepardec.mega.hexagon.monthend.domain.error.MonthEndValidationException;
+@@ -197,6 +198,7 @@ public record MonthEndClarification(
+         return sourceSystem != SourceSystem.ZEP && isOpen() && actorId.equals(createdBy);
+     }
+
++    @FachTracing("authorize clarification resolution")
+     public boolean canBeResolvedBy(UserId actorId) {
+         Objects.requireNonNull(actorId, "actorId must not be null");
+         if (SystemActor.USER_ID.equals(createdBy)) {
+diff --git a/src/main/java/com/gepardec/mega/hexagon/project/domain/model/Project.java b/src/main/java/com/gepardec/mega/hexagon/project/domain/model/Project.java
+index 70ac8b9..240cae1 100644
+--- a/src/main/java/com/gepardec/mega/hexagon/project/domain/model/Project.java
++++ b/src/main/java/com/gepardec/mega/hexagon/project/domain/model/Project.java
+@@ -1,5 +1,6 @@
+ package com.gepardec.mega.hexagon.project.domain.model;
+
++import at.gepardec.fachtracing.api.FachTracing;
+ import com.gepardec.mega.hexagon.shared.domain.model.ProjectId;
+ import com.gepardec.mega.hexagon.shared.domain.model.UserId;
+
+@@ -37,6 +38,7 @@ public record Project(
+         return new Project(id, zepId, name, startDate, endDate, billable, updatedLeads);
+     }
+
++    @FachTracing("determine project activity in month")
+     public boolean isActiveIn(YearMonth month) {
+         LocalDate monthStart = month.atDay(1);
+         LocalDate monthEnd = month.atEndOfMonth();
+diff --git a/src/main/java/com/gepardec/mega/service/helper/WarningCalculatorsManager.java b/src/main/java/com/gepardec/mega/service/helper/WarningCalculatorsManager.java
+--- a/src/main/java/com/gepardec/mega/service/helper/WarningCalculatorsManager.java
++++ b/src/main/java/com/gepardec/mega/service/helper/WarningCalculatorsManager.java
+@@ -1,5 +1,6 @@
+ package com.gepardec.mega.service.helper;
+
++import at.gepardec.fachtracing.api.FachTracing;
+ import com.gepardec.mega.domain.calculation.WarningCalculationStrategy;
+ import com.gepardec.mega.domain.calculation.journey.InvalidJourneyCalculator;
+ import com.gepardec.mega.domain.calculation.journey.InvalidWorkingLocationInJourneyCalculator;
+@@ -61,5 +62,6 @@ public class WarningCalculatorsManager {
+         return warnings;
+     }
+
++    @FachTracing("determine journey warnings")
+     public List<JourneyWarning> determineJourneyWarnings(List<ProjectEntry> projectTimeList) {
+         final List<JourneyWarning> warnings = new ArrayList<>();

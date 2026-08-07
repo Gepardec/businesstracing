@@ -15,8 +15,16 @@ import java.util.Set;
 public final class BackwardDecisionSlicer {
     /** Returns result expressions, their definitions, and enclosing control decisions. */
     public Set<Tree> slice(DependencyGraphBuilder.MethodDependencies dependencies) {
+        return slice(dependencies, Set.of());
+    }
+
+    /** Returns the result slice plus writes to caller-relevant state roots. */
+    public Set<Tree> slice(
+            DependencyGraphBuilder.MethodDependencies dependencies,
+            Set<String> effectRoots) {
         Set<Tree> relevant = Collections.newSetFromMap(new IdentityHashMap<>());
         var pendingNames = new ArrayDeque<String>();
+        pendingNames.addAll(effectRoots);
 
         for (ReturnTree returned : dependencies.returns()) {
             relevant.add(returned);

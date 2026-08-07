@@ -1,30 +1,34 @@
 {
   "id": "generic-java-fachtracing",
   "title": "Generic Java Fachtracing",
-  "description": "Build a domain-neutral Java tracing library that derives business-decision graphs from annotated, previously unknown methods, correlates actual runtime paths, produces business-readable explanations and PlantUML, and validates generality and scale without application-specific rules.",
+  "description": "Build a domain-neutral Java tracing library that derives business-decision graphs from annotated, previously unknown methods, correlates actual runtime paths, produces business-readable explanations and Mermaid/PlantUML, persists versioned records, and validates generality and scale without application-specific rules.",
   "created": "2026-07-10T14:03:23Z",
-  "updated": "2026-07-31T09:39:13Z",
+  "updated": "2026-08-05T21:18:47Z",
   "author": "lucostus",
   "specs": [
     "generic-tracing-walking-skeleton",
-    "static-business-logic-extractor",
     "runtime-decision-path-capture",
-    "decision-protocol-and-scale",
-    "generality-conformance-suite"
+    "generic-application-readiness",
+    "generic-java-extractor-completion",
+    "release-explanation-async-correctness"
   ],
   "order": [
     [
       "generic-tracing-walking-skeleton"
     ],
     [
-      "static-business-logic-extractor",
-      "runtime-decision-path-capture",
-      "decision-protocol-and-scale"
+      "runtime-decision-path-capture"
     ],
     [
-      "generality-conformance-suite"
+      "generic-application-readiness"
+    ],
+    [
+      "generic-java-extractor-completion"
+    ],
+    [
+      "release-explanation-async-correctness"
     ]
   ],
   "skeleton": "generic-tracing-walking-skeleton",
-  "status": "active"
+  "status": "completed"
 }

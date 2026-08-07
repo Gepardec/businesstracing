@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-07-31T09:52:57Z"
-_sourceHash: "0a74195714572f207b3d5c66f704fef5b37cd0809d00587d9be7279607193e6f"
+_generatedAt: "2026-08-07T08:00:07Z"
+_sourceHash: "841f25deb895a1762f4879d0e76c78d3f03d523f7927cf7dd6c43fe631f0f4c9"
 ---
 
 ## Project Structure Map
@@ -28,12 +28,14 @@ fachtracing/
   fachtracing-maven-plugin/
     src/main/java/at/gepardec/fachtracing/maven/
     src/test/java/at/gepardec/fachtracing/maven/
-    src/test/resources/it/{basic,reactor}/
+    src/test/resources/it/{basic,external-release,reactor}/
+  fachtracing-storage-jdbc/
+    src/main/java/at/gepardec/fachtracing/storage/jdbc/
+    src/test/java/at/gepardec/fachtracing/storage/jdbc/
   conformance/mega-backend/
     annotation-overlay.patch
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
-    generated/
     conformance-report.md
   docs/plantuml/
   scripts/
@@ -41,7 +43,7 @@ fachtracing/
 
 ### File Declarations
 
-#### fachtracing-api/ (5 files)
+#### fachtracing-api/ (6 files)
 
 - `src/main/java/at/gepardec/fachtracing/api/FachTracing.java`
   - `public @interface FachTracing`
@@ -52,7 +54,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (39 files)
+#### fachtracing-engine/ (65 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -60,12 +62,22 @@ fachtracing/
   - `public record AnalysisManifest`
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java`
   - `public record AnalysisRequest`
+- `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
+  - `public record ApplicationSourceBoundary`
 - `src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java`
   - `public final class BackwardDecisionSlicer`
+- `src/main/java/at/gepardec/fachtracing/analysis/BytecodeDecisionAnalyzer.java`
+  - `public final class BytecodeDecisionAnalyzer`
+- `src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java`
+  - rejects technical loop and ordinal candidate output
 - `src/main/java/at/gepardec/fachtracing/analysis/DecisionGraphBuilder.java`
   - `public final class DecisionGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java`
   - `public final class DependencyGraphBuilder`
+- `src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java`
+  - flow-ordered direct reference alias roots for result-effect analysis
+- `src/main/java/at/gepardec/fachtracing/analysis/CancellationBoundaryScanner.java`
+  - exact supported cancellation call-site discovery
 - `src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
   - `public final class StaticDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessStatementRenderer.java`
@@ -78,6 +90,8 @@ fachtracing/
   - `public record DecisionExecution`
 - `src/main/java/at/gepardec/fachtracing/model/DecisionExplanation.java`
   - `public record DecisionExplanation`
+- `src/main/java/at/gepardec/fachtracing/model/DecisionRecordEnvelope.java`
+  - `public record DecisionRecordEnvelope`
 - `src/main/java/at/gepardec/fachtracing/plantuml/PlantUmlRenderer.java`
   - `public final class PlantUmlRenderer`
 - `src/main/java/at/gepardec/fachtracing/diagram/ExecutionPathResolver.java`
@@ -96,29 +110,45 @@ fachtracing/
   - `public interface DecisionRecordRepository`
 - `src/main/java/at/gepardec/fachtracing/store/InMemoryDecisionRecordRepository.java`
   - `public final class InMemoryDecisionRecordRepository`
-- `src/test/java/` — 8 executable contract suites
+- `src/test/java/` — executable analysis, runtime, protocol, and performance contract suites
 - `src/test/resources/fixtures/` — aggregation, authorization, calendar, eligibility, gap, pricing, reactor, strategy, and stream domains
 - `src/test/resources/snapshots/` — explanation, PlantUML, and Mermaid snapshots
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-agent/ (9 files)
+#### fachtracing-agent/ (12 files)
 
 - `src/main/java/at/gepardec/fachtracing/agent/FachtracingAgent.java`
   - `public final class FachtracingAgent`
 - `src/main/java/at/gepardec/fachtracing/agent/FachtracingTransformer.java`
   - `public final class FachtracingTransformer`
+- `src/main/java/at/gepardec/fachtracing/agent/AsyncInvocationCatalog.java`
+  - exact standard asynchronous callback bindings
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (15 files)
+#### fachtracing-maven-plugin/ (27 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
+- `src/main/java/at/gepardec/fachtracing/maven/AnalyzeReactorMojo.java`
+  - aggregate reactor analysis and activation-bundle generation
+- `src/main/java/at/gepardec/fachtracing/maven/MavenCompilerModelResolver.java`
+  - effective Maven compiler and JPMS model
+- `src/main/java/at/gepardec/fachtracing/maven/SourceInputResolver.java`
+  - project, external, and source-artifact discovery
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
 - `src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
 - `src/test/resources/it/basic/` — external-style one-off and lifecycle Maven fixtures
 - `src/test/resources/it/reactor/` — two-module JPMS implementation-resolution fixture
+- `pom.xml`
+
+#### fachtracing-storage-jdbc/ (5 files)
+
+- `src/main/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepository.java`
+  - vendor-neutral JDBC envelope repository
+- `src/test/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepositoryTest.java`
+- `src/main/java/module-info.java`
 - `pom.xml`
 
 #### docs/ (7 files)
@@ -145,5 +175,6 @@ fachtracing/
 - `AGENTS.md`
 - `README.md`
 - `pom.xml`
-- `scripts/verify.sh`
-- `scripts/verify-mega-backend.sh`
+- `scripts/verify.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, and `verify-release.sh`
+- `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
+- `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`

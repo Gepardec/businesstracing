@@ -2,6 +2,8 @@
 module at.gepardec.fachtracing.engine {
     requires at.gepardec.fachtracing.api;
     requires jdk.compiler;
+    requires org.objectweb.asm;
+    requires org.objectweb.asm.tree;
 
     exports at.gepardec.fachtracing;
     exports at.gepardec.fachtracing.model;

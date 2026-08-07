@@ -5,12 +5,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>at.gepardec.fachtracing</groupId>
   <artifactId>fachtracing-parent</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.0-rc.1</version>
   <packaging>pom</packaging>
 
   <modules>
     <module>fachtracing-api</module>
     <module>fachtracing-engine</module>
+    <module>fachtracing-storage-jdbc</module>
     <module>fachtracing-agent</module>
     <module>fachtracing-maven-plugin</module>
   </modules>

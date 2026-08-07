@@ -89,3 +89,138 @@ Completed one bugfix task. Maven source discovery omits module descriptors from 
 while Maven still compiles each descriptor and enforces JPMS boundaries. A valid two-module JPMS
 fixture generates one current-module graph with both sibling candidates, and the full verifier
 passes.
+
+### generic-application-readiness (feature) — 2026-07-31
+
+Completed version 4 on 2026-08-05 with 27 tasks. Fachtracing has project-aware source boundaries,
+safe external source inputs, multi-origin developer provenance, one aggregate reactor goal,
+isolated flat, JPMS, and mixed compiler contexts, bounded runtime diagnostics, explicit async
+context propagation, a verified Java capability matrix, deterministic V1 records, bounded delivery,
+and a vendor-neutral JDBC adapter.
+
+Remediation version 4 adds UUID-namespaced execution IDs and strict content-aware idempotency for
+both durable keys. A timed-out or interrupted active save is `unknown`, stops its delivery worker,
+and cannot be falsely counted as dropped. Activation V3 carries exact JVM descriptors for normal,
+branch, dispatch, and lambda bindings, while V2 remains readable. The graph-entry project now
+selects flat or JPMS analysis in a mixed reactor; unavailable cross-mode source logic becomes an
+explicit coverage gap.
+
+Release commit `facd1daf052f4e3ffae42c48a876dc46e4dd9576` passed the isolated external project,
+five complete pinned Mega graphs from 420 source files, and the clean-clone long gate. The gate
+completed 600,000 decisions at 1,000 RPS with 0.078% p95 overhead and zero errors, mismatches,
+drops, or contamination.
+
+### generic-java-extractor-completion (feature) — 2026-08-05
+
+Completed all 12 tasks. The generic analyzer now supports structured exception and synchronized
+flow, exact atomic Boolean and switch paths, proven dynamic candidates, a fingerprinted bytecode
+subset, automatic standard asynchronous context propagation, and owned mixed-JPMS sources.
+Unsupported variants remain actionable gaps; no Mega-specific rule entered production code.
+
+PostgreSQL 18.4, source-free Activation V3, and five complete Mega graphs passed. The clean-clone
+gate completed 600,000 decisions at 1,000 RPS with 6.126% p95 overhead and zero errors, result
+mismatches, dropped records, or trace contamination.
+
+### release-explanation-async-correctness (bugfix) — 2026-08-05
+
+Completed all seven tasks. Release output capture now preserves the producer status and evidence,
+and all verification scripts use declared POSIX tools. Static analysis binds only proven,
+result-relevant operands to predicate nodes, so explanations include typed business facts and do
+not store unrelated method identifiers.
+
+Asynchronous instrumentation uses exact JDK owner, method, descriptor, and callback-position
+bindings. Atomic reservation states close rejection and cancellation paths exactly once. Canonical
+indexed collection loops now use business iteration vocabulary, and a generic export guard rejects
+technical counter and ordinal candidate text.
+
+Release commit `280368d58263c045a01e6879769dac89f820a220` passed source-free activation, five
+complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.054% p95 overhead and zero errors,
+mismatches, dropped records, or trace contamination.
+
+### ci-isolated-maven-repository (bugfix) — 2026-08-06
+
+Completed all four tasks. Verification scripts now resolve one Maven repository path for local,
+release, and explicit use. Manual test launchers use Maven-resolved dependency classpaths, so a
+warm home cache cannot hide missing or stale transitive artifacts. The resolver also normalizes
+the repeated separator produced by the trailing slash in macOS `TMPDIR`.
+
+Hosted monitoring found that the cold macOS release job reached its old 35-minute limit. The job
+now has a bounded 60-minute budget. Standard verification enforces a minimum of 50 minutes so the
+clean builds, Mega analysis, and 600-second load gate have time to finish.
+
+Release commit `defe774040f5a5604caffc15838519fd753c0db2` passed source-free activation, five
+complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.059% p95 overhead and zero errors,
+mismatches, dropped records, or trace contamination.
+
+### runtime-evidence-async-identity-correctness (bugfix) — 2026-08-06
+
+Completed all five tasks. Automatic async completion now uses the exact prepared callback handle,
+and Thread constructors bind the handle to the actual Thread object. Future, CompletableFuture,
+and ForkJoinTask cancellation keeps the original result object and releases a pre-start reservation
+once. Direct parameter facts are read at each predicate branch. Unavailable or unsafe required facts
+make the execution incomplete with a source-located gap.
+
+One generic label normalizer and artifact guard remove Java construction, enum-type, and helper-role
+terms without Mega-specific rules. Release commit `d9a1d4cc7c38a604b41ce91ade069ffe3ca50de2`
+passed source-free activation, five complete Mega graphs, and 600,000 decisions at 1,000 RPS with
+0.054% p95 overhead and zero errors, mismatches, dropped records, or trace contamination.
+
+### stage-lifecycle-evidence-label-correctness (bugfix) — 2026-08-06
+
+Completed all four tasks. Returned CompletionStage objects now release a reservation when normal
+or exceptional completion skips the callback. Typed operand spilling supports every exact callback
+position. One fingerprinted class pass observes cancel calls in methods without graph probes.
+
+Direct method-parameter receivers create exact predicate or return evidence. Unsupported value
+receivers create source-located gaps. Validation helper cleanup uses new-object and validate-only
+call roles, so unrelated business uses of `validator` keep their meaning.
+
+Release commit `9690240f3810a043f52af5af65d17818c4473cfb` passed source-free activation, five
+complete Mega graphs, and 600,000 decisions at 1,000 RPS with 0.077% p95 overhead and zero errors,
+mismatches, dropped records, or trace contamination.
+
+### outcome-evidence-cancellation-slice-label-correctness (bugfix) — 2026-08-06
+
+Completed all four tasks. Terminal observations merge staged receiver facts with the typed result,
+and explanations show non-result facts as business reasons. Activation fingerprints exact supported
+cancellation callers from compiled application output without scanning dependency artifacts.
+
+The analyzer uses attributed platform mutation contracts and source-proven mutation summaries.
+Ignored read-only calls stay outside the result slice. Unknown effects on returned references create
+source-located gaps. Validation helper labels use proven roles; other receivers remain distinct.
+
+Release commit `8e62f243850c06fbd16d57c0c807c4177d91c9df` passed source-free activation, five
+complete Mega graphs from 420 source files, and 600,000 decisions at 1,000 RPS with 0.051% p95
+overhead and zero errors, mismatches, drops, or contamination.
+
+### jdk-mutation-alias-effect-correctness (bugfix) — 2026-08-07
+
+Completed all three tasks. Platform call effects now separate explicit mutation contracts from
+proved read-only operations. An unknown JDK or `javax` reference effect fails closed when it can
+change returned state. Standard deque operations such as `offer` retain their mutation and control
+predicates.
+
+Direct local reference aliases are resolved in source order, invalidated on non-identity assignment,
+and mapped back to source parameters. Effect-relevant source helper bodies now receive exact mutation
+roots, so their business predicates and writes remain in caller graphs without including unrelated
+parameter mutations.
+
+Release commit `e5365f26bdbb52a12f9bb571dcaf8e0e128fc7d4` passed source-free activation, five
+complete Mega graphs from 420 source files, and 600,000 decisions at 1,000 RPS with 0.059% p95
+overhead and zero errors, mismatches, drops, or contamination.
+
+### fast-pr-ci-pipeline (refactor) — 2026-08-07
+
+Completed all three tasks. Pull requests now use cached Maven dependencies and an immutable pinned
+Mega checkout for standard, external activation, short-load, five-graph Mega, and PostgreSQL checks.
+The warm hosted PR job passed in 2 minutes 5 seconds; the first cold run took 3 minutes 12 seconds.
+The unchanged clean 600-second release gate runs on `main`, version tags, nightly schedules, and
+manual dispatches.
+
+### untrack-mega-generated-artifacts (refactor) — 2026-08-07
+
+Completed all three tasks. The five reviewed Mega semantic oracles remain tracked and protected by
+immutable hashes. The 18 reproducible diagrams, normalized comparison files, and execution files
+now use `conformance/mega-backend/target/generated` and stay outside Git. Repository integrity
+prevents a later commit of the former generated-output path. Standalone Mega conformance and the
+complete pull-request gate passed with all five graphs complete.

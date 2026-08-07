@@ -25,6 +25,14 @@
     "updated": "2026-07-24T11:32:48Z"
   },
   {
+    "id": "maven-project-analysis",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-07-31T08:38:50Z"
+  },
+  {
     "id": "developer-graph-json-export",
     "type": "feature",
     "status": "completed",
@@ -64,5 +72,93 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-07-31T09:44:56Z"
+  },
+  {
+    "id": "generic-application-readiness",
+    "type": "feature",
+    "status": "completed",
+    "version": 4,
+    "author": "lucostus",
+    "updated": "2026-08-05T08:16:38Z"
+  },
+  {
+    "id": "generic-java-extractor-completion",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-05T20:16:37Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "release-explanation-async-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-05T21:18:47Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "ci-isolated-maven-repository",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 2,
+    "author": "lucostus",
+    "updated": "2026-08-06T17:40:51Z"
+  },
+  {
+    "id": "runtime-evidence-async-identity-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "codex",
+    "updated": "2026-08-06T19:37:02Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "stage-lifecycle-evidence-label-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "codex",
+    "updated": "2026-08-06T20:40:44Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "outcome-evidence-cancellation-slice-label-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "codex",
+    "updated": "2026-08-06T21:43:43Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "jdk-mutation-alias-effect-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "codex",
+    "updated": "2026-08-07T07:09:58Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "fast-pr-ci-pipeline",
+    "type": "refactor",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T07:41:08Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "untrack-mega-generated-artifacts",
+    "type": "refactor",
+    "status": "completed",
+    "version": 1,
+    "author": "codex",
+    "updated": "2026-08-07T08:00:07Z",
+    "partOf": "generic-java-fachtracing"
   }
 ]

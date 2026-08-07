@@ -9,18 +9,18 @@ paths converge on that `Stop`; normal terminal edges say what is returned. Techn
 suffixes are removed, while result-relevant Java null checks are expressed as the business facts
 “absent” or “exists.”
 
-This repository is the walking skeleton for the broader generic extractor. It proves the full
-flow across eligibility, pricing, and polymorphic strategy fixtures without domain-specific
-analyzer rules. It does not yet claim complete Java-language coverage; unsupported
-result-relevant constructs are retained as visible coverage gaps instead of being silently
-omitted.
+The generic extractor supports exact paths for source-proven structured exception flow,
+synchronized business logic, atomic short-circuit predicates, ternaries, Java 21 switches,
+proven dynamic candidates, and standard asynchronous boundaries. A controlled fingerprinted
+bytecode subset can recover simple source-unavailable Boolean rules. It does not claim every Java
+program. Unsupported result-relevant variants stay as source-located coverage gaps.
 
 ## Maven quick start
 
 For static business diagrams, add `fachtracing-api`, annotate decision methods, and run:
 
 ```sh
-mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-SNAPSHOT:analyze
+mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 ```
 
 The module receives a Markdown index plus Mermaid and PlantUML diagrams under
@@ -32,6 +32,9 @@ launcher, plugin block, or path assembly is required. See the copyable
 [Maven plugin setup](docs/maven-plugin.md), including automatic lifecycle and parent-POM usage for
 many modules. When repository and source-link settings are present, the same goal also writes
 revision-pinned developer JSON that another tool can visualize.
+
+See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
+delivery, JDBC, upgrade, and rollback flow.
 
 ## Integration flow
 
@@ -53,7 +56,7 @@ revision-pinned developer JSON that another tool can visualize.
 No database or filesystem operation occurs in injected probes. Probe failures are suppressed
 from application control flow and exposed separately through `TraceRuntime.pollDiagnostic()`.
 For Java 21 classes from `javac`, a complete Boolean branch binding records the exact opaque
-`true` or `false` graph edge. An incomplete binding keeps the safe evaluated-node probe. If an
+`true` or `false` graph edge. An incomplete exact binding creates a located coverage gap. If an
 exception leaves an instrumented entry method, the collector creates one generic failed record
 and rethrows the same exception object. The failed record contains no exception type, message,
 or stack trace.

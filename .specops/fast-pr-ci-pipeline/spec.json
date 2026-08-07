@@ -1,0 +1,57 @@
+{
+  "id": "fast-pr-ci-pipeline",
+  "type": "refactor",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T07:29:28Z",
+  "updated": "2026-08-07T07:41:08Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [
+    {
+      "specId": "ci-isolated-maven-repository",
+      "reason": "It defines the clean isolated release gate that this refactor preserves.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": ["generic-java-extractor-completion"],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T07:29:28Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "behavioralPreservation": 9,
+        "refactorCorrectness": 9,
+        "regressionSafety": 9,
+        "scopeDiscipline": 9
+      },
+      "evaluatedAt": "2026-08-07T07:41:08Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 2506,
+    "filesChanged": 16,
+    "linesAdded": 404,
+    "linesRemoved": 5,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 8,
+    "specDurationMinutes": 12
+  }
+}

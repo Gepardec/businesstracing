@@ -8,8 +8,8 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 2,
-      "pattern": "Precompute opaque graph topology and developer-only probe plans, then let runtime capture record only validated selected edges without Java details."
+      "count": 8,
+      "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
       "category": "multi-format-projection",
@@ -18,18 +18,33 @@
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 1,
+      "count": 3,
       "pattern": "Preserve result-relevant optionality as absent/exists while stripping language- and persistence-specific vocabulary from business projections."
     },
     {
       "category": "build-tool-adapter",
-      "count": 2,
-      "pattern": "Let the build tool provide source roots, resolved classpaths, and explicit repository settings, while the engine owns graph and provenance contracts."
+      "count": 3,
+      "pattern": "Let the build tool provide source roots, resolved classpaths, explicit module ownership, and repository settings, while the engine owns graph and provenance contracts."
     },
     {
       "category": "source-provenance",
-      "count": 3,
-      "pattern": "Keep source data outside business records and verify both working files and exact commit blobs before a developer export claims a Git revision."
+      "count": 4,
+      "pattern": "Keep source and module provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
+    },
+    {
+      "category": "release-gate-integrity",
+      "count": 4,
+      "pattern": "Separate fast cached feedback from clean release proof, preserve exact status, give required checks a bounded verified time budget, and print success only after every required sub-gate passes."
+    },
+    {
+      "category": "static-effect-proof",
+      "count": 1,
+      "pattern": "Treat namespace support and purity as separate proofs; map direct aliases to state roots and report an exact gap for unproved result-relevant effects."
+    },
+    {
+      "category": "build-artifact-boundary",
+      "count": 1,
+      "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
     }
   ],
   "fileOverlaps": [
@@ -40,9 +55,10 @@
         "maven-project-analysis",
         "developer-graph-json-export",
         "maven-developer-graph-export",
-        "reactor-wide-implementation-resolution"
+        "reactor-wide-implementation-resolution",
+        "generic-java-extractor-completion"
       ],
-      "count": 5
+      "count": 6
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
@@ -50,9 +66,12 @@
         "generic-tracing-walking-skeleton",
         "developer-graph-json-export",
         "maven-developer-graph-export",
-        "reactor-wide-implementation-resolution"
+        "reactor-wide-implementation-resolution",
+        "generic-java-extractor-completion",
+        "release-explanation-async-correctness",
+        "jdk-mutation-alias-effect-correctness"
       ],
-      "count": 4
+      "count": 7
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -61,36 +80,42 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness"],
+      "count": 5
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness"],
+      "count": 4
     },
     {
       "file": "docs/maven-plugin.md",
-      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution"],
-      "count": 2
+      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion"],
+      "count": 3
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java",
       "specs": [
         "maven-developer-graph-export",
         "reactor-wide-implementation-resolution",
-        "jpms-reactor-source-resolution"
+        "jpms-reactor-source-resolution",
+        "generic-java-extractor-completion"
       ],
-      "count": 3
+      "count": 4
     },
     {
       "file": "scripts/verify.sh",
-      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution"],
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository", "fast-pr-ci-pipeline"],
+      "count": 6
+    },
+    {
+      "file": "scripts/verify-mega-backend.sh",
+      "specs": ["fast-pr-ci-pipeline", "untrack-mega-generated-artifacts"],
       "count": 2
     }
   ]

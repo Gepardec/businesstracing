@@ -1,0 +1,91 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pr-gate:
+    if: github.event_name == 'pull_request'
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Restore pinned Mega Backend source
+        id: mega-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/fachtracing-mega-backend
+          key: mega-backend-${{ runner.os }}-782cdec8dfe5b4062eb5c1859e6a9e53afe02770
+      - name: Prepare pinned Mega Backend source
+        if: steps.mega-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -q https://github.com/Gepardec/mega-backend.git "${{ runner.temp }}/fachtracing-mega-backend"
+          git -C "${{ runner.temp }}/fachtracing-mega-backend" checkout -q 782cdec8dfe5b4062eb5c1859e6a9e53afe02770
+      - name: Run cached pull-request verification
+        env:
+          MEGA_BACKEND_DIR: ${{ runner.temp }}/fachtracing-mega-backend
+        run: ./scripts/verify-pr.sh
+
+  release-gate:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run standard, external, Mega Backend, and 1,000-RPS gates
+        run: ./scripts/verify-release.sh
+
+  postgres:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.4
+        env:
+          POSTGRES_DB: fachtracing
+          POSTGRES_USER: fachtracing
+          POSTGRES_PASSWORD: fachtracing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fachtracing -d fachtracing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run PostgreSQL storage contract
+        env:
+          FACHTRACING_POSTGRES_URL: jdbc:postgresql://localhost:5432/fachtracing
+          FACHTRACING_POSTGRES_USER: fachtracing
+          FACHTRACING_POSTGRES_PASSWORD: fachtracing
+        run: ./scripts/verify-postgres.sh

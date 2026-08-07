@@ -1,0 +1,41 @@
+{
+  "id": "maven-project-analysis",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-07-31T08:26:05Z",
+  "updated": "2026-07-31T08:38:50Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    { "specId": "generic-tracing-walking-skeleton", "reason": "Provides the analyzer and graph model adapted by the plugin.", "required": true },
+    { "specId": "mermaid-diagram-rendering", "reason": "Provides one of the two required output formats.", "required": true }
+  ],
+  "relatedSpecs": ["generic-tracing-walking-skeleton", "mermaid-diagram-rendering", "business-graph-terminal-semantics"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": { "criteriaTestability": 10, "criteriaCompleteness": 9, "designCoherence": 10, "taskCoverage": 10 },
+      "evaluatedAt": "2026-07-31T08:27:55Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": { "functionalityDepth": 10, "designFidelity": 10, "codeQuality": 9, "testVerification": 10 },
+      "evaluatedAt": "2026-07-31T08:38:50Z"
+    }
+  },
+  "metrics": {
+    "artifactWords": 1541,
+    "completedTasks": 2,
+    "verifiedCriteria": 8,
+    "durationSeconds": 794,
+    "capturedAt": "2026-07-31T08:38:50Z"
+  }
+}

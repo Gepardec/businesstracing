@@ -1,0 +1,60 @@
+{
+  "id": "ci-isolated-maven-repository",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 2,
+  "created": "2026-08-06T08:26:47Z",
+  "updated": "2026-08-06T17:40:51Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "release-explanation-async-correctness",
+      "reason": "It defines the fail-closed clean release gate corrected by this CI fix.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "generic-java-extractor-completion"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-06T17:40:51Z"
+    },
+    "implementation": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "functionality": 9,
+        "codeQuality": 9,
+        "testVerification": 9,
+        "specCompliance": 9
+      },
+      "evaluatedAt": "2026-08-06T17:40:51Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3000,
+    "filesChanged": 24,
+    "linesAdded": 555,
+    "linesRemoved": 14,
+    "tasksCompleted": 4,
+    "acceptanceCriteriaVerified": 18,
+    "specDurationMinutes": 40
+  }
+}
