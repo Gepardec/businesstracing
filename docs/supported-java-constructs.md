@@ -12,7 +12,7 @@ checks that every entry names an executable contract and appears in this documen
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
-- `source-unavailable-call`
+- `source-unavailable-call`, `jakarta-platform-operation`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
 - `reflection-service-loader-proxy`, `unresolved-dynamic-candidate-gap`, `async-boundary`
 - `exact-async-callback-position`, `skipped-stage-callback-lifecycle`, `async-submission-lifecycle`, `nested-async-reservation-identity`, `transparent-future-cancellation`, `external-cancellation-call-site`
@@ -56,6 +56,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Sealed type dispatch | Includes each source-visible permitted implementation as a candidate |
 | Nested class call | Resolves and expands source-visible nested-class decision logic |
 | Direct method reference | Resolves and expands a source-visible referenced decision method |
+| Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
 | Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location |
 
