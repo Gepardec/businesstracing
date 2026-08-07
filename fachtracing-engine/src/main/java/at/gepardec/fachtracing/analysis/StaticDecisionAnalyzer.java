@@ -2672,7 +2672,8 @@ public final class StaticDecisionAnalyzer {
         Element owner = executable.getEnclosingElement();
         if (!(owner instanceof TypeElement type)) return false;
         String qualifiedName = type.getQualifiedName().toString();
-        if (qualifiedName.startsWith("java.") || qualifiedName.startsWith("javax.")) return true;
+        if (qualifiedName.startsWith("java.") || qualifiedName.startsWith("javax.")
+                || qualifiedName.startsWith("jakarta.")) return true;
         return isSupportedRecordOperation(executable, type);
     }
 
