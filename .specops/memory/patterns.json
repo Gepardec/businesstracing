@@ -53,8 +53,8 @@
     },
     {
       "category": "external-library-boundary",
-      "count": 2,
-      "pattern": "Use exact classpath ownership to exclude dependency mechanics, preserve source-visible receiver controls, and keep direct binary decisions fail-closed."
+      "count": 3,
+      "pattern": "Require an explicit exact-artifact trust declaration before excluding dependency mechanics. Preserve source-visible receiver controls, and keep unselected and direct binary decisions fail-closed."
     }
   ],
   "fileOverlaps": [
@@ -98,9 +98,10 @@
         "jdk-mutation-alias-effect-correctness",
         "fix-jakarta-platform-call-completeness",
         "conditional-alias-method-reference-effects",
-        "fix-hogarama-aggregate-completeness"
+        "fix-hogarama-aggregate-completeness",
+        "explicit-opaque-library-boundaries"
       ],
-      "count": 10
+      "count": 11
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -124,23 +125,23 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness"],
-      "count": 9
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries"],
+      "count": 10
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness"],
-      "count": 8
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries"],
+      "count": 9
     },
     {
       "file": "docs/java-capabilities.json",
-      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness"],
-      "count": 5
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries"],
+      "count": 6
     },
     {
       "file": "docs/maven-plugin.md",
-      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "annotation-processor-output-analysis"],
-      "count": 4
+      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries"],
+      "count": 5
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java",
@@ -148,9 +149,10 @@
         "maven-developer-graph-export",
         "reactor-wide-implementation-resolution",
         "jpms-reactor-source-resolution",
-        "generic-java-extractor-completion"
+        "generic-java-extractor-completion",
+        "explicit-opaque-library-boundaries"
       ],
-      "count": 4
+      "count": 5
     },
     {
       "file": "scripts/verify.sh",
@@ -164,8 +166,23 @@
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java",
-      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "self-dogfood-business-tracing"],
+      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "self-dogfood-business-tracing", "explicit-opaque-library-boundaries"],
+      "count": 5
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BinaryTypeOriginResolver.java",
+      "specs": ["fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeReactorMojo.java",
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries"],
       "count": 4
+    },
+    {
+      "file": "fachtracing-maven-plugin/src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java",
+      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries"],
+      "count": 5
     },
     {
       "file": "fachtracing-maven-plugin/pom.xml",

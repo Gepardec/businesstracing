@@ -208,5 +208,13 @@
     "version": 1,
     "author": "codex",
     "updated": "2026-08-07T12:21:17Z"
+  },
+  {
+    "id": "explicit-opaque-library-boundaries",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T12:56:31Z"
   }
 ]

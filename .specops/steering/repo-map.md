@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T12:26:02Z"
-_sourceHash: "132cd229608607efbe51215a2a0509f54c83641fdc2396021ed4b90b4a5ae1bd"
+_generatedAt: "2026-08-07T12:58:29Z"
+_sourceHash: "9ce09b3e90c45c4083038a724ac767a5df0dc6dee747c114bc8858132ecaa134"
 ---
 
 ## Project Structure Map
@@ -54,7 +54,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (66 files)
+#### fachtracing-engine/ (67 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -79,6 +79,8 @@ fachtracing/
   - `public final class DependencyGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java`
   - flow-ordered direct reference alias roots for result-effect analysis
+- `src/main/java/at/gepardec/fachtracing/analysis/OpaqueLibraryBoundary.java`
+  - exact caller-declared technical dependency archive boundary
 - `src/main/java/at/gepardec/fachtracing/analysis/CancellationBoundaryScanner.java`
   - exact supported cancellation call-site discovery
 - `src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
@@ -130,7 +132,7 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (28 files)
+#### fachtracing-maven-plugin/ (29 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
@@ -138,6 +140,8 @@ fachtracing/
   - aggregate reactor analysis and activation-bundle generation
 - `src/main/java/at/gepardec/fachtracing/maven/MavenCompilerModelResolver.java`
   - effective Maven compiler and JPMS model
+- `src/main/java/at/gepardec/fachtracing/maven/OpaqueLibraryArtifactResolver.java`
+  - exact Maven coordinate to compile-classpath archive mapping
 - `src/main/java/at/gepardec/fachtracing/maven/SourceInputResolver.java`
   - project, external, and source-artifact discovery
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`

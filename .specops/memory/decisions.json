@@ -720,6 +720,26 @@
       "task": "Task 1",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T12:21:17Z"
+    },
+    {
+      "specId": "explicit-opaque-library-boundaries",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Make opaque dependency trust empty by default",
+      "rationale": "Packaging in a JAR does not prove that code is free of business decisions.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:56:31Z"
+    },
+    {
+      "specId": "explicit-opaque-library-boundaries",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Resolve Maven coordinates to exact compile-classpath archive paths",
+      "rationale": "Maven owns artifact identity, while the engine must remain build-tool independent.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:56:31Z"
     }
   ]
 }

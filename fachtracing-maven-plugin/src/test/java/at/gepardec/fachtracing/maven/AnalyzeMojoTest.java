@@ -12,9 +12,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -43,6 +47,7 @@ public final class AnalyzeMojoTest {
         acceptsCompiledAnnotationProcessorOutputSettings();
         rejectsUnsupportedCompilerPluginConfiguration();
         mapsExternalModuleOwnershipConfiguration();
+        resolvesExplicitOpaqueLibraryArtifacts();
         skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
@@ -79,6 +84,65 @@ public final class AnalyzeMojoTest {
                 : automaticOwnership;
         assert automaticOwnership.binaryPath().orElseThrow()
                 .equals(binary.toAbsolutePath().normalize()) : automaticOwnership;
+    }
+
+    private static void resolvesExplicitOpaqueLibraryArtifacts() throws Exception {
+        Path root = Files.createTempDirectory("fachtracing-opaque-library-");
+        Path archive = Files.write(root.resolve("technical-library.jar"), new byte[]{1});
+        Artifact artifact = new DefaultArtifact(
+                "example", "technical-library", "1.0.0", "compile", "jar", null,
+                new DefaultArtifactHandler("jar"));
+        artifact.setFile(archive.toFile());
+        MavenProject project = projectWithArtifacts(List.of(archive.toString()), Set.of(artifact));
+
+        var boundary = OpaqueLibraryArtifactResolver.resolve(
+                List.of(project), List.of("example:technical-library"));
+        assert boundary.archiveFiles().equals(Set.of(archive.toAbsolutePath().normalize())) : boundary;
+
+        assert OpaqueLibraryArtifactResolver.normalizedCoordinates(List.of(
+                "example:technical-library, example:other"))
+                .equals(Set.of("example:technical-library", "example:other"));
+        try {
+            OpaqueLibraryArtifactResolver.resolve(List.of(project), List.of("example:missing"));
+            throw new AssertionError("missing opaque library coordinate was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("not resolved compile-classpath JARs") : expected;
+        }
+        try {
+            OpaqueLibraryArtifactResolver.normalizedCoordinates(List.of("example:library:1.0"));
+            throw new AssertionError("versioned opaque library coordinate was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("groupId:artifactId") : expected;
+        }
+
+        Path directory = Files.createDirectory(root.resolve("technical-library-classes"));
+        Artifact directoryArtifact = new DefaultArtifact(
+                "example", "directory-library", "1.0.0", "compile", "jar", null,
+                new DefaultArtifactHandler("jar"));
+        directoryArtifact.setFile(directory.toFile());
+        MavenProject directoryProject = projectWithArtifacts(
+                List.of(directory.toString()), Set.of(directoryArtifact));
+        try {
+            OpaqueLibraryArtifactResolver.resolve(
+                    List.of(directoryProject), List.of("example:directory-library"));
+            throw new AssertionError("directory-only opaque library coordinate was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("not resolved compile-classpath JARs") : expected;
+        }
+    }
+
+    private static MavenProject projectWithArtifacts(
+            List<String> compileClasspath,
+            Set<Artifact> artifacts) {
+        return new MavenProject() {
+            @Override public List<String> getCompileClasspathElements() {
+                return compileClasspath;
+            }
+
+            @Override public Set<Artifact> getArtifacts() {
+                return artifacts;
+            }
+        };
     }
 
     private static void readsEffectiveCompilerPluginConfiguration() throws Exception {

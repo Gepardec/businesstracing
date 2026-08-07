@@ -51,7 +51,7 @@ public final class StaticDecisionAnalyzerTest {
         exposesRelevantCoverageGaps();
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
         usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
-        supportsExternalArchiveReferenceOperations();
+        supportsExplicitOpaqueLibraryBoundaries();
         analyzesEveryAnnotatedEntry();
         supportsJakartaPlatformOperations();
         treatsPlatformValueOperationsAsDecisionFacts();
@@ -991,7 +991,7 @@ public final class StaticDecisionAnalyzerTest {
         }
     }
 
-    private static void supportsExternalArchiveReferenceOperations() {
+    private static void supportsExplicitOpaqueLibraryBoundaries() {
         Path root = null;
         try {
             root = Files.createTempDirectory("fachtracing-external-archive-");
@@ -1113,8 +1113,30 @@ public final class StaticDecisionAnalyzerTest {
                     }
                     """);
 
-            var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
-                    List.of(application), List.of(CLASSPATH.getFirst(), archive)));
+            AnalysisRequest request = AnalysisRequest.of(
+                    List.of(application), List.of(CLASSPATH.getFirst(), archive));
+            var defaultResults = new StaticDecisionAnalyzer().analyzeAll(request);
+            var defaultData = defaultResults.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
+            var defaultWatering = defaultResults.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllWateringDataMaxNumber")).findFirst().orElseThrow();
+            assert defaultData.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : defaultData;
+            assert defaultWatering.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : defaultWatering;
+
+            Path unrelatedClasses = Files.createDirectory(root.resolve("unrelated-classes"));
+            Path unrelatedArchive = root.resolve("unrelated-library.jar");
+            createJar(unrelatedClasses, unrelatedArchive);
+            var unrelatedResults = new StaticDecisionAnalyzer().analyzeAll(
+                    request, OpaqueLibraryBoundary.of(List.of(unrelatedArchive)));
+            var unrelatedData = unrelatedResults.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
+            assert unrelatedData.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : unrelatedData;
+
+            var opaqueLibraries = OpaqueLibraryBoundary.of(List.of(archive));
+            var results = new StaticDecisionAnalyzer().analyzeAll(request, opaqueLibraries);
             var data = results.stream().filter(result -> result.graph().decisionLabel()
                     .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
             var watering = results.stream().filter(result -> result.graph().decisionLabel()
@@ -1140,7 +1162,8 @@ public final class StaticDecisionAnalyzerTest {
                     : binaryDecision.graph().coverageGaps();
 
             var directoryResults = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
-                    List.of(application), List.of(CLASSPATH.getFirst(), binaryClasses, archive)));
+                    List.of(application), List.of(CLASSPATH.getFirst(), binaryClasses, archive)),
+                    opaqueLibraries);
             var directoryData = directoryResults.stream().filter(result -> result.graph().decisionLabel()
                     .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
             assert directoryData.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE

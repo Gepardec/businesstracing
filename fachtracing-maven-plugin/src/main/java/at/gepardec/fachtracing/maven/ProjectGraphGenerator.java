@@ -4,6 +4,7 @@ import at.gepardec.fachtracing.analysis.AnalysisRequest;
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
+import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.api.FachTracing;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
@@ -87,7 +88,8 @@ final class ProjectGraphGenerator {
             Charset outputCharset,
             Path outputDirectory,
             boolean failOnIncomplete) throws IOException, IncompleteGraphException {
-        return generate(boundary, outputCharset, outputDirectory, failOnIncomplete, Optional.empty());
+        return generate(boundary, OpaqueLibraryBoundary.empty(), outputCharset,
+                outputDirectory, failOnIncomplete, Optional.empty());
     }
 
     GenerationResult generate(
@@ -96,13 +98,25 @@ final class ProjectGraphGenerator {
             Path outputDirectory,
             boolean failOnIncomplete,
             Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
+        return generate(boundary, OpaqueLibraryBoundary.empty(), outputCharset,
+                outputDirectory, failOnIncomplete, developerOutput);
+    }
+
+    GenerationResult generate(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries,
+            Charset outputCharset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
         Objects.requireNonNull(boundary, "boundary");
+        Objects.requireNonNull(opaqueLibraries, "opaqueLibraries");
         Objects.requireNonNull(developerOutput, "developerOutput");
         if (boundary.entrySourceFiles().isEmpty()) {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true, List.of());
         }
-        return write(analyzer.analyzeAll(boundary), outputCharset, outputDirectory,
+        return write(analyzer.analyzeAll(boundary, opaqueLibraries), outputCharset, outputDirectory,
                 failOnIncomplete, developerOutput);
     }
 
