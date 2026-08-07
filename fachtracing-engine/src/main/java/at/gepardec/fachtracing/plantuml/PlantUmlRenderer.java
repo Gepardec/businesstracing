@@ -43,7 +43,8 @@ public final class PlantUmlRenderer {
             else if (visitedEdges.contains(edge.edgeId())) output.append("-[#2E7D32,thickness=3]->");
             else output.append("-[#9E9E9E,dashed]->");
             output.append(' ').append(aliases.get(edge.toNodeId()));
-            if (!edge.outcome().isBlank()) output.append(" : ").append(escape(edge.outcome()));
+            String outcome = displayOutcome(edge.outcome());
+            if (!outcome.isBlank()) output.append(" : ").append(escape(outcome));
             output.append('\n');
         }
         if (graph.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE) {
@@ -52,6 +53,10 @@ public final class PlantUmlRenderer {
             output.append("\nend note\n");
         }
         return output.append("@enduml\n").toString();
+    }
+
+    private static String displayOutcome(String outcome) {
+        return outcome.equals("next") ? "" : outcome;
     }
 
     private static String shape(BusinessDecisionGraph.NodeKind kind) {
