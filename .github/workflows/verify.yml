@@ -4,13 +4,48 @@ on:
   pull_request:
   push:
     branches: [main]
+    tags: ['v*']
+  schedule:
+    - cron: '17 2 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  pr-gate:
+    if: github.event_name == 'pull_request'
+    runs-on: macos-15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Restore pinned Mega Backend source
+        id: mega-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/fachtracing-mega-backend
+          key: mega-backend-${{ runner.os }}-782cdec8dfe5b4062eb5c1859e6a9e53afe02770
+      - name: Prepare pinned Mega Backend source
+        if: steps.mega-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -q https://github.com/Gepardec/mega-backend.git "${{ runner.temp }}/fachtracing-mega-backend"
+          git -C "${{ runner.temp }}/fachtracing-mega-backend" checkout -q 782cdec8dfe5b4062eb5c1859e6a9e53afe02770
+      - name: Run cached pull-request verification
+        env:
+          MEGA_BACKEND_DIR: ${{ runner.temp }}/fachtracing-mega-backend
+        run: ./scripts/verify-pr.sh
+
   release-gate:
+    if: github.event_name != 'pull_request'
     runs-on: macos-15
     timeout-minutes: 60
     steps:
@@ -21,7 +56,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
       - name: Run standard, external, Mega Backend, and 1,000-RPS gates
         run: ./scripts/verify-release.sh
 

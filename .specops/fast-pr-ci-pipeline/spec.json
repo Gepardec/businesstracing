@@ -1,0 +1,37 @@
+{
+  "id": "fast-pr-ci-pipeline",
+  "type": "refactor",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-07T07:29:28Z",
+  "updated": "2026-08-07T07:29:28Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "generic-java-fachtracing",
+  "specDependencies": [
+    {
+      "specId": "ci-isolated-maven-repository",
+      "reason": "It defines the clean isolated release gate that this refactor preserves.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": ["generic-java-extractor-completion"],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T07:29:28Z"
+    }
+  }
+}

@@ -17,7 +17,9 @@ git -C "$SOURCE" diff --quiet
 git -C "$SOURCE" diff --cached --quiet
 git -C "$SOURCE" worktree add --detach "$WORKTREE" "$PIN" >/dev/null
 
-mvn -q -f "$ROOT/pom.xml" package
+if [ "${FACHTRACING_SKIP_PROJECT_BUILD:-false}" != "true" ]; then
+  mvn -q -f "$ROOT/pom.xml" package
+fi
 mvn -q -f "$WORKTREE/pom.xml" -DskipTests test-compile
 mvn -q -f "$WORKTREE/pom.xml" dependency:build-classpath \
   -Dmdep.outputFile="$WORKTREE/target/conformance-classpath.txt" -DincludeScope=test

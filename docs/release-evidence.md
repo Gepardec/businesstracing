@@ -26,9 +26,15 @@ Run:
 The specification can be marked complete only after this command prints `RELEASE_GATE_OK` and its
 evidence file contains successful generic, external, Mega, and long-load results.
 
-Pull requests run the same clean-clone release gate on Java 21. A separate PostgreSQL 18.4 service
-runs `scripts/verify-postgres.sh`. The workflow has read-only repository permissions and no
-application database or Mega credentials. It also supports a manual dispatch.
+Pull requests run `scripts/verify-pr.sh` on Java 21. This gate uses the Maven dependency cache and
+an immutable cache of the pinned Mega source checkout. It still runs the standard, external-release,
+short-load, and five-graph Mega checks. It does not cache generated graphs or Fachtracing build
+outputs. Superseded pull-request runs are canceled.
+
+Pushes to `main`, version tags, nightly schedules, and manual dispatches run the unchanged clean-clone
+release gate. Thus, these events still use an empty Maven repository and the full 600-second load
+proof. A separate PostgreSQL 18.4 service runs `scripts/verify-postgres.sh` for all events. The
+workflow has read-only repository permissions and no application database or Mega credentials.
 
 ## RC 1 corrected result
 
