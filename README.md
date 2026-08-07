@@ -129,6 +129,15 @@ Run the pinned realistic-brownfield conformance harness (optionally set `MEGA_BA
 Its approved immutable oracles, exact graph evidence, runtime path, and anti-overfitting checks are documented in
 [the Mega conformance report](conformance/mega-backend/conformance-report.md).
 
+Run the smaller Spring PetClinic teaching and conformance suite (optionally set `SPRING_PETCLINIC_DIR`):
+
+```sh
+./scripts/verify-spring-petclinic.sh
+```
+
+It adds three annotations to a disposable pinned source tree and shows complete entity and domain
+graphs plus explicit framework-boundary gaps. See [the PetClinic graph report](conformance/spring-petclinic/conformance-report.md).
+
 Run the required load comparison (60 total disabled baseline seconds paired across ten minutes
 enabled at 1,000 requests/second):
 

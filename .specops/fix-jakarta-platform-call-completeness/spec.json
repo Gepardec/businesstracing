@@ -1,0 +1,52 @@
+{
+  "id": "fix-jakarta-platform-call-completeness",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T11:13:49Z",
+  "updated": "2026-08-07T11:25:35Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-07T11:13:49Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 8,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T11:25:35Z"
+    }
+  },
+  "metrics": {
+    "durationMinutes": 16,
+    "specArtifactTokensEstimate": 2963,
+    "filesChanged": 16,
+    "linesAdded": 567,
+    "linesRemoved": 8,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 4
+  }
+}

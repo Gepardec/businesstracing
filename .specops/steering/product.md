@@ -6,7 +6,7 @@ inclusion: always
 
 ## Product Overview
 
-Fachtracing is an embeddable, domain-neutral Java capability that derives business-logic trees from annotated decision methods it has never seen before and enriches them at runtime with the path and evidence needed to explain a specific result. `Gepardec/mega-backend` is a validation corpus, not a source of product-specific rules.
+Fachtracing is an embeddable, domain-neutral Java capability that derives business-logic trees from annotated decision methods it has never seen before and enriches them at runtime with the path and evidence needed to explain a specific result. `Gepardec/mega-backend` and Spring PetClinic are validation corpora, not sources of product-specific rules.
 
 ## Target Users
 
@@ -18,3 +18,4 @@ Java developers integrate the tracing capability and mark business-decision entr
 - Lightweight runtime capture adds actual inputs, evaluated branches, and dynamically selected implementations where static analysis cannot resolve polymorphism.
 - The exported record preserves business meaning while excluding technical execution details.
 - The extractor must not contain `mega-backend`-specific packages, method lists, vocabularies, or rule mappings. Its diagrams for that repository must be generated from the same generic mechanism used for other Java applications.
+- The smaller Spring PetClinic corpus must teach the same generic behavior, including explicit coverage gaps when result-relevant framework behavior cannot be proved.
