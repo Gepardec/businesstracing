@@ -160,5 +160,13 @@
     "author": "codex",
     "updated": "2026-08-07T08:00:07Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "self-dogfood-business-tracing",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T08:50:17Z"
   }
 ]

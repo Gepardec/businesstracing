@@ -56,9 +56,10 @@
         "developer-graph-json-export",
         "maven-developer-graph-export",
         "reactor-wide-implementation-resolution",
-        "generic-java-extractor-completion"
+        "generic-java-extractor-completion",
+        "self-dogfood-business-tracing"
       ],
-      "count": 6
+      "count": 7
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
@@ -110,12 +111,32 @@
     },
     {
       "file": "scripts/verify.sh",
-      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository", "fast-pr-ci-pipeline"],
-      "count": 6
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository", "fast-pr-ci-pipeline", "self-dogfood-business-tracing"],
+      "count": 7
     },
     {
       "file": "scripts/verify-mega-backend.sh",
       "specs": ["fast-pr-ci-pipeline", "untrack-mega-generated-artifacts"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java",
+      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "self-dogfood-business-tracing"],
+      "count": 4
+    },
+    {
+      "file": "fachtracing-maven-plugin/pom.xml",
+      "specs": ["maven-project-analysis", "self-dogfood-business-tracing"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-agent/pom.xml",
+      "specs": ["generic-tracing-walking-skeleton", "self-dogfood-business-tracing"],
+      "count": 2
+    },
+    {
+      "file": "scripts/verify-repository-integrity.sh",
+      "specs": ["generic-application-readiness", "self-dogfood-business-tracing"],
       "count": 2
     }
   ]

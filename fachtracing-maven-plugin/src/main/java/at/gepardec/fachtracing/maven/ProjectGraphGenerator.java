@@ -5,6 +5,7 @@ import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
+import at.gepardec.fachtracing.api.FachTracing;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
@@ -188,6 +189,7 @@ final class ProjectGraphGenerator {
         return slug.isBlank() ? "decision" : slug;
     }
 
+    @FachTracing("enable developer graph export")
     static Optional<DeveloperOutput> developerOutput(
             Path repositoryRoot,
             String repositoryUrl,
