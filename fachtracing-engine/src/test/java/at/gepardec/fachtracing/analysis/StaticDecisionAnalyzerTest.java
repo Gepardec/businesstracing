@@ -317,6 +317,37 @@ public final class StaticDecisionAnalyzerTest {
                 || !referenceLabels.contains("add candidates to accepted")) {
             failures.add("method reference transfer is absent: " + reference.graph());
         }
+
+        var directRead = analyzeLabel("slicing/ResultSlicePolicy.java", "direct conditional alias read");
+        String directReadLabels = directRead.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        if (directRead.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
+                || !directReadLabels.contains("target") || !directReadLabels.contains("detached")) {
+            failures.add("conditional alias read lost a reachable definition: " + directRead.graph());
+        }
+
+        var castReference = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "cast method reference mutation");
+        String castReferenceLabels = castReference.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        if (castReference.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
+                || !castReferenceLabels.contains("add candidates to accepted")) {
+            failures.add("cast method reference transfer is absent: " + castReference.graph());
+        }
+
+        var predicateReference = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "predicate method reference mutation");
+        String predicateReferenceLabels = predicateReference.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        boolean predicateGap = predicateReference.graph().completeness()
+                == BusinessDecisionGraph.Completeness.INCOMPLETE
+                && predicateReferenceLabels.contains("add candidates to accepted")
+                && predicateReference.graph().coverageGaps().stream().anyMatch(gap ->
+                        gap.description().contains("Boolean result"));
+        if (!predicateGap) {
+            failures.add("mutating predicate reference remained false complete: "
+                    + predicateReference.graph());
+        }
         assert failures.isEmpty() : failures;
     }
 

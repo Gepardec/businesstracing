@@ -49,6 +49,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -497,7 +498,8 @@ public final class StaticDecisionAnalyzer {
             var proven = new LinkedHashSet<String>();
             var possible = new LinkedHashSet<String>();
             for (Tree argument : call.getArguments()) {
-                if (argument instanceof LambdaExpressionTree lambda) {
+                Tree callback = unwrapCallback(argument);
+                if (callback instanceof LambdaExpressionTree lambda) {
                     new TreeScanner<Void, Void>() {
                         @Override public Void visitMethodInvocation(MethodInvocationTree nested, Void unused) {
                             DependencyGraphBuilder.CallEffects effects = callEffects(caller, nested);
@@ -506,13 +508,26 @@ public final class StaticDecisionAnalyzer {
                             return super.visitMethodInvocation(nested, unused);
                         }
                     }.scan((Tree) lambda.getBody(), null);
-                } else if (argument instanceof MemberReferenceTree reference) {
+                } else if (callback instanceof MemberReferenceTree reference) {
                     DependencyGraphBuilder.CallEffects effects = memberReferenceEffects(caller, call, reference);
                     proven.addAll(effects.provenWrites());
                     possible.addAll(effects.possibleWrites());
                 }
             }
             return new DependencyGraphBuilder.CallEffects(proven, possible);
+        }
+
+        private static Tree unwrapCallback(Tree callback) {
+            Tree current = callback;
+            while (true) {
+                if (current instanceof ParenthesizedTree parenthesized) {
+                    current = parenthesized.getExpression();
+                } else if (current instanceof TypeCastTree cast) {
+                    current = cast.getExpression();
+                } else {
+                    return current;
+                }
+            }
         }
 
         private DependencyGraphBuilder.CallEffects memberReferenceEffects(
@@ -1552,8 +1567,10 @@ public final class StaticDecisionAnalyzer {
                 if (!isReflectionInvoke(called)
                         || !(invocation.getMethodSelect() instanceof MemberSelectTree invokeSelect)
                         || !(invokeSelect.getExpression() instanceof IdentifierTree methodVariable)) return null;
-                Tree definition = dependencies.definitions().get(methodVariable.getName().toString());
-                if (!(definition instanceof MethodInvocationTree lookup)
+                List<Tree> definitions = dependencies.definitions()
+                        .getOrDefault(methodVariable.getName().toString(), List.of());
+                if (definitions.size() != 1
+                        || !(definitions.getFirst() instanceof MethodInvocationTree lookup)
                         || lookup.getArguments().isEmpty()
                         || !(lookup.getArguments().getFirst() instanceof LiteralTree methodName)
                         || !(methodName.getValue() instanceof String name)
@@ -1612,6 +1629,12 @@ public final class StaticDecisionAnalyzer {
                     String mutation = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                             memberReferenceMutationLabel(node, executable), node, null);
                     advance(mutation);
+                    MethodInvocationTree callback = enclosingCallbackInvocation(node);
+                    if (callback != null && isPredicateOperation(callback)
+                            && executable.getReturnType().getKind() == TypeKind.BOOLEAN) {
+                        addCoverageGap(node,
+                                "Boolean result of mutating method-reference callback cannot be reconstructed");
+                    }
                     return null;
                 }
                 MethodLocation callee = index.methods().get(executable);
@@ -1636,14 +1659,24 @@ public final class StaticDecisionAnalyzer {
 
             private String memberReferenceMutationLabel(
                     MemberReferenceTree reference, ExecutableElement executable) {
-                Tree parent = dependencies.parents().get(reference);
                 String target = expression(reference.getQualifierExpression());
-                if (parent instanceof MethodInvocationTree callback
+                MethodInvocationTree callback = enclosingCallbackInvocation(reference);
+                if (callback != null
                         && callback.getMethodSelect() instanceof MemberSelectTree select) {
                     String source = expression(callbackSource(select.getExpression()));
                     return words(executable.getSimpleName().toString()) + " " + source + " to " + target;
                 }
                 return words(executable.getSimpleName().toString()) + " " + target;
+            }
+
+            private MethodInvocationTree enclosingCallbackInvocation(MemberReferenceTree reference) {
+                Tree current = reference;
+                Tree parent = dependencies.parents().get(current);
+                while (parent instanceof ParenthesizedTree || parent instanceof TypeCastTree) {
+                    current = parent;
+                    parent = dependencies.parents().get(current);
+                }
+                return parent instanceof MethodInvocationTree invocation ? invocation : null;
             }
 
             @Override public Void visitReturn(ReturnTree node, Void unused) {

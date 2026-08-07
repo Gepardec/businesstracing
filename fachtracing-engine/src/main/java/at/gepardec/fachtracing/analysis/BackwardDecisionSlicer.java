@@ -39,8 +39,7 @@ public final class BackwardDecisionSlicer {
         while (!pendingNames.isEmpty()) {
             String name = pendingNames.removeFirst();
             if (!expandedNames.add(name)) continue;
-            Tree definition = dependencies.definitions().get(name);
-            if (definition != null) {
+            for (Tree definition : dependencies.definitions().getOrDefault(name, java.util.List.of())) {
                 relevant.add(definition);
                 pendingNames.addAll(DependencyGraphBuilder.collectIdentifiers(definition));
                 addControlAncestors(definition, dependencies, relevant, pendingNames);

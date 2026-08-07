@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Consumer;
 
 public final class ResultSlicePolicy {
     interface UnknownMutator {
@@ -113,6 +114,28 @@ public final class ResultSlicePolicy {
         List<String> accepted = new ArrayList<>();
         candidates.stream().forEach(accepted::add);
         return !accepted.isEmpty();
+    }
+
+    @FachTracing("direct conditional alias read")
+    public boolean directConditionalAliasRead(List<String> target, boolean detached) {
+        List<String> alias = target;
+        if (detached) {
+            alias = new ArrayList<>();
+        }
+        return alias.isEmpty();
+    }
+
+    @FachTracing("cast method reference mutation")
+    public boolean castMethodReferenceMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        candidates.stream().forEach((Consumer<String>) accepted::add);
+        return !accepted.isEmpty();
+    }
+
+    @FachTracing("predicate method reference mutation")
+    public boolean predicateMethodReferenceMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        return candidates.stream().anyMatch(accepted::add);
     }
 
     @FachTracing("unknown platform effect")
