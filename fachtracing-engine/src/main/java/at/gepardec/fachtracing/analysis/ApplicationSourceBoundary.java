@@ -172,15 +172,33 @@ public record ApplicationSourceBoundary(
         }
     }
 
+    /** How javac selects the source language and available JDK API. */
+    public enum LanguageVersionMode {
+        /** Use the documented API for one Java release. */
+        RELEASE,
+        /** Use the running JDK API with Maven source and target compatibility. */
+        SOURCE_TARGET
+    }
+
     /** Effective source compiler settings for one project. */
     public record CompilerModel(
             Charset charset,
             String release,
             List<String> compilerArguments,
-            List<Path> modulePath) {
+            List<Path> modulePath,
+            LanguageVersionMode languageVersionMode) {
         /** Compatibility constructor for a non-modular compiler model. */
         public CompilerModel(Charset charset, String release, List<String> compilerArguments) {
-            this(charset, release, compilerArguments, List.of());
+            this(charset, release, compilerArguments, List.of(), LanguageVersionMode.RELEASE);
+        }
+
+        /** Compatibility constructor for a modular release compiler model. */
+        public CompilerModel(
+                Charset charset,
+                String release,
+                List<String> compilerArguments,
+                List<Path> modulePath) {
+            this(charset, release, compilerArguments, modulePath, LanguageVersionMode.RELEASE);
         }
 
         /** Creates a defensive compiler model. */
@@ -189,6 +207,24 @@ public record ApplicationSourceBoundary(
             release = requireText(release, "release");
             compilerArguments = List.copyOf(Objects.requireNonNull(compilerArguments, "compilerArguments"));
             modulePath = normalizedPaths(modulePath, "modulePath");
+            languageVersionMode = Objects.requireNonNull(languageVersionMode, "languageVersionMode");
+        }
+
+        /** Creates a model that preserves Maven source and target compiler semantics. */
+        public static CompilerModel sourceTarget(
+                Charset charset,
+                String version,
+                List<String> compilerArguments,
+                List<Path> modulePath) {
+            return new CompilerModel(charset, version, compilerArguments, modulePath,
+                    LanguageVersionMode.SOURCE_TARGET);
+        }
+
+        /** Returns javac language-selection options for this model. */
+        public List<String> languageOptions() {
+            return languageVersionMode == LanguageVersionMode.RELEASE
+                    ? List.of("--release", release)
+                    : List.of("-source", release, "-target", release);
         }
 
         /** Java 21 UTF-8 compiler defaults. */

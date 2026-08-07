@@ -31,7 +31,7 @@ final class MavenCompilerModelResolver {
         String encodingText = first(value(configuration, "encoding"),
                 property(project, "project.build.sourceEncoding"), StandardCharsets.UTF_8.name());
         Charset charset = Charset.forName(interpolate(project, encodingText));
-        String release = languageRelease(project, configuration);
+        LanguageLevel languageLevel = languageLevel(project, configuration);
 
         var configuredArguments = new ArrayList<String>();
         Xpp3Dom compilerArgs = child(configuration, "compilerArgs");
@@ -61,7 +61,8 @@ final class MavenCompilerModelResolver {
         }
         return new EffectiveCompilerModel(
                 new ApplicationSourceBoundary.CompilerModel(
-                        charset, release, List.copyOf(arguments), modulePath),
+                        charset, languageLevel.version(), List.copyOf(arguments), modulePath,
+                        languageLevel.mode()),
                 List.copyOf(sourceRoots));
     }
 
@@ -151,10 +152,13 @@ final class MavenCompilerModelResolver {
         return List.copyOf(roots);
     }
 
-    private static String languageRelease(MavenProject project, Xpp3Dom configuration) {
+    private static LanguageLevel languageLevel(MavenProject project, Xpp3Dom configuration) {
         String release = first(value(configuration, "release"),
                 property(project, "maven.compiler.release"), null);
-        if (hasText(release)) return normalizeVersion(interpolate(project, release));
+        if (hasText(release)) {
+            return new LanguageLevel(normalizeVersion(interpolate(project, release)),
+                    ApplicationSourceBoundary.LanguageVersionMode.RELEASE);
+        }
         String source = first(value(configuration, "source"), property(project, "maven.compiler.source"), null);
         String target = first(value(configuration, "target"), property(project, "maven.compiler.target"), null);
         source = normalizeVersion(interpolate(project, source));
@@ -162,7 +166,12 @@ final class MavenCompilerModelResolver {
         if (hasText(source) && hasText(target) && !source.equals(target)) {
             reject(project, "source and target differ (" + source + " and " + target + ")");
         }
-        return first(target, source, Integer.toString(Runtime.version().feature()));
+        String version = first(target, source, null);
+        if (hasText(version)) {
+            return new LanguageLevel(version, ApplicationSourceBoundary.LanguageVersionMode.SOURCE_TARGET);
+        }
+        return new LanguageLevel(Integer.toString(Runtime.version().feature()),
+                ApplicationSourceBoundary.LanguageVersionMode.RELEASE);
     }
 
     private static void validateCompilerArgument(MavenProject project, String argument) {
@@ -253,4 +262,8 @@ final class MavenCompilerModelResolver {
             compileSourceRoots = List.copyOf(compileSourceRoots);
         }
     }
+
+    private record LanguageLevel(
+            String version,
+            ApplicationSourceBoundary.LanguageVersionMode mode) { }
 }

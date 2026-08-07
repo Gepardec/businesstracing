@@ -39,6 +39,7 @@ public final class AnalyzeMojoTest {
         preventsAggregateOutputCollisions();
         extractsBoundedSourceArtifactsSafely();
         readsEffectiveCompilerPluginConfiguration();
+        preservesSourceTargetCompilerSemantics();
         acceptsCompiledAnnotationProcessorOutputSettings();
         rejectsUnsupportedCompilerPluginConfiguration();
         mapsExternalModuleOwnershipConfiguration();
@@ -106,6 +107,9 @@ public final class AnalyzeMojoTest {
                 Path.of(project.getBuild().getOutputDirectory()), dependency), true);
 
         assert effective.compilerModel().release().equals("21") : effective;
+        assert effective.compilerModel().languageVersionMode()
+                == ApplicationSourceBoundary.LanguageVersionMode.RELEASE : effective;
+        assert effective.compilerModel().languageOptions().equals(List.of("--release", "21")) : effective;
         assert effective.compilerModel().charset().equals(StandardCharsets.UTF_8) : effective;
         assert effective.compilerModel().compilerArguments()
                 .equals(List.of("-Xlint:none", "--enable-preview", "-parameters")) : effective;
@@ -114,6 +118,22 @@ public final class AnalyzeMojoTest {
         assert effective.compileSourceRoots().contains(generated.toString()) : effective;
         assert MavenCompilerModelResolver.generatedSourceRoots(project).equals(List.of(generated))
                 : MavenCompilerModelResolver.generatedSourceRoots(project);
+    }
+
+    private static void preservesSourceTargetCompilerSemantics() throws Exception {
+        MavenProject project = compilerProject();
+        Xpp3Dom configuration = configuration();
+        add(configuration, "source", "1.8");
+        add(configuration, "target", "1.8");
+        project.getBuild().addPlugin(compilerPlugin(configuration));
+
+        var effective = MavenCompilerModelResolver.resolve(project, List.of(), false);
+
+        assert effective.compilerModel().release().equals("8") : effective;
+        assert effective.compilerModel().languageVersionMode()
+                == ApplicationSourceBoundary.LanguageVersionMode.SOURCE_TARGET : effective;
+        assert effective.compilerModel().languageOptions()
+                .equals(List.of("-source", "8", "-target", "8")) : effective;
     }
 
     private static void rejectsUnsupportedCompilerPluginConfiguration() throws Exception {

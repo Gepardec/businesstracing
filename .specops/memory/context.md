@@ -227,17 +227,21 @@ complete pull-request gate passed with all five graphs complete.
 
 ### annotation-processor-output-analysis (bugfix) — 2026-08-07
 
-Completed all five tasks across three versions. Maven projects can now compile with source-generating annotation
+Completed all six tasks across four versions. Maven projects can now compile with source-generating annotation
 processors and then run either Fachtracing Maven goal in the same reactor session. The adapter
 removes all Java 21 processor execution controls from its private compiler model, keeps generated
 Java source roots, and always analyzes with `-proc:none`. Both Maven goals classify configured
 generated roots as generated provenance even when the roots are outside the Maven build directory.
 The two-module fixture disables processing while it compiles its own processor, which prevents
 Java 21 from loading the service provider before the implementation class exists.
+The analyzer also keeps Maven language-selection semantics: explicit `release` uses `--release`,
+while equal `source` and `target` values use `-source` and `-target`. This lets Java 8 projects
+attribute generated QueryDSL and MapStruct source that imports `javax.annotation.processing.Generated`
+when Maven runs on Java 21.
 
 A two-module annotation processor fixture proves per-module and aggregate generated-decision graph
 extraction. Standard verification and external release activation pass. The short load completed
-5,000 decisions at 1,000 RPS with 0.269% p95 overhead and zero errors, mismatches, drops, or
+5,000 decisions at 1,000 RPS with 0.251% p95 overhead and zero errors, mismatches, drops, or
 contamination. AST-only transformations without equivalent Java source remain outside the declared
 support boundary.
 

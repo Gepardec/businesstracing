@@ -3,7 +3,7 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T09:34:26Z"
+_generatedAt: "2026-08-07T09:53:33Z"
 _sourceHash: "8ec191d14aa6b6081e8c2f8105fa2584e56d1e62dd672f1767ffc9bea8840a3f"
 ---
 
@@ -28,7 +28,7 @@ fachtracing/
   fachtracing-maven-plugin/
     src/main/java/at/gepardec/fachtracing/maven/
     src/test/java/at/gepardec/fachtracing/maven/
-    src/test/resources/it/{basic,external-release,reactor}/
+    src/test/resources/it/{annotation-processor,basic,external-release,reactor}/
   fachtracing-storage-jdbc/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
@@ -64,6 +64,7 @@ fachtracing/
   - `public record AnalysisRequest`
 - `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
   - `public record ApplicationSourceBoundary`
+  - `public enum LanguageVersionMode`
 - `src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java`
   - `public final class BackwardDecisionSlicer`
 - `src/main/java/at/gepardec/fachtracing/analysis/BytecodeDecisionAnalyzer.java`

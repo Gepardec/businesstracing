@@ -87,6 +87,11 @@ arguments from `compilerArgs`. Continue to pass `-proc:none` explicitly to every
 compiler task. Keep generated Java source roots and compiled reactor outputs as normal analysis
 inputs. Do not claim source support for AST-only transformations that produce no equivalent Java.
 
+For generated Java attribution, preserve Maven's language-selection mode. An explicit `release`
+setting must use `javac --release`. A `source` and `target` pair must use `javac -source` and
+`-target`; it must not be tightened into `--release`. This matches the successful Maven compile
+that produced the registered source.
+
 ## Unchanged Behavior
 
 - WHEN a project supplies safe compiler settings THE SYSTEM SHALL CONTINUE TO preserve them.
@@ -135,6 +140,9 @@ inputs. Do not claim source support for AST-only transformations that produce no
 - [x] The complete set of supported `javac` processor-only arguments is removed.
 - [x] Configured generated source roots keep generated provenance outside the build directory.
 - [x] The annotation-processor fixture compiles from a clean state on Java 21.
+- [x] A Java 8 `source` and `target` project can analyze generated Java that imports
+  `javax.annotation.processing.Generated` when Maven runs on Java 21.
+- [x] An explicit Java `release` remains a strict `--release` compiler setting.
 
 ## Team Conventions
 

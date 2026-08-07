@@ -44,6 +44,13 @@ If a processor did not produce Java source or compiled output that the compiler 
 the existing compiler diagnostic failure remains. Fachtracing does not infer generated members and
 does not claim support for AST-only transformations such as Lombok-generated members.
 
+### Decision 4: Preserve Maven language-selection semantics
+
+`source` plus `target` and `release` select different JDK API surfaces. The compiler model will
+carry the selection mode with the normalized Java version. The analyzer will emit `-source` and
+`-target` for the first mode and `--release` for the second mode. Existing engine callers keep the
+strict release mode by default.
+
 ## Component Design
 
 ### `MavenCompilerModelResolver`

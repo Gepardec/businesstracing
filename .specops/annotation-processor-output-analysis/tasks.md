@@ -212,6 +212,49 @@ Stop Java 21 from discovering the fixture processor before its implementation cl
 - [x] Run the clean annotation-processor fixture with Maven on Java 21.
 - [x] Run `./scripts/verify-pr.sh` with Maven on Java 21.
 
+---
+
+### Task 6: Preserve Maven source and target semantics
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** Task 5
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Stop converting Maven `source` and `target` into the stricter `javac --release` option.
+
+**Implementation Steps:**
+
+1. Add a compiler-model language-selection mode with release-compatible constructors.
+2. Make the Maven resolver distinguish explicit `release` from `source` and `target`.
+3. Add an executable analyzer regression for generated Java that uses a newer JDK API.
+4. Run focused and pull-request verification.
+
+**Acceptance Criteria:**
+
+- [x] Maven `source` and `target` produce `-source` and `-target` analyzer options.
+- [x] Maven `release` still produces `--release` analyzer options.
+- [x] Generated Java that imports `javax.annotation.processing.Generated` can be attributed for a
+  Java 8 source/target project on Java 21.
+- [x] Existing flat and JPMS compiler-model contracts pass.
+
+**Files to Modify:**
+
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java`
+- `docs/maven-plugin.md`
+- `fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/MavenCompilerModelResolver.java`
+- `fachtracing-maven-plugin/src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
+
+**Tests Required:**
+
+- [x] Run the focused engine and Maven plugin executable contracts.
+- [x] Run `./scripts/verify-pr.sh` with Maven on Java 21.
+
 ## Implementation Order
 
 1. Task 1 freezes the defect.
@@ -219,11 +262,12 @@ Stop Java 21 from discovering the fixture processor before its implementation cl
 3. Task 3 documents and verifies the general boundary.
 4. Task 4 closes the two review gaps before release.
 5. Task 5 fixes the Java 21 CI-only fixture bootstrap failure.
+6. Task 6 preserves the language-selection mode used by the successful Maven compile.
 
 ## Progress Tracking
 
-- Total Tasks: 5
-- Completed: 5
+- Total Tasks: 6
+- Completed: 6
 - In Progress: 0
 - Blocked: 0
 - Pending: 0

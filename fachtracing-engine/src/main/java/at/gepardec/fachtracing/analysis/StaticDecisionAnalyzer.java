@@ -173,8 +173,8 @@ public final class StaticDecisionAnalyzer {
     private List<AnalysisManifest.AnalysisResult> analyzeAll(
             AnalysisRequest request,
             ApplicationSourceBoundary.CompilerModel compilerModel) {
-        List<String> options = new ArrayList<>(List.of(
-                "-proc:none", "--release", compilerModel.release()));
+        List<String> options = new ArrayList<>(List.of("-proc:none"));
+        options.addAll(compilerModel.languageOptions());
         options.addAll(compilerModel.compilerArguments());
         if (!request.compilationClasspath().isEmpty()) {
             options.add("-classpath");
@@ -201,6 +201,7 @@ public final class StaticDecisionAnalyzer {
         boolean compatible = closure.stream().map(ApplicationSourceBoundary.ProjectSources::compilerModel)
                 .allMatch(model -> model.charset().equals(first.charset())
                         && model.release().equals(first.release())
+                        && model.languageVersionMode() == first.languageVersionMode()
                         && model.compilerArguments().equals(first.compilerArguments()));
         if (!compatible) {
             throw new IllegalArgumentException("connected JPMS projects use incompatible compiler settings");
@@ -228,7 +229,8 @@ public final class StaticDecisionAnalyzer {
                                 .map(Optional::orElseThrow))
                 .distinct().filter(path -> !containsModule(path, sourceModuleNames))
                 .sorted(Comparator.comparing(Path::toString)).toList();
-        var options = new ArrayList<>(List.of("-proc:none", "--release", first.release()));
+        var options = new ArrayList<>(List.of("-proc:none"));
+        options.addAll(first.languageOptions());
         options.addAll(first.compilerArguments());
         if (!modulePath.isEmpty()) {
             options.add("--module-path");

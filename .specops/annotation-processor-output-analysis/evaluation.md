@@ -88,3 +88,27 @@
 - Failures: None. PostgreSQL was skipped because no connection was configured.
 
 **Verdict:** PASS — 4 of 4 dimensions passed.
+
+### Iteration 4
+
+**Evaluated at:** 2026-08-07T09:53:33Z
+**Spec type:** bugfix
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Root Cause Accuracy | The resolver converted Maven Java 8 `source` and `target` into `--release 8`, which hides the Java 9 `javax.annotation.processing.Generated` API that Maven compilation could see. | An explicit Maven `release` must remain strict and is tested separately. | 10 | 7 | Pass |
+| Fix Completeness | The compiler model now preserves release or source-target mode. Flat and JPMS tasks use the matching javac options. | Different source and target versions remain intentionally unsupported. | 10 | 7 | Pass |
+| Regression Safety | Existing constructors default to release mode. JPMS compatibility includes the new mode. The real processor fixture uses Java 8 source and target and generates the missing annotation import. | The public record gains one component; compatibility constructors preserve existing source callers. | 9 | 7 | Pass |
+| Test Verification | Focused engine and Maven contracts, the exact generated-source reactor, and `./scripts/verify-pr.sh` pass on Java 21. | PostgreSQL was skipped because no connection is configured; this fix does not touch storage. | 10 | 7 | Pass |
+
+**Test Exercise Results:**
+
+- Tests run: yes
+- Test commands: focused executable contracts, annotation-processor reactor, and
+  `./scripts/verify-pr.sh` on Java 21
+- Pass count: All scripted gates passed
+- Fail count: 0
+- Failures: None. PostgreSQL was skipped because no connection was configured.
+
+**Verdict:** PASS — 4 of 4 dimensions passed.
