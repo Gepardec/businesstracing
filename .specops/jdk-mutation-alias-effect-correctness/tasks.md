@@ -23,18 +23,18 @@
 
 ## Task 3: Verify and release
 
-**Status:** In Progress
+**Status:** Completed
 **Priority:** High
 **Dependencies:** Task 2
 
-- [ ] Update capability, memory, repository map, and release evidence documents.
-- [ ] Run standard, external, Mega, and 600-second gates.
-- [ ] Complete the SpecOps record, commit all changes, and push the PR branch.
+- [x] Update capability, memory, repository map, and release evidence documents.
+- [x] Run standard, external, Mega, and 600-second gates.
+- [x] Complete the SpecOps record, commit all changes, and push the PR branch.
 
 ## Progress
 
 - Total: 3
-- Completed: 2
-- In Progress: 1
+- Completed: 3
+- In Progress: 0
 - Pending: 0
 - Blocked: 0

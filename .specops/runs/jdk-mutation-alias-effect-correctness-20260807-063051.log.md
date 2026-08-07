@@ -1,9 +1,9 @@
 ---
 specId: "jdk-mutation-alias-effect-correctness"
 startedAt: "2026-08-07T06:30:51Z"
-completedAt: null
-finalStatus: "implementing"
-phases: [1, 2, 3]
+completedAt: "2026-08-07T07:09:58Z"
+finalStatus: "completed"
+phases: [1, 2, 3, 4]
 ---
 
 ## Phase 1: Context
@@ -39,6 +39,14 @@ phases: [1, 2, 3]
 - Action: Start the clean release gate and update the approved oracle hash guard after it rejected
   the intentionally reviewed topology change.
 - Result: The gate stopped before build or load work. The guard now matches the reviewed oracle.
+
+## Phase 4: Completion
+
+### [07:09:58] Complete clean release verification
+
+- Action: Run `./scripts/verify-release.sh` from committed head `e5365f2` and complete records.
+- Result: `RELEASE_GATE_OK`. Five Mega graphs were complete. The long run completed 600,000
+  decisions at 1,000 RPS with 0.059% p95 overhead and zero errors, mismatches, drops, or contamination.
 
 ### [06:40:00] Task 1: Record false-before-fix evidence
 

@@ -1,10 +1,10 @@
 {
   "id": "jdk-mutation-alias-effect-correctness",
   "type": "bugfix",
-  "status": "implementing",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-07T06:30:51Z",
-  "updated": "2026-08-07T06:33:22Z",
+  "updated": "2026-08-07T07:09:58Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": { "name": "codex" },
@@ -32,6 +32,26 @@
         "taskCoverage": 9
       },
       "evaluatedAt": "2026-08-07T06:33:22Z"
+    },
+    "implementation": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T07:09:58Z"
     }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3000,
+    "filesChanged": 33,
+    "linesAdded": 1500,
+    "linesRemoved": 472,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 17,
+    "specDurationMinutes": 40
   }
 }

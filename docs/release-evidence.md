@@ -133,3 +133,19 @@ application database or Mega credentials. It also supports a manual dispatch.
 - Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
 - Latency: 15,013.125 us baseline p95; 15,020.791 us enabled p95; 0.051% overhead
 - Gate result: `RELEASE_GATE_OK`
+
+## JDK mutation and alias effect correction
+
+- Release gate commit: `e5365f26bdbb52a12f9bb571dcaf8e0e128fc7d4`
+- Java: OpenJDK 21.0.2
+- Maven: 3.9.16
+- Mega revision: `782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
+- Capability matrix SHA-256: `cc595b5d70e1f00e381a5740726e54b16817d8a00edbb67c34bb7a567b23c6f8`
+- Static proof: standard deque mutations and direct local alias helpers retain their writes and
+  controlling predicates; unknown JDK reference effects produce located gaps
+- Mega result: five complete graphs from 420 source files; the journey graph contains 96 nodes and
+  130 edges after restoring result-changing helper logic
+- Long run: 60-second baseline and 600 seconds enabled at 1,000 RPS
+- Result: 600,000 completed; 0 errors; 0 mismatches; 0 drops; 0 contamination
+- Latency: 15,021.459 us baseline p95; 15,030.333 us enabled p95; 0.059% overhead
+- Gate result: `RELEASE_GATE_OK`

@@ -137,10 +137,10 @@
   {
     "id": "jdk-mutation-alias-effect-correctness",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "codex",
-    "updated": "2026-08-07T06:33:22Z",
+    "updated": "2026-08-07T07:09:58Z",
     "partOf": "generic-java-fachtracing"
   }
 ]

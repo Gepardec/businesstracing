@@ -61,7 +61,7 @@ alias inside a source helper.
 - [x] A direct local alias helper and its controlling predicate occur in a complete caller graph.
 - [x] Unknown JDK reference effects do not produce a false complete graph.
 - [x] Existing read-only and mutation contracts pass.
-- [ ] Mega, external, standard, and long release gates pass.
+- [x] Mega, external, standard, and long release gates pass.
 - [x] No Mega-specific rule or new dependency is added.
 
 ## Scope Check

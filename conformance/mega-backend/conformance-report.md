@@ -69,7 +69,7 @@ raw null, and representative Java implementation terms. Meaningful optionality i
 Each capability has target-neutral regression coverage. The unchanged full non-Mega suite passes
 across eligibility, pricing, strategy, aggregation, authorization, calendar, stream, and explicit-gap
 fixtures. The final load gate completed 600,000 enabled traces at 1,000 RPS for 600 seconds with
-0.267% p95 overhead and zero errors, result mismatches, dropped traces, or contamination.
+0.059% p95 overhead and zero errors, result mismatches, dropped traces, or contamination.
 
 ## Reviewer outcome
 

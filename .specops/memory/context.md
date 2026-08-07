@@ -192,3 +192,19 @@ source-located gaps. Validation helper labels use proven roles; other receivers 
 Release commit `8e62f243850c06fbd16d57c0c807c4177d91c9df` passed source-free activation, five
 complete Mega graphs from 420 source files, and 600,000 decisions at 1,000 RPS with 0.051% p95
 overhead and zero errors, mismatches, drops, or contamination.
+
+### jdk-mutation-alias-effect-correctness (bugfix) — 2026-08-07
+
+Completed all three tasks. Platform call effects now separate explicit mutation contracts from
+proved read-only operations. An unknown JDK or `javax` reference effect fails closed when it can
+change returned state. Standard deque operations such as `offer` retain their mutation and control
+predicates.
+
+Direct local reference aliases are resolved in source order, invalidated on non-identity assignment,
+and mapped back to source parameters. Effect-relevant source helper bodies now receive exact mutation
+roots, so their business predicates and writes remain in caller graphs without including unrelated
+parameter mutations.
+
+Release commit `e5365f26bdbb52a12f9bb571dcaf8e0e128fc7d4` passed source-free activation, five
+complete Mega graphs from 420 source files, and 600,000 decisions at 1,000 RPS with 0.059% p95
+overhead and zero errors, mismatches, drops, or contamination.

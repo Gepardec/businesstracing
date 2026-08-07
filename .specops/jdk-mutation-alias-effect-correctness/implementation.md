@@ -42,3 +42,23 @@
 - 2026-08-07: The first clean release attempt stopped at repository integrity because the reviewed
   journey oracle hash guard still named the prior approved topology. The guard now names the new
   reviewed hash; no runtime or analyzer behavior changed.
+- 2026-08-07: Task 3 completed. Clean release commit `e5365f26bdbb52a12f9bb571dcaf8e0e128fc7d4`
+  passed. The long run completed 600,000 decisions at 1,000 RPS with 0.059% p95 overhead and zero
+  errors, mismatches, drops, or contamination.
+
+## Documentation Review
+
+- `docs/java-capabilities.json` has independent JDK mutation, alias, invalidation, and unknown-JDK
+  effect contracts.
+- `docs/supported-java-constructs.md` defines explicit purity and direct alias behavior.
+- The Mega report, generated diagrams, semantic oracle, hash guard, and reviewed oracle hash agree.
+- `docs/release-evidence.md` records the clean release result.
+
+## Final Evaluation
+
+- Root cause accuracy: 10/10.
+- Fix completeness: 9/10. The direct-alias contract is complete; arbitrary points-to analysis is not
+  claimed.
+- Regression safety: 9/10. All five Mega graphs stay complete and the reviewed journey graph now
+  contains the previously hidden result-changing helper logic.
+- Test verification: 10/10. Focused, standard, external, Mega, and clean long gates pass.

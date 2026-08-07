@@ -35,6 +35,11 @@
       "category": "release-gate-integrity",
       "count": 3,
       "pattern": "Capture producer output before presentation, preserve its exact status, give required checks a bounded verified time budget, and print success only after every release sub-gate passes."
+    },
+    {
+      "category": "static-effect-proof",
+      "count": 1,
+      "pattern": "Treat namespace support and purity as separate proofs; map direct aliases to state roots and report an exact gap for unproved result-relevant effects."
     }
   ],
   "fileOverlaps": [
@@ -58,9 +63,10 @@
         "maven-developer-graph-export",
         "reactor-wide-implementation-resolution",
         "generic-java-extractor-completion",
-        "release-explanation-async-correctness"
+        "release-explanation-async-correctness",
+        "jdk-mutation-alias-effect-correctness"
       ],
-      "count": 6
+      "count": 7
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -74,13 +80,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness"],
-      "count": 4
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness"],
+      "count": 5
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness"],
-      "count": 3
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness"],
+      "count": 4
     },
     {
       "file": "docs/maven-plugin.md",
