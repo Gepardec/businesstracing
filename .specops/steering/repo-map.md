@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T09:53:33Z"
-_sourceHash: "8ec191d14aa6b6081e8c2f8105fa2584e56d1e62dd672f1767ffc9bea8840a3f"
+_generatedAt: "2026-08-07T12:26:02Z"
+_sourceHash: "132cd229608607efbe51215a2a0509f54c83641fdc2396021ed4b90b4a5ae1bd"
 ---
 
 ## Project Structure Map
@@ -54,7 +54,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (65 files)
+#### fachtracing-engine/ (66 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -67,6 +67,8 @@ fachtracing/
   - `public enum LanguageVersionMode`
 - `src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java`
   - `public final class BackwardDecisionSlicer`
+- `src/main/java/at/gepardec/fachtracing/analysis/BinaryTypeOriginResolver.java`
+  - cached first-match classpath origin for exact binary types
 - `src/main/java/at/gepardec/fachtracing/analysis/BytecodeDecisionAnalyzer.java`
   - `public final class BytecodeDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java`

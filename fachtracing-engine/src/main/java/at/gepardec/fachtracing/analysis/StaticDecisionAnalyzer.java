@@ -49,6 +49,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -408,6 +409,7 @@ public final class StaticDecisionAnalyzer {
         private final DecisionGraphBuilder builder;
         private final List<AnalysisManifest.AnalysisDiagnostic> diagnostics;
         private final List<Path> binaryClasspath;
+        private final BinaryTypeOriginResolver binaryTypeOrigins;
         private final List<String> pendingFailureNodes = new ArrayList<>();
         private final Map<ExecutableElement, MutationSummary> mutationSummaries = new HashMap<>();
         private final Set<ExecutableElement> activeMutationSummaries = new HashSet<>();
@@ -428,6 +430,7 @@ public final class StaticDecisionAnalyzer {
             this.builder = builder;
             this.diagnostics = diagnostics;
             this.binaryClasspath = List.copyOf(binaryClasspath);
+            this.binaryTypeOrigins = new BinaryTypeOriginResolver(binaryClasspath);
         }
 
         private String addEntry(MethodLocation method) {
@@ -479,6 +482,10 @@ public final class StaticDecisionAnalyzer {
                         call, summary.receiverUnknown(), summary.parameterUnknown());
                 return mergeEffects(callbackEffects,
                         new DependencyGraphBuilder.CallEffects(proven, possible));
+            }
+            if (isExternalArchiveReferenceOperation(executable)) {
+                return mergeEffects(callbackEffects, new DependencyGraphBuilder.CallEffects(
+                        externalArchiveReceiverRoots(caller, call), Set.of()));
             }
             if (isProvenReadOnlyLibraryOperation(executable)) return callbackEffects;
             return mergeEffects(callbackEffects,
@@ -551,6 +558,13 @@ public final class StaticDecisionAnalyzer {
                     possible.addAll(callbackInputs);
                 }
                 return new DependencyGraphBuilder.CallEffects(proven, possible);
+            }
+            if (isExternalArchiveReferenceOperation(executable)) {
+                Set<String> receiverRoots = memberReferenceReceiverRoots(caller, reference);
+                if (receiverRoots.isEmpty() && !executable.getModifiers().contains(Modifier.STATIC)) {
+                    receiverRoots = callbackInputs;
+                }
+                return new DependencyGraphBuilder.CallEffects(receiverRoots, Set.of());
             }
             if (isProvenReadOnlyLibraryOperation(executable)) {
                 return DependencyGraphBuilder.CallEffects.none();
@@ -682,6 +696,34 @@ public final class StaticDecisionAnalyzer {
                 if (referenceValue(location, argument)) roots.addAll(stateRoots(argument));
             }
             return Set.copyOf(roots);
+        }
+
+        private Set<String> externalArchiveReceiverRoots(
+                MethodLocation location, MethodInvocationTree call) {
+            if (!(call.getMethodSelect() instanceof MemberSelectTree member)) return Set.of();
+            TreePath path = TreePath.getPath(location.unit(), member.getExpression());
+            Element receiver = path == null ? null : trees.getElement(path);
+            if (receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
+                    ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind())) return Set.of();
+            return stateRoots(member.getExpression());
+        }
+
+        private boolean isExternalArchiveReferenceOperation(ExecutableElement executable) {
+            TypeKind result = executable.getReturnType().getKind();
+            if (!Set.of(TypeKind.ARRAY, TypeKind.DECLARED, TypeKind.TYPEVAR,
+                    TypeKind.WILDCARD, TypeKind.INTERSECTION).contains(result)) return false;
+            return hasExternalArchiveOwner(executable);
+        }
+
+        private boolean isExternalArchiveBooleanOperation(ExecutableElement executable) {
+            return executable.getReturnType().getKind() == TypeKind.BOOLEAN
+                    && hasExternalArchiveOwner(executable);
+        }
+
+        private boolean hasExternalArchiveOwner(ExecutableElement executable) {
+            if (!(executable.getEnclosingElement() instanceof TypeElement owner)) return false;
+            String binaryName = elements.getBinaryName(owner).toString();
+            return binaryTypeOrigins.resolve(binaryName) == BinaryTypeOriginResolver.Origin.ARCHIVE;
         }
 
         private boolean referenceValue(MethodLocation location, Tree tree) {
@@ -1465,6 +1507,10 @@ public final class StaticDecisionAnalyzer {
                     return null;
                 }
                 if (isSupportedLibraryOperation(executable)) return super.visitMethodInvocation(node, unused);
+                if (isExternalArchiveReferenceOperation(executable)
+                        || (isExternalArchiveBooleanOperation(executable) && isSourceControlPredicate(node))) {
+                    return super.visitMethodInvocation(node, unused);
+                }
 
                 scan(node.getMethodSelect(), unused);
                 scan(node.getArguments(), unused);
@@ -1510,6 +1556,38 @@ public final class StaticDecisionAnalyzer {
                     }
                 }
                 return null;
+            }
+
+            private boolean isSourceControlPredicate(MethodInvocationTree invocation) {
+                Tree current = invocation;
+                Tree parent;
+                while ((parent = dependencies.parents().get(current)) != null) {
+                    Tree condition = switch (parent) {
+                        case IfTree decision -> decision.getCondition();
+                        case WhileLoopTree loop -> loop.getCondition();
+                        case DoWhileLoopTree loop -> loop.getCondition();
+                        case ForLoopTree loop -> loop.getCondition();
+                        case ConditionalExpressionTree decision -> decision.getCondition();
+                        default -> null;
+                    };
+                    if (condition != null && containsTree(condition, invocation)) return true;
+                    current = parent;
+                }
+                return false;
+            }
+
+            private boolean containsTree(Tree root, Tree target) {
+                boolean[] found = { false };
+                new TreeScanner<Void, Void>() {
+                    @Override public Void scan(Tree tree, Void unused) {
+                        if (tree == target) {
+                            found[0] = true;
+                            return null;
+                        }
+                        return found[0] ? null : super.scan(tree, unused);
+                    }
+                }.scan(root, null);
+                return found[0];
             }
 
             private void scanDynamicInvocation(
@@ -1614,6 +1692,7 @@ public final class StaticDecisionAnalyzer {
                     advance(mutation);
                     return null;
                 }
+                if (isExternalArchiveReferenceOperation(executable)) return null;
                 MethodLocation callee = index.methods().get(executable);
                 if (callee == null) {
                     if (!isSupportedLibraryOperation(executable)) {

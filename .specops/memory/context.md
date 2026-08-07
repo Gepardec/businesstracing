@@ -287,3 +287,9 @@ Draft PR #11 passed the hosted pull-request and PostgreSQL checks. A separate sh
 commit reserves half of the configured close bound for cancellation after the prior 100 ms reserve
 failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
 local runs and the complete local gate.
+
+### fix-hogarama-aggregate-completeness (bugfix) — 2026-08-07
+
+Completed one task. The analyzer now uses exact first-match classpath origin to keep reference-returning dependency-JAR operations outside the application decision boundary. Instance operations keep an opaque receiver effect, so source-visible predicates that configure fluent query and options objects remain in the result slice. Boolean archive calls are transparent only inside explicit source control conditions.
+
+Direct Boolean dependency decisions and application class-directory binaries remain fail-closed. Strict analysis of the real Hogarama reactor reports `getAllDataMaxNumber` and `getAllWateringDataMaxNumber` as complete. Five Mega graphs, external release, Java capabilities, and the full pull-request gate passed. The short load completed 5,000 decisions with zero errors, mismatches, drops, or contamination.
