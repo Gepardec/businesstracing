@@ -1,0 +1,55 @@
+{
+  "id": "explicit-opaque-library-boundaries",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T12:42:10Z",
+  "updated": "2026-08-07T12:56:31Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "fix-hogarama-aggregate-completeness",
+    "generic-application-readiness"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 10,
+        "designCoherence": 10,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T12:42:10Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "requirementCompliance": 10,
+        "designAdherence": 10,
+        "codeQuality": 10,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T12:56:31Z"
+    }
+  },
+  "metrics": {
+    "durationMinutes": 14,
+    "specArtifactTokensEstimate": 3619,
+    "filesChanged": 25,
+    "linesAdded": 921,
+    "linesRemoved": 68,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 19
+  }
+}

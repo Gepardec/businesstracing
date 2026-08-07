@@ -12,7 +12,7 @@ checks that every entry names an executable contract and appears in this documen
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `method-reference-callback-mutation`, `wrapped-method-reference-callback-mutation`, `local-method-reference-callback-mutation`, `mutating-predicate-method-reference-gap`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
-- `source-unavailable-call`, `jakarta-platform-operation`
+- `source-unavailable-call`, `jakarta-platform-operation`, `explicit-opaque-library-boundary`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
 - `reflection-service-loader-proxy`, `unresolved-dynamic-candidate-gap`, `async-boundary`
 - `exact-async-callback-position`, `skipped-stage-callback-lifecycle`, `async-submission-lifecycle`, `nested-async-reservation-identity`, `transparent-future-cancellation`, `external-cancellation-call-site`
@@ -59,8 +59,9 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Nested class call | Resolves and expands source-visible nested-class decision logic |
 | Direct method reference | Resolves and expands a source-visible referenced decision method. Direct, parenthesized, cast, and local-variable bound mutating callbacks use the same receiver-effect contract as a normal call and show the source-to-target transfer. A platform mutator Boolean used as a predicate callback keeps the mutation but creates a located gap for its unsupported outcome topology |
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
+| Explicit opaque library boundary | By default, source-unavailable dependency operations remain incomplete. A caller can select exact technical library JARs. A reference-returning operation from a selected JAR stays outside the graph. An instance operation keeps its receiver in the result slice, so source-visible predicates that configure fluent query or options objects remain visible. A Boolean call from a selected JAR is transparent only inside an explicit source control condition, where the call site is already the graph predicate. Direct Boolean decisions, other primitive results, unselected JARs, and application class directories stay fail-closed |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
-| Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location |
+| Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location. This includes Boolean dependency decisions that the controlled fallback cannot prove |
 
 The context-aware operation-label contract compiles independent scheduling, pricing, access-control,
 and inventory sources. It uses attributed declaration symbols and types for `var`, generic types,
@@ -95,7 +96,7 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 
 ## Failure and privacy boundary
 
-- Unsupported relevant logic is never reported as complete.
+- Unsupported application decision logic is never reported as complete. Source-unavailable dependency code stays fail-closed unless the caller selects its exact technical-library JAR. Source-visible application predicates around a selected boundary remain in the graph.
 - The binary fallback rejects exception tables, calls, monitors, switches, dynamic instructions,
   native methods, and every shape outside its declared comparison subset.
 - A source/class fingerprint mismatch prevents transformation.

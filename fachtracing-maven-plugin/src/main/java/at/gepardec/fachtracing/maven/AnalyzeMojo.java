@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -79,6 +80,10 @@ public final class AnalyzeMojo extends AbstractMojo {
     @Parameter(property = "fachtracing.sourceDependencies")
     private List<String> sourceDependencies;
 
+    /** Exact groupId:artifactId values whose resolved compile JARs are trusted technical boundaries. */
+    @Parameter(property = "fachtracing.opaqueLibraryArtifacts")
+    private List<String> opaqueLibraryArtifacts;
+
     /** Explicit named or automatic module ownership for external source inputs. */
     @Parameter
     private List<ExternalModuleOwnershipConfiguration> externalModuleOwnership;
@@ -110,7 +115,9 @@ public final class AnalyzeMojo extends AbstractMojo {
             List<MavenProject> analysisProjects = analysisProjects();
             var artifacts = resolveSourceDependencies();
             ApplicationSourceBoundary boundary = boundary(analysisProjects, artifacts);
-            result = generator.generate(boundary, charset, outputDirectory.toPath(),
+            OpaqueLibraryBoundary opaqueLibraries = OpaqueLibraryArtifactResolver.resolve(
+                    analysisProjects, opaqueLibraryArtifacts);
+            result = generator.generate(boundary, opaqueLibraries, charset, outputDirectory.toPath(),
                     failOnIncomplete, developerOutput(sourceOrigins(artifacts)));
             if (result.skipped()) {
                 getLog().info("No @FachTracing decision found in " + module + "; skipping");

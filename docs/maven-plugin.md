@@ -75,10 +75,10 @@ Optional `includeProjects` and `excludeProjects` lists use exact `groupId:artifa
 filter Maven's effective selection. An include value that is not in that selection causes a failure.
 The existing `analyze` goal remains available for per-module output.
 
-The aggregate goal supports the same `additionalSourceRoots`, `additionalEntrySourceRoots`, and
-`sourceDependencies` settings as the module goal. You can also set these lists with the matching
-`fachtracing.*` command-line properties. In a reactor with a POM execution root, an additional entry
-root uses the first selected non-POM project's compiler context.
+The aggregate goal supports the same `additionalSourceRoots`, `additionalEntrySourceRoots`,
+`sourceDependencies`, and `opaqueLibraryArtifacts` settings as the module goal. You can also set
+these lists with the matching `fachtracing.*` command-line properties. In a reactor with a POM
+execution root, an additional entry root uses the first selected non-POM project's compiler context.
 External sources in a JPMS closure must have explicit module ownership. The analyzer rejects an
 unowned external source in a modular closure.
 
@@ -172,6 +172,40 @@ removes the default cache. Source archives can contain private source code. Prot
 repository, build directory, CI artifacts, and developer JSON according to the source owner's access
 rules.
 
+## Explicit technical library boundaries
+
+Source-unavailable dependency code is decision-bearing by default. Thus, a result-relevant call into
+an unselected dependency JAR creates a coverage gap. Use `opaqueLibraryArtifacts` only for technical
+libraries whose internal decisions must stay outside the business graph:
+
+```xml
+<configuration>
+  <opaqueLibraryArtifacts>
+    <opaqueLibraryArtifact>com.acme.persistence:query-api</opaqueLibraryArtifact>
+    <opaqueLibraryArtifact>org.apache.commons:commons-lang3</opaqueLibraryArtifact>
+  </opaqueLibraryArtifacts>
+</configuration>
+```
+
+Each value must use exact `groupId:artifactId` form. The plugin maps the value to the exact resolved
+JAR paths that occur on the selected projects' compile classpaths. It does not use package prefixes
+or artifact-name patterns. An invalid coordinate, a missing artifact, a runtime-only artifact, or a
+class directory causes the goal to fail before graph extraction.
+
+You can set the same list for one-off use:
+
+```sh
+mvn compile \
+  -Dfachtracing.failOnIncomplete=true \
+  -Dfachtracing.opaqueLibraryArtifacts=com.acme.persistence:query-api,org.apache.commons:commons-lang3 \
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
+```
+
+Selection is an explicit trust declaration. Do not select an artifact that contains business rules.
+A selected reference-returning operation is opaque, and source-visible receiver controls remain in
+the graph. A selected Boolean call is opaque only when the source call is already a control
+predicate. A direct binary Boolean decision stays fail-closed.
+
 ## Developer JSON and source links
 
 Developer JSON is opt-in because source browsers need repository-specific URLs. Set both values:
@@ -183,11 +217,30 @@ Developer JSON is opt-in because source browsers need repository-specific URLs. 
 </configuration>
 ```
 
-The plugin then adds `<decision>-developer.json` and links it from `index.md`. The file uses UTF-8.
+The plugin then adds `<decision>-developer.json` and links it from `index.md`. It also writes and links
+one matching formal schema:
+
+- `fachtracing-developer-graph-v1.schema.json` for a single Git origin
+- `fachtracing-developer-graph-v2.schema.json` for Git, local, generated, or Maven origins
+
+Give the frontend developer the `*-developer.json` file and the matching schema file. Both files use
+UTF-8. The schema uses JSON Schema Draft 2020-12. All `$ref` values are local, so frontend tools can
+validate the graph or generate types without a Fachtracing schema server.
+
 A single Git origin keeps the compatible `fachtracing-developer-graph/v1` format. A graph with local,
 generated, or Maven sources uses `fachtracing-developer-graph/v2`. V2 lists `sourceOrigins` and gives
 each source an `originId`. Only Git sources get a commit-pinned `url`. External and generated sources
 never get a false Git URL. A graph tool can render `graph.nodes` and `graph.edges` in both versions.
+
+Library integrations can generate the same schema without the Maven plugin:
+
+```java
+import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
+
+String schema = new DeveloperGraphJsonSchema().generate(
+        DeveloperGraphExporter.SCHEMA_V2);
+```
 
 For one-off use, pass the same settings as properties:
 

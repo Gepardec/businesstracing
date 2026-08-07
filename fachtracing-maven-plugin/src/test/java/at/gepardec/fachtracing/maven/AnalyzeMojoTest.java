@@ -1,6 +1,9 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
+import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -12,9 +15,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -33,6 +40,7 @@ public final class AnalyzeMojoTest {
 
     public static void main(String[] args) throws Exception {
         generatesBothFormatsAndIndexWithoutDeletingUnrelatedFiles();
+        generatesDeveloperGraphSchemasFromCode();
         generatesParsedDeveloperJsonFromCleanRevision();
         validatesDeveloperOutputSettings();
         resolvesReactorSourcesWithoutGeneratingSiblingEntries();
@@ -43,6 +51,7 @@ public final class AnalyzeMojoTest {
         acceptsCompiledAnnotationProcessorOutputSettings();
         rejectsUnsupportedCompilerPluginConfiguration();
         mapsExternalModuleOwnershipConfiguration();
+        resolvesExplicitOpaqueLibraryArtifacts();
         skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
@@ -79,6 +88,65 @@ public final class AnalyzeMojoTest {
                 : automaticOwnership;
         assert automaticOwnership.binaryPath().orElseThrow()
                 .equals(binary.toAbsolutePath().normalize()) : automaticOwnership;
+    }
+
+    private static void resolvesExplicitOpaqueLibraryArtifacts() throws Exception {
+        Path root = Files.createTempDirectory("fachtracing-opaque-library-");
+        Path archive = Files.write(root.resolve("technical-library.jar"), new byte[]{1});
+        Artifact artifact = new DefaultArtifact(
+                "example", "technical-library", "1.0.0", "compile", "jar", null,
+                new DefaultArtifactHandler("jar"));
+        artifact.setFile(archive.toFile());
+        MavenProject project = projectWithArtifacts(List.of(archive.toString()), Set.of(artifact));
+
+        var boundary = OpaqueLibraryArtifactResolver.resolve(
+                List.of(project), List.of("example:technical-library"));
+        assert boundary.archiveFiles().equals(Set.of(archive.toAbsolutePath().normalize())) : boundary;
+
+        assert OpaqueLibraryArtifactResolver.normalizedCoordinates(List.of(
+                "example:technical-library, example:other"))
+                .equals(Set.of("example:technical-library", "example:other"));
+        try {
+            OpaqueLibraryArtifactResolver.resolve(List.of(project), List.of("example:missing"));
+            throw new AssertionError("missing opaque library coordinate was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("not resolved compile-classpath JARs") : expected;
+        }
+        try {
+            OpaqueLibraryArtifactResolver.normalizedCoordinates(List.of("example:library:1.0"));
+            throw new AssertionError("versioned opaque library coordinate was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("groupId:artifactId") : expected;
+        }
+
+        Path directory = Files.createDirectory(root.resolve("technical-library-classes"));
+        Artifact directoryArtifact = new DefaultArtifact(
+                "example", "directory-library", "1.0.0", "compile", "jar", null,
+                new DefaultArtifactHandler("jar"));
+        directoryArtifact.setFile(directory.toFile());
+        MavenProject directoryProject = projectWithArtifacts(
+                List.of(directory.toString()), Set.of(directoryArtifact));
+        try {
+            OpaqueLibraryArtifactResolver.resolve(
+                    List.of(directoryProject), List.of("example:directory-library"));
+            throw new AssertionError("directory-only opaque library coordinate was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("not resolved compile-classpath JARs") : expected;
+        }
+    }
+
+    private static MavenProject projectWithArtifacts(
+            List<String> compileClasspath,
+            Set<Artifact> artifacts) {
+        return new MavenProject() {
+            @Override public List<String> getCompileClasspathElements() {
+                return compileClasspath;
+            }
+
+            @Override public Set<Artifact> getArtifacts() {
+                return artifacts;
+            }
+        };
     }
 
     private static void readsEffectiveCompilerPluginConfiguration() throws Exception {
@@ -232,6 +300,95 @@ public final class AnalyzeMojoTest {
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
     }
 
+    private static void generatesDeveloperGraphSchemasFromCode() {
+        var generator = new DeveloperGraphJsonSchema();
+        Map<String, Object> v1 = object(new JsonParser(
+                generator.generate(DeveloperGraphExporter.SCHEMA)).parse());
+        assert v1.get("$schema").equals("https://json-schema.org/draft/2020-12/schema") : v1;
+        assert v1.get("$id").equals("urn:fachtracing:schema:developer-graph:v1") : v1;
+        assert Boolean.FALSE.equals(v1.get("additionalProperties")) : v1;
+        assertRequired(v1, "schema", "graph", "sourceRevision", "sourceFiles");
+        assertDataSchema(v1, DeveloperGraphExporter.SCHEMA);
+
+        Map<String, Object> v1Definitions = object(v1.get("$defs"));
+        assert v1Definitions.keySet().equals(java.util.Set.of(
+                "graph", "node", "edge", "coverageGap", "source", "sourceFile", "revision"))
+                : v1Definitions.keySet();
+        assertEnum(v1Definitions, "node", "kind",
+                Arrays.stream(BusinessDecisionGraph.NodeKind.values()).map(Enum::name).toList());
+        assertEnum(v1Definitions, "graph", "completeness",
+                Arrays.stream(BusinessDecisionGraph.Completeness.values()).map(Enum::name).toList());
+        assertProperties(v1Definitions, "graph",
+                "id", "version", "label", "entryNodeId", "completeness",
+                "nodes", "edges", "coverageGaps");
+        assertProperties(v1Definitions, "node", "id", "kind", "label", "attributes", "source");
+        assertProperties(v1Definitions, "edge", "id", "from", "to", "outcome");
+        assertProperties(v1Definitions, "coverageGap", "nodeId", "description");
+        assertProperties(v1Definitions, "source", "path", "line", "column", "syntaxKind", "sha256", "url");
+        assertProperties(v1Definitions, "sourceFile", "path", "sha256");
+        assertProperties(v1Definitions, "revision", "repository", "commit", "committedAt");
+        Map<String, Object> v1Source = object(v1Definitions.get("source"));
+        assertRequired(v1Source, "path", "line", "column", "syntaxKind", "sha256", "url");
+        assert !object(v1Source.get("properties")).containsKey("originId") : v1Source;
+
+        Map<String, Object> v2 = object(new JsonParser(
+                generator.generate(DeveloperGraphExporter.SCHEMA_V2)).parse());
+        assert v2.get("$id").equals("urn:fachtracing:schema:developer-graph:v2") : v2;
+        assertRequired(v2, "schema", "graph", "sourceOrigins", "sourceFiles");
+        assertDataSchema(v2, DeveloperGraphExporter.SCHEMA_V2);
+        Map<String, Object> v2Definitions = object(v2.get("$defs"));
+        assert v2Definitions.keySet().equals(java.util.Set.of(
+                "graph", "node", "edge", "coverageGap", "source", "sourceFile", "revision", "sourceOrigin"))
+                : v2Definitions.keySet();
+        assertEnum(v2Definitions, "sourceOrigin", "kind",
+                Arrays.stream(DeveloperGraphExporter.OriginKind.values()).map(Enum::name).toList());
+        assertProperties(v2Definitions, "source",
+                "originId", "path", "line", "column", "syntaxKind", "sha256", "url");
+        assertProperties(v2Definitions, "sourceFile", "originId", "path", "sha256");
+        assertProperties(v2Definitions, "sourceOrigin", "id", "kind", "identity", "checksum", "revision");
+        Map<String, Object> v2Source = object(v2Definitions.get("source"));
+        assertRequired(v2Source, "originId", "path", "line", "column", "syntaxKind", "sha256");
+        assert !strings(v2Source.get("required")).contains("url") : v2Source;
+        assert object(v2Source.get("properties")).containsKey("url") : v2Source;
+
+        try {
+            generator.generate("fachtracing-developer-graph/v99");
+            throw new AssertionError("unsupported developer graph schema was accepted");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("unsupported developer graph schema") : expected;
+        }
+    }
+
+    private static void assertDataSchema(Map<String, Object> schema, String expected) {
+        Map<String, Object> properties = object(schema.get("properties"));
+        assert object(properties.get("schema")).get("const").equals(expected) : properties;
+    }
+
+    private static void assertEnum(
+            Map<String, Object> definitions,
+            String definition,
+            String property,
+            List<String> expected) {
+        Map<String, Object> properties = object(object(definitions.get(definition)).get("properties"));
+        assert strings(object(properties.get(property)).get("enum")).equals(expected) : properties;
+    }
+
+    private static void assertProperties(
+            Map<String, Object> definitions,
+            String definition,
+            String... expected) {
+        Map<String, Object> properties = object(object(definitions.get(definition)).get("properties"));
+        assert properties.keySet().equals(java.util.Set.of(expected)) : properties.keySet();
+    }
+
+    private static void assertRequired(Map<String, Object> schema, String... expected) {
+        assert strings(schema.get("required")).equals(List.of(expected)) : schema;
+    }
+
+    private static List<String> strings(Object value) {
+        return array(value).stream().map(AnalyzeMojoTest::string).toList();
+    }
+
     private static void generatesParsedDeveloperJsonFromCleanRevision() throws Exception {
         Path repository = Files.createTempDirectory("fachtracing-plugin-json-source");
         Path source = repository.resolve("src/Policy.java");
@@ -261,6 +418,7 @@ public final class AnalyzeMojoTest {
                 Optional.of(developerOutput));
 
         Path jsonFile = output.resolve("guarded-approval-developer.json");
+        Path schemaFile = output.resolve("fachtracing-developer-graph-v1.schema.json");
         byte[] jsonBytes = Files.readAllBytes(jsonFile);
         String json = StandardCharsets.UTF_8.newDecoder().decode(
                 java.nio.ByteBuffer.wrap(jsonBytes)).toString();
@@ -279,14 +437,20 @@ public final class AnalyzeMojoTest {
                 .findFirst().orElseThrow();
         String sourceUrl = string(object(sourceNode.get("source")).get("url"));
         assert sourceUrl.contains("/blob/" + commit + "/src/Policy.java#L") : sourceUrl;
+        Map<String, Object> schema = object(new JsonParser(Files.readString(schemaFile)).parse());
+        assertDataSchema(schema, DeveloperGraphExporter.SCHEMA);
+        assertRequired(schema, "schema", "graph", "sourceRevision", "sourceFiles");
         assert Files.readString(output.resolve("index.md"))
                 .contains("[Developer JSON](guarded-approval-developer.json)");
+        assert Files.readString(output.resolve("index.md")).contains(
+                "Developer JSON Schema: [V1](fachtracing-developer-graph-v1.schema.json)");
         assert result.graphCount() == 1 && result.incompleteCount() == 1 : result;
 
         Files.writeString(output.resolve("keep.txt"), "application-owned");
         new ProjectGraphGenerator().generate(
                 List.of(source), CLASSPATH, StandardCharsets.UTF_8, output, false, Optional.empty());
         assert !Files.exists(jsonFile) : "stale developer JSON was not removed";
+        assert !Files.exists(schemaFile) : "stale developer JSON schema was not removed";
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
 
         Files.writeString(source, Files.readString(source) + "\n", StandardCharsets.UTF_8);
