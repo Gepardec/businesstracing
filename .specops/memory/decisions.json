@@ -670,6 +670,16 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T08:48:18Z"
+    },
+    {
+      "specId": "fix-jakarta-platform-call-completeness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Publish Jakarta platform operations as a Java capability",
+      "rationale": "The public support boundary must stay linked to its executable regression contract.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:25:35Z"
     }
   ]
 }
