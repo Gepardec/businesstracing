@@ -77,17 +77,37 @@ Add executable contracts and developer documentation. Run all required checks.
 - [x] Developer documentation explains static candidates and runtime selection.
 - [x] The complete repository verification passes.
 
+### Task 5: Correct branch definitions and read-only enum effects
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Tasks 1-4
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Correct the strict relevance policy after the PR gate exposed two false gaps and missing branch paths.
+
+**Acceptance Criteria:**
+
+- [x] Final Java `Enum` queries do not create possible-mutation gaps.
+- [x] Every result-relevant branch assignment remains in the graph.
+- [x] A terminal source `throw` remains in the graph.
+- [x] The pinned Mega graph stays complete and matches each reviewed topology.
+
 ## Implementation Order
 
 1. Task 1
 2. Task 2
 3. Task 3
 4. Task 4
+5. Task 5
 
 ## Progress Tracking
 
-- Total Tasks: 4
-- Completed: 4
+- Total Tasks: 5
+- Completed: 5
 - In Progress: 0
 - Blocked: 0
 - Pending: 0

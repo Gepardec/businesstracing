@@ -8,6 +8,7 @@ import com.sun.source.tree.IfTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.ReturnTree;
+import com.sun.source.tree.ThrowTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
@@ -28,9 +29,11 @@ public final class DependencyGraphBuilder {
             MethodTree method,
             Function<MethodInvocationTree, CallEffects> callEffects) {
         var definitions = new LinkedHashMap<String, Tree>();
+        var definitionHistory = new LinkedHashMap<String, List<Tree>>();
         var identifiers = new IdentityHashMap<Tree, Set<String>>();
         var parents = new IdentityHashMap<Tree, Tree>();
         var returns = new ArrayList<ReturnTree>();
+        var throwStatements = new ArrayList<ThrowTree>();
         var effectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
         var possibleEffectsByIdentifier = new LinkedHashMap<String, List<Tree>>();
         var aliases = new LocalAliasResolver();
@@ -52,6 +55,8 @@ public final class DependencyGraphBuilder {
             @Override public Void visitAssignment(AssignmentTree node, Tree parent) {
                 if (node.getVariable() instanceof IdentifierTree identifier) {
                     definitions.put(identifier.getName().toString(), node.getExpression());
+                    definitionHistory.computeIfAbsent(identifier.getName().toString(), ignored -> new ArrayList<>())
+                            .add(node.getExpression());
                     aliases.assign(identifier.getName().toString(), node.getExpression());
                 }
                 return super.visitAssignment(node, parent);
@@ -72,6 +77,8 @@ public final class DependencyGraphBuilder {
             @Override public Void visitCompoundAssignment(CompoundAssignmentTree node, Tree parent) {
                 if (node.getVariable() instanceof IdentifierTree identifier) {
                     definitions.put(identifier.getName().toString(), node);
+                    definitionHistory.computeIfAbsent(identifier.getName().toString(), ignored -> new ArrayList<>())
+                            .add(node);
                 }
                 return super.visitCompoundAssignment(node, parent);
             }
@@ -79,6 +86,11 @@ public final class DependencyGraphBuilder {
             @Override public Void visitReturn(ReturnTree node, Tree parent) {
                 returns.add(node);
                 return super.visitReturn(node, parent);
+            }
+
+            @Override public Void visitThrow(ThrowTree node, Tree parent) {
+                throwStatements.add(node);
+                return super.visitThrow(node, parent);
             }
 
             @Override public Void visitMethodInvocation(MethodInvocationTree node, Tree parent) {
@@ -110,8 +122,11 @@ public final class DependencyGraphBuilder {
         Map<String, List<Tree>> immutablePossibleEffects = new LinkedHashMap<>();
         possibleEffectsByIdentifier.forEach((name, effects) ->
                 immutablePossibleEffects.put(name, List.copyOf(effects)));
-        return new MethodDependencies(method, returns, definitions, identifiers, parents,
-                immutableEffects, immutablePossibleEffects);
+        Map<String, List<Tree>> immutableDefinitions = new LinkedHashMap<>();
+        definitions.forEach((name, latest) -> immutableDefinitions.put(name,
+                List.copyOf(definitionHistory.getOrDefault(name, List.of(latest)))));
+        return new MethodDependencies(method, returns, throwStatements, definitions, immutableDefinitions,
+                identifiers, parents, immutableEffects, immutablePossibleEffects);
     }
 
     /** Classified writes for one attributed call. */
@@ -132,7 +147,9 @@ public final class DependencyGraphBuilder {
     public record MethodDependencies(
             MethodTree method,
             List<ReturnTree> returns,
+            List<ThrowTree> throwStatements,
             Map<String, Tree> definitions,
+            Map<String, List<Tree>> definitionHistory,
             Map<Tree, Set<String>> identifierUses,
             Map<Tree, Tree> parents,
             Map<String, List<Tree>> effectsByIdentifier,
@@ -140,7 +157,9 @@ public final class DependencyGraphBuilder {
         /** Creates defensive collections while retaining tree object identity. */
         public MethodDependencies {
             returns = List.copyOf(returns);
+            throwStatements = List.copyOf(throwStatements);
             definitions = Map.copyOf(definitions);
+            definitionHistory = Map.copyOf(definitionHistory);
             identifierUses = Map.copyOf(identifierUses);
             parents = Map.copyOf(parents);
             effectsByIdentifier = Map.copyOf(effectsByIdentifier);

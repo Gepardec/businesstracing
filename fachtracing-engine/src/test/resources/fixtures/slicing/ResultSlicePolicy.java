@@ -9,6 +9,8 @@ import java.util.Deque;
 import java.util.List;
 
 public final class ResultSlicePolicy {
+    enum State { OPEN, CLOSED }
+
     interface UnknownMutator {
         void update(Customer customer);
     }
@@ -47,6 +49,31 @@ public final class ResultSlicePolicy {
             return false;
         }
         return meetsMinimumAge(age);
+    }
+
+    @FachTracing("read-only enum queries")
+    public boolean readOnlyEnumQueries(State state) {
+        state.name();
+        state.equals(State.CLOSED);
+        return state == State.OPEN;
+    }
+
+    @FachTracing("branch definitions and failure")
+    public boolean branchDefinitionsAndFailure(State state, boolean override) {
+        boolean allowed = false;
+        switch (state) {
+            case OPEN:
+                if (override) {
+                    allowed = true;
+                }
+                break;
+            case CLOSED:
+                allowed = false;
+                break;
+            default:
+                throw new IllegalArgumentException(state.name());
+        }
+        return allowed;
     }
 
     private void recordAudit(int age) {

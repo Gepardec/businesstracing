@@ -30,6 +30,9 @@ The analyzer builds a business graph from the parts of a Java method that can ch
 - [x] WHEN a construct is in the backward slice, is an ancestor of a sliced construct, or is inside a sliced expression, THE SYSTEM SHALL treat it as relevant.
 - [x] WHEN a call is only in the body of a relevant control statement and does not affect the result, THE SYSTEM SHALL exclude it from the graph.
 - [x] WHEN a call is inside a relevant return expression, predicate expression, or data expression, THE SYSTEM SHALL keep it eligible for extraction.
+- [x] WHEN different branches assign a value that can affect the result, THE SYSTEM SHALL consider every branch assignment relevant.
+- [x] WHEN a source `throw` can terminate an analyzed path, THE SYSTEM SHALL keep the failure path relevant.
+- [x] WHEN a final Java `Enum` query is outside the result slice, THE SYSTEM SHALL exclude it without reporting a possible mutation gap.
 
 ### Use Case 3: Explain Java polymorphic dispatch
 

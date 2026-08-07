@@ -26,7 +26,9 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 “technical”; work disappears only when it cannot affect the decision result. A construct is
 relevant when it is in the result slice, contains a sliced construct, or is inside a sliced
 expression. Unrelated work in the body of a relevant branch does not become relevant only because
-the branch controls a return.
+the branch controls a return. The slice keeps every assignment to a result-dependent local across
+alternative branches. It also keeps each source `throw` as a terminal failure path. If a local has
+later assignments, its seed initializer stays implicit in the business graph.
 
 `AnalysisManifest.analysisDecisions()` explains this selection for developer tools. An included
 source construct has the opaque graph node ID and an inclusion reason. An excluded graph-eligible
@@ -44,7 +46,7 @@ or runtime activation JSON.
 | Method receiver evidence | Records a direct parameter receiver for result-relevant value calls, including direct Boolean return expressions. An unsupported explicit value receiver creates a source-located gap |
 | Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
 | Local initialization and assignment | Retained only when it can influence a return |
-| Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only |
+| Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only. Final `java.lang.Enum` queries such as `name`, `equals`, and `compareTo` are proven read-only |
 | Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies, including queue and deque operations such as `offer` |
 | Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument. An unconditional non-identity assignment removes that relation. A conditional assignment merges branch roots; an unproved result-relevant write creates a located gap |
 | Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |

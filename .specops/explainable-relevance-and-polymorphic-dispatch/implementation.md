@@ -2,7 +2,7 @@
 
 ## Summary
 
-Completed four tasks. The analyzer now uses expression-bounded relevance, so a relevant control statement does not make unrelated work in its body relevant. The developer-only manifest explains source-derived inclusions, exclusions, coverage gaps, and Java polymorphic candidates. Static analysis keeps each proven concrete compatible implementation. Runtime evidence still selects the implementation that ran. The business graph schema and activation format do not change. The full repository verifier passed.
+Completed five tasks. The analyzer now uses expression-bounded relevance, so a relevant control statement does not make unrelated work in its body relevant. The slice keeps every result-relevant branch assignment and terminal failure. Final Java `Enum` queries do not create false mutation gaps. The developer-only manifest explains source-derived inclusions, exclusions, coverage gaps, and Java polymorphic candidates. Static analysis keeps each proven concrete compatible implementation. Runtime evidence still selects the implementation that ran. The business graph schema and activation format do not change. The full repository verifier and pinned Mega conformance gate passed.
 
 ## Phase 1 Context Summary
 
@@ -22,6 +22,7 @@ Completed four tasks. The analyzer now uses expression-bounded relevance, so a r
 | --- | --- | --- | --- | --- |
 | 1 | Bound descendant relevance to sliced expressions. | Calls nested in returned and predicate expressions remain relevant, while unrelated calls in a relevant branch body do not enter the graph. | Task 1 | 2026-08-07T11:41:40Z |
 | 2 | Keep all proven compatible dispatch candidates and let runtime evidence select one. | Java polymorphism can make the concrete target unknown during static analysis. The analyzer must not guess a target. | Task 3 | 2026-08-07T11:44:30Z |
+| 3 | Slice every branch assignment and each terminal source failure. | Last-write-only definitions removed valid alternative paths after descendant relevance became strict. | Task 5 | 2026-08-07T12:24:11Z |
 
 ## Phase 2 Completion Summary
 
@@ -32,12 +33,12 @@ Completed four tasks. The analyzer now uses expression-bounded relevance, so a r
 
 ## Phase 3 Completion Summary
 
-- Tasks completed: 4 of 4.
+- Tasks completed: 5 of 5.
 - Production changes: Added `DecisionRelevance`, `AnalysisDecisionAuditor`, immutable manifest decisions, builder collection, and dispatch candidate classification.
 - Test changes: Added result-slice, manifest, sealed-interface, abstract-subtype, and receiver-compatibility contracts.
 - Documentation: Updated `docs/supported-java-constructs.md`.
-- Deviations: None.
-- Verification: Focused analyzer and API contracts passed. `./scripts/verify.sh` passed repository integrity, Java capabilities, self-tracing, external release, all executable contracts, and the short load test. The load completed 5,000 decisions at 1,000 RPS with 0.180% p95 overhead and no errors, mismatches, drops, or contamination. PostgreSQL verification was skipped because no connection was configured.
+- Deviations: The PR gate found two false Java `Enum` effect gaps and two incomplete alternative-path slices. Task 5 corrected both findings without changing reviewed Mega topologies.
+- Verification: Focused analyzer and API contracts passed. The pinned Mega gate analyzed 420 source files and five complete decisions, then selected all three warning strategies at runtime. `./scripts/verify.sh` passed repository integrity, Java capabilities, self-tracing, external release, all executable contracts, and the short load test. The load completed 5,000 decisions at 1,000 RPS with 0.249% p95 overhead and no errors, mismatches, drops, or contamination. PostgreSQL verification was skipped because no connection was configured.
 
 ## Documentation Review
 
@@ -53,3 +54,5 @@ Completed four tasks. The analyzer now uses expression-bounded relevance, so a r
 - 2026-08-07T11:44:01Z — Task 2 completed. Added source-derived inclusion, exclusion, and gap decisions.
 - 2026-08-07T11:44:30Z — Task 3 completed. Added exact candidate decisions for concrete, abstract, and receiver-incompatible subtypes.
 - 2026-08-07T11:49:35Z — Task 4 completed. Focused and full verification passed; documentation is current.
+- 2026-08-07T12:24:11Z — Task 5 completed. Corrected read-only enum effects, alternative branch definitions, and terminal failures.
+- 2026-08-07T12:25:49Z — Pinned Mega and full repository verification passed.

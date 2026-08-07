@@ -273,12 +273,14 @@ or contamination.
 
 ### explainable-relevance-and-polymorphic-dispatch (feature) — 2026-08-07
 
-Completed four tasks. The analyzer now uses expression-bounded relevance, so a relevant control
+Completed five tasks. The analyzer now uses expression-bounded relevance, so a relevant control
 statement does not make unrelated work in its body relevant. The developer-only manifest explains
 source-derived inclusions, exclusions, coverage gaps, and Java polymorphic candidates. Static
 analysis keeps each proven concrete compatible implementation, and runtime evidence still selects
-the implementation that ran. The business graph schema and activation format did not change. Focused
-contracts and the full repository verifier passed.
+the implementation that ran. Every result-relevant branch assignment and terminal failure remains
+in the slice. Final Java enum queries do not create false mutation gaps. The business graph schema
+and activation format did not change. Focused contracts, the pinned Mega gate, and the full
+repository verifier passed.
 
 ### conditional-alias-method-reference-effects (bugfix) — 2026-08-07
 

@@ -702,6 +702,16 @@
       "completedAt": "2026-08-07T11:49:35Z"
     },
     {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Slice every branch assignment and each terminal source failure",
+      "rationale": "Last-write-only definitions removed valid alternative paths after descendant relevance became strict.",
+      "task": "Task 5",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:25:49Z"
+    },
+    {
       "specId": "conditional-alias-method-reference-effects",
       "specType": "bugfix",
       "number": 1,

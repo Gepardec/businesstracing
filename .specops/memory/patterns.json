@@ -114,8 +114,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
-      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects"],
-      "count": 5
+      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "explainable-relevance-and-polymorphic-dispatch"],
+      "count": 6
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java",

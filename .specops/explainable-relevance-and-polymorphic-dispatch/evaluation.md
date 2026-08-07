@@ -38,3 +38,24 @@
 - Fail count: 0 after the sandbox-only Maven repository write restriction was removed
 
 **Verdict:** PASS — 4 of 4 dimensions passed
+
+### Iteration 2
+
+**Evaluated at:** 2026-08-07T12:25:49Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Functionality Depth | Added contracts for excluded final enum queries, all branch assignments, and terminal failures. | None. | 10 | 7 | Pass |
+| Design Fidelity | The strict expression boundary remains. Dependency collection now supplies the missing alternative definitions and failures. | None. | 10 | 7 | Pass |
+| Code Quality | Effect classification is limited to final `Enum` queries. Definition history stays separate from graph extraction. | Seed initializers with later assignments stay implicit to preserve business topology. | 9 | 7 | Pass |
+| Test Verification | Focused tests, the pinned 420-source Mega gate, reviewed topology comparison, runtime dispatch, and `./scripts/verify.sh` passed. | PostgreSQL was skipped because no connection was configured. | 10 | 7 | Pass |
+
+**Test Exercise Results:**
+
+- Tests run: yes
+- Commands: focused static analyzer contract; pinned Mega conformance; `./scripts/verify.sh`; `git diff --check`
+- Pass count: all required checks
+- Fail count: 0 after Task 5 remediation
+
+**Verdict:** PASS — 4 of 4 dimensions passed

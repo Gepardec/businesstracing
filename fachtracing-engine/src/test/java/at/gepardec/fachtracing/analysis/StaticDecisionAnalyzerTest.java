@@ -29,6 +29,8 @@ public final class StaticDecisionAnalyzerTest {
         excludesResultIndependentWork();
         explainsIncludedExcludedAndGapDecisions();
         excludesIgnoredReadsAndReportsUnknownEffects();
+        excludesReadOnlyEnumQueriesWithoutCoverageGaps();
+        preservesEveryBranchDefinitionAndFailurePath();
         preservesDequeOfferMutation();
         preservesLocalAliasMutation();
         invalidatesReassignedLocalAliases();
@@ -272,6 +274,30 @@ public final class StaticDecisionAnalyzerTest {
                 : unknown.diagnostics();
         assert unknown.graph().nodes().stream().noneMatch(node ->
                 node.businessLabel().contains("evaluate update")) : unknown.graph().nodes();
+    }
+
+    private static void excludesReadOnlyEnumQueriesWithoutCoverageGaps() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "read-only enum queries");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        assert result.graph().coverageGaps().isEmpty() : result.graph().coverageGaps();
+        assert result.manifest().analysisDecisions().stream().filter(decision ->
+                        decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                                && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
+                                && decision.constructKind().equals("METHOD_INVOCATION"))
+                .count() == 2 : result.manifest().analysisDecisions();
+    }
+
+    private static void preservesEveryBranchDefinitionAndFailurePath() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "branch definitions and failure");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("set allowed to true") : labels;
+        assert labels.contains("set allowed to false") : labels;
+        assert labels.contains("decision cannot continue") : labels;
+        assert !labels.contains("derive allowed as false") : labels;
     }
 
     private static void preservesLocalAliasMutation() {

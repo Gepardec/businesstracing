@@ -1,7 +1,7 @@
 ---
 specId: "explainable-relevance-and-polymorphic-dispatch"
 startedAt: "2026-08-07T11:33:19Z"
-completedAt: "2026-08-07T11:52:03Z"
+completedAt: "2026-08-07T12:25:49Z"
 finalStatus: "completed"
 phases: []
 ---
@@ -62,3 +62,16 @@ phases: []
 - Result: Project memory now includes two decisions and the completed-spec context.
 - Result: Refreshed the repository map for 172 project files and the two new analysis classes.
 - Result: Captured completion metrics and marked the spec completed.
+
+## Phase 5: PR Gate Remediation
+
+### [12:24:11] Task 5: Correct branch definitions and read-only enum effects
+
+- Status: In Progress
+- Action: Reproduced the pinned Mega failure and traced two gaps to final `Enum.name()` and `Enum.equals()` calls.
+- Action: Compared generated topology with immutable reviewed oracles and found last-write-only slicing had removed valid branch assignments and terminal failures.
+
+- Status: Completed
+- Result: Final Java `Enum` queries are read-only. The slicer keeps every subsequent assignment for a result-dependent local and every source `throw`.
+- Result: Focused contracts passed. The pinned Mega gate analyzed 420 sources, produced five complete decisions, matched all reviewed topologies, and selected three runtime strategies.
+- Result: `./scripts/verify.sh` passed. The load completed 5,000 decisions at 1,000 RPS with 0.249% p95 overhead and no errors, mismatches, drops, or contamination.

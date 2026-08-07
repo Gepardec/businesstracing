@@ -32,6 +32,12 @@ The business graph stays unchanged. Runtime activation serialization will contin
 
 **Rationale:** Java polymorphism can make the runtime target unknown. The analyzer must preserve every proven possible target and must not choose one without runtime evidence.
 
+### Decision 5: Keep every branch definition and terminal failure
+
+**Decision:** The dependency builder will retain every assignment to a local result dependency. The slicer will also seed each source `throw`. If a local has later assignments, its seed initializer stays implicit in the graph. Final Java `Enum` queries are proven read-only.
+
+**Rationale:** A last-write-only definition map can remove a valid assignment from another branch. A strict descendant policy can also remove a terminal failure. The slice must retain these result paths without restoring unrelated work from a whole control body.
+
 ## Data Model
 
 ```text
@@ -89,6 +95,8 @@ AnalysisDecision
 - Extend the strategy fixture with an abstract subtype and a sealed interface hierarchy.
 - Verify two concrete alternatives remain, the abstract subtype is excluded, and dispatch targets remain exact.
 - Add a focused receiver-compatibility fixture that proves an incompatible contract subtype is excluded.
+- Add a fixture that proves all branch definitions and a terminal failure remain visible.
+- Add a fixture that proves excluded final `Enum` queries do not create mutation gaps.
 - Run engine tests, repository verification, and the full project verification script.
 
 ## Risks and Mitigations
@@ -97,6 +105,7 @@ AnalysisDecision
 - **Risk:** Exclusion records become noisy. **Mitigation:** Stop traversal at the first excluded graph-eligible construct in each subtree.
 - **Risk:** Audit data leaks technical names into business output. **Mitigation:** Store it only in `AnalysisManifest` and do not add it to runtime activation serialization.
 - **Risk:** Polymorphic filtering removes a valid implementation. **Mitigation:** Use compiler-attributed subtype checks and preserve the current dispatch target tests.
+- **Risk:** Last-write-only local definitions remove a valid branch. **Mitigation:** Slice every assignment for a result-dependent local and verify the reviewed Mega topology.
 
 ## Dependency Decisions
 

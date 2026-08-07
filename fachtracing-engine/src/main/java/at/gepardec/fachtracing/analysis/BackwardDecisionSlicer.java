@@ -5,6 +5,7 @@ import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.ThrowTree;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -35,12 +36,20 @@ public final class BackwardDecisionSlicer {
             }
         }
 
+        for (ThrowTree thrown : dependencies.throwStatements()) {
+            relevant.add(thrown);
+            if (thrown.getExpression() != null) {
+                relevant.add(thrown.getExpression());
+                pendingNames.addAll(DependencyGraphBuilder.collectIdentifiers(thrown.getExpression()));
+            }
+            addControlAncestors(thrown, dependencies, relevant, pendingNames);
+        }
+
         var expandedNames = new java.util.HashSet<String>();
         while (!pendingNames.isEmpty()) {
             String name = pendingNames.removeFirst();
             if (!expandedNames.add(name)) continue;
-            Tree definition = dependencies.definitions().get(name);
-            if (definition != null) {
+            for (Tree definition : dependencies.definitionHistory().getOrDefault(name, java.util.List.of())) {
                 relevant.add(definition);
                 pendingNames.addAll(DependencyGraphBuilder.collectIdentifiers(definition));
                 addControlAncestors(definition, dependencies, relevant, pendingNames);

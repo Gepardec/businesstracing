@@ -2854,6 +2854,9 @@ public final class StaticDecisionAnalyzer {
                 || qualifiedName.equals("java.util.OptionalInt")
                 || qualifiedName.equals("java.util.OptionalLong")
                 || qualifiedName.equals("java.util.OptionalDouble")) return true;
+        if (qualifiedName.equals("java.lang.Enum") && Set.of(
+                "name", "ordinal", "equals", "hashCode", "compareTo",
+                "getDeclaringClass", "describeConstable", "valueOf").contains(method)) return true;
         if (qualifiedName.startsWith("java.util.") && Set.of(
                 "size", "isEmpty", "indexOf", "lastIndexOf", "peek", "peekFirst", "peekLast", "element",
                 "first", "last", "keySet", "values", "entrySet", "iterator", "listIterator",
