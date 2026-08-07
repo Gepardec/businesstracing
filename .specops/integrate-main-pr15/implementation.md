@@ -2,6 +2,11 @@
 
 ## Summary
 
+Merged `origin/main` through `34f6285` into PR #15 with two normal merge commits. Conflict
+resolution retained the analyzer, test, documentation, conformance, and SpecOps changes from both
+branches. The complete local pull-request gate and required hosted checks pass, and PR #15 is
+mergeable.
+
 ## Phase 1 Context Summary
 
 - Config: SpecOps 1.8.0 defaults; `.specops.json` is absent.
@@ -40,6 +45,10 @@
 
 ## Documentation Review
 
+- `docs/java-capabilities.json` retains all capability entries from both branches.
+- `docs/supported-java-constructs.md` retains the context-label and callback-effect support text.
+- The Spring PetClinic conformance report from the updated base remains present.
+
 ## Session Log
 
 - 2026-08-07T12:55:30Z: Started integration work. PR #15 is conflicting with current `main`.
@@ -50,3 +59,5 @@
 - 2026-08-07T13:06:38Z: `main` advanced through PR #16 after the first merge. The second merge
   retained the integration changes and added Spring PetClinic conformance. The expanded full gate
   passes.
+- 2026-08-07T13:13:12Z: Hosted `pr-gate` and `postgres` checks pass. PR #15 is mergeable. Task 2
+  and this integration spec are complete.

@@ -29,7 +29,7 @@
 
 ## Task 2: Verify and publish
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 1
 **Priority:** High
@@ -38,14 +38,14 @@
 
 **Acceptance Criteria:**
 
-- [ ] The full local pull-request gate passes.
-- [ ] The merge commit is pushed to PR #15.
-- [ ] Required hosted checks pass.
+- [x] The full local pull-request gate passes.
+- [x] The merge commit is pushed to PR #15.
+- [x] Required hosted checks pass.
 
 ## Progress
 
 - Total: 2
-- Completed: 1
-- In Progress: 1
+- Completed: 2
+- In Progress: 0
 - Pending: 0
 - Blocked: 0

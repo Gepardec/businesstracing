@@ -14,10 +14,10 @@ both the label changes from `main` and the alias, callback, and shutdown fixes i
 
 ## Acceptance Criteria
 
-- WHEN current `origin/main` is merged THE SYSTEM SHALL retain both branches' analyzer behavior.
-- THE SYSTEM SHALL keep all Java capability entries and all completed SpecOps records from both branches.
-- THE SYSTEM SHALL pass the complete local pull-request gate and required hosted checks.
-- THE SYSTEM SHALL leave the two confirmed pre-existing coverage limits outside this integration change.
+- [x] WHEN current `origin/main` is merged THE SYSTEM SHALL retain both branches' analyzer behavior.
+- [x] THE SYSTEM SHALL keep all Java capability entries and all completed SpecOps records from both branches.
+- [x] THE SYSTEM SHALL pass the complete local pull-request gate and required hosted checks.
+- [x] THE SYSTEM SHALL leave the two confirmed pre-existing coverage limits outside this integration change.
 
 ## Team Conventions
 

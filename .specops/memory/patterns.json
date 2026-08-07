@@ -55,6 +55,11 @@
       "category": "platform-operation-classification",
       "count": 1,
       "pattern": "Classify equivalent current and legacy platform namespaces at one boundary while unsupported application binary logic stays fail-closed."
+    },
+    {
+      "category": "branch-integration",
+      "count": 1,
+      "pattern": "Merge concurrent analyzer work by semantic union and regenerate shared aggregate records from all completed specifications."
     }
   ],
   "fileOverlaps": [
@@ -100,9 +105,10 @@
         "conditional-alias-method-reference-effects",
         "review-followup-correctness",
         "context-aware-operation-labels",
-        "context-label-symbol-correctness"
+        "context-label-symbol-correctness",
+        "integrate-main-pr15"
       ],
-      "count": 12
+      "count": 13
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -126,18 +132,18 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "context-aware-operation-labels", "context-label-symbol-correctness"],
-      "count": 11
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15"],
+      "count": 12
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "context-aware-operation-labels", "context-label-symbol-correctness"],
-      "count": 10
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15"],
+      "count": 11
     },
     {
       "file": "docs/java-capabilities.json",
-      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "context-aware-operation-labels"],
-      "count": 6
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "context-aware-operation-labels", "integrate-main-pr15"],
+      "count": 7
     },
     {
       "file": "docs/maven-plugin.md",

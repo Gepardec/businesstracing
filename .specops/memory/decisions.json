@@ -790,6 +790,26 @@
       "task": "Task 1",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T12:31:57Z"
+    },
+    {
+      "specId": "integrate-main-pr15",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Resolve analyzer overlap by import and helper union",
+      "rationale": "The branches change independent semantics in one class, so both executable contract groups must remain.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:13:12Z"
+    },
+    {
+      "specId": "integrate-main-pr15",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Regenerate aggregate SpecOps files by union",
+      "rationale": "Selecting one branch would lose valid completed-spec history from the other branch.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:13:12Z"
     }
   ]
 }

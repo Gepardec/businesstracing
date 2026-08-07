@@ -334,3 +334,13 @@ The harness compares three immutable semantic oracles, keeps generated diagrams 
 and runs in pull-request and release gates. Its isolation test scans every production module,
 including JDBC storage. The graph report explains what Fachtracing proves and where it stops. The
 full local pull-request gate passed with both external corpora.
+
+### integrate-main-pr15 (refactor) — 2026-08-07
+
+Completed both tasks. PR #15 now contains current `main` through `34f6285`. Semantic conflict
+resolution retained the independent analyzer, test, documentation, conformance, and SpecOps changes
+from both branches. The two confirmed pre-existing coverage limits remain unchanged and outside this
+integration.
+
+The complete local pull-request gate passed after each base update. Hosted `pr-gate` and `postgres`
+checks pass, and GitHub reports PR #15 as mergeable.
