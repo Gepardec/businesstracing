@@ -23,6 +23,13 @@ public final class StaticDecisionAnalyzerTest {
 
     public static void main(String[] args) {
         removesJavaConstructionVocabularyGenerically();
+        usesContextForLocalAndGenericSetterLabels();
+        usesTypeForAbbreviatedLocalLabels();
+        addsContextToCollectionMutationLabels();
+        addsContextToOtherPlatformMutationLabels();
+        usesElementTypeForGenericCollectionLabels();
+        appliesContextRulesAcrossIndependentApplications();
+        rejectsUnclearFallbackLabels();
         scansMethodReceiversForEvidence();
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
@@ -82,6 +89,160 @@ public final class StaticDecisionAnalyzerTest {
         assert BusinessLabelNormalizer.normalize("evaluate create warning with enum type")
                 .equals("create warning")
                 : BusinessLabelNormalizer.normalize("evaluate create warning with enum type");
+    }
+
+    private static void usesContextForLocalAndGenericSetterLabels() {
+        var result = analyzeLabel("labels/ContextAwareLabelPolicy.java", "calendar bounds");
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("calendar") : labels;
+        assert labels.contains("set calendar hour of day to hour") : labels;
+        assert labels.contains("set calendar minute to minute") : labels;
+        assert labels.contains("set calendar second to second") : labels;
+        assert !labels.contains("evaluate set") : labels;
+        assert result.graph().nodes().stream().noneMatch(node -> node.businessLabel().equals("c")) : labels;
+        assert new BusinessArtifactGuard().violations(result.graph()).isEmpty()
+                : new BusinessArtifactGuard().violations(result.graph());
+    }
+
+    private static void usesTypeForAbbreviatedLocalLabels() {
+        var result = analyzeLabel("labels/ContextAwareLabelPolicy.java", "abbreviated comparator");
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("derive comparator") : labels;
+        assert result.graph().nodes().stream().noneMatch(node -> node.businessLabel().equals("comp")) : labels;
+    }
+
+    private static void addsContextToCollectionMutationLabels() {
+        var result = analyzeLabel("labels/ContextAwareLabelPolicy.java", "collection add");
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("add sensor to sensors") : labels;
+        assert !labels.contains("evaluate add") : labels;
+    }
+
+    private static void addsContextToOtherPlatformMutationLabels() {
+        var result = analyzeLabel("labels/ContextAwareLabelPolicy.java", "collection add all");
+        List<String> labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert labels.contains("add all additions to sensors") : labels;
+        assert !labels.contains("evaluate add all") : labels;
+    }
+
+    private static void usesElementTypeForGenericCollectionLabels() {
+        var result = analyzeLabel("labels/ContextAwareLabelPolicy.java", "generic collection name");
+        List<String> labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert labels.contains("sensor data list") : labels;
+        assert labels.stream().anyMatch(label -> label.startsWith("add new sensor data")
+                        && label.endsWith("to sensor data list")) : labels;
+        assert !labels.contains("list") : labels;
+    }
+
+    private static void usesAttributedTypeForInferredLocalLabels() {
+        var result = analyzeLabel("labels/ContextAwareLabelPolicy.java", "inferred calendar");
+        List<String> labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert labels.contains("gregorian calendar") : labels;
+        assert labels.contains("set gregorian calendar hour of day to 0") : labels;
+        assert !labels.contains("item") : labels;
+        assert labels.stream().noneMatch(label -> label.startsWith("set item ")) : labels;
+    }
+
+    private static void usesMutatedArgumentForStaticUtilityLabels() {
+        List<String> sortLabels = analyzeLabel("labels/ContextAwareLabelPolicy.java", "static sort")
+                .graph().nodes().stream().map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert sortLabels.contains("sort warnings") : sortLabels;
+        assert !sortLabels.contains("sort collections with warnings") : sortLabels;
+
+        List<String> fillLabels = analyzeLabel("labels/ContextAwareLabelPolicy.java", "static fill")
+                .graph().nodes().stream().map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert fillLabels.contains("fill buffer with value") : fillLabels;
+        assert !fillLabels.contains("fill arrays with buffer and value") : fillLabels;
+    }
+
+    private static void keepsReceiverSubjectsBoundToTheirDeclaration() {
+        List<String> labels = analyzeLabel("labels/ContextAwareLabelPolicy.java", "scoped receiver")
+                .graph().nodes().stream().map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert labels.contains("add sensor to deque") : labels;
+        assert !labels.contains("add sensor to calendar") : labels;
+    }
+
+    private static void appliesContextRulesAcrossIndependentApplications() {
+        usesAttributedTypeForInferredLocalLabels();
+        usesMutatedArgumentForStaticUtilityLabels();
+        keepsReceiverSubjectsBoundToTheirDeclaration();
+        assertApplicationLabels(
+                "crossapp/scheduling/ScheduleApplication.java",
+                List.of("gregorian calendar", "set gregorian calendar hour of day to hour"),
+                List.of("gc", "evaluate set"));
+        assertApplicationLabels(
+                "crossapp/pricing/QuoteApplication.java",
+                List.of("derive comparator"),
+                List.of("cmp"));
+        assertApplicationLabels(
+                "crossapp/access/AccessApplication.java",
+                List.of("role set"),
+                List.of("list", "evaluate add"));
+        assertApplicationLabelShape(
+                "crossapp/access/AccessApplication.java", "add new role", "to role set");
+        assertApplicationLabels(
+                "crossapp/inventory/InventoryApplication.java",
+                List.of("set slots 0 to amount"),
+                List.of("evaluate set"));
+    }
+
+    private static void assertApplicationLabels(
+            String fixture, List<String> expected, List<String> forbidden) {
+        var result = analyze(fixture);
+        List<String> labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        expected.forEach(label -> {
+            assert labels.contains(label) : fixture + ": " + labels;
+        });
+        forbidden.forEach(label -> {
+            assert !labels.contains(label) : fixture + ": " + labels;
+        });
+        assert new BusinessArtifactGuard().violations(result.graph()).isEmpty()
+                : fixture + ": " + new BusinessArtifactGuard().violations(result.graph());
+    }
+
+    private static void assertApplicationLabelShape(String fixture, String prefix, String suffix) {
+        List<String> labels = analyze(fixture).graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert labels.stream().anyMatch(label -> label.startsWith(prefix) && label.endsWith(suffix))
+                : fixture + ": " + labels;
+    }
+
+    private static void rejectsUnclearFallbackLabels() {
+        var unclear = new BusinessDecisionGraph(
+                "unclear-labels", 1, "unclear labels", "entry",
+                List.of(
+                        new BusinessDecisionGraph.DecisionNode(
+                                "entry", BusinessDecisionGraph.NodeKind.ENTRY, "Start", java.util.Map.of()),
+                        new BusinessDecisionGraph.DecisionNode(
+                                "local", BusinessDecisionGraph.NodeKind.COMPUTATION, "c", java.util.Map.of()),
+                        new BusinessDecisionGraph.DecisionNode(
+                                "setter", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "evaluate set", java.util.Map.of()),
+                        new BusinessDecisionGraph.DecisionNode(
+                                "addition", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "evaluate add", java.util.Map.of()),
+                        new BusinessDecisionGraph.DecisionNode(
+                                "collection", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "list", java.util.Map.of()),
+                        new BusinessDecisionGraph.DecisionNode(
+                                "collection-addition", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "evaluate add all", java.util.Map.of()),
+                        new BusinessDecisionGraph.DecisionNode(
+                                "queue-addition", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "evaluate offer", java.util.Map.of()),
+                        new BusinessDecisionGraph.DecisionNode(
+                                "ordering", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "evaluate sort", java.util.Map.of())),
+                List.of(), BusinessDecisionGraph.Completeness.COMPLETE, List.of());
+        assert new BusinessArtifactGuard().violations(unclear).size() == 7
+                : new BusinessArtifactGuard().violations(unclear);
     }
 
     private static void scansMethodReceiversForEvidence() {
@@ -287,7 +448,7 @@ public final class StaticDecisionAnalyzerTest {
         String dequeLabels = deque.graph().nodes().stream()
                 .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
         assert dequeLabels.contains("age is below 24") : dequeLabels;
-        assert dequeLabels.contains("offer") : dequeLabels;
+        assert dequeLabels.contains("offer age to reasons") : dequeLabels;
     }
 
     private static void invalidatesReassignedLocalAliases() {

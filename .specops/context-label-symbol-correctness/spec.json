@@ -1,0 +1,55 @@
+{
+  "id": "context-label-symbol-correctness",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T12:17:53Z",
+  "updated": "2026-08-07T12:35:12Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "context-aware-operation-labels",
+    "jdk-mutation-alias-effect-correctness"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-07T12:17:53Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 9,
+        "fixCompleteness": 9,
+        "regressionSafety": 8,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T12:33:07Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 5287,
+    "filesChanged": 18,
+    "linesAdded": 828,
+    "linesRemoved": 27,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 21,
+    "specDurationMinutes": 18
+  }
+}

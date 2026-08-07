@@ -1,0 +1,56 @@
+{
+  "id": "context-aware-operation-labels",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T11:11:11Z",
+  "updated": "2026-08-07T11:53:37Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "runtime-evidence-async-identity-correctness",
+    "stage-lifecycle-evidence-label-correctness",
+    "outcome-evidence-cancellation-slice-label-correctness"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-07T11:13:27Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 9,
+        "fixCompleteness": 9,
+        "regressionSafety": 8,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T11:53:37Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 4319,
+    "filesChanged": 22,
+    "linesAdded": 967,
+    "linesRemoved": 21,
+    "tasksCompleted": 4,
+    "acceptanceCriteriaVerified": 22,
+    "specDurationMinutes": 42
+  }
+}
