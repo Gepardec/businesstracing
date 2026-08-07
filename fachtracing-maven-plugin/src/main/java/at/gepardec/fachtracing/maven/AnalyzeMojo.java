@@ -233,10 +233,8 @@ public final class AnalyzeMojo extends AbstractMojo {
                     "maven-" + (++index), DeveloperGraphExporter.OriginKind.MAVEN_SOURCE,
                     artifact.root(), artifact.coordinate(), artifact.checksum()));
         }
-        Path build = Path.of(project.getBuild().getDirectory()).toAbsolutePath().normalize();
-        for (String root : project.getCompileSourceRoots()) {
-            Path path = Path.of(root).toAbsolutePath().normalize();
-            if (path.startsWith(build) && Files.isDirectory(path)) {
+        for (Path path : MavenCompilerModelResolver.generatedSourceRoots(project)) {
+            if (Files.isDirectory(path)) {
                 byRoot.putIfAbsent(path, DeveloperGraphExporter.SourceOrigin.external(
                         "generated-" + (++index), DeveloperGraphExporter.OriginKind.GENERATED,
                         path, project.getGroupId() + ':' + project.getArtifactId(), ""));

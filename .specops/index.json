@@ -3,7 +3,7 @@
     "id": "generic-tracing-walking-skeleton",
     "type": "feature",
     "status": "completed",
-    "version": 2,
+    "version": 3,
     "author": "lucostus",
     "updated": "2026-07-24T10:30:55Z",
     "partOf": "generic-java-fachtracing"
@@ -160,6 +160,14 @@
     "author": "codex",
     "updated": "2026-08-07T08:00:07Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "annotation-processor-output-analysis",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 3,
+    "author": "lucostus",
+    "updated": "2026-08-07T09:29:15Z"
   },
   {
     "id": "self-dogfood-business-tracing",

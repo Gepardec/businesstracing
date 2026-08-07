@@ -75,6 +75,17 @@ grep -q '"schema":"fachtracing-activation/v3"' "$REACTOR_FIXTURE/target/fachtrac
 grep -q '"classFingerprints"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
 grep -q '"decisions"' "$REACTOR_FIXTURE/target/fachtracing/activation.json"
 grep -q 'regional decision rule' "$REACTOR_FIXTURE/target/fachtracing/reactor-approval-structure.mmd"
+PROCESSOR_FIXTURE="fachtracing-maven-plugin/src/test/resources/it/annotation-processor"
+mvn -q -f "$PROCESSOR_FIXTURE/pom.xml" clean process-classes
+test -f "$PROCESSOR_FIXTURE/application/target/fachtracing/generated-approval-structure.mmd"
+grep -q 'request age is at least 18' \
+  "$PROCESSOR_FIXTURE/application/target/fachtracing/generated-approval-structure.mmd"
+mvn -q -f "$PROCESSOR_FIXTURE/pom.xml" clean compile \
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
+test -f "$PROCESSOR_FIXTURE/application/target/generated-sources/annotations/example/generated/GeneratedApprovalPolicy.java"
+test -f "$PROCESSOR_FIXTURE/target/fachtracing/generated-approval-structure.mmd"
+grep -q 'request age is at least 18' \
+  "$PROCESSOR_FIXTURE/target/fachtracing/generated-approval-structure.mmd"
 ./scripts/verify-external-release.sh
 if [ -n "${FACHTRACING_POSTGRES_URL:-}" ]; then
   ./scripts/verify-postgres.sh

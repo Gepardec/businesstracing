@@ -39,6 +39,7 @@ public final class AnalyzeMojoTest {
         preventsAggregateOutputCollisions();
         extractsBoundedSourceArtifactsSafely();
         readsEffectiveCompilerPluginConfiguration();
+        acceptsCompiledAnnotationProcessorOutputSettings();
         rejectsUnsupportedCompilerPluginConfiguration();
         mapsExternalModuleOwnershipConfiguration();
         skipsSourceEmptyModuleWithReactorSources();
@@ -81,7 +82,8 @@ public final class AnalyzeMojoTest {
 
     private static void readsEffectiveCompilerPluginConfiguration() throws Exception {
         MavenProject project = compilerProject();
-        Path generated = project.getBasedir().toPath().resolve("target/generated/rules");
+        Path generated = Files.createDirectories(
+                project.getBasedir().toPath().resolve("generated/rules"));
         Xpp3Dom shared = configuration();
         add(shared, "encoding", "UTF-8");
         add(shared, "release", "${java.release}");
@@ -110,21 +112,52 @@ public final class AnalyzeMojoTest {
         assert effective.compilerModel().modulePath().equals(List.of(dependency.toAbsolutePath().normalize()))
                 : effective;
         assert effective.compileSourceRoots().contains(generated.toString()) : effective;
+        assert MavenCompilerModelResolver.generatedSourceRoots(project).equals(List.of(generated))
+                : MavenCompilerModelResolver.generatedSourceRoots(project);
     }
 
     private static void rejectsUnsupportedCompilerPluginConfiguration() throws Exception {
         MavenProject project = compilerProject();
         Xpp3Dom configuration = configuration();
-        Xpp3Dom processors = add(configuration, "annotationProcessorPaths", null);
-        add(processors, "path", "example");
+        add(configuration, "fork", "true");
         project.getBuild().addPlugin(compilerPlugin(configuration));
         try {
             MavenCompilerModelResolver.resolve(project, List.of(), false);
-            throw new AssertionError("annotation processor configuration was accepted");
+            throw new AssertionError("forked compiler configuration was accepted");
         } catch (IllegalArgumentException expected) {
-            assert expected.getMessage().contains("annotation processor settings") : expected;
+            assert expected.getMessage().contains("forked compiler executables") : expected;
             assert expected.getMessage().contains("example:compiler-fixture") : expected;
         }
+    }
+
+    private static void acceptsCompiledAnnotationProcessorOutputSettings() throws Exception {
+        MavenProject project = compilerProject();
+        Xpp3Dom configuration = configuration();
+        add(configuration, "proc", "full");
+        Xpp3Dom processorPaths = add(configuration, "annotationProcessorPaths", null);
+        add(processorPaths, "path", "example-processor-path");
+        Xpp3Dom processors = add(configuration, "annotationProcessors", null);
+        add(processors, "annotationProcessor", "example.DecisionProcessor");
+        Xpp3Dom arguments = add(configuration, "compilerArgs", null);
+        add(arguments, "arg", "-Aexample.option=value");
+        add(arguments, "arg", "-processor");
+        add(arguments, "arg", "example.DecisionProcessor");
+        add(arguments, "arg", "--processor-path=target/processors");
+        add(arguments, "arg", "--processor-module-path");
+        add(arguments, "arg", "target/processor-modules");
+        add(arguments, "arg", "--default-module-for-created-files");
+        add(arguments, "arg", "example.generated");
+        add(arguments, "arg", "--default-module-for-created-files=example.generated");
+        add(arguments, "arg", "-proc:only");
+        add(arguments, "arg", "-XprintRounds");
+        add(arguments, "arg", "-proc");
+        add(arguments, "arg", "-Xlint:none");
+        add(arguments, "arg", "-Xlint:none");
+        project.getBuild().addPlugin(compilerPlugin(configuration));
+
+        var effective = MavenCompilerModelResolver.resolve(project, List.of(), false);
+
+        assert effective.compilerModel().compilerArguments().equals(List.of("-Xlint:none")) : effective;
     }
 
     private static MavenProject compilerProject() throws Exception {
