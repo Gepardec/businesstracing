@@ -337,10 +337,14 @@ full local pull-request gate passed with both external corpora.
 
 ### integrate-main-pr15 (refactor) — 2026-08-07
 
-Completed both tasks. PR #15 now contains current `main` through `34f6285`. Semantic conflict
+Completed both tasks. PR #15 now contains current `main` through `3db368d`. Semantic conflict
 resolution retained the independent analyzer, test, documentation, conformance, and SpecOps changes
 from both branches. The two confirmed pre-existing coverage limits remain unchanged and outside this
 integration.
 
 The complete local pull-request gate passed after each base update. Hosted `pr-gate` and `postgres`
 checks pass, and GitHub reports PR #15 as mergeable.
+
+### developer-graph-json-schema (feature) — 2026-08-07
+
+Completed both tasks. Fachtracing now generates closed JSON Schema Draft 2020-12 documents for developer graph V1 and V2 through a public Java API. Maven writes and links one matching schema beside the developer JSON, removes stale schema output safely, and documents the exact frontend handoff. The focused consumer contract and full repository verifier passed.

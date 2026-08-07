@@ -183,11 +183,30 @@ Developer JSON is opt-in because source browsers need repository-specific URLs. 
 </configuration>
 ```
 
-The plugin then adds `<decision>-developer.json` and links it from `index.md`. The file uses UTF-8.
+The plugin then adds `<decision>-developer.json` and links it from `index.md`. It also writes and links
+one matching formal schema:
+
+- `fachtracing-developer-graph-v1.schema.json` for a single Git origin
+- `fachtracing-developer-graph-v2.schema.json` for Git, local, generated, or Maven origins
+
+Give the frontend developer the `*-developer.json` file and the matching schema file. Both files use
+UTF-8. The schema uses JSON Schema Draft 2020-12. All `$ref` values are local, so frontend tools can
+validate the graph or generate types without a Fachtracing schema server.
+
 A single Git origin keeps the compatible `fachtracing-developer-graph/v1` format. A graph with local,
 generated, or Maven sources uses `fachtracing-developer-graph/v2`. V2 lists `sourceOrigins` and gives
 each source an `originId`. Only Git sources get a commit-pinned `url`. External and generated sources
 never get a false Git URL. A graph tool can render `graph.nodes` and `graph.edges` in both versions.
+
+Library integrations can generate the same schema without the Maven plugin:
+
+```java
+import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
+
+String schema = new DeveloperGraphJsonSchema().generate(
+        DeveloperGraphExporter.SCHEMA_V2);
+```
 
 For one-off use, pass the same settings as properties:
 

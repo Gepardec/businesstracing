@@ -2,7 +2,7 @@
 
 ## Summary
 
-Merged `origin/main` through `34f6285` into PR #15 with two normal merge commits. Conflict
+Merged `origin/main` through `3db368d` into PR #15 with three normal merge commits. Conflict
 resolution retained the analyzer, test, documentation, conformance, and SpecOps changes from both
 branches. The complete local pull-request gate and required hosted checks pass, and PR #15 is
 mergeable.
@@ -35,19 +35,21 @@ mergeable.
 
 | Planned | Actual | Reason | Task |
 | --- | --- | --- | --- |
-| One merge from current `main` | A second merge was required after PR #16 advanced `main` | The base branch changed after the first verified merge was pushed. | 2 |
+| One merge from current `main` | Two additional merges were required after PR #16 and PR #17 advanced `main` | The base branch changed twice after a verified merge was pushed. | 2 |
 
 ## Blockers Encountered
 
 | Blocker | Resolution | Impact | Task |
 | --- | --- | --- | --- |
-| GitHub still reported PR #15 as conflicting after the first merge. | Fetched the new `main` head, merged its Spring PetClinic conformance suite, and reran the expanded gate. | One additional merge commit and conformance run. | 2 |
+| GitHub still reported PR #15 as conflicting after verified merges. | Fetched each new `main` head, merged Spring PetClinic conformance and developer graph JSON Schema, and reran the expanded gate. | Two additional merge commits and gate runs. | 2 |
 
 ## Documentation Review
 
 - `docs/java-capabilities.json` retains all capability entries from both branches.
 - `docs/supported-java-constructs.md` retains the context-label and callback-effect support text.
 - The Spring PetClinic conformance report from the updated base remains present.
+- The developer graph JSON Schema API and Maven handoff documentation from the updated base remain
+  present.
 
 ## Session Log
 
@@ -61,3 +63,5 @@ mergeable.
   passes.
 - 2026-08-07T13:13:12Z: Hosted `pr-gate` and `postgres` checks pass. PR #15 is mergeable. Task 2
   and this integration spec are complete.
+- 2026-08-07T13:22:21Z: `main` advanced through PR #17. The third merge retains the developer graph
+  JSON Schema feature and all prior integration changes. The expanded full local gate passes.
