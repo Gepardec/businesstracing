@@ -34,6 +34,12 @@ phases: [1, 2, 3]
   zero errors, mismatches, drops, or contamination and 0.228% p95 overhead. PostgreSQL was skipped
   because no connection was configured.
 
+### [06:57:00] Task 3: Correct release integrity metadata
+
+- Action: Start the clean release gate and update the approved oracle hash guard after it rejected
+  the intentionally reviewed topology change.
+- Result: The gate stopped before build or load work. The guard now matches the reviewed oracle.
+
 ### [06:40:00] Task 1: Record false-before-fix evidence
 
 - Action: Run the analyzer contracts with each regression first.

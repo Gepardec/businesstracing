@@ -39,3 +39,6 @@
   passed. PostgreSQL was skipped because no connection was configured.
 - 2026-08-07: Mega passed with five complete graphs from 420 source files. The reviewed journey
   graph now follows result-changing helper mutations and has 96 nodes and 130 edges.
+- 2026-08-07: The first clean release attempt stopped at repository integrity because the reviewed
+  journey oracle hash guard still named the prior approved topology. The guard now names the new
+  reviewed hash; no runtime or analyzer behavior changed.
