@@ -36,6 +36,8 @@
 - 2026-08-07 07:40 UTC: The first hosted run passed. The cold PR job took 3 minutes 12 seconds,
   including runner and cache setup; its verification step took 2 minutes 51 seconds. PostgreSQL
   passed in 55 seconds, and the full release job was correctly skipped.
+- 2026-08-07 07:44 UTC: The second hosted run used the saved caches and passed in 2 minutes 5
+  seconds. PostgreSQL passed in 41 seconds, and the full release job was correctly skipped.
 
 ## Phase 3 Completion Summary
 
@@ -47,8 +49,9 @@ scripts, and has no design deviation. Local and hosted verification passed.
 
 All three tasks are complete. Pull requests now run the standard, external activation, short load,
 five-graph Mega, and PostgreSQL checks without the 600-second release measurement. The full isolated
-gate still runs for `main`, version tags, nightly schedules, and manual runs. The cold hosted PR gate
-passed in 3 minutes 12 seconds, compared with the prior approximately 15-minute path.
+gate still runs for `main`, version tags, nightly schedules, and manual runs. The warm hosted PR gate
+passed in 2 minutes 5 seconds; the first cold run took 3 minutes 12 seconds. The prior path took
+approximately 15 minutes.
 
 ## Documentation Review
 

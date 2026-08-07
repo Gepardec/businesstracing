@@ -213,5 +213,6 @@ overhead and zero errors, mismatches, drops, or contamination.
 
 Completed all three tasks. Pull requests now use cached Maven dependencies and an immutable pinned
 Mega checkout for standard, external activation, short-load, five-graph Mega, and PostgreSQL checks.
-The cold hosted PR job passed in 3 minutes 12 seconds. The unchanged clean 600-second release gate
-runs on `main`, version tags, nightly schedules, and manual dispatches.
+The warm hosted PR job passed in 2 minutes 5 seconds; the first cold run took 3 minutes 12 seconds.
+The unchanged clean 600-second release gate runs on `main`, version tags, nightly schedules, and
+manual dispatches.

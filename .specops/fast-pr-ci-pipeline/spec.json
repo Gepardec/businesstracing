@@ -46,7 +46,7 @@
     }
   },
   "metrics": {
-    "specArtifactTokensEstimate": 2451,
+    "specArtifactTokensEstimate": 2506,
     "filesChanged": 16,
     "linesAdded": 404,
     "linesRemoved": 5,
