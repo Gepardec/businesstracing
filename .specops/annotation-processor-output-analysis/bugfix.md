@@ -107,6 +107,10 @@ inputs. Do not claim source support for AST-only transformations that produce no
   that Java in aggregate graph extraction without executing the processor again.
 - WHEN processor-only compiler arguments are present THE SYSTEM SHALL omit them from the analysis
   compiler model.
+- WHEN `--default-module-for-created-files` is present THE SYSTEM SHALL omit the option and its
+  module-name value from the analysis compiler model.
+- WHEN the compiler uses a generated source directory outside the Maven build directory THE SYSTEM
+  SHALL preserve generated provenance for developer graph V2.
 
 ### Unchanged Behavior
 
@@ -126,6 +130,8 @@ inputs. Do not claim source support for AST-only transformations that produce no
 - [x] Existing effective compiler-model and unsupported-setting contracts pass.
 - [x] Documentation states the supported source-generating and unsupported AST-only boundaries.
 - [x] Standard repository verification passes.
+- [x] The complete set of supported `javac` processor-only arguments is removed.
+- [x] Configured generated source roots keep generated provenance outside the build directory.
 
 ## Team Conventions
 

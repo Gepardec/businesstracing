@@ -82,7 +82,8 @@ public final class AnalyzeMojoTest {
 
     private static void readsEffectiveCompilerPluginConfiguration() throws Exception {
         MavenProject project = compilerProject();
-        Path generated = project.getBasedir().toPath().resolve("target/generated/rules");
+        Path generated = Files.createDirectories(
+                project.getBasedir().toPath().resolve("generated/rules"));
         Xpp3Dom shared = configuration();
         add(shared, "encoding", "UTF-8");
         add(shared, "release", "${java.release}");
@@ -111,6 +112,8 @@ public final class AnalyzeMojoTest {
         assert effective.compilerModel().modulePath().equals(List.of(dependency.toAbsolutePath().normalize()))
                 : effective;
         assert effective.compileSourceRoots().contains(generated.toString()) : effective;
+        assert MavenCompilerModelResolver.generatedSourceRoots(project).equals(List.of(generated))
+                : MavenCompilerModelResolver.generatedSourceRoots(project);
     }
 
     private static void rejectsUnsupportedCompilerPluginConfiguration() throws Exception {
@@ -142,6 +145,9 @@ public final class AnalyzeMojoTest {
         add(arguments, "arg", "--processor-path=target/processors");
         add(arguments, "arg", "--processor-module-path");
         add(arguments, "arg", "target/processor-modules");
+        add(arguments, "arg", "--default-module-for-created-files");
+        add(arguments, "arg", "example.generated");
+        add(arguments, "arg", "--default-module-for-created-files=example.generated");
         add(arguments, "arg", "-proc:only");
         add(arguments, "arg", "-XprintRounds");
         add(arguments, "arg", "-proc");

@@ -133,16 +133,58 @@ Document post-compile generated-source analysis and verify the complete reposito
 
 - [x] Run `./scripts/verify.sh`.
 
+---
+
+### Task 4: Correct review gaps in processor sanitization and provenance
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** Task 3
+**Priority:** Medium
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Remove the remaining official processor-only module option and classify configured generated source
+roots independently of their location.
+
+**Implementation Steps:**
+
+1. Extend processor argument sanitization for `--default-module-for-created-files`.
+2. Centralize generated source root discovery and use it for developer provenance.
+3. Add focused resolver and provenance contracts, then run repository verification.
+
+**Acceptance Criteria:**
+
+- [x] Both forms of `--default-module-for-created-files` are absent from the analysis model.
+- [x] A configured generated source root outside the build directory is classified as generated.
+- [x] Both Maven goals use the same generated source root discovery.
+- [x] Standard repository verification passes.
+
+**Files to Modify:**
+
+- `fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/MavenCompilerModelResolver.java`
+- `fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
+- `fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeReactorMojo.java`
+- `fachtracing-maven-plugin/src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
+- `.specops/annotation-processor-output-analysis/*`
+
+**Tests Required:**
+
+- [x] Run the focused Maven plugin executable contract.
+- [x] Run `./scripts/verify.sh`.
+
 ## Implementation Order
 
 1. Task 1 freezes the defect.
 2. Task 2 implements and tests the fix.
 3. Task 3 documents and verifies the general boundary.
+4. Task 4 closes the two review gaps before release.
 
 ## Progress Tracking
 
-- Total Tasks: 3
-- Completed: 3
+- Total Tasks: 4
+- Completed: 4
 - In Progress: 0
 - Blocked: 0
 - Pending: 0

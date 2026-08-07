@@ -620,6 +620,16 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T08:55:30Z"
+    },
+    {
+      "specId": "annotation-processor-output-analysis",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Use compiler-model generated roots for developer provenance",
+      "rationale": "The configured generated directory is authoritative even when it is outside the Maven build directory.",
+      "task": "Task 4",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T09:20:07Z"
     }
   ]
 }

@@ -165,8 +165,8 @@
     "id": "annotation-processor-output-analysis",
     "type": "bugfix",
     "status": "completed",
-    "version": 1,
+    "version": 2,
     "author": "lucostus",
-    "updated": "2026-08-07T08:56:32Z"
+    "updated": "2026-08-07T09:20:07Z"
   }
 ]

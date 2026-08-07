@@ -2,10 +2,12 @@
 
 ## Summary
 
-Completed three tasks. The Maven adapter now accepts projects that use annotation processors,
-removes processor execution controls from the analysis model, and keeps `-proc:none` in the private
-compiler task. A real two-module processor fixture proves generated Java extraction through both
-Maven goals. All standard verification gates pass. No design deviation or new dependency occurred.
+Completed four tasks across two versions. The Maven adapter accepts projects that use annotation
+processors, removes all Java 21 processor-only compiler controls from the analysis model, and keeps
+`-proc:none` in the private compiler task. Both Maven goals now use one generated-source discovery
+rule for developer provenance, including configured roots outside the Maven build directory. A real
+two-module processor fixture proves generated Java extraction through both Maven goals. Focused and
+standard verification pass. No new dependency or design deviation occurred.
 
 ## Phase 1 Context Summary
 
@@ -36,6 +38,8 @@ Maven goals. All standard verification gates pass. No design deviation or new de
   Fachtracing consumes generated source without executing processors.
 - `docs/supported-java-constructs.md`: Updated. It states the source-generating support boundary and
   the AST-only attribution limit.
+- Version 2 review: Both Maven documents remain accurate after location-independent generated-root
+  provenance and complete Java 21 processor-option sanitization.
 - `README.md`: Checked. It does not describe effective compiler-model details and needs no change.
 - `AGENTS.md`: Checked. No project instruction changed.
 
@@ -73,3 +77,12 @@ Maven goals. All standard verification gates pass. No design deviation or new de
 - 2026-08-07T08:55:30Z: Updated project memory and refreshed the repository map. Documentation
   review is complete.
 - 2026-08-07T08:56:32Z: Captured completion metrics and marked the spec completed.
+- 2026-08-07T09:14:50Z: Reopened version 2 for review remediation. Task 4 anchor: remove the official
+  default-module processor option in both forms and preserve generated provenance for configured
+  roots outside the Maven build directory. No new dependency or architecture change is required.
+- 2026-08-07T09:19:35Z: Task 4 completed. The focused Maven plugin contract and `./scripts/verify.sh`
+  pass. The verifier covered both Maven goals, processor-generated Java, developer export contracts,
+  external release activation, and 5,000 decisions at 1,000 RPS with 0.309% p95 overhead. PostgreSQL
+  was skipped because no connection is configured.
+- 2026-08-07T09:20:07Z: Version 2 implementation evaluation passed. Documentation, memory, metrics,
+  repository map, and the run log were refreshed.

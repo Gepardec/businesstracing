@@ -2,9 +2,9 @@
   "id": "annotation-processor-output-analysis",
   "type": "bugfix",
   "status": "completed",
-  "version": 1,
+  "version": 2,
   "created": "2026-08-07T08:39:42Z",
-  "updated": "2026-08-07T08:56:32Z",
+  "updated": "2026-08-07T09:20:07Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": { "name": "lucostus" },
@@ -37,24 +37,24 @@
       "evaluatedAt": "2026-08-07T08:43:56Z"
     },
     "implementation": {
-      "iterations": 1,
+      "iterations": 2,
       "passed": true,
       "scores": {
         "rootCauseAccuracy": 10,
         "fixCompleteness": 9,
-        "regressionSafety": 9,
+        "regressionSafety": 8,
         "testVerification": 10
       },
-      "evaluatedAt": "2026-08-07T08:54:34Z"
+      "evaluatedAt": "2026-08-07T09:20:07Z"
     }
   },
   "metrics": {
-    "specArtifactTokensEstimate": 5014,
-    "filesChanged": 25,
-    "linesAdded": 1050,
-    "linesRemoved": 35,
-    "tasksCompleted": 3,
-    "acceptanceCriteriaVerified": 21,
-    "specDurationMinutes": 17
+    "specArtifactTokensEstimate": 5911,
+    "filesChanged": 27,
+    "linesAdded": 1203,
+    "linesRemoved": 47,
+    "tasksCompleted": 4,
+    "acceptanceCriteriaVerified": 29,
+    "specDurationMinutes": 40
   }
 }

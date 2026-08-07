@@ -54,8 +54,11 @@ does not claim support for AST-only transformations such as Lombok-generated mem
 
 - Stop rejecting `proc`, `annotationProcessorPaths`, and `annotationProcessors` configuration.
 - Sanitize processor-only entries from `compilerArgs`.
+- Include `--default-module-for-created-files` and its value in processor-only sanitization.
 - Keep validation for forked compilers, legacy argument maps, language level, classpath, output,
   encoding, and other analysis-owned settings.
+- Expose the configured and registered generated source roots to Maven developer-provenance
+  collection, including roots outside `project.build.directory`.
 
 ### Maven integration fixture
 
@@ -101,4 +104,3 @@ root, and then runs aggregate Fachtracing analysis in the same reactor session.
 - Add explicit diagnostics that distinguish a missing compile step from another attribution error.
 - Add separate conformance coverage for AST-only transformation tools if a safe source model becomes
   available.
-

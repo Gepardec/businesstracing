@@ -42,3 +42,26 @@
 - Failures: None. PostgreSQL was skipped because no connection was configured.
 
 **Verdict:** PASS — 4 of 4 dimensions passed.
+
+### Iteration 2
+
+**Evaluated at:** 2026-08-07T09:20:07Z
+**Spec type:** bugfix
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Root Cause Accuracy | `MavenCompilerModelResolver` removes both forms of `--default-module-for-created-files` and discovers configured generated roots independently of the build directory. | The processor option list remains tied to the supported Java baseline and must be reviewed when that baseline changes. | 10 | 7 | Pass |
+| Fix Completeness | The executable contract covers the separate-value and equals forms. It also proves that a configured generated root outside `target` is discovered. Both Maven goals use the shared method and assign `GENERATED` provenance. | The contract tests shared root discovery directly; full developer JSON behavior remains covered by the existing developer export contracts. | 9 | 7 | Pass |
+| Regression Safety | Existing build-directory roots keep the prior prefix rule. Safe compiler options and unrelated rejection paths stay unchanged. The full verifier passes. | PostgreSQL was skipped because no connection is configured; this remediation does not touch storage. | 8 | 7 | Pass |
+| Test Verification | The focused Maven plugin executable contract passes. `./scripts/verify.sh` passes processor, per-module, aggregate, developer export, external release, and load gates. | The existing no-op SLF4J warning remains and does not affect the result. | 10 | 7 | Pass |
+
+**Test Exercise Results:**
+
+- Tests run: yes
+- Test commands: focused `AnalyzeMojoTest` and `./scripts/verify.sh`
+- Pass count: All scripted gates passed
+- Fail count: 0
+- Failures: None. PostgreSQL was skipped because no connection was configured.
+
+**Verdict:** PASS — 4 of 4 dimensions passed.

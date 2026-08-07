@@ -230,10 +230,8 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
                     artifact.root(), artifact.coordinate(), artifact.checksum()));
         }
         for (MavenProject candidate : projects) {
-            Path build = Path.of(candidate.getBuild().getDirectory()).toAbsolutePath().normalize();
-            for (String root : candidate.getCompileSourceRoots()) {
-                Path path = Path.of(root).toAbsolutePath().normalize();
-                if (path.startsWith(build) && Files.isDirectory(path)) {
+            for (Path path : MavenCompilerModelResolver.generatedSourceRoots(candidate)) {
+                if (Files.isDirectory(path)) {
                     result.putIfAbsent(path, DeveloperGraphExporter.SourceOrigin.external(
                             "aggregate-generated-" + (++index), DeveloperGraphExporter.OriginKind.GENERATED,
                             path, coordinate(candidate), ""));

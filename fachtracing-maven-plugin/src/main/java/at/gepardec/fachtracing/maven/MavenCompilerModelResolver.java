@@ -53,9 +53,7 @@ final class MavenCompilerModelResolver {
 
         List<Path> modulePath = modular ? modulePath(project, compileClasspath) : List.of();
         List<String> sourceRoots = new ArrayList<>(project.getCompileSourceRoots());
-        String generated = interpolate(project, value(configuration, "generatedSourcesDirectory"));
-        if (generated != null && !generated.isBlank()) {
-            Path path = resolvePath(project, generated);
+        for (Path path : generatedSourceRoots(project, configuration)) {
             if (sourceRoots.stream().map(Path::of).map(MavenCompilerModelResolver::normalize)
                     .noneMatch(path::equals)) {
                 sourceRoots.add(path.toString());
@@ -116,7 +114,8 @@ final class MavenCompilerModelResolver {
 
     private static boolean processorArgumentWithSeparateValue(String argument) {
         return List.of("-processor", "--processor", "-processorpath",
-                "--processor-path", "--processor-module-path").contains(argument);
+                "--processor-path", "--processor-module-path",
+                "--default-module-for-created-files").contains(argument);
     }
 
     private static boolean processorArgument(String argument) {
@@ -126,8 +125,30 @@ final class MavenCompilerModelResolver {
             return true;
         }
         return List.of("-proc", "--proc", "-processor", "--processor", "-processorpath",
-                        "--processor-path", "--processor-module-path").stream()
+                        "--processor-path", "--processor-module-path",
+                        "--default-module-for-created-files").stream()
                 .anyMatch(option -> argument.startsWith(option + "="));
+    }
+
+    static List<Path> generatedSourceRoots(MavenProject project) {
+        Objects.requireNonNull(project, "project");
+        return generatedSourceRoots(project, compilerConfiguration(project));
+    }
+
+    private static List<Path> generatedSourceRoots(
+            MavenProject project,
+            Xpp3Dom configuration) {
+        var roots = new LinkedHashSet<Path>();
+        if (project.getBuild() != null && hasText(project.getBuild().getDirectory())) {
+            Path build = normalize(Path.of(project.getBuild().getDirectory()));
+            project.getCompileSourceRoots().stream().map(Path::of)
+                    .map(MavenCompilerModelResolver::normalize)
+                    .filter(path -> path.startsWith(build))
+                    .forEach(roots::add);
+        }
+        String generated = interpolate(project, value(configuration, "generatedSourcesDirectory"));
+        if (hasText(generated)) roots.add(resolvePath(project, generated));
+        return List.copyOf(roots);
     }
 
     private static String languageRelease(MavenProject project, Xpp3Dom configuration) {
