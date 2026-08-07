@@ -40,6 +40,23 @@ public final class ResultSlicePolicy {
         return age >= 24;
     }
 
+    @FachTracing("irrelevant branch work")
+    public boolean irrelevantBranchWork(int age) {
+        if (age < 18) {
+            recordAudit(age);
+            return false;
+        }
+        return meetsMinimumAge(age);
+    }
+
+    private void recordAudit(int age) {
+        int ignoredAge = age + 1;
+    }
+
+    private boolean meetsMinimumAge(int age) {
+        return age >= 24;
+    }
+
     @FachTracing("unknown customer effect")
     public boolean unknownEffect(UnknownMutator mutator, Customer customer) {
         mutator.update(customer);

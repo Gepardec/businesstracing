@@ -258,3 +258,12 @@ Plexus Utils moved to the advisory-free compatible release 3.6.1, and Maven JAR 
 ### omit-next-diagram-labels (feature) — 2026-08-07
 
 Completed one task. Mermaid and PlantUML now omit the exact `next` arrow label while preserving meaningful outcomes such as `next item`. The graph contract, opaque edge IDs, serialized outcomes, and execution-path logic remain unchanged. Focused renderer contracts, self-tracing, and repository integrity passed.
+
+### explainable-relevance-and-polymorphic-dispatch (feature) — 2026-08-07
+
+Completed four tasks. The analyzer now uses expression-bounded relevance, so a relevant control
+statement does not make unrelated work in its body relevant. The developer-only manifest explains
+source-derived inclusions, exclusions, coverage gaps, and Java polymorphic candidates. Static
+analysis keeps each proven concrete compatible implementation, and runtime evidence still selects
+the implementation that ran. The business graph schema and activation format did not change. Focused
+contracts and the full repository verifier passed.

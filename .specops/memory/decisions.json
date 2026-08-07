@@ -670,6 +670,26 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T08:48:18Z"
+    },
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Bound descendant relevance to sliced expressions",
+      "rationale": "Calls nested in returned and predicate expressions remain relevant, while unrelated calls in a relevant branch body do not enter the graph.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:49:35Z"
+    },
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Keep all proven compatible dispatch candidates and let runtime evidence select one",
+      "rationale": "Java polymorphism can make the concrete target unknown during static analysis. The analyzer must not guess a target.",
+      "task": "Task 3",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:49:35Z"
     }
   ]
 }

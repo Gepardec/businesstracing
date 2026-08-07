@@ -755,6 +755,11 @@ public final class StaticDecisionAnalyzer {
             var dependencies = new DependencyGraphBuilder().build(
                     location.method(), call -> callEffects(location, call));
             Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies, effectRoots);
+            AnalysisDecisionAuditor.excludedConstructs(location.method(), dependencies, slice).forEach(tree ->
+                    builder.addAnalysisDecision(
+                            AnalysisManifest.AnalysisAction.EXCLUDED,
+                            AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT,
+                            mapping(location, tree), List.of(), ""));
             Set<Tree> unknownResultEffects = unknownResultEffects(location, dependencies, slice);
             var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
                     unknownResultEffects, predecessor);
@@ -1416,14 +1421,29 @@ public final class StaticDecisionAnalyzer {
                 int candidate = 0;
                 for (TypeElement implementation : index.types()) {
                     if (!implementation.getKind().isClass()
-                            || implementation.getModifiers().contains(Modifier.ABSTRACT)
-                            || !isCompatibleDispatchTarget(implementation, owner, receiverType)) continue;
+                            || !isContractSubtype(implementation, owner)) continue;
+                    if (implementation.getModifiers().contains(Modifier.ABSTRACT)) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.ABSTRACT_IMPLEMENTATION, List.of());
+                        continue;
+                    }
+                    if (!isCompatibleDispatchTarget(implementation, owner, receiverType)) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION, List.of());
+                        continue;
+                    }
                     String alternative = builder.addNode(
                             BusinessDecisionGraph.NodeKind.COMPUTATION,
                             businessRuleLabel(implementation),
                             Map.of(), null, null, "", "");
                     candidate++;
                     String candidateEdge = builder.addEdge(dispatch, alternative, "selected rule");
+                    auditDispatchCandidate(node, implementation,
+                            AnalysisManifest.AnalysisAction.INCLUDED,
+                            AnalysisManifest.AnalysisReason.DISPATCH_CANDIDATE,
+                            List.of(dispatch, alternative));
                     MethodLocation implementationMethod = implementationOf(contract, implementation);
                     if (implementationMethod == null) {
                         resultTails.add(new Tail(alternative, "result"));
@@ -1437,6 +1457,16 @@ public final class StaticDecisionAnalyzer {
                 }
                 if (candidate == 0) addCoverageGap(node, "decision-rule implementations are unavailable");
                 else frontier = List.copyOf(resultTails);
+            }
+
+            private void auditDispatchCandidate(
+                    MethodInvocationTree invocation,
+                    TypeElement implementation,
+                    AnalysisManifest.AnalysisAction action,
+                    AnalysisManifest.AnalysisReason reason,
+                    List<String> nodeIds) {
+                builder.addAnalysisDecision(action, reason, mapping(location, invocation), nodeIds,
+                        implementation.getQualifiedName().toString());
             }
 
             private ExecutableElement reflectedContract(
@@ -2187,6 +2217,11 @@ public final class StaticDecisionAnalyzer {
                 return types.isSubtype(types.erasure(implementation.asType()), types.erasure(contractOwner.asType()));
             }
 
+            private boolean isContractSubtype(TypeElement implementation, TypeElement contractOwner) {
+                return types.isSubtype(
+                        types.erasure(implementation.asType()), types.erasure(contractOwner.asType()));
+            }
+
             private boolean hasDecisionBearingOverrides(ExecutableElement contract, TypeElement owner) {
                 if (owner.getKind() != ElementKind.INTERFACE) return false;
                 return index.types().stream()
@@ -2337,20 +2372,7 @@ public final class StaticDecisionAnalyzer {
                 Tree tree,
                 Set<Tree> slice,
                 DependencyGraphBuilder.MethodDependencies dependencies) {
-            if (slice.contains(tree)) return true;
-            for (Tree item : slice) {
-                Tree current = item;
-                while (current != null && current != dependencies.method()) {
-                    if (current == tree) return true;
-                    current = dependencies.parents().get(current);
-                }
-            }
-            Tree current = tree;
-            while (current != null && current != dependencies.method()) {
-                if (slice.contains(current)) return true;
-                current = dependencies.parents().get(current);
-            }
-            return false;
+            return DecisionRelevance.isRelevant(tree, slice, dependencies);
         }
 
         private static boolean isPredicateExpression(Tree expression) {

@@ -23,7 +23,16 @@ checks that every entry names an executable contract and appears in this documen
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
-“technical”; work disappears only when it cannot affect the decision result.
+“technical”; work disappears only when it cannot affect the decision result. A construct is
+relevant when it is in the result slice, contains a sliced construct, or is inside a sliced
+expression. Unrelated work in the body of a relevant branch does not become relevant only because
+the branch controls a return.
+
+`AnalysisManifest.analysisDecisions()` explains this selection for developer tools. An included
+source construct has the opaque graph node ID and an inclusion reason. An excluded graph-eligible
+construct has its source location, no node ID, and reason `NO_RESULT_EFFECT`. An unresolved construct
+has a gap node ID and reason `UNRESOLVED_RELEVANCE`. This audit data does not enter the business graph
+or runtime activation JSON.
 
 | Construct | Walking-skeleton behavior |
 | --- | --- |
@@ -40,7 +49,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument; a later non-identity assignment removes the alias relation |
 | Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
 | Direct method call | Follows a source-available callee and includes its relevant slice |
-| Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |
+| Generic interface or abstract dispatch | Uses compiler subtype and receiver compatibility to include all proven source-visible concrete candidates, including implementations in sibling modules of the active Maven reactor. The manifest records included candidates and excluded abstract or receiver-incompatible subtypes. Runtime evidence selects the expected call site's opaque edge |
 | Proxy or `ServiceLoader` dispatch | Uses the instrumented implementation entry to select one proven source candidate; proxy mechanics and provider classes stay outside business output |
 | Constant reflection target | Resolves one unambiguous class literal, method-name literal, and arity to source candidates; dynamic or ambiguous targets stay incomplete |
 | Boolean, number, category, string result | Encoded as a typed `DecisionValue` |

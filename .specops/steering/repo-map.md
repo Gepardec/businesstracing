@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T09:53:33Z"
-_sourceHash: "8ec191d14aa6b6081e8c2f8105fa2584e56d1e62dd672f1767ffc9bea8840a3f"
+_generatedAt: "2026-08-07T11:52:03Z"
+_sourceHash: "a3a24ca9ac55f0debd2e09daa129148c7bcf81fe967af21dbb588537abe8fb57"
 ---
 
 ## Project Structure Map
@@ -54,12 +54,14 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (65 files)
+#### fachtracing-engine/ (67 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisManifest.java`
   - `public record AnalysisManifest`
+- `src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java`
+  - excluded graph-eligible source construct audit
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java`
   - `public record AnalysisRequest`
 - `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
@@ -73,6 +75,8 @@ fachtracing/
   - rejects technical loop and ordinal candidate output
 - `src/main/java/at/gepardec/fachtracing/analysis/DecisionGraphBuilder.java`
   - `public final class DecisionGraphBuilder`
+- `src/main/java/at/gepardec/fachtracing/analysis/DecisionRelevance.java`
+  - expression-bounded result-slice relevance policy
 - `src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java`
   - `public final class DependencyGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java`

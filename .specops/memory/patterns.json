@@ -8,7 +8,7 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 8,
+      "count": 9,
       "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
@@ -28,8 +28,8 @@
     },
     {
       "category": "source-provenance",
-      "count": 4,
-      "pattern": "Keep source and module provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
+      "count": 5,
+      "pattern": "Keep source, module, and analysis-decision provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
     },
     {
       "category": "release-gate-integrity",
@@ -45,6 +45,11 @@
       "category": "build-artifact-boundary",
       "count": 1,
       "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
+    },
+    {
+      "category": "static-relevance-audit",
+      "count": 1,
+      "pattern": "Bound descendant relevance to sliced expressions and record included, excluded, and unresolved source decisions outside business output."
     }
   ],
   "fileOverlaps": [
@@ -85,9 +90,10 @@
         "reactor-wide-implementation-resolution",
         "generic-java-extractor-completion",
         "release-explanation-async-correctness",
-        "jdk-mutation-alias-effect-correctness"
+        "jdk-mutation-alias-effect-correctness",
+        "explainable-relevance-and-polymorphic-dispatch"
       ],
-      "count": 7
+      "count": 8
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -101,13 +107,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis"],
-      "count": 6
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "explainable-relevance-and-polymorphic-dispatch"],
+      "count": 7
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis"],
-      "count": 5
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "explainable-relevance-and-polymorphic-dispatch"],
+      "count": 6
     },
     {
       "file": "docs/maven-plugin.md",

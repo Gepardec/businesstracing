@@ -27,6 +27,7 @@ public final class StaticDecisionAnalyzerTest {
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
         excludesResultIndependentWork();
+        explainsIncludedExcludedAndGapDecisions();
         excludesIgnoredReadsAndReportsUnknownEffects();
         preservesDequeOfferMutation();
         preservesLocalAliasMutation();
@@ -35,6 +36,7 @@ public final class StaticDecisionAnalyzerTest {
         usesProvenValidationRolesWithoutGlobalReceiverRemoval();
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
+        explainsReceiverCompatibleDispatchCandidates();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
@@ -342,7 +344,7 @@ public final class StaticDecisionAnalyzerTest {
     }
 
     private static void representsDynamicDispatchWithoutGuessing() {
-        var result = analyze("strategy/StrategyDecisionService.java");
+        var result = analyzeLabel("strategy/StrategyDecisionService.java", "delivery eligibility");
         var dispatch = result.graph().nodes().stream()
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.DISPATCH)
                 .findFirst().orElseThrow();
@@ -359,6 +361,62 @@ public final class StaticDecisionAnalyzerTest {
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
                 .count();
         assert implementationPredicates == 2 : result.graph().nodes();
+        long includedCandidates = result.manifest().analysisDecisions().stream()
+                .filter(decision -> decision.action() == AnalysisManifest.AnalysisAction.INCLUDED)
+                .filter(decision -> decision.reason() == AnalysisManifest.AnalysisReason.DISPATCH_CANDIDATE)
+                .count();
+        assert includedCandidates == 2 : result.manifest().analysisDecisions();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.ABSTRACT_IMPLEMENTATION
+                        && decision.subject().endsWith("AbstractDecisionRule"))
+                : result.manifest().analysisDecisions();
+    }
+
+    private static void explainsReceiverCompatibleDispatchCandidates() {
+        var result = analyzeLabel("strategy/StrategyDecisionService.java", "scoped delivery eligibility");
+        long alternatives = result.graph().edges().stream()
+                .filter(edge -> edge.outcome().equals("selected rule")).count();
+        assert alternatives == 1 : result.graph().edges();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.INCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.DISPATCH_CANDIDATE
+                        && decision.subject().endsWith("LocalScopedRule"))
+                : result.manifest().analysisDecisions();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION
+                        && decision.subject().endsWith("RemoteScopedRule"))
+                : result.manifest().analysisDecisions();
+    }
+
+    private static void explainsIncludedExcludedAndGapDecisions() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "irrelevant branch work");
+        var decisions = result.manifest().analysisDecisions();
+        var auditedNodeIds = decisions.stream().flatMap(decision -> decision.nodeIds().stream())
+                .collect(java.util.stream.Collectors.toSet());
+        assert auditedNodeIds.containsAll(result.manifest().sourceMappings().keySet())
+                : result.manifest().sourceMappings().keySet() + " / " + decisions;
+        assert result.graph().nodes().stream().noneMatch(node ->
+                node.businessLabel().contains("record audit")) : result.graph().nodes();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.businessLabel().contains("minimum age")) : result.graph().nodes();
+        assert decisions.stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
+                        && decision.constructKind().equals("METHOD_INVOCATION")
+                        && decision.line() > 0
+                        && decision.nodeIds().isEmpty()) : decisions;
+
+        var incomplete = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
+        var gapNodeIds = incomplete.graph().coverageGaps().stream()
+                .map(BusinessDecisionGraph.CoverageGap::nodeId).collect(java.util.stream.Collectors.toSet());
+        var auditedGapNodeIds = incomplete.manifest().analysisDecisions().stream()
+                .filter(decision -> decision.action() == AnalysisManifest.AnalysisAction.GAP)
+                .filter(decision -> decision.reason() == AnalysisManifest.AnalysisReason.UNRESOLVED_RELEVANCE)
+                .flatMap(decision -> decision.nodeIds().stream()).collect(java.util.stream.Collectors.toSet());
+        assert auditedGapNodeIds.containsAll(gapNodeIds)
+                : gapNodeIds + " / " + incomplete.manifest().analysisDecisions();
     }
 
     private static void resolvesImplementationsFromSourcesOutsideTheGraphRootScope() {
