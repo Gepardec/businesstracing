@@ -2,7 +2,7 @@
 
 ## Summary
 
-Merged `origin/main` through `3db368d` into PR #15 with three normal merge commits. Conflict
+Merged `origin/main` through `2f9f5c5` into PR #15 with four normal merge commits. Conflict
 resolution retained the analyzer, test, documentation, conformance, and SpecOps changes from both
 branches. The complete local pull-request gate and required hosted checks pass, and PR #15 is
 mergeable.
@@ -35,13 +35,14 @@ mergeable.
 
 | Planned | Actual | Reason | Task |
 | --- | --- | --- | --- |
-| One merge from current `main` | Two additional merges were required after PR #16 and PR #17 advanced `main` | The base branch changed twice after a verified merge was pushed. | 2 |
+| One merge from current `main` | Three additional merges were required after PR #16, PR #17, and PR #14 advanced `main` | The base branch changed three times during integration. | 2 |
+| Leave the two excluded cases unchanged | A concurrent remote commit changed both cases, so its history was merged without its file changes | The latest user instruction limits this work to merge repair. | 2 |
 
 ## Blockers Encountered
 
 | Blocker | Resolution | Impact | Task |
 | --- | --- | --- | --- |
-| GitHub still reported PR #15 as conflicting after verified merges. | Fetched each new `main` head, merged Spring PetClinic conformance and developer graph JSON Schema, and reran the expanded gate. | Two additional merge commits and gate runs. | 2 |
+| GitHub still reported PR #15 as conflicting after verified merges. | Fetched each new `main` head, merged Spring PetClinic conformance, developer graph JSON Schema, and explicit opaque-library boundaries, and reran the expanded gate. | Three additional merge commits and gate runs. | 2 |
 
 ## Documentation Review
 
@@ -50,6 +51,8 @@ mergeable.
 - The Spring PetClinic conformance report from the updated base remains present.
 - The developer graph JSON Schema API and Maven handoff documentation from the updated base remain
   present.
+- Exact opaque-library boundary and Hogarama aggregate-completeness documentation from the updated
+  base remain present.
 
 ## Session Log
 
@@ -65,3 +68,5 @@ mergeable.
   and this integration spec are complete.
 - 2026-08-07T13:22:21Z: `main` advanced through PR #17. The third merge retains the developer graph
   JSON Schema feature and all prior integration changes. The expanded full local gate passes.
+- 2026-08-07T13:28:21Z: `main` advanced through PR #14. The fourth merge retains explicit opaque
+  library boundaries and Hogarama aggregate completeness. Both excluded probes remain unchanged.

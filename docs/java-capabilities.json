@@ -49,6 +49,7 @@
     {"id":"synchronized-business-logic","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsBusinessLogicInsideSynchronizedBlocks"},
     {"id":"source-unavailable-call","status":"explicit-gap","contract":"StaticDecisionAnalyzerTest.sourceUnavailableDecisionLogicIsNeverReportedComplete"},
     {"id":"jakarta-platform-operation","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsJakartaPlatformOperations"},
+    {"id":"explicit-opaque-library-boundary","status":"supported","contract":"StaticDecisionAnalyzerTest.supportsExplicitOpaqueLibraryBoundaries"},
     {"id":"controlled-bytecode-fallback","status":"supported","contract":"FachtracingTransformerTest.controlledBinaryFallbackRecordsExactRuntimePath"},
     {"id":"controlled-bytecode-fallback-boundary","status":"explicit-gap","contract":"StaticDecisionAnalyzerTest.usesControlledBytecodeFallbackAndRejectsUnsafeBinary"},
     {"id":"reflection-service-loader-proxy","status":"supported","contract":"FachtracingTransformerTest.proxiesServiceLoaderAndConstantReflectionSelectProvenCandidates"},

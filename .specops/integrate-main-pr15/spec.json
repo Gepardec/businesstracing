@@ -4,7 +4,7 @@
   "status": "completed",
   "version": 1,
   "created": "2026-08-07T12:56:18Z",
-  "updated": "2026-08-07T13:22:21Z",
+  "updated": "2026-08-07T13:28:21Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": { "name": "lucostus" },
@@ -33,7 +33,7 @@
         "aggregateIntegrity": 9,
         "testVerification": 10
       },
-      "evaluatedAt": "2026-08-07T13:22:21Z"
+      "evaluatedAt": "2026-08-07T13:28:21Z"
     }
   },
   "specDependencies": [
@@ -46,15 +46,17 @@
   "relatedSpecs": [
     "context-label-symbol-correctness",
     "spring-petclinic-conformance",
-    "developer-graph-json-schema"
+    "developer-graph-json-schema",
+    "fix-hogarama-aggregate-completeness",
+    "explicit-opaque-library-boundaries"
   ],
   "metrics": {
-    "specArtifactTokensEstimate": 3200,
-    "filesChanged": 83,
-    "linesAdded": 4569,
-    "linesRemoved": 50,
+    "specArtifactTokensEstimate": 3500,
+    "filesChanged": 104,
+    "linesAdded": 6294,
+    "linesRemoved": 76,
     "tasksCompleted": 2,
     "acceptanceCriteriaVerified": 4,
-    "specDurationMinutes": 27
+    "specDurationMinutes": 33
   }
 }

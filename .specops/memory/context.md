@@ -312,6 +312,22 @@ delivery and short bounds remain bounded. Analyzer commit `cbd0fa4` and shutdown
 are published in draft PR #15. The full local pull-request gate and hosted `pr-gate` and `postgres`
 checks pass.
 
+### fix-hogarama-aggregate-completeness (bugfix) — 2026-08-07
+
+Completed one task. The analyzer now uses exact first-match classpath origin to keep reference-returning dependency-JAR operations outside the application decision boundary. Instance operations keep an opaque receiver effect, so source-visible predicates that configure fluent query and options objects remain in the result slice. Boolean archive calls are transparent only inside explicit source control conditions.
+
+Direct Boolean dependency decisions and application class-directory binaries remain fail-closed. Strict analysis of the real Hogarama reactor reports `getAllDataMaxNumber` and `getAllWateringDataMaxNumber` as complete. Five Mega graphs, external release, Java capabilities, and the full pull-request gate passed. The short load completed 5,000 decisions with zero errors, mismatches, drops, or contamination.
+
+### explicit-opaque-library-boundaries (feature) — 2026-08-07
+
+Completed one task. Dependency JARs are fail-closed by default. Users can declare exact resolved
+technical-library artifacts, while unselected dependencies, direct binary Boolean decisions, and
+application class directories remain incomplete.
+
+The real Hogarama proof fails strictly without a selection and passes with its three technical
+artifacts selected. Focused contracts, Java capabilities, self-tracing, external release, five
+complete Mega graphs, and the full pull-request gate passed with zero load correctness failures.
+
 ### context-label-symbol-correctness (bugfix) — 2026-08-07
 
 Completed all three tasks. Context-aware labels now bind local and receiver subjects to attributed
@@ -337,7 +353,7 @@ full local pull-request gate passed with both external corpora.
 
 ### integrate-main-pr15 (refactor) — 2026-08-07
 
-Completed both tasks. PR #15 now contains current `main` through `3db368d`. Semantic conflict
+Completed both tasks. PR #15 now contains current `main` through `2f9f5c5`. Semantic conflict
 resolution retained the independent analyzer, test, documentation, conformance, and SpecOps changes
 from both branches. The two confirmed pre-existing coverage limits remain unchanged and outside this
 integration.
