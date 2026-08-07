@@ -258,3 +258,14 @@ Plexus Utils moved to the advisory-free compatible release 3.6.1, and Maven JAR 
 ### omit-next-diagram-labels (feature) — 2026-08-07
 
 Completed one task. Mermaid and PlantUML now omit the exact `next` arrow label while preserving meaningful outcomes such as `next item`. The graph contract, opaque edge IDs, serialized outcomes, and execution-path logic remain unchanged. Focused renderer contracts, self-tracing, and repository integrity passed.
+
+### context-aware-operation-labels (bugfix) — 2026-08-07
+
+Completed all four tasks. Static labels now use attributed declaration types for short abbreviations,
+generic element types for container-named locals, and receiver plus operand context for attributed
+platform mutations. The production rules contain no Hogajama package or class knowledge.
+
+Four independent scheduling, pricing, access-control, and inventory applications pass. The complete
+Hogajama audit contains none of the known context-free forms. The exact pull-request gate passes with
+the external-release fixture and five complete Mega decisions from 420 source files. The short load
+processed 5,000 decisions with 0.216% p95 overhead and zero errors, mismatches, drops, or contamination.

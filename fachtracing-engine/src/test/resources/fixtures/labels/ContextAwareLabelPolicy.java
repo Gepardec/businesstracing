@@ -1,0 +1,63 @@
+package fixtures.labels;
+
+import at.gepardec.fachtracing.api.FachTracing;
+
+import java.util.Calendar;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+
+public final class ContextAwareLabelPolicy {
+    @FachTracing("calendar bounds")
+    public Date startOfDay(boolean today) {
+        Date from = null;
+        if (today) {
+            from = timeAt(0, 0, 0);
+        }
+        return from;
+    }
+
+    private Date timeAt(int hour, int minute, int second) {
+        Calendar c = new GregorianCalendar();
+        c.set(Calendar.HOUR_OF_DAY, hour);
+        c.set(Calendar.MINUTE, minute);
+        c.set(Calendar.SECOND, second);
+        return c.getTime();
+    }
+
+    @FachTracing("abbreviated comparator")
+    public int compare(boolean naturalOrder) {
+        Comparator<String> comp = naturalOrder
+                ? Comparator.naturalOrder()
+                : Comparator.reverseOrder();
+        return comp.compare("first", "second");
+    }
+
+    @FachTracing("collection add")
+    public boolean addSensor(boolean required, List<String> sensors) {
+        if (required) {
+            sensors.add("sensor");
+        }
+        return sensors.isEmpty();
+    }
+
+    @FachTracing("collection add all")
+    public boolean addSensors(boolean required, List<String> sensors, List<String> additions) {
+        if (required) {
+            sensors.addAll(additions);
+        }
+        return sensors.isEmpty();
+    }
+
+    @FachTracing("generic collection name")
+    public boolean hasMappedSensor(boolean required) {
+        List<SensorData> list = new java.util.ArrayList<>();
+        if (required) {
+            list.add(new SensorData("sensor"));
+        }
+        return list.isEmpty();
+    }
+
+    private record SensorData(String name) { }
+}

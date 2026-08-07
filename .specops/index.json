@@ -184,5 +184,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T09:56:05Z"
+  },
+  {
+    "id": "context-aware-operation-labels",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T11:53:37Z"
   }
 ]

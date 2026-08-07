@@ -5,6 +5,7 @@ import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /** Finds generic Java iteration and dynamic-dispatch mechanics in business graph text. */
 public final class BusinessArtifactGuard {
@@ -13,7 +14,11 @@ public final class BusinessArtifactGuard {
         var violations = new ArrayList<String>();
         for (BusinessDecisionGraph.DecisionNode node : graph.nodes()) {
             String label = node.businessLabel().toLowerCase(Locale.ROOT);
-            if (label.matches("derive (?:i|idx|index)(?: as 0)?")
+            if (label.matches("[a-z]")
+                    || label.equals("list")
+                    || Set.of("evaluate add", "evaluate add all", "evaluate offer", "evaluate set",
+                            "evaluate sort").contains(label)
+                    || label.matches("derive (?:i|idx|index)(?: as 0)?")
                     || label.matches("repeat while .*\\b(?:index|idx)\\b.*\\bsize\\b.*")
                     || label.matches(".*\\bitem (?:index|idx)(?: plus [0-9]+)?\\b.*")
                     || label.matches(".*\\binitialize\\b.*")
