@@ -20,6 +20,7 @@ require_spec() {
 require_tracked AGENTS.md
 require_tracked README.md
 require_tracked scripts/verify.sh
+require_tracked scripts/verify-self-tracing.sh
 require_tracked scripts/capture-gate-output.sh
 require_tracked scripts/maven-repository-path.sh
 require_tracked scripts/test-capture-gate-output.sh
@@ -39,6 +40,7 @@ require_tracked conformance/mega-backend/conformance-report.md
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java
 require_tracked conformance/mega-backend/src/test/resources/oracles/README.md
+require_tracked docs/self-tracing.md
 
 test -z "$(git ls-files conformance/mega-backend/generated)" \
   || fail "generated Mega artifacts must not be tracked: use conformance/mega-backend/target/generated"

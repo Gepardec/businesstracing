@@ -240,3 +240,13 @@ extraction. Standard verification and external release activation pass. The shor
 5,000 decisions at 1,000 RPS with 0.269% p95 overhead and zero errors, mismatches, drops, or
 contamination. AST-only transformations without equivalent Java source remain outside the declared
 support boundary.
+
+### self-dogfood-business-tracing (feature) — 2026-08-07
+
+Completed all three tasks. The project now marks its Maven-plugin developer-export policy with
+`@FachTracing`, generates its own aggregate Mermaid, PlantUML, index, and activation artifacts,
+and verifies them in the normal repository gate. The guide explains the enabled and disabled
+results and states that the current result slice omits the direct thrown validation path.
+
+Plexus Utils moved to the advisory-free compatible release 3.6.1, and Maven JAR Plugin moved to
+3.5.1. Exact dependency checks and the full repository verifier passed.

@@ -8,6 +8,7 @@ set -eu
 ./scripts/test-fast-pr-workflow.sh
 ./scripts/verify-java-capabilities.sh
 mvn -q install
+FACHTRACING_SKIP_PROJECT_BUILD=true ./scripts/verify-self-tracing.sh
 MAVEN_REPOSITORY=$(./scripts/maven-repository-path.sh)
 mkdir -p target/verification-classpaths
 mvn -q -pl fachtracing-engine dependency:build-classpath -DincludeScope=test \
