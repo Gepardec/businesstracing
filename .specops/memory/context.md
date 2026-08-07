@@ -337,3 +337,7 @@ The harness compares three immutable semantic oracles, keeps generated diagrams 
 and runs in pull-request and release gates. Its isolation test scans every production module,
 including JDBC storage. The graph report explains what Fachtracing proves and where it stops. The
 full local pull-request gate passed with both external corpora.
+
+### developer-graph-json-schema (feature) — 2026-08-07
+
+Completed both tasks. Fachtracing now generates closed JSON Schema Draft 2020-12 documents for developer graph V1 and V2 through a public Java API. Maven writes and links one matching schema beside the developer JSON, removes stale schema output safely, and documents the exact frontend handoff. The focused consumer contract and full repository verifier passed.

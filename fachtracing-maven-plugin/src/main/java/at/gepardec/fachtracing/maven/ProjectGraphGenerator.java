@@ -8,6 +8,7 @@ import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.api.FachTracing;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.plantuml.PlantUmlRenderer;
@@ -28,8 +29,12 @@ import java.util.stream.Collectors;
 
 /** Maven-independent generation pipeline used by the Mojo and executable contracts. */
 final class ProjectGraphGenerator {
+    private static final String DEVELOPER_SCHEMA_V1 = "fachtracing-developer-graph-v1.schema.json";
+    private static final String DEVELOPER_SCHEMA_V2 = "fachtracing-developer-graph-v2.schema.json";
+
     private final StaticDecisionAnalyzer analyzer = new StaticDecisionAnalyzer();
     private final DeveloperGraphExporter developerJson = new DeveloperGraphExporter();
+    private final DeveloperGraphJsonSchema developerSchema = new DeveloperGraphJsonSchema();
     private final MermaidRenderer mermaid = new MermaidRenderer();
     private final PlantUmlRenderer plantUml = new PlantUmlRenderer();
 
@@ -144,6 +149,17 @@ final class ProjectGraphGenerator {
                 .collect(Collectors.groupingBy(
                         result -> slug(result.graph().decisionLabel()), HashMap::new, Collectors.counting()));
         var index = new StringBuilder("# Fachtracing decision graphs\n\n");
+        if (revision != null) {
+            String dataSchemaId = sourceCatalog == null
+                    ? DeveloperGraphExporter.SCHEMA
+                    : DeveloperGraphExporter.SCHEMA_V2;
+            String schemaName = sourceCatalog == null ? DEVELOPER_SCHEMA_V1 : DEVELOPER_SCHEMA_V2;
+            Files.writeString(outputDirectory.resolve(schemaName),
+                    developerSchema.generate(dataSchemaId), StandardCharsets.UTF_8);
+            index.append("Developer JSON Schema: [")
+                    .append(sourceCatalog == null ? "V1" : "V2")
+                    .append("](").append(schemaName).append(")\n\n");
+        }
         var incomplete = new ArrayList<String>();
 
         for (var analysis : analyses) {
@@ -189,7 +205,8 @@ final class ProjectGraphGenerator {
             for (Path file : files.filter(Files::isRegularFile).toList()) {
                 String name = file.getFileName().toString();
                 if (name.equals("index.md") || name.endsWith("-structure.mmd")
-                        || name.endsWith("-structure.puml") || name.endsWith("-developer.json")) {
+                        || name.endsWith("-structure.puml") || name.endsWith("-developer.json")
+                        || name.equals(DEVELOPER_SCHEMA_V1) || name.equals(DEVELOPER_SCHEMA_V2)) {
                     Files.delete(file);
                 }
             }
