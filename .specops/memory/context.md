@@ -224,3 +224,16 @@ immutable hashes. The 18 reproducible diagrams, normalized comparison files, and
 now use `conformance/mega-backend/target/generated` and stay outside Git. Repository integrity
 prevents a later commit of the former generated-output path. Standalone Mega conformance and the
 complete pull-request gate passed with all five graphs complete.
+
+### annotation-processor-output-analysis (bugfix) — 2026-08-07
+
+Completed all three tasks. Maven projects can now compile with source-generating annotation
+processors and then run either Fachtracing Maven goal in the same reactor session. The adapter
+removes processor execution controls from its private compiler model, keeps generated Java source
+roots, and always analyzes with `-proc:none`.
+
+A two-module annotation processor fixture proves per-module and aggregate generated-decision graph
+extraction. Standard verification and external release activation pass. The short load completed
+5,000 decisions at 1,000 RPS with 0.321% p95 overhead and zero errors, mismatches, drops, or
+contamination. AST-only transformations without equivalent Java source remain outside the declared
+support boundary.

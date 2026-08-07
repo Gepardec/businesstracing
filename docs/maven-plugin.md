@@ -140,11 +140,22 @@ Maven repository mirrors, credentials, and offline mode apply. In offline mode, 
 must already be in the local repository. A missing artifact causes a deterministic failure.
 
 The analyzer reads the effective `maven-compiler-plugin` configuration for each project. It keeps
-the encoding, release or equal source/target level, `compilerArgs`, preview and parameter flags,
-generated source root, module descriptor, and module path. It rejects different source and target
-levels, forked compiler executables, legacy free-form compiler arguments, and configured annotation
-processors before graph extraction. Run analysis after compilation so generated processor output is
-in the registered compile source roots.
+the encoding, release or equal source/target level, analysis-safe `compilerArgs`, preview and
+parameter flags, generated source root, module descriptor, and module path. It rejects different
+source and target levels, forked compiler executables, and legacy free-form compiler arguments.
+
+Maven must run annotation processors during `compile`. Fachtracing does not execute them again. It
+removes processor paths, processor names, processor options, and the Maven processing mode from its
+private compiler model, then runs source attribution with `-proc:none`. Run `compile` and analysis in
+the same Maven invocation so generated Java is present in the registered compile source roots:
+
+```sh
+mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
+```
+
+This supports processors such as MapStruct that generate normal Java source. An AST-only
+transformation that does not produce equivalent Java source can still cause an attribution error.
+Fachtracing fails in that case and does not claim complete graph coverage.
 
 The plugin extracts source JARs below
 `target/fachtracing-source-dependencies/<archive-sha256>`. It rejects absolute paths, traversal,

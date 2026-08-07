@@ -610,6 +610,16 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T08:00:07Z"
+    },
+    {
+      "specId": "annotation-processor-output-analysis",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Consume generated Java without executing annotation processors during analysis",
+      "rationale": "Maven owns processor execution; Fachtracing needs deterministic post-compile attribution with proc disabled.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T08:55:30Z"
     }
   ]
 }

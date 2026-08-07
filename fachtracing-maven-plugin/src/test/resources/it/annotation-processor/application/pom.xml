@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>example</groupId>
+    <artifactId>fachtracing-annotation-processor-fixture</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <artifactId>generated-decision-application</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId>
+      <artifactId>fachtracing-api</artifactId>
+      <version>0.1.0-rc.1</version>
+    </dependency>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId>
+      <artifactId>fachtracing-agent</artifactId>
+      <version>0.1.0-rc.1</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <proc>full</proc>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>example</groupId>
+              <artifactId>decision-processor</artifactId>
+              <version>${project.version}</version>
+            </path>
+          </annotationProcessorPaths>
+          <compilerArgs>
+            <arg>-Aexample.option=value</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>at.gepardec.fachtracing</groupId>
+        <artifactId>fachtracing-maven-plugin</artifactId>
+        <version>0.1.0-rc.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>analyze</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

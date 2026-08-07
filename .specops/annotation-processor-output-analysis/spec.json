@@ -1,0 +1,60 @@
+{
+  "id": "annotation-processor-output-analysis",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T08:39:42Z",
+  "updated": "2026-08-07T08:56:32Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "generic-application-readiness",
+      "reason": "It introduced the effective compiler-model resolver corrected here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "maven-project-analysis",
+    "reactor-wide-implementation-resolution",
+    "generic-java-extractor-completion"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-07T08:43:56Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T08:54:34Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 5014,
+    "filesChanged": 25,
+    "linesAdded": 1050,
+    "linesRemoved": 35,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 21,
+    "specDurationMinutes": 17
+  }
+}

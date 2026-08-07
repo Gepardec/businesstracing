@@ -1,0 +1,75 @@
+# Implementation Journal: Analyze Annotation-Processor Output
+
+## Summary
+
+Completed three tasks. The Maven adapter now accepts projects that use annotation processors,
+removes processor execution controls from the analysis model, and keeps `-proc:none` in the private
+compiler task. A real two-module processor fixture proves generated Java extraction through both
+Maven goals. All standard verification gates pass. No design deviation or new dependency occurred.
+
+## Phase 1 Context Summary
+
+- Config: SpecOps 1.8.0 defaults; library vertical; `.specops`; no external task tracking.
+- Context recovery: No incomplete spec exists.
+- Steering files: Loaded product, technology, structure, reference application, dependencies, and
+  the generated repository map.
+- Repo map: Fresh at Phase 1 start.
+- Memory: Loaded prior build-tool-adapter, compiler-boundary, and fail-closed analysis decisions.
+- Vertical: Brownfield Java library.
+- Affected files: Maven compiler-model resolver, executable plugin contracts, Maven integration
+  fixtures, standard verification script, and Maven plugin documentation.
+- Project state: Brownfield.
+- Scope assessment: One compiler-boundary defect, one verification cluster, and three tasks. No
+  decomposition is required.
+- Plan validation: Pass. All existing file paths resolve, and each planned fixture path is marked as
+  a new file.
+
+## Decision Log
+
+| # | Decision | Rationale | Task | Timestamp |
+| --- | --- | --- | --- | --- |
+| 1 | Consume generated Java after Maven compile and never run processors in Fachtracing. | The engine already owns a deterministic `-proc:none` attribution task. | 2 | 2026-08-07T08:43:56Z |
+
+## Documentation Review
+
+- `docs/maven-plugin.md`: Updated. It gives the required same-invocation command and states that
+  Fachtracing consumes generated source without executing processors.
+- `docs/supported-java-constructs.md`: Updated. It states the source-generating support boundary and
+  the AST-only attribution limit.
+- `README.md`: Checked. It does not describe effective compiler-model details and needs no change.
+- `AGENTS.md`: Checked. No project instruction changed.
+
+## Session Log
+
+- 2026-08-07T08:39:42Z: Started the medium-severity bug-fix workflow. Confirmed that Hogajama uses
+  MapStruct through `annotationProcessorPaths` and generates normal Java source.
+- 2026-08-07T08:43:56Z: Coherence, split detection, reference validation, dependency introduction,
+  dependency safety, and spec evaluation passed. No new dependency is introduced.
+- 2026-08-07T08:45:00Z: Task 1 anchor. Freeze configuration sanitization and a complete Maven
+  generate-then-analyze flow. The task must fail against the current resolver before production
+  code changes. Required proof: generated Java exists, analysis reaches the current rejection, and
+  no test changes weaken unrelated compiler checks.
+- 2026-08-07T08:47:20Z: Task 1 completed. The focused resolver contract fails on configured
+  `proc=full`. The two-module Maven fixture compiles its processor, generates
+  `GeneratedApprovalPolicy.java`, and then fails at the same effective-model rejection reported by
+  Hogajama.
+- 2026-08-07T08:47:20Z: Task 2 anchor. Change only the analysis projection of Maven compiler
+  settings. Required proof: processing configuration and arguments are absent, `-Xlint:none`
+  remains, forked compilers still fail, and the generated decision graph is extracted.
+- 2026-08-07T08:50:09Z: Task 2 completed. The resolver ignores configuration-level processing
+  controls and removes `-A`, processor selection/path/module-path, processing mode, and processor
+  diagnostic arguments. Safe arguments remain ordered and unique. The focused executable contract
+  and the generated-source Maven reactor pass. The graph contains `request age is at least 18`.
+- 2026-08-07T08:50:09Z: Task 3 anchor. State the exact post-compile support boundary and run the
+  complete standard verifier. Required proof: docs distinguish generated Java from AST-only
+  transformations, the new fixture runs in `scripts/verify.sh`, and all existing tests pass.
+- 2026-08-07T08:53:48Z: Task 3 completed. Documentation defines the post-compile, `-proc:none`
+  boundary and the AST-only limit. `scripts/verify.sh` passes both per-module and aggregate generated
+  decision extraction, all existing executable contracts, external release activation, and 5,000
+  decisions at 1,000 RPS with 0.321% p95 overhead. PostgreSQL was skipped because no connection is
+  configured.
+- 2026-08-07T08:54:34Z: Implementation evaluation passed all four dimensions. All six bug-fix
+  acceptance criteria and all task criteria are verified.
+- 2026-08-07T08:55:30Z: Updated project memory and refreshed the repository map. Documentation
+  review is complete.
+- 2026-08-07T08:56:32Z: Captured completion metrics and marked the spec completed.

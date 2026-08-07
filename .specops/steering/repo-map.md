@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T08:00:07Z"
-_sourceHash: "841f25deb895a1762f4879d0e76c78d3f03d523f7927cf7dd6c43fe631f0f4c9"
+_generatedAt: "2026-08-07T08:55:30Z"
+_sourceHash: "29e4888c7bbb5ec96ba60b0768203524d0631e7bd8cf8a2537734d52ccb3338c"
 ---
 
 ## Project Structure Map
@@ -141,6 +141,7 @@ fachtracing/
 - `src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
 - `src/test/resources/it/basic/` — external-style one-off and lifecycle Maven fixtures
 - `src/test/resources/it/reactor/` — two-module JPMS implementation-resolution fixture
+- `src/test/resources/it/annotation-processor/` — generated-Java analysis through both Maven goals
 - `pom.xml`
 
 #### fachtracing-storage-jdbc/ (5 files)

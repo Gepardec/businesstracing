@@ -160,5 +160,13 @@
     "author": "codex",
     "updated": "2026-08-07T08:00:07Z",
     "partOf": "generic-java-fachtracing"
+  },
+  {
+    "id": "annotation-processor-output-analysis",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T08:56:32Z"
   }
 ]

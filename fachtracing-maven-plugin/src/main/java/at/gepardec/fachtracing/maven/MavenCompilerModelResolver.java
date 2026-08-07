@@ -33,23 +33,23 @@ final class MavenCompilerModelResolver {
         Charset charset = Charset.forName(interpolate(project, encodingText));
         String release = languageRelease(project, configuration);
 
-        var arguments = new LinkedHashSet<String>();
+        var configuredArguments = new ArrayList<String>();
         Xpp3Dom compilerArgs = child(configuration, "compilerArgs");
         if (compilerArgs != null) {
             for (Xpp3Dom argument : compilerArgs.getChildren("arg")) {
                 String text = interpolate(project, argument.getValue());
-                if (text != null && !text.isBlank()) arguments.add(text.trim());
+                if (text != null && !text.isBlank()) configuredArguments.add(text.trim());
             }
         }
         if (Boolean.parseBoolean(first(value(configuration, "enablePreview"),
                 property(project, "maven.compiler.enablePreview"), "false"))) {
-            arguments.add("--enable-preview");
+            configuredArguments.add("--enable-preview");
         }
         if (Boolean.parseBoolean(first(value(configuration, "parameters"),
                 property(project, "maven.compiler.parameters"), "false"))) {
-            arguments.add("-parameters");
+            configuredArguments.add("-parameters");
         }
-        arguments.forEach(argument -> validateCompilerArgument(project, argument));
+        List<String> arguments = analysisCompilerArguments(project, configuredArguments);
 
         List<Path> modulePath = modular ? modulePath(project, compileClasspath) : List.of();
         List<String> sourceRoots = new ArrayList<>(project.getCompileSourceRoots());
@@ -91,14 +91,43 @@ final class MavenCompilerModelResolver {
                 || child(configuration, "compilerArguments") != null) {
             reject(project, "legacy compilerArgument settings are not supported; use compilerArgs/arg");
         }
-        String proc = first(value(configuration, "proc"), property(project, "maven.compiler.proc"), "none");
-        if (!"none".equalsIgnoreCase(proc) && hasText(proc)) {
-            reject(project, "annotation processing must be disabled for analysis with proc=none");
+    }
+
+    private static List<String> analysisCompilerArguments(
+            MavenProject project,
+            List<String> configuredArguments) {
+        var arguments = new LinkedHashSet<String>();
+        boolean skipProcessorValue = false;
+        for (String argument : configuredArguments) {
+            if (skipProcessorValue) {
+                skipProcessorValue = false;
+                continue;
+            }
+            if (processorArgumentWithSeparateValue(argument)) {
+                skipProcessorValue = true;
+                continue;
+            }
+            if (processorArgument(argument)) continue;
+            validateCompilerArgument(project, argument);
+            arguments.add(argument);
         }
-        if (hasChildren(child(configuration, "annotationProcessorPaths"))
-                || hasChildren(child(configuration, "annotationProcessors"))) {
-            reject(project, "annotation processor settings are not supported; analyze generated sources after compile");
+        return List.copyOf(arguments);
+    }
+
+    private static boolean processorArgumentWithSeparateValue(String argument) {
+        return List.of("-processor", "--processor", "-processorpath",
+                "--processor-path", "--processor-module-path").contains(argument);
+    }
+
+    private static boolean processorArgument(String argument) {
+        if (argument.startsWith("-A") || argument.equals("-proc") || argument.equals("--proc")
+                || argument.startsWith("-proc:")
+                || argument.equals("-XprintProcessorInfo") || argument.equals("-XprintRounds")) {
+            return true;
         }
+        return List.of("-proc", "--proc", "-processor", "--processor", "-processorpath",
+                        "--processor-path", "--processor-module-path").stream()
+                .anyMatch(option -> argument.startsWith(option + "="));
     }
 
     private static String languageRelease(MavenProject project, Xpp3Dom configuration) {
@@ -164,10 +193,6 @@ final class MavenCompilerModelResolver {
 
     private static Xpp3Dom child(Xpp3Dom configuration, String name) {
         return configuration == null ? null : configuration.getChild(name);
-    }
-
-    private static boolean hasChildren(Xpp3Dom node) {
-        return node != null && node.getChildCount() > 0;
     }
 
     private static Xpp3Dom copy(Object configuration) {
