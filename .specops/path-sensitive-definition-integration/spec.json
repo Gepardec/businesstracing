@@ -1,0 +1,66 @@
+{
+  "id": "path-sensitive-definition-integration",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-10T08:10:55Z",
+  "updated": "2026-08-10T08:25:28Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "reason": "It adds the reaching-definition index integrated here.",
+      "required": true
+    },
+    {
+      "specId": "implicit-field-local-callback-correctness",
+      "reason": "It adds callback and alias fixes integrated here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "review-followup-correctness",
+    "result-relevance-review-findings"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-10T08:10:55Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 10,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-10T08:25:28Z"
+    }
+  },
+  "metrics": {
+    "durationMinutes": 15,
+    "specArtifactTokensEstimate": 2600,
+    "filesChanged": 43,
+    "linesAdded": 2495,
+    "linesRemoved": 296,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 5
+  }
+}

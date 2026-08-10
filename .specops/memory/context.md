@@ -310,6 +310,19 @@ commit reserves half of the configured close bound for cancellation after the pr
 failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
 local runs and the complete local gate.
 
+### review-followup-correctness (bugfix) — 2026-08-07
+
+Completed all four tasks. Branch-dependent alias definitions now retain each reachable
+result-relevant value. The join is limited to aliases that reach known state, which keeps the five
+reviewed Mega graph counts stable. Direct, parenthesized, and cast method-reference callbacks keep
+their receiver effects. A mutating Boolean callback used as a predicate keeps its transfer and adds
+a source-located coverage gap.
+
+Shutdown reserves at most 500 ms for cancellation, so long bounds keep most time for graceful
+delivery and short bounds remain bounded. Analyzer commit `cbd0fa4` and shutdown commit `b371d19`
+are published in draft PR #15. The full local pull-request gate and hosted `pr-gate` and `postgres`
+checks pass.
+
 ### result-relevance-review-findings (bugfix) — 2026-08-07
 
 Completed one task. Local definitions now resolve at each use site, so an unconditional later
@@ -361,6 +374,36 @@ and runs in pull-request and release gates. Its isolation test scans every produ
 including JDBC storage. The graph report explains what Fachtracing proves and where it stops. The
 full local pull-request gate passed with both external corpora.
 
+### integrate-main-pr15 (refactor) — 2026-08-07
+
+Completed both tasks. PR #15 now contains current `main` through `2f9f5c5`. Semantic conflict
+resolution retained the independent analyzer, test, documentation, conformance, and SpecOps changes
+from both branches. The two confirmed pre-existing coverage limits remain unchanged and outside this
+integration.
+
+The complete local pull-request gate passed after each base update. Hosted `pr-gate` and `postgres`
+checks pass, and GitHub reports PR #15 as mergeable.
+
 ### developer-graph-json-schema (feature) — 2026-08-07
 
 Completed both tasks. Fachtracing now generates closed JSON Schema Draft 2020-12 documents for developer graph V1 and V2 through a public Java API. Maven writes and links one matching schema beside the developer JSON, removes stale schema output safely, and documents the exact frontend handoff. The focused consumer contract and full repository verifier passed.
+
+### implicit-field-local-callback-correctness (bugfix) — 2026-08-07
+
+Completed all four tasks. Conditional aliases now retain attributed implicit fields. Callback
+arguments stored in locals resolve against active definitions, preserve their source-to-target
+mutation transfer, and report a located gap when a platform mutator Boolean controls a predicate.
+
+Two focused regressions, Java capabilities, two full local pull-request gates, five Mega graphs,
+and hosted `pr-gate` and `postgres` checks pass. Current `main` is integrated, and PR #15 is
+mergeable.
+
+### path-sensitive-definition-integration (bugfix) — 2026-08-10
+
+Completed one task. PR #12 and PR #15 now use one path-sensitive definition model for result
+slicing and a separate active-definition model for callback effects. A local initializer remains
+visible when only some paths overwrite it, while a fully overwritten definition stays excluded.
+
+The focused regression failed before the fix and passed after it. The complete pull-request gate
+passed. Five Mega graphs and three Spring PetClinic graphs passed; two reviewed Mega oracles now
+include the source-backed absent-warning and main-working-location initializers.

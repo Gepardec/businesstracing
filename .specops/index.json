@@ -258,11 +258,43 @@
     "updated": "2026-08-07T12:49:29Z"
   },
   {
+    "id": "review-followup-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T12:34:38Z"
+  },
+  {
+    "id": "integrate-main-pr15",
+    "type": "refactor",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T13:28:21Z"
+  },
+  {
     "id": "developer-graph-json-schema",
     "type": "feature",
     "status": "completed",
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T12:55:38Z"
+  },
+  {
+    "id": "implicit-field-local-callback-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T13:31:23Z"
+  },
+  {
+    "id": "path-sensitive-definition-integration",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-10T08:25:28Z"
   }
 ]

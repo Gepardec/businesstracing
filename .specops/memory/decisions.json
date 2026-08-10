@@ -762,6 +762,46 @@
       "completedAt": "2026-08-07T11:53:56Z"
     },
     {
+      "specId": "review-followup-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Keep active definition sets in a dedicated resolver",
+      "rationale": "Branch joins must preserve reachable definitions without mixing alias certainty with definition ownership.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:34:38Z"
+    },
+    {
+      "specId": "review-followup-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Fail closed for a mutating callback Boolean result",
+      "rationale": "The receiver write is proved, but the platform callback outcome cannot be reconstructed as exact predicate topology.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:34:38Z"
+    },
+    {
+      "specId": "review-followup-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Cap the cancellation reserve at 500 ms",
+      "rationale": "Short bounds keep half for cancellation, while long bounds keep most time for graceful delivery.",
+      "task": "Task 3",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:34:38Z"
+    },
+    {
+      "specId": "result-relevance-review-findings",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Keep conservative flat assignment history for non-local state while indexing local definitions by use site",
+      "rationale": "Field writes can affect later receiver calls and must not be removed as overwritten local values.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:07:46Z"
+    },
+    {
       "specId": "result-relevance-review-findings",
       "specType": "bugfix",
       "number": 1,
@@ -852,6 +892,26 @@
       "completedAt": "2026-08-07T12:31:57Z"
     },
     {
+      "specId": "integrate-main-pr15",
+      "specType": "refactor",
+      "number": 1,
+      "decision": "Resolve analyzer overlap by import and helper union",
+      "rationale": "The branches change independent semantics in one class, so both executable contract groups must remain.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:13:12Z"
+    },
+    {
+      "specId": "integrate-main-pr15",
+      "specType": "refactor",
+      "number": 2,
+      "decision": "Regenerate aggregate SpecOps files by union",
+      "rationale": "Selecting one branch would lose valid completed-spec history from the other branch.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:13:12Z"
+    },
+    {
       "specId": "developer-graph-json-schema",
       "specType": "feature",
       "number": 1,
@@ -870,6 +930,46 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T12:55:38Z"
+    },
+    {
+      "specId": "implicit-field-local-callback-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Supply field names from attributed analysis",
+      "rationale": "The analyzer owns compiler attribution, while the dependency builder owns branch state.",
+      "task": "Task 2",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:31:23Z"
+    },
+    {
+      "specId": "implicit-field-local-callback-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Resolve callback locals from active definitions at each invocation",
+      "rationale": "A local callback can have branch-dependent definitions, so effect proof must use the definition state at its use site.",
+      "task": "Task 3",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:31:23Z"
+    },
+    {
+      "specId": "path-sensitive-definition-integration",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Let flow state decide initializer reachability",
+      "rationale": "A method-wide assignment set cannot distinguish partial and complete overwrites.",
+      "task": "Task 1",
+      "date": "2026-08-10",
+      "completedAt": "2026-08-10T08:25:28Z"
+    },
+    {
+      "specId": "path-sensitive-definition-integration",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Keep callback definitions separate from result-slice definitions",
+      "rationale": "Callback effects need active call-site definitions, while result slicing needs use-site reaching definitions.",
+      "task": "Task 1",
+      "date": "2026-08-10",
+      "completedAt": "2026-08-10T08:25:28Z"
     }
   ]
 }

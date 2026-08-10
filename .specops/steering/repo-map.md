@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T13:27:49Z"
-_sourceHash: "da473860fb4ad9ba4f9c6d82b5d34e939c91a37c7ee248ae02e799bac3fdc3c2"
+_generatedAt: "2026-08-10T08:25:08Z"
+_sourceHash: "be7bf39beee5377a928ba410970bb8ba928a13a3976d329767e4837b71f1ba8e"
 ---
 
 ## Project Structure Map
@@ -88,6 +88,8 @@ fachtracing/
   - `public final class DependencyGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java`
   - flow-ordered direct reference alias roots for result-effect analysis
+- `src/main/java/at/gepardec/fachtracing/analysis/LocalDefinitionResolver.java`
+  - branch-aware active local definitions for result slicing
 - `src/main/java/at/gepardec/fachtracing/analysis/OpaqueLibraryBoundary.java`
   - exact caller-declared technical dependency archive boundary
 - `src/main/java/at/gepardec/fachtracing/analysis/CancellationBoundaryScanner.java`

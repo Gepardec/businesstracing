@@ -7,8 +7,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public final class ResultSlicePolicy {
+    private final List<String> targetField = new ArrayList<>();
     enum State { OPEN, CLOSED }
 
     interface UnknownMutator {
@@ -72,6 +75,15 @@ public final class ResultSlicePolicy {
                 break;
             default:
                 throw new IllegalArgumentException(state.name());
+        }
+        return allowed;
+    }
+
+    @FachTracing("conditional fallback definition")
+    public boolean conditionalFallbackDefinition(int age, boolean override) {
+        boolean allowed = meetsMinimumAge(age);
+        if (override) {
+            allowed = true;
         }
         return allowed;
     }
@@ -184,6 +196,44 @@ public final class ResultSlicePolicy {
         List<String> accepted = new ArrayList<>();
         candidates.stream().forEach(accepted::add);
         return !accepted.isEmpty();
+    }
+
+    @FachTracing("direct conditional alias read")
+    public boolean directConditionalAliasRead(List<String> target, boolean detached) {
+        List<String> alias = target;
+        if (detached) {
+            alias = new ArrayList<>();
+        }
+        return alias.isEmpty();
+    }
+
+    @FachTracing("implicit field alias read")
+    public boolean implicitFieldAliasRead(boolean detached) {
+        List<String> alias = targetField;
+        if (detached) {
+            alias = new ArrayList<>();
+        }
+        return alias.isEmpty();
+    }
+
+    @FachTracing("cast method reference mutation")
+    public boolean castMethodReferenceMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        candidates.stream().forEach((Consumer<String>) accepted::add);
+        return !accepted.isEmpty();
+    }
+
+    @FachTracing("predicate method reference mutation")
+    public boolean predicateMethodReferenceMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        return candidates.stream().anyMatch(accepted::add);
+    }
+
+    @FachTracing("local predicate callback mutation")
+    public boolean localPredicateCallbackMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        Predicate<String> predicate = accepted::add;
+        return candidates.stream().anyMatch(predicate);
     }
 
     @FachTracing("unknown platform effect")

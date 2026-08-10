@@ -28,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /** Indexes the local definitions that can reach each source tree. */
 final class ReachingDefinitionIndex {
@@ -37,26 +36,21 @@ final class ReachingDefinitionIndex {
     /** Builds immutable use-site definition snapshots for one method. */
     static Map<Tree, Map<String, List<Tree>>> build(
             MethodTree method,
-            Set<String> assignedNames,
             Map<String, List<Tree>> nonLocalDefinitions) {
         if (method.getBody() == null) return Map.of();
-        return new Builder(method, assignedNames, nonLocalDefinitions).build();
+        return new Builder(method, nonLocalDefinitions).build();
     }
 
     private static final class Builder extends TreeScanner<Void, Void> {
         private final MethodTree method;
-        private final Set<String> assignedNames;
         private final Map<String, List<Tree>> nonLocalDefinitions;
-        private final Set<Tree> initializers = Collections.newSetFromMap(new IdentityHashMap<>());
         private final Map<Tree, Map<String, List<Tree>>> definitionsBefore = new IdentityHashMap<>();
         private State state = new State();
 
         private Builder(
                 MethodTree method,
-                Set<String> assignedNames,
                 Map<String, List<Tree>> nonLocalDefinitions) {
             this.method = method;
-            this.assignedNames = Set.copyOf(assignedNames);
             this.nonLocalDefinitions = Map.copyOf(nonLocalDefinitions);
         }
 
@@ -77,7 +71,6 @@ final class ReachingDefinitionIndex {
             scan(node.getType(), unused);
             scan(node.getInitializer(), unused);
             if (state.reachable() && node.getInitializer() != null) {
-                initializers.add(node.getInitializer());
                 state.assign(node.getName().toString(), node.getInitializer());
             }
             return null;
@@ -227,12 +220,7 @@ final class ReachingDefinitionIndex {
         private Map<String, List<Tree>> snapshot() {
             if (!state.reachable()) return Map.of();
             var result = new LinkedHashMap<String, List<Tree>>();
-            state.definitions().forEach((name, definitions) -> {
-                List<Tree> visible = definitions.stream()
-                        .filter(definition -> !assignedNames.contains(name) || !initializers.contains(definition))
-                        .toList();
-                if (!visible.isEmpty()) result.put(name, visible);
-            });
+            state.definitions().forEach((name, definitions) -> result.put(name, List.copyOf(definitions)));
             nonLocalDefinitions.forEach(result::put);
             return Collections.unmodifiableMap(result);
         }

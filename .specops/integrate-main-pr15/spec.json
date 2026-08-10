@@ -1,0 +1,62 @@
+{
+  "id": "integrate-main-pr15",
+  "type": "refactor",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T12:56:18Z",
+  "updated": "2026-08-07T13:28:21Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-07T12:56:18Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "behaviorPreservation": 10,
+        "mergeCorrectness": 10,
+        "aggregateIntegrity": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T13:28:21Z"
+    }
+  },
+  "specDependencies": [
+    {
+      "specId": "review-followup-correctness",
+      "reason": "This integration publishes that completed implementation on current main.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "context-label-symbol-correctness",
+    "spring-petclinic-conformance",
+    "developer-graph-json-schema",
+    "fix-hogarama-aggregate-completeness",
+    "explicit-opaque-library-boundaries"
+  ],
+  "metrics": {
+    "specArtifactTokensEstimate": 3500,
+    "filesChanged": 104,
+    "linesAdded": 6294,
+    "linesRemoved": 76,
+    "tasksCompleted": 2,
+    "acceptanceCriteriaVerified": 4,
+    "specDurationMinutes": 33
+  }
+}

@@ -76,11 +76,11 @@ check_hash 192cd18116ed3522a7bd4ab07dc6cd4000cfbc4b42afaf830e4ed620ca3f3848 \
   conformance/mega-backend/src/test/resources/oracles/authorize-clarification-resolution.txt
 check_hash cccbb57b3ac143b86565c50ffeefb536d17ed6d2671feb7cf1ff2d553ee54198 \
   conformance/mega-backend/src/test/resources/oracles/detect-overlapping-time-entries.txt
-check_hash 368391bfdb748f2d453d78439386083b83b2be4363201915589963aa878ede0a \
+check_hash d907cbcc27f9dcb115d1f82b0ecbddc0497ed5cc95e8fb6c22104e81227f29e7 \
   conformance/mega-backend/src/test/resources/oracles/determine-journey-warnings.txt
 check_hash 0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38 \
   conformance/mega-backend/src/test/resources/oracles/determine-project-activity-in-month.txt
-check_hash 1684955f4aa81930040a8d9df919be77df0f953f1fd4a419d70b6621a9f6c36e \
+check_hash 7a30ee2b6912fb8727ae1b6d686fcc8e1af3be4e78c4b26b9dc2c2f48b0f8148 \
   conformance/mega-backend/src/test/resources/oracles/validate-journey-direction.txt
 
 for oracle in \

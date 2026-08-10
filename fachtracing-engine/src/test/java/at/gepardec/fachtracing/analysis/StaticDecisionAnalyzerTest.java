@@ -38,6 +38,7 @@ public final class StaticDecisionAnalyzerTest {
         excludesIgnoredReadsAndReportsUnknownEffects();
         excludesReadOnlyEnumQueriesWithoutCoverageGaps();
         preservesEveryBranchDefinitionAndFailurePath();
+        preservesConditionalFallbackDefinition();
         excludesOverwrittenDefinitions();
         excludesCaughtResultIndependentThrows();
         preservesDequeOfferMutation();
@@ -473,7 +474,17 @@ public final class StaticDecisionAnalyzerTest {
         assert labels.contains("set allowed to true") : labels;
         assert labels.contains("set allowed to false") : labels;
         assert labels.contains("decision cannot continue") : labels;
-        assert !labels.contains("derive allowed as false") : labels;
+        assert labels.contains("derive allowed as false") : labels;
+    }
+
+    private static void preservesConditionalFallbackDefinition() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "conditional fallback definition");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("age is at least 24") : labels;
+        assert labels.contains("set allowed to true") : labels;
     }
 
     private static void excludesOverwrittenDefinitions() {
@@ -542,6 +553,63 @@ public final class StaticDecisionAnalyzerTest {
         if (reference.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
                 || !referenceLabels.contains("add candidates to accepted")) {
             failures.add("method reference transfer is absent: " + reference.graph());
+        }
+
+        var directRead = analyzeLabel("slicing/ResultSlicePolicy.java", "direct conditional alias read");
+        String directReadLabels = directRead.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        if (directRead.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
+                || !directReadLabels.contains("target") || !directReadLabels.contains("detached")) {
+            failures.add("conditional alias read lost a reachable definition: " + directRead.graph());
+        }
+
+        var castReference = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "cast method reference mutation");
+        String castReferenceLabels = castReference.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        if (castReference.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
+                || !castReferenceLabels.contains("add candidates to accepted")) {
+            failures.add("cast method reference transfer is absent: " + castReference.graph());
+        }
+
+        var predicateReference = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "predicate method reference mutation");
+        String predicateReferenceLabels = predicateReference.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        boolean predicateGap = predicateReference.graph().completeness()
+                == BusinessDecisionGraph.Completeness.INCOMPLETE
+                && predicateReferenceLabels.contains("add candidates to accepted")
+                && predicateReference.graph().coverageGaps().stream().anyMatch(gap ->
+                        gap.description().contains("Boolean result"));
+        if (!predicateGap) {
+            failures.add("mutating predicate reference remained false complete: "
+                    + predicateReference.graph());
+        }
+
+        var implicitField = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "implicit field alias read");
+        String implicitFieldLabels = implicitField.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        if (implicitField.graph().completeness() != BusinessDecisionGraph.Completeness.COMPLETE
+                || !implicitFieldLabels.contains("target field")
+                || !implicitFieldLabels.contains("detached")) {
+            failures.add("conditional alias read lost an implicit field: "
+                    + implicitField.graph());
+        }
+
+        var localCallback = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "local predicate callback mutation");
+        String localCallbackLabels = localCallback.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        boolean localCallbackGap = localCallback.graph().completeness()
+                == BusinessDecisionGraph.Completeness.INCOMPLETE
+                && localCallbackLabels.contains("add candidates to accepted")
+                && localCallback.graph().coverageGaps().stream().anyMatch(gap ->
+                        gap.description().contains("Boolean result"))
+                && localCallback.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0);
+        if (!localCallbackGap) {
+            failures.add("local predicate callback remained false complete: "
+                    + localCallback.graph());
         }
         assert failures.isEmpty() : failures;
     }

@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /** Bounded single-consumer delivery that keeps repository I/O off decision threads. */
 public final class DecisionRecordDelivery implements AutoCloseable {
+    private static final long MAX_CANCELLATION_RESERVE_NANOS = TimeUnit.MILLISECONDS.toNanos(500);
+
     private final DecisionRecordRepository repository;
     private final ArrayBlockingQueue<DecisionRecordEnvelope> queue;
     private final AdmissionPolicy policy;
@@ -205,8 +207,8 @@ public final class DecisionRecordDelivery implements AutoCloseable {
         synchronized (lifecycle) { running.set(false); lifecycle.notifyAll(); }
         boolean interrupted = false;
         long deadline = System.nanoTime() + shutdownTimeoutNanos;
-        // Keep half of the bound for cancellation and worker termination on loaded hosts.
-        long interruptReserve = Math.max(1, shutdownTimeoutNanos / 2);
+        long interruptReserve = Math.min(MAX_CANCELLATION_RESERVE_NANOS,
+                Math.max(1, shutdownTimeoutNanos / 2));
         long gracefulDeadline = deadline - interruptReserve;
         while (worker.isAlive() && System.nanoTime() < gracefulDeadline) {
             long remaining = gracefulDeadline - System.nanoTime();
