@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T13:25:52Z"
-_sourceHash: "d22a363b162beb8d7d6cbb2630ad4fe6fa1b71538496440c4c1248e722fb62f8"
+_generatedAt: "2026-08-10T08:25:08Z"
+_sourceHash: "be7bf39beee5377a928ba410970bb8ba928a13a3976d329767e4837b71f1ba8e"
 ---
 
 ## Project Structure Map
@@ -59,12 +59,14 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (68 files)
+#### fachtracing-engine/ (72 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisManifest.java`
   - `public record AnalysisManifest`
+- `src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java`
+  - excluded graph-eligible source construct audit
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java`
   - `public record AnalysisRequest`
 - `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
@@ -80,6 +82,8 @@ fachtracing/
   - rejects technical loop and ordinal candidate output
 - `src/main/java/at/gepardec/fachtracing/analysis/DecisionGraphBuilder.java`
   - `public final class DecisionGraphBuilder`
+- `src/main/java/at/gepardec/fachtracing/analysis/DecisionRelevance.java`
+  - expression-bounded result-slice relevance policy
 - `src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java`
   - `public final class DependencyGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java`
@@ -90,8 +94,12 @@ fachtracing/
   - exact caller-declared technical dependency archive boundary
 - `src/main/java/at/gepardec/fachtracing/analysis/CancellationBoundaryScanner.java`
   - exact supported cancellation call-site discovery
+- `src/main/java/at/gepardec/fachtracing/analysis/CaughtThrowResolver.java`
+  - attributed compatible local catch resolution
 - `src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
   - `public final class StaticDecisionAnalyzer`
+- `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`
+  - use-site local reaching definitions
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessStatementRenderer.java`
   - `public final class BusinessStatementRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/DecisionExplanationProjector.java`

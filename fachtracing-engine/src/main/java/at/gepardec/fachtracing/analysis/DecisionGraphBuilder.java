@@ -23,6 +23,7 @@ public final class DecisionGraphBuilder {
     private final List<AnalysisManifest.DispatchTarget> dispatchTargets = new ArrayList<>();
     private final List<ControlBinding> controlBindings = new ArrayList<>();
     private final List<AnalysisManifest.EvidenceTarget> evidenceTargets = new ArrayList<>();
+    private final List<AnalysisManifest.AnalysisDecision> analysisDecisions = new ArrayList<>();
     private final Map<String, List<AnalysisManifest.BranchCompletion>> branchCompletions = new LinkedHashMap<>();
     private int nodeSequence;
     private int edgeSequence;
@@ -59,8 +60,10 @@ public final class DecisionGraphBuilder {
         String nodeId = opaque("node", ++nodeSequence, kind.name(), businessLabel);
         nodes.add(new BusinessDecisionGraph.DecisionNode(nodeId, kind, businessLabel, attributes));
         if (source != null) {
-            mappings.put(nodeId, new AnalysisManifest.SourceMapping(
-                    nodeId, source.source(), source.line(), source.column(), source.treeKind()));
+            var resolvedSource = new AnalysisManifest.SourceMapping(
+                    nodeId, source.source(), source.line(), source.column(), source.treeKind());
+            mappings.put(nodeId, resolvedSource);
+            addAnalysisDecision(action(kind), reason(kind), resolvedSource, List.of(nodeId), "");
         }
         if (probeKind != null) {
             probes.add(new AnalysisManifest.ProbeSite(nodeId, probeKind,
@@ -69,6 +72,18 @@ public final class DecisionGraphBuilder {
                     source == null ? -1 : source.line()));
         }
         return nodeId;
+    }
+
+    /** Adds one developer-only explanation for an analysis inclusion or exclusion. */
+    public void addAnalysisDecision(
+            AnalysisManifest.AnalysisAction action,
+            AnalysisManifest.AnalysisReason reason,
+            AnalysisManifest.SourceMapping source,
+            List<String> nodeIds,
+            String subject) {
+        Objects.requireNonNull(source, "source");
+        analysisDecisions.add(new AnalysisManifest.AnalysisDecision(
+                action, reason, source.source(), source.line(), source.column(), source.treeKind(), nodeIds, subject));
     }
 
     /** Connects two graph nodes. */
@@ -189,7 +204,7 @@ public final class DecisionGraphBuilder {
                 graphId, 1, decisionLabel, entryNodeId, nodes, edges, completeness, gaps);
         var manifest = new AnalysisManifest(
                 graphId, 1, mappings, probes, dispatchTargets, branchTargets(), controlTargets(),
-                evidenceTargets, sourceFingerprints);
+                evidenceTargets, analysisDecisions, sourceFingerprints);
         return new BuiltGraph(graph, manifest, List.copyOf(diagnostics));
     }
 
@@ -254,6 +269,22 @@ public final class DecisionGraphBuilder {
 
     private static boolean booleanOutcome(String outcome, String value) {
         return outcome.equals(value) || outcome.startsWith(value + ";");
+    }
+
+    private static AnalysisManifest.AnalysisAction action(BusinessDecisionGraph.NodeKind kind) {
+        return kind == BusinessDecisionGraph.NodeKind.COVERAGE_GAP
+                ? AnalysisManifest.AnalysisAction.GAP
+                : AnalysisManifest.AnalysisAction.INCLUDED;
+    }
+
+    private static AnalysisManifest.AnalysisReason reason(BusinessDecisionGraph.NodeKind kind) {
+        return switch (kind) {
+            case ENTRY -> AnalysisManifest.AnalysisReason.ENTRY_POINT;
+            case OUTCOME -> AnalysisManifest.AnalysisReason.RETURN_VALUE;
+            case PREDICATE, CHOICE, DISPATCH -> AnalysisManifest.AnalysisReason.CONTROL_DEPENDENCY;
+            case COMPUTATION -> AnalysisManifest.AnalysisReason.DATA_DEPENDENCY;
+            case COVERAGE_GAP -> AnalysisManifest.AnalysisReason.UNRESOLVED_RELEVANCE;
+        };
     }
 
     /** Static graph plus its developer-only artifacts. */

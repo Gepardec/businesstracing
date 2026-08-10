@@ -8,7 +8,7 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 8,
+      "count": 9,
       "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
@@ -28,8 +28,8 @@
     },
     {
       "category": "source-provenance",
-      "count": 4,
-      "pattern": "Keep source and module provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
+      "count": 5,
+      "pattern": "Keep source, module, and analysis-decision provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
     },
     {
       "category": "release-gate-integrity",
@@ -62,6 +62,11 @@
       "pattern": "Merge concurrent analyzer work by semantic union and regenerate shared aggregate records from all completed specifications."
     },
     {
+      "category": "static-relevance-audit",
+      "count": 2,
+      "pattern": "Bound relevance to sliced expressions and use-site definitions, keep only compatible escaping failures, and make included, excluded, and unresolved source decisions mutually consistent outside business output."
+    },
+    {
       "category": "external-library-boundary",
       "count": 3,
       "pattern": "Require an explicit exact-artifact trust declaration before excluding dependency mechanics. Preserve source-visible receiver controls, and keep unselected and direct binary decisions fail-closed."
@@ -70,6 +75,11 @@
       "category": "wire-contract-schema",
       "count": 1,
       "pattern": "Generate formal wire schemas in the engine, derive closed values from production Java enums, and let build-tool adapters publish the matching artifact."
+    },
+    {
+      "category": "path-sensitive-definition-flow",
+      "count": 1,
+      "pattern": "Let control-flow state decide which definitions reach each use; keep callback call-site definitions separate from result-slice use-site definitions."
     }
   ],
   "fileOverlaps": [
@@ -113,16 +123,19 @@
         "release-explanation-async-correctness",
         "jdk-mutation-alias-effect-correctness",
         "fix-jakarta-platform-call-completeness",
+        "explainable-relevance-and-polymorphic-dispatch",
         "conditional-alias-method-reference-effects",
         "review-followup-correctness",
+        "result-relevance-review-findings",
         "fix-hogarama-aggregate-completeness",
         "explicit-opaque-library-boundaries",
         "context-aware-operation-labels",
         "context-label-symbol-correctness",
         "integrate-main-pr15",
-        "implicit-field-local-callback-correctness"
+        "implicit-field-local-callback-correctness",
+        "path-sensitive-definition-integration"
       ],
-      "count": 16
+      "count": 19
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -136,8 +149,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
-      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness", "implicit-field-local-callback-correctness"],
-      "count": 7
+      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration"],
+      "count": 10
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java",
@@ -146,13 +159,28 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness"],
-      "count": 15
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration"],
+      "count": 18
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness"],
-      "count": 14
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
+      "count": 16
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java",
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java",
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration"],
+      "count": 3
+    },
+    {
+      "file": "fachtracing-engine/src/test/resources/fixtures/slicing/ResultSlicePolicy.java",
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration"],
+      "count": 3
     },
     {
       "file": "docs/java-capabilities.json",

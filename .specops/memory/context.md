@@ -282,6 +282,17 @@ full Maven suite, Java capability verifier, repository integrity verifier, and f
 gate passed. Five Mega graphs were complete, and the short load had zero errors, mismatches, drops,
 or contamination.
 
+### explainable-relevance-and-polymorphic-dispatch (feature) — 2026-08-07
+
+Completed five tasks. The analyzer now uses expression-bounded relevance, so a relevant control
+statement does not make unrelated work in its body relevant. The developer-only manifest explains
+source-derived inclusions, exclusions, coverage gaps, and Java polymorphic candidates. Static
+analysis keeps each proven concrete compatible implementation, and runtime evidence still selects
+the implementation that ran. Every result-relevant branch assignment and terminal failure remains
+in the slice. Final Java enum queries do not create false mutation gaps. The business graph schema
+and activation format did not change. Focused contracts, the pinned Mega gate, and the full
+repository verifier passed.
+
 ### conditional-alias-method-reference-effects (bugfix) — 2026-08-07
 
 Completed all three tasks. Local alias resolution now keeps proved and possible roots and merges
@@ -311,6 +322,18 @@ Shutdown reserves at most 500 ms for cancellation, so long bounds keep most time
 delivery and short bounds remain bounded. Analyzer commit `cbd0fa4` and shutdown commit `b371d19`
 are published in draft PR #15. The full local pull-request gate and hosted `pr-gate` and `postgres`
 checks pass.
+
+### result-relevance-review-findings (bugfix) — 2026-08-07
+
+Completed one task. Local definitions now resolve at each use site, so an unconditional later
+assignment removes stale work while alternative branch definitions remain. Non-local state writes
+keep conservative history because later receiver logic can read them. Compiler-attributed catch
+compatibility removes only locally handled throws from terminal sinks. An unresolved result effect
+now gets one gap decision and no contradictory no-result-effect decision.
+
+The focused analyzer contract, full pull-request gate, and all five pinned Mega graphs passed. The
+runtime proof selected all three strategy implementations, and the short load completed 5,000
+decisions at 1,000 RPS with no errors, mismatches, drops, or contamination.
 
 ### fix-hogarama-aggregate-completeness (bugfix) — 2026-08-07
 
@@ -374,3 +397,13 @@ mutation transfer, and report a located gap when a platform mutator Boolean cont
 Two focused regressions, Java capabilities, two full local pull-request gates, five Mega graphs,
 and hosted `pr-gate` and `postgres` checks pass. Current `main` is integrated, and PR #15 is
 mergeable.
+
+### path-sensitive-definition-integration (bugfix) — 2026-08-10
+
+Completed one task. PR #12 and PR #15 now use one path-sensitive definition model for result
+slicing and a separate active-definition model for callback effects. A local initializer remains
+visible when only some paths overwrite it, while a fully overwritten definition stays excluded.
+
+The focused regression failed before the fix and passed after it. The complete pull-request gate
+passed. Five Mega graphs and three Spring PetClinic graphs passed; two reviewed Mega oracles now
+include the source-backed absent-warning and main-working-location initializers.

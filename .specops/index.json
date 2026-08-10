@@ -210,6 +210,22 @@
     "updated": "2026-08-07T11:25:35Z"
   },
   {
+    "id": "explainable-relevance-and-polymorphic-dispatch",
+    "type": "feature",
+    "status": "completed",
+    "version": 2,
+    "author": "lucostus",
+    "updated": "2026-08-07T12:25:49Z"
+  },
+  {
+    "id": "result-relevance-review-findings",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-07T13:12:05Z"
+  },
+  {
     "id": "fix-hogarama-aggregate-completeness",
     "type": "bugfix",
     "status": "completed",
@@ -272,5 +288,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-07T13:31:23Z"
+  },
+  {
+    "id": "path-sensitive-definition-integration",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-10T08:25:28Z"
   }
 ]

@@ -23,7 +23,20 @@ checks that every entry names an executable contract and appears in this documen
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
-“technical”; work disappears only when it cannot affect the decision result.
+“technical”; work disappears only when it cannot affect the decision result. A construct is
+relevant when it is in the result slice, contains a sliced construct, or is inside a sliced
+expression. Unrelated work in the body of a relevant branch does not become relevant only because
+the branch controls a return. The slice keeps each assignment that can reach a result-dependent
+use across alternative branches and removes an assignment that a later sequential assignment
+overwrites. A source `throw` is a terminal failure path only when a compatible local catch does not
+handle its protected path. If a local has later assignments, its seed initializer stays implicit in the
+business graph.
+
+`AnalysisManifest.analysisDecisions()` explains this selection for developer tools. An included
+source construct has the opaque graph node ID and an inclusion reason. An excluded graph-eligible
+construct has its source location, no node ID, and reason `NO_RESULT_EFFECT`. An unresolved construct
+has a gap node ID and reason `UNRESOLVED_RELEVANCE`; it does not also get a no-result-effect decision.
+This audit data does not enter the business graph or runtime activation JSON.
 
 | Construct | Walking-skeleton behavior |
 | --- | --- |
@@ -36,13 +49,13 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
 | Local initialization and assignment | Retained only when it can influence a return |
 | Context-aware operation label | Uses declared-type context for short locals and generic collection names, and renders generic `set` and `add` operations with their receivers and operands |
-| Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only |
+| Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only. Final `java.lang.Enum` queries such as `name`, `equals`, and `compareTo` are proven read-only |
 | Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies, including queue and deque operations such as `offer` |
 | Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument. An unconditional non-identity assignment removes that relation. A conditional assignment merges branch roots and active definitions; an unproved result-relevant write creates a located gap |
 | Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
 
 | Direct method call | Follows a source-available callee and includes its relevant slice |
-| Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |
+| Generic interface or abstract dispatch | Uses compiler subtype and receiver compatibility to include all proven source-visible concrete candidates, including implementations in sibling modules of the active Maven reactor. The manifest records included candidates and excluded abstract or receiver-incompatible subtypes. Runtime evidence selects the expected call site's opaque edge |
 | Proxy or `ServiceLoader` dispatch | Uses the instrumented implementation entry to select one proven source candidate; proxy mechanics and provider classes stay outside business output |
 | Constant reflection target | Resolves one unambiguous class literal, method-name literal, and arity to source candidates; dynamic or ambiguous targets stay incomplete |
 | Boolean, number, category, string result | Encoded as a typed `DecisionValue` |
