@@ -5,10 +5,13 @@ import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.ThrowTree;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Computes the domain-neutral backward slice that can influence a method result. */
@@ -22,32 +25,54 @@ public final class BackwardDecisionSlicer {
     public Set<Tree> slice(
             DependencyGraphBuilder.MethodDependencies dependencies,
             Set<String> effectRoots) {
+        return slice(dependencies, effectRoots, Set.of());
+    }
+
+    /** Returns the result slice and omits throws handled by compatible local catches. */
+    public Set<Tree> slice(
+            DependencyGraphBuilder.MethodDependencies dependencies,
+            Set<String> effectRoots,
+            Set<ThrowTree> locallyCaughtThrows) {
         Set<Tree> relevant = Collections.newSetFromMap(new IdentityHashMap<>());
-        var pendingNames = new ArrayDeque<String>();
-        pendingNames.addAll(effectRoots);
+        var pendingNames = new ArrayDeque<PendingName>();
+        effectRoots.forEach(name -> pendingNames.add(new PendingName(name, dependencies.method())));
 
         for (ReturnTree returned : dependencies.returns()) {
             relevant.add(returned);
             if (returned.getExpression() != null) {
                 relevant.add(returned.getExpression());
-                pendingNames.addAll(DependencyGraphBuilder.collectIdentifiers(returned.getExpression()));
+                enqueueIdentifiers(returned.getExpression(), pendingNames);
                 addControlAncestors(returned, dependencies, relevant, pendingNames);
             }
         }
 
-        var expandedNames = new java.util.HashSet<String>();
+        for (ThrowTree thrown : dependencies.throwStatements()) {
+            if (locallyCaughtThrows.contains(thrown)) continue;
+            relevant.add(thrown);
+            if (thrown.getExpression() != null) {
+                relevant.add(thrown.getExpression());
+                enqueueIdentifiers(thrown.getExpression(), pendingNames);
+            }
+            addControlAncestors(thrown, dependencies, relevant, pendingNames);
+        }
+
+        Map<Tree, Set<String>> expandedAtUse = new IdentityHashMap<>();
+        var expandedEffects = new java.util.HashSet<String>();
         while (!pendingNames.isEmpty()) {
-            String name = pendingNames.removeFirst();
-            if (!expandedNames.add(name)) continue;
-            Tree definition = dependencies.definitions().get(name);
-            if (definition != null) {
+            PendingName pending = pendingNames.removeFirst();
+            if (!expandedAtUse.computeIfAbsent(pending.use(), ignored -> new java.util.HashSet<>())
+                    .add(pending.name())) continue;
+            Map<String, List<Tree>> definitions = dependencies.reachingDefinitions()
+                    .getOrDefault(pending.use(), Map.of());
+            for (Tree definition : definitions.getOrDefault(pending.name(), List.of())) {
                 relevant.add(definition);
-                pendingNames.addAll(DependencyGraphBuilder.collectIdentifiers(definition));
+                enqueueIdentifiers(definition, pendingNames);
                 addControlAncestors(definition, dependencies, relevant, pendingNames);
             }
-            for (Tree effect : dependencies.effectsByIdentifier().getOrDefault(name, java.util.List.of())) {
+            if (!expandedEffects.add(pending.name())) continue;
+            for (Tree effect : dependencies.effectsByIdentifier().getOrDefault(pending.name(), List.of())) {
                 if (!relevant.add(effect)) continue;
-                pendingNames.addAll(DependencyGraphBuilder.collectIdentifiers(effect));
+                enqueueIdentifiers(effect, pendingNames);
                 addControlAncestors(effect, dependencies, relevant, pendingNames);
             }
         }
@@ -58,7 +83,7 @@ public final class BackwardDecisionSlicer {
             Tree child,
             DependencyGraphBuilder.MethodDependencies dependencies,
             Set<Tree> relevant,
-            ArrayDeque<String> pendingNames) {
+            ArrayDeque<PendingName> pendingNames) {
         Tree current = dependencies.parents().get(child);
         while (current != null && current != dependencies.method()) {
             Tree condition = switch (current) {
@@ -70,9 +95,16 @@ public final class BackwardDecisionSlicer {
             if (condition != null) {
                 relevant.add(current);
                 relevant.add(condition);
-                pendingNames.addAll(DependencyGraphBuilder.collectIdentifiers(condition));
+                enqueueIdentifiers(condition, pendingNames);
             }
             current = dependencies.parents().get(current);
         }
     }
+
+    private static void enqueueIdentifiers(Tree use, ArrayDeque<PendingName> pendingNames) {
+        DependencyGraphBuilder.collectIdentifiers(use).forEach(name ->
+                pendingNames.add(new PendingName(name, use)));
+    }
+
+    private record PendingName(String name, Tree use) { }
 }

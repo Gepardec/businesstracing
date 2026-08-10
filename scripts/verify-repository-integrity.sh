@@ -95,7 +95,7 @@ check_hash 72c426152fd2e4aea025d4758da7d85faf3b7a1ac47824ba9f56d83df247b5b0 \
   conformance/spring-petclinic/src/test/resources/oracles/determine-whether-an-entity-is-new.txt
 check_hash ccb613cd380454d5aaf939c210adab10d40e89fdbda312fe985a436bc13bed9d \
   conformance/spring-petclinic/src/test/resources/oracles/find-an-eligible-pet-by-name.txt
-check_hash 888019a73253cb98abad87b79867da763bc833abe002e386fb6dad572c8e9a85 \
+check_hash 27db9b109a2e479ec26d76e843dab9b4d3339cd786664ac3fe7b046e4f1eac02 \
   conformance/spring-petclinic/src/test/resources/oracles/register-a-new-pet.txt
 
 for spec_file in .specops/*/spec.json

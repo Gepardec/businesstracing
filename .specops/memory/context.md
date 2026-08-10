@@ -282,6 +282,17 @@ full Maven suite, Java capability verifier, repository integrity verifier, and f
 gate passed. Five Mega graphs were complete, and the short load had zero errors, mismatches, drops,
 or contamination.
 
+### explainable-relevance-and-polymorphic-dispatch (feature) — 2026-08-07
+
+Completed five tasks. The analyzer now uses expression-bounded relevance, so a relevant control
+statement does not make unrelated work in its body relevant. The developer-only manifest explains
+source-derived inclusions, exclusions, coverage gaps, and Java polymorphic candidates. Static
+analysis keeps each proven concrete compatible implementation, and runtime evidence still selects
+the implementation that ran. Every result-relevant branch assignment and terminal failure remains
+in the slice. Final Java enum queries do not create false mutation gaps. The business graph schema
+and activation format did not change. Focused contracts, the pinned Mega gate, and the full
+repository verifier passed.
+
 ### conditional-alias-method-reference-effects (bugfix) — 2026-08-07
 
 Completed all three tasks. Local alias resolution now keeps proved and possible roots and merges
@@ -298,6 +309,34 @@ Draft PR #11 passed the hosted pull-request and PostgreSQL checks. A separate sh
 commit reserves half of the configured close bound for cancellation after the prior 100 ms reserve
 failed twice on the loaded hosted runner. The affected protocol contract passed 20 consecutive
 local runs and the complete local gate.
+
+### result-relevance-review-findings (bugfix) — 2026-08-07
+
+Completed one task. Local definitions now resolve at each use site, so an unconditional later
+assignment removes stale work while alternative branch definitions remain. Non-local state writes
+keep conservative history because later receiver logic can read them. Compiler-attributed catch
+compatibility removes only locally handled throws from terminal sinks. An unresolved result effect
+now gets one gap decision and no contradictory no-result-effect decision.
+
+The focused analyzer contract, full pull-request gate, and all five pinned Mega graphs passed. The
+runtime proof selected all three strategy implementations, and the short load completed 5,000
+decisions at 1,000 RPS with no errors, mismatches, drops, or contamination.
+
+### fix-hogarama-aggregate-completeness (bugfix) — 2026-08-07
+
+Completed one task. The analyzer now uses exact first-match classpath origin to keep reference-returning dependency-JAR operations outside the application decision boundary. Instance operations keep an opaque receiver effect, so source-visible predicates that configure fluent query and options objects remain in the result slice. Boolean archive calls are transparent only inside explicit source control conditions.
+
+Direct Boolean dependency decisions and application class-directory binaries remain fail-closed. Strict analysis of the real Hogarama reactor reports `getAllDataMaxNumber` and `getAllWateringDataMaxNumber` as complete. Five Mega graphs, external release, Java capabilities, and the full pull-request gate passed. The short load completed 5,000 decisions with zero errors, mismatches, drops, or contamination.
+
+### explicit-opaque-library-boundaries (feature) — 2026-08-07
+
+Completed one task. Dependency JARs are fail-closed by default. Users can declare exact resolved
+technical-library artifacts, while unselected dependencies, direct binary Boolean decisions, and
+application class directories remain incomplete.
+
+The real Hogarama proof fails strictly without a selection and passes with its three technical
+artifacts selected. Focused contracts, Java capabilities, self-tracing, external release, five
+complete Mega graphs, and the full pull-request gate passed with zero load correctness failures.
 
 ### context-label-symbol-correctness (bugfix) — 2026-08-07
 

@@ -9,6 +9,8 @@ import java.util.Deque;
 import java.util.List;
 
 public final class ResultSlicePolicy {
+    enum State { OPEN, CLOSED }
+
     interface UnknownMutator {
         void update(Customer customer);
     }
@@ -37,6 +39,75 @@ public final class ResultSlicePolicy {
     public boolean ignoredAudit(int age) {
         AuditValidator auditValidator = new AuditValidator();
         auditValidator.validate(age);
+        return age >= 24;
+    }
+
+    @FachTracing("irrelevant branch work")
+    public boolean irrelevantBranchWork(int age) {
+        if (age < 18) {
+            recordAudit(age);
+            return false;
+        }
+        return meetsMinimumAge(age);
+    }
+
+    @FachTracing("read-only enum queries")
+    public boolean readOnlyEnumQueries(State state) {
+        state.name();
+        state.equals(State.CLOSED);
+        return state == State.OPEN;
+    }
+
+    @FachTracing("branch definitions and failure")
+    public boolean branchDefinitionsAndFailure(State state, boolean override) {
+        boolean allowed = false;
+        switch (state) {
+            case OPEN:
+                if (override) {
+                    allowed = true;
+                }
+                break;
+            case CLOSED:
+                allowed = false;
+                break;
+            default:
+                throw new IllegalArgumentException(state.name());
+        }
+        return allowed;
+    }
+
+    @FachTracing("overwritten decision assignment")
+    public boolean overwrittenDecisionAssignment(boolean approved) {
+        boolean decision;
+        decision = auditDecision(approved);
+        decision = approved;
+        return decision;
+    }
+
+    private boolean auditDecision(boolean approved) {
+        if (approved) {
+            return false;
+        }
+        return true;
+    }
+
+    @FachTracing("caught audit failure")
+    public boolean caughtAuditFailure(boolean approved, boolean audit) {
+        try {
+            if (audit) {
+                throw new IllegalStateException();
+            }
+        } catch (IllegalStateException ignored) {
+            recordAudit(0);
+        }
+        return approved;
+    }
+
+    private void recordAudit(int age) {
+        int ignoredAge = age + 1;
+    }
+
+    private boolean meetsMinimumAge(int age) {
         return age >= 24;
     }
 

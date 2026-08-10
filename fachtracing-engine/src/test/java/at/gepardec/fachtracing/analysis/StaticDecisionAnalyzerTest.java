@@ -34,7 +34,12 @@ public final class StaticDecisionAnalyzerTest {
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
         excludesResultIndependentWork();
+        explainsIncludedExcludedAndGapDecisions();
         excludesIgnoredReadsAndReportsUnknownEffects();
+        excludesReadOnlyEnumQueriesWithoutCoverageGaps();
+        preservesEveryBranchDefinitionAndFailurePath();
+        excludesOverwrittenDefinitions();
+        excludesCaughtResultIndependentThrows();
         preservesDequeOfferMutation();
         preservesLocalAliasMutation();
         invalidatesReassignedLocalAliases();
@@ -43,6 +48,7 @@ public final class StaticDecisionAnalyzerTest {
         usesProvenValidationRolesWithoutGlobalReceiverRemoval();
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
+        explainsReceiverCompatibleDispatchCandidates();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
@@ -58,6 +64,7 @@ public final class StaticDecisionAnalyzerTest {
         exposesRelevantCoverageGaps();
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
         usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
+        supportsExplicitOpaqueLibraryBoundaries();
         analyzesEveryAnnotatedEntry();
         supportsJakartaPlatformOperations();
         treatsPlatformValueOperationsAsDecisionFacts();
@@ -431,6 +438,64 @@ public final class StaticDecisionAnalyzerTest {
                 : unknown.diagnostics();
         assert unknown.graph().nodes().stream().noneMatch(node ->
                 node.businessLabel().contains("evaluate update")) : unknown.graph().nodes();
+        var gapMappings = unknown.graph().coverageGaps().stream()
+                .map(gap -> unknown.manifest().sourceMappings().get(gap.nodeId()))
+                .filter(java.util.Objects::nonNull).toList();
+        assert !gapMappings.isEmpty() : unknown.manifest().sourceMappings();
+        for (AnalysisManifest.SourceMapping gap : gapMappings) {
+            assert unknown.manifest().analysisDecisions().stream().noneMatch(decision ->
+                    decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                            && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
+                            && decision.source().equals(gap.source())
+                            && decision.line() == gap.line())
+                    : gap + " / " + unknown.manifest().analysisDecisions();
+        }
+    }
+
+    private static void excludesReadOnlyEnumQueriesWithoutCoverageGaps() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "read-only enum queries");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        assert result.graph().coverageGaps().isEmpty() : result.graph().coverageGaps();
+        assert result.manifest().analysisDecisions().stream().filter(decision ->
+                        decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                                && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
+                                && decision.constructKind().equals("METHOD_INVOCATION"))
+                .count() == 2 : result.manifest().analysisDecisions();
+    }
+
+    private static void preservesEveryBranchDefinitionAndFailurePath() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "branch definitions and failure");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("set allowed to true") : labels;
+        assert labels.contains("set allowed to false") : labels;
+        assert labels.contains("decision cannot continue") : labels;
+        assert !labels.contains("derive allowed as false") : labels;
+    }
+
+    private static void excludesOverwrittenDefinitions() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "overwritten decision assignment");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert labels.contains("set decision to approved") : labels;
+        assert !labels.contains("audit") : labels;
+    }
+
+    private static void excludesCaughtResultIndependentThrows() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "caught audit failure");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.diagnostics();
+        String labels = result.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        assert result.graph().nodes().stream().noneMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.CHOICE) : result.graph().nodes();
+        assert !labels.contains("audit") : labels;
+        assert !labels.contains("alternative decision result") : labels;
     }
 
     private static void preservesLocalAliasMutation() {
@@ -527,7 +592,7 @@ public final class StaticDecisionAnalyzerTest {
     }
 
     private static void representsDynamicDispatchWithoutGuessing() {
-        var result = analyze("strategy/StrategyDecisionService.java");
+        var result = analyzeLabel("strategy/StrategyDecisionService.java", "delivery eligibility");
         var dispatch = result.graph().nodes().stream()
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.DISPATCH)
                 .findFirst().orElseThrow();
@@ -544,6 +609,62 @@ public final class StaticDecisionAnalyzerTest {
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
                 .count();
         assert implementationPredicates == 2 : result.graph().nodes();
+        long includedCandidates = result.manifest().analysisDecisions().stream()
+                .filter(decision -> decision.action() == AnalysisManifest.AnalysisAction.INCLUDED)
+                .filter(decision -> decision.reason() == AnalysisManifest.AnalysisReason.DISPATCH_CANDIDATE)
+                .count();
+        assert includedCandidates == 2 : result.manifest().analysisDecisions();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.ABSTRACT_IMPLEMENTATION
+                        && decision.subject().endsWith("AbstractDecisionRule"))
+                : result.manifest().analysisDecisions();
+    }
+
+    private static void explainsReceiverCompatibleDispatchCandidates() {
+        var result = analyzeLabel("strategy/StrategyDecisionService.java", "scoped delivery eligibility");
+        long alternatives = result.graph().edges().stream()
+                .filter(edge -> edge.outcome().equals("selected rule")).count();
+        assert alternatives == 1 : result.graph().edges();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.INCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.DISPATCH_CANDIDATE
+                        && decision.subject().endsWith("LocalScopedRule"))
+                : result.manifest().analysisDecisions();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION
+                        && decision.subject().endsWith("RemoteScopedRule"))
+                : result.manifest().analysisDecisions();
+    }
+
+    private static void explainsIncludedExcludedAndGapDecisions() {
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "irrelevant branch work");
+        var decisions = result.manifest().analysisDecisions();
+        var auditedNodeIds = decisions.stream().flatMap(decision -> decision.nodeIds().stream())
+                .collect(java.util.stream.Collectors.toSet());
+        assert auditedNodeIds.containsAll(result.manifest().sourceMappings().keySet())
+                : result.manifest().sourceMappings().keySet() + " / " + decisions;
+        assert result.graph().nodes().stream().noneMatch(node ->
+                node.businessLabel().contains("record audit")) : result.graph().nodes();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.businessLabel().contains("minimum age")) : result.graph().nodes();
+        assert decisions.stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                        && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
+                        && decision.constructKind().equals("METHOD_INVOCATION")
+                        && decision.line() > 0
+                        && decision.nodeIds().isEmpty()) : decisions;
+
+        var incomplete = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
+        var gapNodeIds = incomplete.graph().coverageGaps().stream()
+                .map(BusinessDecisionGraph.CoverageGap::nodeId).collect(java.util.stream.Collectors.toSet());
+        var auditedGapNodeIds = incomplete.manifest().analysisDecisions().stream()
+                .filter(decision -> decision.action() == AnalysisManifest.AnalysisAction.GAP)
+                .filter(decision -> decision.reason() == AnalysisManifest.AnalysisReason.UNRESOLVED_RELEVANCE)
+                .flatMap(decision -> decision.nodeIds().stream()).collect(java.util.stream.Collectors.toSet());
+        assert auditedGapNodeIds.containsAll(gapNodeIds)
+                : gapNodeIds + " / " + incomplete.manifest().analysisDecisions();
     }
 
     private static void resolvesImplementationsFromSourcesOutsideTheGraphRootScope() {
@@ -1144,6 +1265,190 @@ public final class StaticDecisionAnalyzerTest {
             assert unsafe.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unsafe;
             assert unsafe.graph().coverageGaps().stream().anyMatch(gap ->
                     gap.description().contains("unsupported call")) : unsafe.graph().coverageGaps();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void supportsExplicitOpaqueLibraryBoundaries() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-external-archive-");
+            Path binarySource = root.resolve("binary-source/external");
+            Path binaryClasses = root.resolve("binary-classes");
+            Path application = root.resolve("application-source/application/ArchiveDataPolicy.java");
+            Files.createDirectories(binarySource);
+            Files.createDirectories(binaryClasses);
+            Files.createDirectories(application.getParent());
+
+            Path dataStore = binarySource.resolve("DataStore.java");
+            Path query = binarySource.resolve("Query.java");
+            Path findOptions = binarySource.resolve("FindOptions.java");
+            Path archiveCollections = binarySource.resolve("ArchiveCollections.java");
+            Path archiveStrings = binarySource.resolve("ArchiveStrings.java");
+            Path decisionRule = binarySource.resolve("DecisionRule.java");
+            Files.writeString(dataStore, """
+                    package external;
+                    public interface DataStore {
+                        <T> Query<T> createQuery(Class<T> type);
+                    }
+                    """);
+            Files.writeString(query, """
+                    package external;
+                    import java.util.List;
+                    public interface Query<T> {
+                        Query<T> order(String field);
+                        Query<T> filter(String field, Object value);
+                        List<T> asList(FindOptions options);
+                    }
+                    """);
+            Files.writeString(findOptions, """
+                    package external;
+                    public final class FindOptions {
+                        public FindOptions limit(int maximum) { return this; }
+                    }
+                    """);
+            Files.writeString(archiveCollections, """
+                    package external;
+                    import java.util.Collection;
+                    import java.util.List;
+                    public final class ArchiveCollections {
+                        private ArchiveCollections() { }
+                        public static <T> Collection<T> emptyIfNull(Collection<T> values) {
+                            return values == null ? List.of() : values;
+                        }
+                    }
+                    """);
+            Files.writeString(decisionRule, """
+                    package external;
+                    public interface DecisionRule {
+                        boolean approve(int value);
+                    }
+                    """);
+            Files.writeString(archiveStrings, """
+                    package external;
+                    public final class ArchiveStrings {
+                        private ArchiveStrings() { }
+                        public static boolean isNotEmpty(String value) {
+                            return value != null && !value.isEmpty();
+                        }
+                    }
+                    """);
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", binaryClasses.toString(),
+                    dataStore.toString(), query.toString(), findOptions.toString(),
+                    archiveCollections.toString(), archiveStrings.toString(), decisionRule.toString());
+            assert compilation == 0 : "could not compile the external archive fixture";
+            Path archive = root.resolve("external-library.jar");
+            createJar(binaryClasses, archive);
+
+            Files.writeString(application, """
+                    package application;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import external.ArchiveCollections;
+                    import external.ArchiveStrings;
+                    import external.DataStore;
+                    import external.DecisionRule;
+                    import external.FindOptions;
+                    import external.Query;
+                    import java.time.Instant;
+                    import java.util.List;
+                    public final class ArchiveDataPolicy {
+                        @FachTracing("getAllDataMaxNumber")
+                        public List<String> getAllDataMaxNumber(DataStore store, String sensor,
+                                Instant from, Instant to, Integer maximum) {
+                            Query<String> query = store.createQuery(String.class).order("-id");
+                            limitByOwner(sensor, query);
+                            limitByDate(from, to, query);
+                            FindOptions options = options(maximum);
+                            return ArchiveCollections.emptyIfNull(query.asList(options)).stream()
+                                    .filter(value -> !value.isBlank()).toList();
+                        }
+                        @FachTracing("getAllWateringDataMaxNumber")
+                        public List<String> getAllWateringDataMaxNumber(DataStore store, String actor,
+                                Instant from, Instant to, Integer maximum) {
+                            Query<String> query = store.createQuery(String.class).order("-id");
+                            limitByOwner(actor, query);
+                            limitByDate(from, to, query);
+                            FindOptions options = options(maximum);
+                            return query.asList(options);
+                        }
+                        @FachTracing("external Boolean decision")
+                        public boolean externalBooleanDecision(DecisionRule rule, int value) {
+                            return rule.approve(value);
+                        }
+                        private void limitByOwner(String owner, Query<String> query) {
+                            if (ArchiveStrings.isNotEmpty(owner)) query.filter("owner", owner);
+                        }
+                        private void limitByDate(Instant from, Instant to, Query<String> query) {
+                            if (from != null) query.filter("from", from);
+                            if (to != null) query.filter("to", to);
+                        }
+                        private FindOptions options(Integer maximum) {
+                            FindOptions options = new FindOptions();
+                            if (maximum != null && maximum >= 0) options.limit(maximum);
+                            return options;
+                        }
+                    }
+                    """);
+
+            AnalysisRequest request = AnalysisRequest.of(
+                    List.of(application), List.of(CLASSPATH.getFirst(), archive));
+            var defaultResults = new StaticDecisionAnalyzer().analyzeAll(request);
+            var defaultData = defaultResults.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
+            var defaultWatering = defaultResults.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllWateringDataMaxNumber")).findFirst().orElseThrow();
+            assert defaultData.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : defaultData;
+            assert defaultWatering.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : defaultWatering;
+
+            Path unrelatedClasses = Files.createDirectory(root.resolve("unrelated-classes"));
+            Path unrelatedArchive = root.resolve("unrelated-library.jar");
+            createJar(unrelatedClasses, unrelatedArchive);
+            var unrelatedResults = new StaticDecisionAnalyzer().analyzeAll(
+                    request, OpaqueLibraryBoundary.of(List.of(unrelatedArchive)));
+            var unrelatedData = unrelatedResults.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
+            assert unrelatedData.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : unrelatedData;
+
+            var opaqueLibraries = OpaqueLibraryBoundary.of(List.of(archive));
+            var results = new StaticDecisionAnalyzer().analyzeAll(request, opaqueLibraries);
+            var data = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
+            var watering = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllWateringDataMaxNumber")).findFirst().orElseThrow();
+            assert data.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : data;
+            assert watering.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : watering;
+            String predicates = java.util.stream.Stream.concat(
+                            data.graph().nodes().stream(), watering.graph().nodes().stream())
+                    .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
+                    .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+            assert predicates.contains("archive strings is not empty owner") : predicates;
+            assert predicates.contains("from exists") : predicates;
+            assert predicates.contains("to exists") : predicates;
+            assert predicates.contains("maximum exists") : predicates;
+            assert predicates.contains("maximum is at least 0") : predicates;
+
+            var binaryDecision = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("external Boolean decision")).findFirst().orElseThrow();
+            assert binaryDecision.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : binaryDecision;
+            assert binaryDecision.graph().coverageGaps().stream().anyMatch(gap ->
+                    gap.description().contains("implementations are unavailable"))
+                    : binaryDecision.graph().coverageGaps();
+
+            var directoryResults = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                    List.of(application), List.of(CLASSPATH.getFirst(), binaryClasses, archive)),
+                    opaqueLibraries);
+            var directoryData = directoryResults.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("getAllDataMaxNumber")).findFirst().orElseThrow();
+            assert directoryData.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : directoryData;
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {

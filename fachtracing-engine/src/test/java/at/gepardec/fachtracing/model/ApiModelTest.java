@@ -22,7 +22,40 @@ public final class ApiModelTest {
         customAdapterAndRedaction();
         collectionsPreserveTypedElementsWithoutArbitraryStringification();
         unknownValuesAreRejectedWithoutStringification();
+        analysisDecisionAuditIsImmutableAndNotActivated();
         activationBundleRoundTripsWithoutRuntimeSourceAnalysis();
+    }
+
+    private static void analysisDecisionAuditIsImmutableAndNotActivated() {
+        var nodeIds = new java.util.ArrayList<>(List.of("start"));
+        var decisions = new java.util.ArrayList<>(List.of(new AnalysisManifest.AnalysisDecision(
+                AnalysisManifest.AnalysisAction.INCLUDED,
+                AnalysisManifest.AnalysisReason.ENTRY_POINT,
+                Path.of("Policy.java"), 3, 5, "METHOD", nodeIds, "")));
+        var mapping = new AnalysisManifest.SourceMapping("start", Path.of("Policy.java"), 3, 5, "METHOD");
+        var manifest = new AnalysisManifest("graph", 1, Map.of("start", mapping),
+                List.of(), List.of(), List.of(), List.of(), List.of(), decisions,
+                Map.of("Policy.java", "0".repeat(64)));
+        nodeIds.clear();
+        decisions.clear();
+        assert manifest.analysisDecisions().size() == 1 : manifest.analysisDecisions();
+        assert manifest.analysisDecisions().getFirst().nodeIds().equals(List.of("start"));
+        try {
+            manifest.analysisDecisions().clear();
+            throw new AssertionError("analysis decisions were mutable");
+        } catch (UnsupportedOperationException expected) {
+            // The manifest is immutable.
+        }
+
+        var graph = new BusinessDecisionGraph("graph", 1, "approval", "start",
+                List.of(new BusinessDecisionGraph.DecisionNode(
+                        "start", BusinessDecisionGraph.NodeKind.ENTRY, "Start", Map.of())),
+                List.of(), BusinessDecisionGraph.Completeness.COMPLETE, List.of());
+        var bundle = new RuntimeActivationBundle("boundary", "-javaagent:/opt/fachtracing-agent.jar",
+                Map.of(), List.of(new RuntimeActivationBundle.DecisionDefinition(graph, manifest)));
+        String payload = new String(bundle.toJson(), java.nio.charset.StandardCharsets.UTF_8);
+        assert !payload.contains("analysisDecisions") : payload;
+        assert !payload.contains("ENTRY_POINT") : payload;
     }
 
     private static void collectionsPreserveTypedElementsWithoutArbitraryStringification() {

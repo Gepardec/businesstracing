@@ -712,6 +712,36 @@
       "completedAt": "2026-08-07T11:25:35Z"
     },
     {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Bound descendant relevance to sliced expressions",
+      "rationale": "Calls nested in returned and predicate expressions remain relevant, while unrelated calls in a relevant branch body do not enter the graph.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:49:35Z"
+    },
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Keep all proven compatible dispatch candidates and let runtime evidence select one",
+      "rationale": "Java polymorphism can make the concrete target unknown during static analysis. The analyzer must not guess a target.",
+      "task": "Task 3",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T11:49:35Z"
+    },
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Slice every branch assignment and each terminal source failure",
+      "rationale": "Last-write-only definitions removed valid alternative paths after descendant relevance became strict.",
+      "task": "Task 5",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:25:49Z"
+    },
+    {
       "specId": "conditional-alias-method-reference-effects",
       "specType": "bugfix",
       "number": 1,
@@ -730,6 +760,66 @@
       "task": "Task 2",
       "date": "2026-08-07",
       "completedAt": "2026-08-07T11:53:56Z"
+    },
+    {
+      "specId": "result-relevance-review-findings",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Keep conservative flat assignment history for non-local state while indexing local definitions by use site",
+      "rationale": "Field writes can affect later receiver calls and must not be removed as overwritten local values.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:07:46Z"
+    },
+    {
+      "specId": "result-relevance-review-findings",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Use compiler-attributed thrown and catch types before filtering throw sinks",
+      "rationale": "The presence of an unrelated catch does not make a thrown exception non-terminal.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T13:07:46Z"
+    },
+    {
+      "specId": "fix-hogarama-aggregate-completeness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Use exact classpath origin for external archive operations",
+      "rationale": "Classpath origin is target-neutral ownership evidence and keeps application class-directory binaries fail-closed.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:21:17Z"
+    },
+    {
+      "specId": "fix-hogarama-aggregate-completeness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Trust archive Boolean calls only at source control predicates",
+      "rationale": "The source call site already defines the graph branch, but a direct returned Boolean dependency call can still hide business logic.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:21:17Z"
+    },
+    {
+      "specId": "explicit-opaque-library-boundaries",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Make opaque dependency trust empty by default",
+      "rationale": "Packaging in a JAR does not prove that code is free of business decisions.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:56:31Z"
+    },
+    {
+      "specId": "explicit-opaque-library-boundaries",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Resolve Maven coordinates to exact compile-classpath archive paths",
+      "rationale": "Maven owns artifact identity, while the engine must remain build-tool independent.",
+      "task": "Task 1",
+      "date": "2026-08-07",
+      "completedAt": "2026-08-07T12:56:31Z"
     },
     {
       "specId": "context-label-symbol-correctness",

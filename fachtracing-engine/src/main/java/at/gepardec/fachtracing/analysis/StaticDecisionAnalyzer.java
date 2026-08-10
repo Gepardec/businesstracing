@@ -51,6 +51,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -86,14 +87,29 @@ import java.util.stream.Collectors;
 public final class StaticDecisionAnalyzer {
     /** Analyzes the first graph entry from a project-aware application boundary. */
     public AnalysisManifest.AnalysisResult analyze(ApplicationSourceBoundary boundary) {
-        List<AnalysisManifest.AnalysisResult> results = analyzeAll(boundary);
+        return analyze(boundary, OpaqueLibraryBoundary.empty());
+    }
+
+    /** Analyzes the first graph entry with explicitly trusted technical dependency archives. */
+    public AnalysisManifest.AnalysisResult analyze(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries) {
+        List<AnalysisManifest.AnalysisResult> results = analyzeAll(boundary, opaqueLibraries);
         if (results.isEmpty()) throw new IllegalArgumentException("No @FachTracing method found");
         return results.getFirst();
     }
 
     /** Analyzes every graph entry from a compatible project-aware application boundary. */
     public List<AnalysisManifest.AnalysisResult> analyzeAll(ApplicationSourceBoundary boundary) {
+        return analyzeAll(boundary, OpaqueLibraryBoundary.empty());
+    }
+
+    /** Analyzes every graph entry with explicitly trusted technical dependency archives. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries) {
         Objects.requireNonNull(boundary, "boundary");
+        Objects.requireNonNull(opaqueLibraries, "opaqueLibraries");
         String searchedBoundary = "searched projects " + boundary.projects().stream()
                 .map(ApplicationSourceBoundary.ProjectSources::projectId).sorted().toList()
                 + ", external sources " + boundary.externalResolutionSources().stream()
@@ -117,8 +133,11 @@ public final class StaticDecisionAnalyzer {
                     .sorted(Comparator.comparing(Path::toString)).toList();
             var request = new AnalysisRequest(
                     sources, classpath, project.compilerModel().charset(), project.entrySourceFiles());
-            if (modular) results.addAll(analyzeModular(request, analysisClosure, boundary));
-            else results.addAll(analyzeAll(request, project.compilerModel()));
+            if (modular) {
+                results.addAll(analyzeModular(request, analysisClosure, boundary, opaqueLibraries));
+            } else {
+                results.addAll(analyzeAll(request, project.compilerModel(), opaqueLibraries));
+            }
         }
         return results.stream()
                 .map(result -> withSearchedBoundary(result, searchedBoundary))
@@ -162,19 +181,34 @@ public final class StaticDecisionAnalyzer {
 
     /** Parses and attributes sources, then analyzes the first annotated method in source order. */
     public AnalysisManifest.AnalysisResult analyze(AnalysisRequest request) {
-        List<AnalysisManifest.AnalysisResult> results = analyzeAll(request);
+        return analyze(request, OpaqueLibraryBoundary.empty());
+    }
+
+    /** Analyzes the first annotated method with explicitly trusted technical dependency archives. */
+    public AnalysisManifest.AnalysisResult analyze(
+            AnalysisRequest request,
+            OpaqueLibraryBoundary opaqueLibraries) {
+        List<AnalysisManifest.AnalysisResult> results = analyzeAll(request, opaqueLibraries);
         if (results.isEmpty()) throw new IllegalArgumentException("No @FachTracing method found");
         return results.getFirst();
     }
 
     /** Parses and attributes sources, then analyzes every annotated method in deterministic source order. */
     public List<AnalysisManifest.AnalysisResult> analyzeAll(AnalysisRequest request) {
-        return analyzeAll(request, ApplicationSourceBoundary.CompilerModel.java21());
+        return analyzeAll(request, OpaqueLibraryBoundary.empty());
+    }
+
+    /** Analyzes all annotated methods with explicitly trusted technical dependency archives. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(
+            AnalysisRequest request,
+            OpaqueLibraryBoundary opaqueLibraries) {
+        return analyzeAll(request, ApplicationSourceBoundary.CompilerModel.java21(), opaqueLibraries);
     }
 
     private List<AnalysisManifest.AnalysisResult> analyzeAll(
             AnalysisRequest request,
-            ApplicationSourceBoundary.CompilerModel compilerModel) {
+            ApplicationSourceBoundary.CompilerModel compilerModel,
+            OpaqueLibraryBoundary opaqueLibraries) {
         List<String> options = new ArrayList<>(List.of("-proc:none"));
         options.addAll(compilerModel.languageOptions());
         options.addAll(compilerModel.compilerArguments());
@@ -182,13 +216,14 @@ public final class StaticDecisionAnalyzer {
             options.add("-classpath");
             options.add(joinPaths(request.compilationClasspath()));
         }
-        return analyzeWithCompiler(request, request.sourceFiles(), options);
+        return analyzeWithCompiler(request, request.sourceFiles(), options, opaqueLibraries);
     }
 
     private List<AnalysisManifest.AnalysisResult> analyzeModular(
             AnalysisRequest request,
             List<ApplicationSourceBoundary.ProjectSources> closure,
-            ApplicationSourceBoundary boundary) {
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries) {
         List<ApplicationSourceBoundary.ResolutionSource> external = boundary.externalResolutionSources();
         if (external.stream().anyMatch(source -> source.ownership().kind()
                 == ApplicationSourceBoundary.ModuleOwnershipKind.UNNAMED)) {
@@ -276,7 +311,7 @@ public final class StaticDecisionAnalyzer {
         options.add("-d");
         options.add(output.toString());
         try {
-            return analyzeWithCompiler(request, List.copyOf(sourceFiles), options);
+            return analyzeWithCompiler(request, List.copyOf(sourceFiles), options, opaqueLibraries);
         } finally {
             deleteTree(output);
         }
@@ -293,7 +328,8 @@ public final class StaticDecisionAnalyzer {
     private List<AnalysisManifest.AnalysisResult> analyzeWithCompiler(
             AnalysisRequest request,
             List<Path> compilerSources,
-            List<String> options) {
+            List<String> options,
+            OpaqueLibraryBoundary opaqueLibraries) {
         Objects.requireNonNull(request, "request");
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) throw new IllegalStateException("A full JDK is required for source analysis");
@@ -338,7 +374,7 @@ public final class StaticDecisionAnalyzer {
                 var diagnostics = new ArrayList<AnalysisManifest.AnalysisDiagnostic>();
                 var extractor = new Extractor(
                         trees, task.getTypes(), task.getElements(), index, builder, diagnostics,
-                        request.compilationClasspath());
+                        request.compilationClasspath(), opaqueLibraries);
                 String entry = extractor.addEntry(root);
                 extractor.extract(root, entry, true, new HashSet<>());
                 var built = builder.build(entry, sourceFingerprints, diagnostics);
@@ -410,6 +446,8 @@ public final class StaticDecisionAnalyzer {
         private final DecisionGraphBuilder builder;
         private final List<AnalysisManifest.AnalysisDiagnostic> diagnostics;
         private final List<Path> binaryClasspath;
+        private final BinaryTypeOriginResolver binaryTypeOrigins;
+        private final OpaqueLibraryBoundary opaqueLibraries;
         private final List<String> pendingFailureNodes = new ArrayList<>();
         private final Map<ExecutableElement, MutationSummary> mutationSummaries = new HashMap<>();
         private final Set<ExecutableElement> activeMutationSummaries = new HashSet<>();
@@ -422,7 +460,8 @@ public final class StaticDecisionAnalyzer {
                 SourceIndex index,
                 DecisionGraphBuilder builder,
                 List<AnalysisManifest.AnalysisDiagnostic> diagnostics,
-                List<Path> binaryClasspath) {
+                List<Path> binaryClasspath,
+                OpaqueLibraryBoundary opaqueLibraries) {
             this.trees = trees;
             this.types = types;
             this.elements = elements;
@@ -430,6 +469,8 @@ public final class StaticDecisionAnalyzer {
             this.builder = builder;
             this.diagnostics = diagnostics;
             this.binaryClasspath = List.copyOf(binaryClasspath);
+            this.binaryTypeOrigins = new BinaryTypeOriginResolver(binaryClasspath);
+            this.opaqueLibraries = opaqueLibraries;
         }
 
         private String addEntry(MethodLocation method) {
@@ -481,6 +522,10 @@ public final class StaticDecisionAnalyzer {
                         call, summary.receiverUnknown(), summary.parameterUnknown());
                 return mergeEffects(callbackEffects,
                         new DependencyGraphBuilder.CallEffects(proven, possible));
+            }
+            if (isOpaqueLibraryReferenceOperation(executable)) {
+                return mergeEffects(callbackEffects, new DependencyGraphBuilder.CallEffects(
+                        opaqueLibraryReceiverRoots(caller, call), Set.of()));
             }
             if (isProvenReadOnlyLibraryOperation(executable)) return callbackEffects;
             return mergeEffects(callbackEffects,
@@ -553,6 +598,13 @@ public final class StaticDecisionAnalyzer {
                     possible.addAll(callbackInputs);
                 }
                 return new DependencyGraphBuilder.CallEffects(proven, possible);
+            }
+            if (isOpaqueLibraryReferenceOperation(executable)) {
+                Set<String> receiverRoots = memberReferenceReceiverRoots(caller, reference);
+                if (receiverRoots.isEmpty() && !executable.getModifiers().contains(Modifier.STATIC)) {
+                    receiverRoots = callbackInputs;
+                }
+                return new DependencyGraphBuilder.CallEffects(receiverRoots, Set.of());
             }
             if (isProvenReadOnlyLibraryOperation(executable)) {
                 return DependencyGraphBuilder.CallEffects.none();
@@ -691,6 +743,36 @@ public final class StaticDecisionAnalyzer {
                 if (referenceValue(location, argument)) roots.addAll(stateRoots(argument));
             }
             return Set.copyOf(roots);
+        }
+
+        private Set<String> opaqueLibraryReceiverRoots(
+                MethodLocation location, MethodInvocationTree call) {
+            if (!(call.getMethodSelect() instanceof MemberSelectTree member)) return Set.of();
+            TreePath path = TreePath.getPath(location.unit(), member.getExpression());
+            Element receiver = path == null ? null : trees.getElement(path);
+            if (receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
+                    ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind())) return Set.of();
+            return stateRoots(member.getExpression());
+        }
+
+        private boolean isOpaqueLibraryReferenceOperation(ExecutableElement executable) {
+            TypeKind result = executable.getReturnType().getKind();
+            if (!Set.of(TypeKind.ARRAY, TypeKind.DECLARED, TypeKind.TYPEVAR,
+                    TypeKind.WILDCARD, TypeKind.INTERSECTION).contains(result)) return false;
+            return hasOpaqueLibraryOwner(executable);
+        }
+
+        private boolean isOpaqueLibraryBooleanOperation(ExecutableElement executable) {
+            return executable.getReturnType().getKind() == TypeKind.BOOLEAN
+                    && hasOpaqueLibraryOwner(executable);
+        }
+
+        private boolean hasOpaqueLibraryOwner(ExecutableElement executable) {
+            if (!(executable.getEnclosingElement() instanceof TypeElement owner)) return false;
+            String binaryName = elements.getBinaryName(owner).toString();
+            BinaryTypeOriginResolver.Resolution resolution = binaryTypeOrigins.resolve(binaryName);
+            return resolution.origin() == BinaryTypeOriginResolver.Origin.ARCHIVE
+                    && opaqueLibraries.contains(resolution.location().orElseThrow());
         }
 
         private boolean referenceValue(MethodLocation location, Tree tree) {
@@ -871,8 +953,17 @@ public final class StaticDecisionAnalyzer {
             }
             var dependencies = new DependencyGraphBuilder().build(
                     location.method(), call -> callEffects(location, call));
-            Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies, effectRoots);
+            Set<ThrowTree> locallyCaughtThrows = CaughtThrowResolver.resolve(
+                    location.path(), dependencies.throwStatements(), dependencies.parents(), trees, types);
+            Set<Tree> slice = new BackwardDecisionSlicer().slice(
+                    dependencies, effectRoots, locallyCaughtThrows);
             Set<Tree> unknownResultEffects = unknownResultEffects(location, dependencies, slice);
+            AnalysisDecisionAuditor.excludedConstructs(
+                    location.method(), dependencies, slice, unknownResultEffects).forEach(tree ->
+                    builder.addAnalysisDecision(
+                            AnalysisManifest.AnalysisAction.EXCLUDED,
+                            AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT,
+                            mapping(location, tree), List.of(), ""));
             var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
                     unknownResultEffects, predecessor);
             flow.scan(new TreePath(location.path(), location.method().getBody()), null);
@@ -1477,6 +1568,10 @@ public final class StaticDecisionAnalyzer {
                     return null;
                 }
                 if (isSupportedLibraryOperation(executable)) return super.visitMethodInvocation(node, unused);
+                if (isOpaqueLibraryReferenceOperation(executable)
+                        || (isOpaqueLibraryBooleanOperation(executable) && isSourceControlPredicate(node))) {
+                    return super.visitMethodInvocation(node, unused);
+                }
 
                 scan(node.getMethodSelect(), unused);
                 scan(node.getArguments(), unused);
@@ -1524,6 +1619,38 @@ public final class StaticDecisionAnalyzer {
                 return null;
             }
 
+            private boolean isSourceControlPredicate(MethodInvocationTree invocation) {
+                Tree current = invocation;
+                Tree parent;
+                while ((parent = dependencies.parents().get(current)) != null) {
+                    Tree condition = switch (parent) {
+                        case IfTree decision -> decision.getCondition();
+                        case WhileLoopTree loop -> loop.getCondition();
+                        case DoWhileLoopTree loop -> loop.getCondition();
+                        case ForLoopTree loop -> loop.getCondition();
+                        case ConditionalExpressionTree decision -> decision.getCondition();
+                        default -> null;
+                    };
+                    if (condition != null && containsTree(condition, invocation)) return true;
+                    current = parent;
+                }
+                return false;
+            }
+
+            private boolean containsTree(Tree root, Tree target) {
+                boolean[] found = { false };
+                new TreeScanner<Void, Void>() {
+                    @Override public Void scan(Tree tree, Void unused) {
+                        if (tree == target) {
+                            found[0] = true;
+                            return null;
+                        }
+                        return found[0] ? null : super.scan(tree, unused);
+                    }
+                }.scan(root, null);
+                return found[0];
+            }
+
             private void scanDynamicInvocation(
                     MethodInvocationTree node,
                     ExecutableElement contract,
@@ -1536,14 +1663,29 @@ public final class StaticDecisionAnalyzer {
                 int candidate = 0;
                 for (TypeElement implementation : index.types()) {
                     if (!implementation.getKind().isClass()
-                            || implementation.getModifiers().contains(Modifier.ABSTRACT)
-                            || !isCompatibleDispatchTarget(implementation, owner, receiverType)) continue;
+                            || !isContractSubtype(implementation, owner)) continue;
+                    if (implementation.getModifiers().contains(Modifier.ABSTRACT)) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.ABSTRACT_IMPLEMENTATION, List.of());
+                        continue;
+                    }
+                    if (!isCompatibleDispatchTarget(implementation, owner, receiverType)) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION, List.of());
+                        continue;
+                    }
                     String alternative = builder.addNode(
                             BusinessDecisionGraph.NodeKind.COMPUTATION,
                             businessRuleLabel(implementation),
                             Map.of(), null, null, "", "");
                     candidate++;
                     String candidateEdge = builder.addEdge(dispatch, alternative, "selected rule");
+                    auditDispatchCandidate(node, implementation,
+                            AnalysisManifest.AnalysisAction.INCLUDED,
+                            AnalysisManifest.AnalysisReason.DISPATCH_CANDIDATE,
+                            List.of(dispatch, alternative));
                     MethodLocation implementationMethod = implementationOf(contract, implementation);
                     if (implementationMethod == null) {
                         resultTails.add(new Tail(alternative, "result"));
@@ -1557,6 +1699,16 @@ public final class StaticDecisionAnalyzer {
                 }
                 if (candidate == 0) addCoverageGap(node, "decision-rule implementations are unavailable");
                 else frontier = List.copyOf(resultTails);
+            }
+
+            private void auditDispatchCandidate(
+                    MethodInvocationTree invocation,
+                    TypeElement implementation,
+                    AnalysisManifest.AnalysisAction action,
+                    AnalysisManifest.AnalysisReason reason,
+                    List<String> nodeIds) {
+                builder.addAnalysisDecision(action, reason, mapping(location, invocation), nodeIds,
+                        implementation.getQualifiedName().toString());
             }
 
             private ExecutableElement reflectedContract(
@@ -1626,6 +1778,7 @@ public final class StaticDecisionAnalyzer {
                     advance(mutation);
                     return null;
                 }
+                if (isOpaqueLibraryReferenceOperation(executable)) return null;
                 MethodLocation callee = index.methods().get(executable);
                 if (callee == null) {
                     if (!isSupportedLibraryOperation(executable)) {
@@ -2467,6 +2620,11 @@ public final class StaticDecisionAnalyzer {
                 return types.isSubtype(types.erasure(implementation.asType()), types.erasure(contractOwner.asType()));
             }
 
+            private boolean isContractSubtype(TypeElement implementation, TypeElement contractOwner) {
+                return types.isSubtype(
+                        types.erasure(implementation.asType()), types.erasure(contractOwner.asType()));
+            }
+
             private boolean hasDecisionBearingOverrides(ExecutableElement contract, TypeElement owner) {
                 if (owner.getKind() != ElementKind.INTERFACE) return false;
                 return index.types().stream()
@@ -2617,20 +2775,7 @@ public final class StaticDecisionAnalyzer {
                 Tree tree,
                 Set<Tree> slice,
                 DependencyGraphBuilder.MethodDependencies dependencies) {
-            if (slice.contains(tree)) return true;
-            for (Tree item : slice) {
-                Tree current = item;
-                while (current != null && current != dependencies.method()) {
-                    if (current == tree) return true;
-                    current = dependencies.parents().get(current);
-                }
-            }
-            Tree current = tree;
-            while (current != null && current != dependencies.method()) {
-                if (slice.contains(current)) return true;
-                current = dependencies.parents().get(current);
-            }
-            return false;
+            return DecisionRelevance.isRelevant(tree, slice, dependencies);
         }
 
         private static boolean isPredicateExpression(Tree expression) {
@@ -2985,6 +3130,9 @@ public final class StaticDecisionAnalyzer {
                 || qualifiedName.equals("java.util.OptionalInt")
                 || qualifiedName.equals("java.util.OptionalLong")
                 || qualifiedName.equals("java.util.OptionalDouble")) return true;
+        if (qualifiedName.equals("java.lang.Enum") && Set.of(
+                "name", "ordinal", "equals", "hashCode", "compareTo",
+                "getDeclaringClass", "describeConstable", "valueOf").contains(method)) return true;
         if (qualifiedName.startsWith("java.util.") && Set.of(
                 "size", "isEmpty", "indexOf", "lastIndexOf", "peek", "peekFirst", "peekLast", "element",
                 "first", "last", "keySet", "values", "entrySet", "iterator", "listIterator",

@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-07T13:05:06Z"
-_sourceHash: "948b751950a1c9d6d9c35c6c929824874119575c5016a737feef12be5e2a7867"
+_generatedAt: "2026-08-07T13:27:49Z"
+_sourceHash: "da473860fb4ad9ba4f9c6d82b5d34e939c91a37c7ee248ae02e799bac3fdc3c2"
 ---
 
 ## Project Structure Map
@@ -59,12 +59,14 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (66 files)
+#### fachtracing-engine/ (72 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisManifest.java`
   - `public record AnalysisManifest`
+- `src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java`
+  - excluded graph-eligible source construct audit
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java`
   - `public record AnalysisRequest`
 - `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
@@ -72,20 +74,30 @@ fachtracing/
   - `public enum LanguageVersionMode`
 - `src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java`
   - `public final class BackwardDecisionSlicer`
+- `src/main/java/at/gepardec/fachtracing/analysis/BinaryTypeOriginResolver.java`
+  - cached first-match classpath origin for exact binary types
 - `src/main/java/at/gepardec/fachtracing/analysis/BytecodeDecisionAnalyzer.java`
   - `public final class BytecodeDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java`
   - rejects technical loop and ordinal candidate output
 - `src/main/java/at/gepardec/fachtracing/analysis/DecisionGraphBuilder.java`
   - `public final class DecisionGraphBuilder`
+- `src/main/java/at/gepardec/fachtracing/analysis/DecisionRelevance.java`
+  - expression-bounded result-slice relevance policy
 - `src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java`
   - `public final class DependencyGraphBuilder`
 - `src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java`
   - flow-ordered direct reference alias roots for result-effect analysis
+- `src/main/java/at/gepardec/fachtracing/analysis/OpaqueLibraryBoundary.java`
+  - exact caller-declared technical dependency archive boundary
 - `src/main/java/at/gepardec/fachtracing/analysis/CancellationBoundaryScanner.java`
   - exact supported cancellation call-site discovery
+- `src/main/java/at/gepardec/fachtracing/analysis/CaughtThrowResolver.java`
+  - attributed compatible local catch resolution
 - `src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
   - `public final class StaticDecisionAnalyzer`
+- `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`
+  - use-site local reaching definitions
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessStatementRenderer.java`
   - `public final class BusinessStatementRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/DecisionExplanationProjector.java`
@@ -135,7 +147,7 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (28 files)
+#### fachtracing-maven-plugin/ (29 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
@@ -143,6 +155,8 @@ fachtracing/
   - aggregate reactor analysis and activation-bundle generation
 - `src/main/java/at/gepardec/fachtracing/maven/MavenCompilerModelResolver.java`
   - effective Maven compiler and JPMS model
+- `src/main/java/at/gepardec/fachtracing/maven/OpaqueLibraryArtifactResolver.java`
+  - exact Maven coordinate to compile-classpath archive mapping
 - `src/main/java/at/gepardec/fachtracing/maven/SourceInputResolver.java`
   - project, external, and source-artifact discovery
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
