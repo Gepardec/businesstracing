@@ -1,0 +1,57 @@
+{
+  "id": "unify-developer-graph-contract",
+  "type": "refactor",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T13:16:28Z",
+  "updated": "2026-08-07T13:30:55Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "developer-graph-json-schema",
+    "developer-graph-json-export",
+    "maven-developer-graph-export",
+    "generic-application-readiness"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T13:19:11Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 9,
+        "codeQuality": 9,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-07T13:30:55Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3000,
+    "filesChanged": 18,
+    "linesAdded": 430,
+    "linesRemoved": 302,
+    "tasksCompleted": 2,
+    "acceptanceCriteriaVerified": 13,
+    "specDurationMinutes": 15
+  }
+}

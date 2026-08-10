@@ -99,9 +99,9 @@ Maven binary on the module path and a controlled source patch. Both Maven goals 
 by source identity or source root.
 Unsupported forked compilers fail before graph extraction. Maven can use annotation processors
 during the preceding compile phase. Fachtracing removes their execution settings and uses
-`-proc:none` while it reads registered generated Java source. Generated sources keep generated
-provenance in developer graph V2. AST-only transformations that have no equivalent Java source are
-not reconstructed; an attribution failure stops extraction.
+`-proc:none` while it reads registered generated Java source. Generated sources keep a generated
+origin in developer graph V1. AST-only transformations that have no equivalent Java source are not
+reconstructed; an attribution failure stops extraction.
 
 Every annotated decision has one `Start` and one `Stop`. Return paths state the returned business
 expression on their edge to Stop. Relevant throws in the entry or an expanded source method use a

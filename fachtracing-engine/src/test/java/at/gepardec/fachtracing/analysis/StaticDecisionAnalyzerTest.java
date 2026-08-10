@@ -1695,6 +1695,9 @@ public final class StaticDecisionAnalyzerTest {
 
             assert json.equals(exporter.export(result, revision)) : "developer export must be deterministic";
             assert json.contains("\"schema\":\"fachtracing-developer-graph/v1\"") : json;
+            assert json.contains("\"sourceOrigins\":[") : json;
+            assert json.contains("\"originId\":\"git\"") : json;
+            assert !json.contains("\"sourceRevision\"") : json;
             assert json.contains("\"commit\":\"" + revision.commit() + "\"") : json;
             assert json.contains("src/Policy.java") : json;
             assert json.contains("/blob/" + revision.commit() + "/src/Policy.java#L") : json;
@@ -1825,7 +1828,7 @@ public final class StaticDecisionAnalyzerTest {
                             external, "example:rules:1.0", "archive-sha256")));
 
             String json = new DeveloperGraphExporter().export(analysis, catalog);
-            assert json.contains("\"schema\":\"fachtracing-developer-graph/v2\"") : json;
+            assert json.contains("\"schema\":\"fachtracing-developer-graph/v1\"") : json;
             assert json.contains("\"kind\":\"MAVEN_SOURCE\"") : json;
             assert json.contains("\"identity\":\"example:rules:1.0\"") : json;
             int urls = json.split("\\\"url\\\"", -1).length - 1;

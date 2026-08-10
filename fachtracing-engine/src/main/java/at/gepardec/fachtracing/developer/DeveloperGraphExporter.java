@@ -26,31 +26,16 @@ public final class DeveloperGraphExporter {
     /** Identifies the current JSON format. */
     public static final String SCHEMA = "fachtracing-developer-graph/v1";
 
-    /** Identifies the multi-origin JSON format. */
-    public static final String SCHEMA_V2 = "fachtracing-developer-graph/v2";
-
     /** Produces one deterministic developer graph document. */
     public String export(AnalysisManifest.AnalysisResult analysis, SourceRevision revision) {
         Objects.requireNonNull(analysis, "analysis");
         Objects.requireNonNull(revision, "revision");
-        if (!analysis.graph().graphId().equals(analysis.manifest().graphId())
-                || analysis.graph().version() != analysis.manifest().graphVersion()) {
-            throw new IllegalArgumentException("graph and developer manifest versions do not match");
-        }
-        verifySourceFiles(analysis.manifest(), revision);
-
-        var output = new StringBuilder(4096).append('{');
-        stringField(output, "schema", SCHEMA).append(',');
-        output.append("\"graph\":");
-        appendGraph(output, analysis, revision);
-        output.append(',').append("\"sourceRevision\":");
-        appendRevision(output, revision);
-        output.append(',').append("\"sourceFiles\":");
-        appendSourceFiles(output, analysis.manifest(), revision);
-        return output.append('}').append('\n').toString();
+        analysis.manifest().sourceFingerprints().keySet().forEach(path ->
+                revision.relativePath(Path.of(path)));
+        return export(analysis, new SourceCatalog(List.of(SourceOrigin.git("git", revision))));
     }
 
-    /** Produces developer JSON when analyzed sources have more than one provenance origin. */
+    /** Produces developer JSON for one or more provenance origins. */
     public String export(AnalysisManifest.AnalysisResult analysis, SourceCatalog catalog) {
         Objects.requireNonNull(analysis, "analysis");
         Objects.requireNonNull(catalog, "catalog");
@@ -60,17 +45,17 @@ public final class DeveloperGraphExporter {
         }
         Map<Path, ResolvedSource> sources = resolveAndVerify(analysis.manifest(), catalog);
         var output = new StringBuilder(4096).append('{');
-        stringField(output, "schema", SCHEMA_V2).append(',');
+        stringField(output, "schema", SCHEMA).append(',');
         output.append("\"graph\":");
-        appendGraphV2(output, analysis, sources);
+        appendGraph(output, analysis, sources);
         output.append(',').append("\"sourceOrigins\":");
         appendOrigins(output, catalog);
         output.append(',').append("\"sourceFiles\":");
-        appendSourceFilesV2(output, sources);
+        appendSourceFiles(output, sources);
         return output.append('}').append('\n').toString();
     }
 
-    private static void appendGraphV2(
+    private static void appendGraph(
             StringBuilder output,
             AnalysisManifest.AnalysisResult analysis,
             Map<Path, ResolvedSource> sources) {
@@ -94,7 +79,7 @@ public final class DeveloperGraphExporter {
             AnalysisManifest.SourceMapping mapping = analysis.manifest().sourceMappings().get(node.nodeId());
             if (mapping != null) {
                 output.append(',').append("\"source\":");
-                appendSourceV2(output, mapping, sources.get(canonical(mapping.source())));
+                appendSource(output, mapping, sources.get(canonical(mapping.source())));
             }
             output.append('}');
         }
@@ -115,7 +100,7 @@ public final class DeveloperGraphExporter {
         output.append("]}");
     }
 
-    private static void appendSourceV2(
+    private static void appendSource(
             StringBuilder output,
             AnalysisManifest.SourceMapping mapping,
             ResolvedSource source) {
@@ -154,7 +139,7 @@ public final class DeveloperGraphExporter {
         output.append(']');
     }
 
-    private static void appendSourceFilesV2(StringBuilder output, Map<Path, ResolvedSource> sources) {
+    private static void appendSourceFiles(StringBuilder output, Map<Path, ResolvedSource> sources) {
         List<ResolvedSource> files = sources.values().stream()
                 .sorted(Comparator.comparing(item -> item.origin().id() + ':' + item.relativePath()))
                 .toList();
@@ -197,88 +182,6 @@ public final class DeveloperGraphExporter {
         return Map.copyOf(result);
     }
 
-    private static void appendGraph(
-            StringBuilder output,
-            AnalysisManifest.AnalysisResult analysis,
-            SourceRevision revision) {
-        BusinessDecisionGraph graph = analysis.graph();
-        output.append('{');
-        stringField(output, "id", graph.graphId()).append(',');
-        numberField(output, "version", graph.version()).append(',');
-        stringField(output, "label", graph.decisionLabel()).append(',');
-        stringField(output, "entryNodeId", graph.entryNodeId()).append(',');
-        stringField(output, "completeness", graph.completeness().name()).append(',');
-        output.append("\"nodes\":[");
-        for (int index = 0; index < graph.nodes().size(); index++) {
-            if (index > 0) output.append(',');
-            appendNode(output, graph.nodes().get(index), analysis.manifest(), revision);
-        }
-        output.append("],\"edges\":[");
-        for (int index = 0; index < graph.edges().size(); index++) {
-            if (index > 0) output.append(',');
-            appendEdge(output, graph.edges().get(index));
-        }
-        output.append("],\"coverageGaps\":[");
-        for (int index = 0; index < graph.coverageGaps().size(); index++) {
-            if (index > 0) output.append(',');
-            var gap = graph.coverageGaps().get(index);
-            output.append('{');
-            stringField(output, "nodeId", gap.nodeId()).append(',');
-            stringField(output, "description", gap.description());
-            output.append('}');
-        }
-        output.append("]}");
-    }
-
-    private static void appendNode(
-            StringBuilder output,
-            BusinessDecisionGraph.DecisionNode node,
-            AnalysisManifest manifest,
-            SourceRevision revision) {
-        output.append('{');
-        stringField(output, "id", node.nodeId()).append(',');
-        stringField(output, "kind", node.kind().name()).append(',');
-        stringField(output, "label", node.businessLabel()).append(',');
-        output.append("\"attributes\":");
-        appendStringMap(output, node.attributes());
-        AnalysisManifest.SourceMapping mapping = manifest.sourceMappings().get(node.nodeId());
-        if (mapping != null) {
-            output.append(',').append("\"source\":");
-            appendSource(output, mapping, manifest, revision);
-        }
-        output.append('}');
-    }
-
-    private static void appendSource(
-            StringBuilder output,
-            AnalysisManifest.SourceMapping mapping,
-            AnalysisManifest manifest,
-            SourceRevision revision) {
-        String relativePath = revision.relativePath(mapping.source());
-        String fingerprint = fingerprint(manifest, mapping.source(), revision);
-        output.append('{');
-        stringField(output, "path", relativePath).append(',');
-        numberField(output, "line", mapping.line()).append(',');
-        numberField(output, "column", mapping.column()).append(',');
-        stringField(output, "syntaxKind", mapping.treeKind()).append(',');
-        stringField(output, "sha256", fingerprint).append(',');
-        stringField(output, "url", revision.sourceUrl(relativePath, mapping.line(), mapping.column()));
-        output.append('}');
-    }
-
-    private static String fingerprint(
-            AnalysisManifest manifest,
-            Path source,
-            SourceRevision revision) {
-        String relativeSource = revision.relativePath(source);
-        return manifest.sourceFingerprints().entrySet().stream()
-                .filter(entry -> revision.relativePath(Path.of(entry.getKey())).equals(relativeSource))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "no source fingerprint exists for repository path " + relativeSource));
-    }
-
     private static void appendEdge(StringBuilder output, BusinessDecisionGraph.DecisionEdge edge) {
         output.append('{');
         stringField(output, "id", edge.edgeId()).append(',');
@@ -294,44 +197,6 @@ public final class DeveloperGraphExporter {
         stringField(output, "commit", revision.commit()).append(',');
         stringField(output, "committedAt", revision.committedAt());
         output.append('}');
-    }
-
-    private static void appendSourceFiles(
-            StringBuilder output,
-            AnalysisManifest manifest,
-            SourceRevision revision) {
-        var files = new ArrayList<SourceFile>();
-        manifest.sourceFingerprints().forEach((path, fingerprint) ->
-                files.add(new SourceFile(revision.relativePath(Path.of(path)), fingerprint)));
-        files.sort(Comparator.comparing(SourceFile::path));
-        output.append('[');
-        for (int index = 0; index < files.size(); index++) {
-            if (index > 0) output.append(',');
-            SourceFile file = files.get(index);
-            output.append('{');
-            stringField(output, "path", file.path()).append(',');
-            stringField(output, "sha256", file.sha256());
-            output.append('}');
-        }
-        output.append(']');
-    }
-
-    private static void verifySourceFiles(AnalysisManifest manifest, SourceRevision revision) {
-        manifest.sourceFingerprints().forEach((path, expected) -> {
-            Path source = Path.of(path);
-            String relativePath = revision.relativePath(source);
-            try {
-                String actual = sha256(Files.readAllBytes(source));
-                if (!actual.equals(expected)) {
-                    throw new IllegalStateException(
-                            "source file does not match the analyzed content: " + relativePath);
-                }
-                revision.verifyCommittedSource(source, expected);
-            } catch (IOException exception) {
-                throw new IllegalStateException(
-                        "cannot verify analyzed source file: " + relativePath, exception);
-            }
-        });
     }
 
     private static String sha256(byte[] content) {
@@ -397,8 +262,6 @@ public final class DeveloperGraphExporter {
         }
         return output.append('"');
     }
-
-    private record SourceFile(String path, String sha256) { }
 
     private record ResolvedSource(SourceOrigin origin, String relativePath, String sha256) { }
 

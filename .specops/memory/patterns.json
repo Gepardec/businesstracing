@@ -73,8 +73,8 @@
     },
     {
       "category": "wire-contract-schema",
-      "count": 1,
-      "pattern": "Generate formal wire schemas in the engine, derive closed values from production Java enums, and let build-tool adapters publish the matching artifact."
+      "count": 2,
+      "pattern": "Generate formal wire schemas in the engine, derive closed values from production Java enums, publish one current artifact through build adapters, and add a new version only for an incompatible consumed contract."
     },
     {
       "category": "path-sensitive-definition-flow",

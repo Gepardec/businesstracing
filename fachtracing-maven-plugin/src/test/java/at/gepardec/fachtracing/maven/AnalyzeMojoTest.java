@@ -302,61 +302,38 @@ public final class AnalyzeMojoTest {
 
     private static void generatesDeveloperGraphSchemasFromCode() {
         var generator = new DeveloperGraphJsonSchema();
-        Map<String, Object> v1 = object(new JsonParser(
-                generator.generate(DeveloperGraphExporter.SCHEMA)).parse());
-        assert v1.get("$schema").equals("https://json-schema.org/draft/2020-12/schema") : v1;
-        assert v1.get("$id").equals("urn:fachtracing:schema:developer-graph:v1") : v1;
-        assert Boolean.FALSE.equals(v1.get("additionalProperties")) : v1;
-        assertRequired(v1, "schema", "graph", "sourceRevision", "sourceFiles");
-        assertDataSchema(v1, DeveloperGraphExporter.SCHEMA);
+        Map<String, Object> schema = object(new JsonParser(generator.generate()).parse());
+        assert schema.get("$schema").equals("https://json-schema.org/draft/2020-12/schema") : schema;
+        assert schema.get("$id").equals("urn:fachtracing:schema:developer-graph:v1") : schema;
+        assert Boolean.FALSE.equals(schema.get("additionalProperties")) : schema;
+        assertRequired(schema, "schema", "graph", "sourceOrigins", "sourceFiles");
+        assertDataSchema(schema, DeveloperGraphExporter.SCHEMA);
 
-        Map<String, Object> v1Definitions = object(v1.get("$defs"));
-        assert v1Definitions.keySet().equals(java.util.Set.of(
-                "graph", "node", "edge", "coverageGap", "source", "sourceFile", "revision"))
-                : v1Definitions.keySet();
-        assertEnum(v1Definitions, "node", "kind",
+        Map<String, Object> definitions = object(schema.get("$defs"));
+        assert definitions.keySet().equals(java.util.Set.of(
+                "graph", "node", "edge", "coverageGap", "source", "sourceFile", "revision", "sourceOrigin"))
+                : definitions.keySet();
+        assertEnum(definitions, "node", "kind",
                 Arrays.stream(BusinessDecisionGraph.NodeKind.values()).map(Enum::name).toList());
-        assertEnum(v1Definitions, "graph", "completeness",
+        assertEnum(definitions, "graph", "completeness",
                 Arrays.stream(BusinessDecisionGraph.Completeness.values()).map(Enum::name).toList());
-        assertProperties(v1Definitions, "graph",
+        assertEnum(definitions, "sourceOrigin", "kind",
+                Arrays.stream(DeveloperGraphExporter.OriginKind.values()).map(Enum::name).toList());
+        assertProperties(definitions, "graph",
                 "id", "version", "label", "entryNodeId", "completeness",
                 "nodes", "edges", "coverageGaps");
-        assertProperties(v1Definitions, "node", "id", "kind", "label", "attributes", "source");
-        assertProperties(v1Definitions, "edge", "id", "from", "to", "outcome");
-        assertProperties(v1Definitions, "coverageGap", "nodeId", "description");
-        assertProperties(v1Definitions, "source", "path", "line", "column", "syntaxKind", "sha256", "url");
-        assertProperties(v1Definitions, "sourceFile", "path", "sha256");
-        assertProperties(v1Definitions, "revision", "repository", "commit", "committedAt");
-        Map<String, Object> v1Source = object(v1Definitions.get("source"));
-        assertRequired(v1Source, "path", "line", "column", "syntaxKind", "sha256", "url");
-        assert !object(v1Source.get("properties")).containsKey("originId") : v1Source;
-
-        Map<String, Object> v2 = object(new JsonParser(
-                generator.generate(DeveloperGraphExporter.SCHEMA_V2)).parse());
-        assert v2.get("$id").equals("urn:fachtracing:schema:developer-graph:v2") : v2;
-        assertRequired(v2, "schema", "graph", "sourceOrigins", "sourceFiles");
-        assertDataSchema(v2, DeveloperGraphExporter.SCHEMA_V2);
-        Map<String, Object> v2Definitions = object(v2.get("$defs"));
-        assert v2Definitions.keySet().equals(java.util.Set.of(
-                "graph", "node", "edge", "coverageGap", "source", "sourceFile", "revision", "sourceOrigin"))
-                : v2Definitions.keySet();
-        assertEnum(v2Definitions, "sourceOrigin", "kind",
-                Arrays.stream(DeveloperGraphExporter.OriginKind.values()).map(Enum::name).toList());
-        assertProperties(v2Definitions, "source",
+        assertProperties(definitions, "node", "id", "kind", "label", "attributes", "source");
+        assertProperties(definitions, "edge", "id", "from", "to", "outcome");
+        assertProperties(definitions, "coverageGap", "nodeId", "description");
+        assertProperties(definitions, "source",
                 "originId", "path", "line", "column", "syntaxKind", "sha256", "url");
-        assertProperties(v2Definitions, "sourceFile", "originId", "path", "sha256");
-        assertProperties(v2Definitions, "sourceOrigin", "id", "kind", "identity", "checksum", "revision");
-        Map<String, Object> v2Source = object(v2Definitions.get("source"));
-        assertRequired(v2Source, "originId", "path", "line", "column", "syntaxKind", "sha256");
-        assert !strings(v2Source.get("required")).contains("url") : v2Source;
-        assert object(v2Source.get("properties")).containsKey("url") : v2Source;
-
-        try {
-            generator.generate("fachtracing-developer-graph/v99");
-            throw new AssertionError("unsupported developer graph schema was accepted");
-        } catch (IllegalArgumentException expected) {
-            assert expected.getMessage().contains("unsupported developer graph schema") : expected;
-        }
+        assertProperties(definitions, "sourceFile", "originId", "path", "sha256");
+        assertProperties(definitions, "sourceOrigin", "id", "kind", "identity", "checksum", "revision");
+        assertProperties(definitions, "revision", "repository", "commit", "committedAt");
+        Map<String, Object> source = object(definitions.get("source"));
+        assertRequired(source, "originId", "path", "line", "column", "syntaxKind", "sha256");
+        assert !strings(source.get("required")).contains("url") : source;
+        assert object(source.get("properties")).containsKey("url") : source;
     }
 
     private static void assertDataSchema(Map<String, Object> schema, String expected) {
@@ -424,7 +401,13 @@ public final class AnalyzeMojoTest {
                 java.nio.ByteBuffer.wrap(jsonBytes)).toString();
         Map<String, Object> document = object(new JsonParser(json).parse());
         assert document.get("schema").equals("fachtracing-developer-graph/v1") : document;
-        Map<String, Object> revision = object(document.get("sourceRevision"));
+        assert !document.containsKey("sourceRevision") : document;
+        List<Object> origins = array(document.get("sourceOrigins"));
+        assert origins.size() == 1 : origins;
+        Map<String, Object> gitOrigin = object(origins.getFirst());
+        assert gitOrigin.get("id").equals("git") : gitOrigin;
+        assert gitOrigin.get("kind").equals("GIT") : gitOrigin;
+        Map<String, Object> revision = object(gitOrigin.get("revision"));
         String commit = string(revision.get("commit"));
         assert commit.matches("[0-9a-f]{40,64}") : commit;
         Map<String, Object> graph = object(document.get("graph"));
@@ -435,23 +418,54 @@ public final class AnalyzeMojoTest {
                 .map(AnalyzeMojoTest::object)
                 .filter(node -> node.containsKey("source"))
                 .findFirst().orElseThrow();
-        String sourceUrl = string(object(sourceNode.get("source")).get("url"));
+        Map<String, Object> sourceLocation = object(sourceNode.get("source"));
+        assert sourceLocation.get("originId").equals("git") : sourceLocation;
+        String sourceUrl = string(sourceLocation.get("url"));
         assert sourceUrl.contains("/blob/" + commit + "/src/Policy.java#L") : sourceUrl;
         Map<String, Object> schema = object(new JsonParser(Files.readString(schemaFile)).parse());
         assertDataSchema(schema, DeveloperGraphExporter.SCHEMA);
-        assertRequired(schema, "schema", "graph", "sourceRevision", "sourceFiles");
+        assertRequired(schema, "schema", "graph", "sourceOrigins", "sourceFiles");
         assert Files.readString(output.resolve("index.md"))
                 .contains("[Developer JSON](guarded-approval-developer.json)");
         assert Files.readString(output.resolve("index.md")).contains(
                 "Developer JSON Schema: [V1](fachtracing-developer-graph-v1.schema.json)");
         assert result.graphCount() == 1 && result.incompleteCount() == 1 : result;
 
+        Files.writeString(output.resolve("fachtracing-developer-graph-v2.schema.json"), "stale");
         Files.writeString(output.resolve("keep.txt"), "application-owned");
         new ProjectGraphGenerator().generate(
                 List.of(source), CLASSPATH, StandardCharsets.UTF_8, output, false, Optional.empty());
         assert !Files.exists(jsonFile) : "stale developer JSON was not removed";
         assert !Files.exists(schemaFile) : "stale developer JSON schema was not removed";
+        assert !Files.exists(output.resolve("fachtracing-developer-graph-v2.schema.json"))
+                : "stale legacy developer JSON schema was not removed";
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
+
+        Files.delete(output.resolve("guarded-approval-structure.mmd"));
+        Files.delete(output.resolve("guarded-approval-structure.puml"));
+        Files.delete(output.resolve("index.md"));
+        Files.delete(output.resolve("keep.txt"));
+        Files.delete(output);
+        Path externalRoot = Files.createTempDirectory("fachtracing-plugin-external-origin");
+        Path multiOriginOutput = Files.createTempDirectory("fachtracing-plugin-multi-origin-output");
+        var multiOriginDeveloperOutput = new ProjectGraphGenerator.DeveloperOutput(
+                repository,
+                "https://example.invalid/rules",
+                "https://example.invalid/rules/blob/{commit}/{path}#L{line}",
+                List.of(DeveloperGraphExporter.SourceOrigin.external(
+                        "generated", DeveloperGraphExporter.OriginKind.GENERATED,
+                        externalRoot, "generated-rules", "generated-sha256")));
+        new ProjectGraphGenerator().generate(
+                List.of(source), CLASSPATH, StandardCharsets.UTF_8, multiOriginOutput, false,
+                Optional.of(multiOriginDeveloperOutput));
+        assert Files.exists(multiOriginOutput.resolve("fachtracing-developer-graph-v1.schema.json"));
+        assert !Files.exists(multiOriginOutput.resolve("fachtracing-developer-graph-v2.schema.json"));
+        Map<String, Object> multiOriginDocument = object(new JsonParser(Files.readString(
+                multiOriginOutput.resolve("guarded-approval-developer.json"))).parse());
+        assert multiOriginDocument.get("schema").equals(DeveloperGraphExporter.SCHEMA)
+                : multiOriginDocument;
+        assert Files.readString(multiOriginOutput.resolve("index.md")).contains(
+                "Developer JSON Schema: [V1](fachtracing-developer-graph-v1.schema.json)");
 
         Files.writeString(source, Files.readString(source) + "\n", StandardCharsets.UTF_8);
         Path failedOutput = repository.resolve("failed-output");
