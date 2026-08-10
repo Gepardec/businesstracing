@@ -76,11 +76,11 @@ check_hash 192cd18116ed3522a7bd4ab07dc6cd4000cfbc4b42afaf830e4ed620ca3f3848 \
   conformance/mega-backend/src/test/resources/oracles/authorize-clarification-resolution.txt
 check_hash cccbb57b3ac143b86565c50ffeefb536d17ed6d2671feb7cf1ff2d553ee54198 \
   conformance/mega-backend/src/test/resources/oracles/detect-overlapping-time-entries.txt
-check_hash 368391bfdb748f2d453d78439386083b83b2be4363201915589963aa878ede0a \
+check_hash d907cbcc27f9dcb115d1f82b0ecbddc0497ed5cc95e8fb6c22104e81227f29e7 \
   conformance/mega-backend/src/test/resources/oracles/determine-journey-warnings.txt
 check_hash 0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38 \
   conformance/mega-backend/src/test/resources/oracles/determine-project-activity-in-month.txt
-check_hash 1684955f4aa81930040a8d9df919be77df0f953f1fd4a419d70b6621a9f6c36e \
+check_hash 7a30ee2b6912fb8727ae1b6d686fcc8e1af3be4e78c4b26b9dc2c2f48b0f8148 \
   conformance/mega-backend/src/test/resources/oracles/validate-journey-direction.txt
 
 for oracle in \
@@ -95,7 +95,7 @@ check_hash 72c426152fd2e4aea025d4758da7d85faf3b7a1ac47824ba9f56d83df247b5b0 \
   conformance/spring-petclinic/src/test/resources/oracles/determine-whether-an-entity-is-new.txt
 check_hash ccb613cd380454d5aaf939c210adab10d40e89fdbda312fe985a436bc13bed9d \
   conformance/spring-petclinic/src/test/resources/oracles/find-an-eligible-pet-by-name.txt
-check_hash 888019a73253cb98abad87b79867da763bc833abe002e386fb6dad572c8e9a85 \
+check_hash 27db9b109a2e479ec26d76e843dab9b4d3339cd786664ac3fe7b046e4f1eac02 \
   conformance/spring-petclinic/src/test/resources/oracles/register-a-new-pet.txt
 
 for spec_file in .specops/*/spec.json

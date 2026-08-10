@@ -17,7 +17,23 @@ public record AnalysisManifest(
         List<BranchTarget> branchTargets,
         List<ControlTarget> controlTargets,
         List<EvidenceTarget> evidenceTargets,
+        List<AnalysisDecision> analysisDecisions,
         Map<String, String> sourceFingerprints) {
+    /** Compatibility constructor for manifests that have no analysis-decision audit. */
+    public AnalysisManifest(
+            String graphId,
+            long graphVersion,
+            Map<String, SourceMapping> sourceMappings,
+            List<ProbeSite> probeSites,
+            List<DispatchTarget> dispatchTargets,
+            List<BranchTarget> branchTargets,
+            List<ControlTarget> controlTargets,
+            List<EvidenceTarget> evidenceTargets,
+            Map<String, String> sourceFingerprints) {
+        this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
+                branchTargets, controlTargets, evidenceTargets, List.of(), sourceFingerprints);
+    }
+
     /** Compatibility constructor for manifests that have no exact branch bindings. */
     public AnalysisManifest(
             String graphId,
@@ -27,7 +43,7 @@ public record AnalysisManifest(
             List<DispatchTarget> dispatchTargets,
             Map<String, String> sourceFingerprints) {
         this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
-                List.of(), List.of(), List.of(), sourceFingerprints);
+                List.of(), List.of(), List.of(), List.of(), sourceFingerprints);
     }
 
     /** Compatibility constructor for manifests that have no exact control-path bindings. */
@@ -40,7 +56,7 @@ public record AnalysisManifest(
             List<BranchTarget> branchTargets,
             Map<String, String> sourceFingerprints) {
         this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
-                branchTargets, List.of(), List.of(), sourceFingerprints);
+                branchTargets, List.of(), List.of(), List.of(), sourceFingerprints);
     }
 
     /** Compatibility constructor for manifests that have no operand evidence bindings. */
@@ -54,7 +70,7 @@ public record AnalysisManifest(
             List<ControlTarget> controlTargets,
             Map<String, String> sourceFingerprints) {
         this(graphId, graphVersion, sourceMappings, probeSites, dispatchTargets,
-                branchTargets, controlTargets, List.of(), sourceFingerprints);
+                branchTargets, controlTargets, List.of(), List.of(), sourceFingerprints);
     }
 
     /** Creates a defensive manifest snapshot. */
@@ -66,6 +82,7 @@ public record AnalysisManifest(
         branchTargets = List.copyOf(branchTargets);
         controlTargets = List.copyOf(controlTargets);
         evidenceTargets = List.copyOf(evidenceTargets);
+        analysisDecisions = List.copyOf(analysisDecisions);
         sourceFingerprints = Map.copyOf(sourceFingerprints);
     }
 
@@ -225,6 +242,55 @@ public record AnalysisManifest(
 
     /** Bytecode point that proves a source control path was taken. */
     public enum ControlPoint { LINE, RETURN, CASE_EXIT, PREDICATE_TRUE }
+
+    /** Explains one source inclusion, exclusion, or unresolved analysis decision. */
+    public record AnalysisDecision(
+            AnalysisAction action,
+            AnalysisReason reason,
+            Path source,
+            long line,
+            long column,
+            String constructKind,
+            List<String> nodeIds,
+            String subject) {
+        /** Creates one immutable developer-only analysis decision. */
+        public AnalysisDecision {
+            Objects.requireNonNull(action, "action");
+            Objects.requireNonNull(reason, "reason");
+            Objects.requireNonNull(source, "source");
+            Objects.requireNonNull(constructKind, "constructKind");
+            nodeIds = List.copyOf(nodeIds);
+            subject = Objects.requireNonNullElse(subject, "");
+            if (line == 0 || line < -1) {
+                throw new IllegalArgumentException("line must be positive or -1");
+            }
+            if (column == 0 || column < -1) {
+                throw new IllegalArgumentException("column must be positive or -1");
+            }
+            if (action == AnalysisAction.EXCLUDED && !nodeIds.isEmpty()) {
+                throw new IllegalArgumentException("excluded decisions cannot refer to graph nodes");
+            }
+            if (action != AnalysisAction.EXCLUDED && nodeIds.isEmpty()) {
+                throw new IllegalArgumentException("included and gap decisions must refer to graph nodes");
+            }
+        }
+    }
+
+    /** Result of one graph-inclusion decision. */
+    public enum AnalysisAction { INCLUDED, EXCLUDED, GAP }
+
+    /** Stable reason for one graph-inclusion decision. */
+    public enum AnalysisReason {
+        ENTRY_POINT,
+        RETURN_VALUE,
+        DATA_DEPENDENCY,
+        CONTROL_DEPENDENCY,
+        DISPATCH_CANDIDATE,
+        NO_RESULT_EFFECT,
+        ABSTRACT_IMPLEMENTATION,
+        INCOMPATIBLE_IMPLEMENTATION,
+        UNRESOLVED_RELEVANCE
+    }
 
     /** Binds one result-relevant method argument, or an unavailable exact operand, to a predicate. */
     public record EvidenceTarget(

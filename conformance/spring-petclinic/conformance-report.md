@@ -63,7 +63,7 @@ Result: **complete**, 10 nodes, 15 edges.
 
 ## 3. An application workflow with proof limits
 
-The new-pet controller uses compiled Spring validation objects and persistence calls. Fachtracing can prove the visible error-result predicate and the terminal view or redirect results. It cannot reconstruct five result-relevant binary side effects. The graph shows these limits as explicit gap nodes.
+The new-pet controller uses compiled Spring validation objects and persistence calls. Fachtracing can prove the visible error-result predicate, the duplicate-name exception check, the escaping failure, and the terminal view or redirect results. It cannot reconstruct five result-relevant binary side effects. The graph shows these limits as explicit gap nodes.
 
 ```mermaid
 flowchart LR
@@ -75,7 +75,13 @@ flowchart LR
     n6(["Stop"])
     n7{"select decision result path"}
     n8{{"analysis incomplete: a possible side effect on the returned decision cannot be reconstructed"}}
-    n9{{"analysis incomplete: a possible side effect on the returned decision cannot be reconstructed"}}
+    n9["evaluate is duplicate pet name violation"]
+    n10["derive message as ex message"]
+    n11{"message exists"}
+    n12{"message to lower case contains unique_owner_pet_name"}
+    n13{"is not duplicate pet name violation ex"}
+    n14["decision cannot continue"]
+    n15{{"analysis incomplete: a possible side effect on the returned decision cannot be reconstructed"}}
     n1 -->|"unresolved"| n2
     n2 -->|"unresolved"| n3
     n3 -->|"unresolved"| n4
@@ -83,13 +89,22 @@ flowchart LR
     n5 -->|"true; returns views pets create or update form"| n6
     n5 -->|"false"| n7
     n7 -->|"unresolved"| n8
-    n7 -->|"unresolved"| n9
-    n9 -->|"returns views pets create or update form"| n6
+    n7 -->|"alternative result 1"| n9
+    n9 --> n10
+    n10 --> n11
+    n11 -->|"true"| n12
+    n11 -->|"false"| n13
+    n12 -->|"true"| n13
+    n12 -->|"false"| n13
+    n13 -->|"true"| n14
+    n14 -->|"fails"| n6
+    n13 -->|"unresolved"| n15
+    n15 -->|"returns views pets create or update form"| n6
     n8 -->|"returns redirect:/owners/{ownerId}"| n6
     coverage["Incomplete analysis<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision<br/>- binary method contains an unsupported call, monitor, switch, or dynamic instruction affects the decision<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision"]
 ```
 
-Result: **incomplete**, 9 nodes, 10 edges, 5 explicit gaps.
+Result: **incomplete**, 15 nodes, 19 edges, 5 explicit gaps.
 
 This is a conformance success. The graph tells the reader which paths are proved and which paths need more source or supported bytecode semantics.
 

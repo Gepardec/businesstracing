@@ -7,10 +7,10 @@ checks that every entry names an executable contract and appears in this documen
 
 - `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
 - `complex-boolean-exact-path`, `predicate-operand-evidence`, `predicate-site-evidence`, `method-receiver-evidence`, `terminal-outcome-evidence`, `incomplete-exact-path-gap`
-- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `conditional-local-alias-effect-gap`, `unknown-jdk-effect-gap`
+- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `conditional-local-alias-effect-gap`, `conditional-local-alias-definition`, `unknown-jdk-effect-gap`
 - `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
-- `lambdas-and-streams`, `method-reference-callback-mutation`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
+- `lambdas-and-streams`, `method-reference-callback-mutation`, `wrapped-method-reference-callback-mutation`, `local-method-reference-callback-mutation`, `mutating-predicate-method-reference-gap`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
 - `source-unavailable-call`, `jakarta-platform-operation`, `explicit-opaque-library-boundary`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
@@ -23,7 +23,20 @@ checks that every entry names an executable contract and appears in this documen
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
-“technical”; work disappears only when it cannot affect the decision result.
+“technical”; work disappears only when it cannot affect the decision result. A construct is
+relevant when it is in the result slice, contains a sliced construct, or is inside a sliced
+expression. Unrelated work in the body of a relevant branch does not become relevant only because
+the branch controls a return. The slice keeps each assignment that can reach a result-dependent
+use across alternative branches and removes an assignment that a later sequential assignment
+overwrites. A source `throw` is a terminal failure path only when a compatible local catch does not
+handle its protected path. If a local has later assignments, its seed initializer stays implicit in the
+business graph.
+
+`AnalysisManifest.analysisDecisions()` explains this selection for developer tools. An included
+source construct has the opaque graph node ID and an inclusion reason. An excluded graph-eligible
+construct has its source location, no node ID, and reason `NO_RESULT_EFFECT`. An unresolved construct
+has a gap node ID and reason `UNRESOLVED_RELEVANCE`; it does not also get a no-result-effect decision.
+This audit data does not enter the business graph or runtime activation JSON.
 
 | Construct | Walking-skeleton behavior |
 | --- | --- |
@@ -36,13 +49,13 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
 | Local initialization and assignment | Retained only when it can influence a return |
 | Context-aware operation label | Uses declared-type context for short locals and generic collection names, and renders generic `set` and `add` operations with their receivers and operands |
-| Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only |
+| Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only. Final `java.lang.Enum` queries such as `name`, `equals`, and `compareTo` are proven read-only |
 | Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies, including queue and deque operations such as `offer` |
-| Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument. An unconditional non-identity assignment removes that relation. A conditional assignment merges branch roots; an unproved result-relevant write creates a located gap |
+| Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument. An unconditional non-identity assignment removes that relation. A conditional assignment merges branch roots and active definitions; an unproved result-relevant write creates a located gap |
 | Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
 
 | Direct method call | Follows a source-available callee and includes its relevant slice |
-| Generic interface or abstract dispatch | Uses erased subtype identity to include all source-visible candidates, including implementations in sibling modules of the active Maven reactor; runtime evidence selects the expected call site's opaque edge |
+| Generic interface or abstract dispatch | Uses compiler subtype and receiver compatibility to include all proven source-visible concrete candidates, including implementations in sibling modules of the active Maven reactor. The manifest records included candidates and excluded abstract or receiver-incompatible subtypes. Runtime evidence selects the expected call site's opaque edge |
 | Proxy or `ServiceLoader` dispatch | Uses the instrumented implementation entry to select one proven source candidate; proxy mechanics and provider classes stay outside business output |
 | Constant reflection target | Resolves one unambiguous class literal, method-name literal, and arity to source candidates; dynamic or ambiguous targets stay incomplete |
 | Boolean, number, category, string result | Encoded as a typed `DecisionValue` |
@@ -57,7 +70,7 @@ analyzer does not classify logging, metrics, packages, frameworks, or method nam
 | Pattern matching | Retains result-relevant type patterns and their bound business facts |
 | Sealed type dispatch | Includes each source-visible permitted implementation as a candidate |
 | Nested class call | Resolves and expands source-visible nested-class decision logic |
-| Direct method reference | Resolves and expands a source-visible referenced decision method. A bound mutating callback such as `accepted::add` uses the same receiver-effect contract as a normal call and shows the source-to-target transfer |
+| Direct method reference | Resolves and expands a source-visible referenced decision method. Direct, parenthesized, cast, and local-variable bound mutating callbacks use the same receiver-effect contract as a normal call and show the source-to-target transfer. A platform mutator Boolean used as a predicate callback keeps the mutation but creates a located gap for its unsupported outcome topology |
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
 | Explicit opaque library boundary | By default, source-unavailable dependency operations remain incomplete. A caller can select exact technical library JARs. A reference-returning operation from a selected JAR stays outside the graph. An instance operation keeps its receiver in the result slice, so source-visible predicates that configure fluent query or options objects remain visible. A Boolean call from a selected JAR is transparent only inside an explicit source control condition, where the call site is already the graph predicate. Direct Boolean decisions, other primitive results, unselected JARs, and application class directories stay fail-closed |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |

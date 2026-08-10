@@ -2,7 +2,7 @@
 
 Status: **passed**
 Pinned source: `Gepardec/mega-backend@782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
-Run date: 2026-08-07, Java 21
+Run date: 2026-08-10, Java 21
 
 ## Reproduction and isolation
 
@@ -22,9 +22,9 @@ are the same artifacts used by non-Mega applications.
 | --- | --- | ---: | ---: | --- |
 | Authorize clarification resolution | Month end | 18 | 30 | Complete, exact atomic oracle match |
 | Detect overlapping time entries | Time warnings | 6 | 9 | Complete, exact atomic oracle match |
-| Determine journey warnings | Journey orchestration | 96 | 130 | Complete, exact atomic oracle match; indexed iteration and result-changing helper mutations are business-safe |
+| Determine journey warnings | Journey orchestration | 98 | 132 | Complete, exact atomic oracle match; reachable initializers, indexed iteration, and result-changing helper mutations are business-safe |
 | Determine project activity in month | Projects | 8 | 9 | Complete, exact atomic oracle match |
-| Validate journey direction | Journey validation | 22 | 34 | Complete, exact atomic oracle match |
+| Validate journey direction | Journey validation | 23 | 35 | Complete, exact atomic oracle match; the reachable absent warning initializer is explicit |
 
 The independent source-walk method, reviewed semantic inventories, approval outcomes, and SHA-256
 hashes are recorded in `src/test/resources/oracles/README.md`. Verification cannot rewrite those

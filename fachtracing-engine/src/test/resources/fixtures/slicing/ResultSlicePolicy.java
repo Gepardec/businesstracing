@@ -7,8 +7,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public final class ResultSlicePolicy {
+    private final List<String> targetField = new ArrayList<>();
+    enum State { OPEN, CLOSED }
+
     interface UnknownMutator {
         void update(Customer customer);
     }
@@ -37,6 +42,84 @@ public final class ResultSlicePolicy {
     public boolean ignoredAudit(int age) {
         AuditValidator auditValidator = new AuditValidator();
         auditValidator.validate(age);
+        return age >= 24;
+    }
+
+    @FachTracing("irrelevant branch work")
+    public boolean irrelevantBranchWork(int age) {
+        if (age < 18) {
+            recordAudit(age);
+            return false;
+        }
+        return meetsMinimumAge(age);
+    }
+
+    @FachTracing("read-only enum queries")
+    public boolean readOnlyEnumQueries(State state) {
+        state.name();
+        state.equals(State.CLOSED);
+        return state == State.OPEN;
+    }
+
+    @FachTracing("branch definitions and failure")
+    public boolean branchDefinitionsAndFailure(State state, boolean override) {
+        boolean allowed = false;
+        switch (state) {
+            case OPEN:
+                if (override) {
+                    allowed = true;
+                }
+                break;
+            case CLOSED:
+                allowed = false;
+                break;
+            default:
+                throw new IllegalArgumentException(state.name());
+        }
+        return allowed;
+    }
+
+    @FachTracing("conditional fallback definition")
+    public boolean conditionalFallbackDefinition(int age, boolean override) {
+        boolean allowed = meetsMinimumAge(age);
+        if (override) {
+            allowed = true;
+        }
+        return allowed;
+    }
+
+    @FachTracing("overwritten decision assignment")
+    public boolean overwrittenDecisionAssignment(boolean approved) {
+        boolean decision;
+        decision = auditDecision(approved);
+        decision = approved;
+        return decision;
+    }
+
+    private boolean auditDecision(boolean approved) {
+        if (approved) {
+            return false;
+        }
+        return true;
+    }
+
+    @FachTracing("caught audit failure")
+    public boolean caughtAuditFailure(boolean approved, boolean audit) {
+        try {
+            if (audit) {
+                throw new IllegalStateException();
+            }
+        } catch (IllegalStateException ignored) {
+            recordAudit(0);
+        }
+        return approved;
+    }
+
+    private void recordAudit(int age) {
+        int ignoredAge = age + 1;
+    }
+
+    private boolean meetsMinimumAge(int age) {
         return age >= 24;
     }
 
@@ -113,6 +196,44 @@ public final class ResultSlicePolicy {
         List<String> accepted = new ArrayList<>();
         candidates.stream().forEach(accepted::add);
         return !accepted.isEmpty();
+    }
+
+    @FachTracing("direct conditional alias read")
+    public boolean directConditionalAliasRead(List<String> target, boolean detached) {
+        List<String> alias = target;
+        if (detached) {
+            alias = new ArrayList<>();
+        }
+        return alias.isEmpty();
+    }
+
+    @FachTracing("implicit field alias read")
+    public boolean implicitFieldAliasRead(boolean detached) {
+        List<String> alias = targetField;
+        if (detached) {
+            alias = new ArrayList<>();
+        }
+        return alias.isEmpty();
+    }
+
+    @FachTracing("cast method reference mutation")
+    public boolean castMethodReferenceMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        candidates.stream().forEach((Consumer<String>) accepted::add);
+        return !accepted.isEmpty();
+    }
+
+    @FachTracing("predicate method reference mutation")
+    public boolean predicateMethodReferenceMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        return candidates.stream().anyMatch(accepted::add);
+    }
+
+    @FachTracing("local predicate callback mutation")
+    public boolean localPredicateCallbackMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        Predicate<String> predicate = accepted::add;
+        return candidates.stream().anyMatch(predicate);
     }
 
     @FachTracing("unknown platform effect")

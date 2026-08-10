@@ -1,0 +1,62 @@
+{
+  "id": "result-relevance-review-findings",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-07T12:44:01Z",
+  "updated": "2026-08-07T13:12:05Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "reason": "This fix corrects the result relevance and audit behavior from the completed feature.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "explainable-relevance-and-polymorphic-dispatch",
+    "conditional-alias-method-reference-effects",
+    "generic-java-extractor-completion"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 8,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T12:44:01Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 9,
+        "regressionSafety": 8,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-07T13:06:55Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 4783,
+    "filesChanged": 21,
+    "linesAdded": 1146,
+    "linesRemoved": 36,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 16,
+    "specDurationMinutes": 28
+  }
+}

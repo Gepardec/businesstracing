@@ -1,0 +1,56 @@
+{
+  "id": "explainable-relevance-and-polymorphic-dispatch",
+  "type": "feature",
+  "status": "completed",
+  "version": 2,
+  "created": "2026-08-07T11:38:11Z",
+  "updated": "2026-08-07T12:25:49Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "generic-java-extractor-completion",
+    "reactor-wide-implementation-resolution",
+    "runtime-decision-path-capture"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-07T11:38:11Z"
+    },
+    "implementation": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 10,
+        "designFidelity": 10,
+        "codeQuality": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-07T12:25:49Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3200,
+    "filesChanged": 25,
+    "linesAdded": 1105,
+    "linesRemoved": 45,
+    "tasksCompleted": 5,
+    "acceptanceCriteriaVerified": 34,
+    "specDurationMinutes": 52
+  }
+}

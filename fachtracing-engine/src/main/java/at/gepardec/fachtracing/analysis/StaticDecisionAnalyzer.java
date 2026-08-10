@@ -501,7 +501,15 @@ public final class StaticDecisionAnalyzer {
 
         private DependencyGraphBuilder.CallEffects callEffects(
                 MethodLocation caller, MethodInvocationTree call) {
-            DependencyGraphBuilder.CallEffects callbackEffects = callbackEffects(caller, call);
+            return callEffects(caller, call, Map.of());
+        }
+
+        private DependencyGraphBuilder.CallEffects callEffects(
+                MethodLocation caller,
+                MethodInvocationTree call,
+                Map<String, List<Tree>> activeDefinitions) {
+            DependencyGraphBuilder.CallEffects callbackEffects =
+                    callbackEffects(caller, call, activeDefinitions);
             TreePath path = TreePath.getPath(caller.unit(), call);
             Element called = path == null ? null : trees.getElement(path);
             if (!(called instanceof ExecutableElement executable)) {
@@ -533,7 +541,9 @@ public final class StaticDecisionAnalyzer {
         }
 
         private DependencyGraphBuilder.CallEffects callbackEffects(
-                MethodLocation caller, MethodInvocationTree call) {
+                MethodLocation caller,
+                MethodInvocationTree call,
+                Map<String, List<Tree>> activeDefinitions) {
             String method = call.getMethodSelect() instanceof MemberSelectTree member
                     ? member.getIdentifier().toString() : call.getMethodSelect().toString();
             if (!Set.of("forEach", "forEachOrdered", "map", "mapToInt", "mapToLong", "mapToDouble",
@@ -544,22 +554,89 @@ public final class StaticDecisionAnalyzer {
             var proven = new LinkedHashSet<String>();
             var possible = new LinkedHashSet<String>();
             for (Tree argument : call.getArguments()) {
-                if (argument instanceof LambdaExpressionTree lambda) {
-                    new TreeScanner<Void, Void>() {
-                        @Override public Void visitMethodInvocation(MethodInvocationTree nested, Void unused) {
-                            DependencyGraphBuilder.CallEffects effects = callEffects(caller, nested);
-                            proven.addAll(effects.provenWrites());
-                            possible.addAll(effects.possibleWrites());
-                            return super.visitMethodInvocation(nested, unused);
-                        }
-                    }.scan((Tree) lambda.getBody(), null);
-                } else if (argument instanceof MemberReferenceTree reference) {
-                    DependencyGraphBuilder.CallEffects effects = memberReferenceEffects(caller, call, reference);
-                    proven.addAll(effects.provenWrites());
-                    possible.addAll(effects.possibleWrites());
+                var alternativeEffects = new ArrayList<DependencyGraphBuilder.CallEffects>();
+                for (Tree callback : callbackDefinitions(argument, activeDefinitions)) {
+                    if (callback instanceof LambdaExpressionTree lambda) {
+                        var lambdaProven = new LinkedHashSet<String>();
+                        var lambdaPossible = new LinkedHashSet<String>();
+                        new TreeScanner<Void, Void>() {
+                            @Override public Void visitMethodInvocation(
+                                    MethodInvocationTree nested, Void unused) {
+                                DependencyGraphBuilder.CallEffects effects =
+                                        callEffects(caller, nested, activeDefinitions);
+                                lambdaProven.addAll(effects.provenWrites());
+                                lambdaPossible.addAll(effects.possibleWrites());
+                                return super.visitMethodInvocation(nested, unused);
+                            }
+                        }.scan((Tree) lambda.getBody(), null);
+                        alternativeEffects.add(new DependencyGraphBuilder.CallEffects(
+                                lambdaProven, lambdaPossible));
+                    } else if (callback instanceof MemberReferenceTree reference) {
+                        alternativeEffects.add(memberReferenceEffects(caller, call, reference));
+                    }
                 }
+                DependencyGraphBuilder.CallEffects effects = mergeAlternativeEffects(alternativeEffects);
+                proven.addAll(effects.provenWrites());
+                possible.addAll(effects.possibleWrites());
             }
             return new DependencyGraphBuilder.CallEffects(proven, possible);
+        }
+
+        private List<Tree> callbackDefinitions(
+                Tree argument, Map<String, List<Tree>> activeDefinitions) {
+            var result = new ArrayList<Tree>();
+            Set<Tree> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+            collectCallbackDefinitions(
+                    unwrapCallback(argument), activeDefinitions, new HashSet<>(), visited, result);
+            return List.copyOf(result);
+        }
+
+        private void collectCallbackDefinitions(
+                Tree candidate,
+                Map<String, List<Tree>> activeDefinitions,
+                Set<String> activeNames,
+                Set<Tree> visited,
+                List<Tree> result) {
+            Tree callback = unwrapCallback(candidate);
+            if (!visited.add(callback)) return;
+            if (callback instanceof LambdaExpressionTree || callback instanceof MemberReferenceTree) {
+                result.add(callback);
+                return;
+            }
+            if (!(callback instanceof IdentifierTree identifier)) return;
+            String name = identifier.getName().toString();
+            if (!activeNames.add(name)) return;
+            for (Tree definition : activeDefinitions.getOrDefault(name, List.of())) {
+                collectCallbackDefinitions(definition, activeDefinitions, activeNames, visited, result);
+            }
+            activeNames.remove(name);
+        }
+
+        private static DependencyGraphBuilder.CallEffects mergeAlternativeEffects(
+                List<DependencyGraphBuilder.CallEffects> alternatives) {
+            if (alternatives.isEmpty()) return DependencyGraphBuilder.CallEffects.none();
+            var proven = new LinkedHashSet<>(alternatives.getFirst().provenWrites());
+            var reachable = new LinkedHashSet<String>();
+            for (DependencyGraphBuilder.CallEffects alternative : alternatives) {
+                proven.retainAll(alternative.provenWrites());
+                reachable.addAll(alternative.provenWrites());
+                reachable.addAll(alternative.possibleWrites());
+            }
+            reachable.removeAll(proven);
+            return new DependencyGraphBuilder.CallEffects(proven, reachable);
+        }
+
+        private static Tree unwrapCallback(Tree callback) {
+            Tree current = callback;
+            while (true) {
+                if (current instanceof ParenthesizedTree parenthesized) {
+                    current = parenthesized.getExpression();
+                } else if (current instanceof TypeCastTree cast) {
+                    current = cast.getExpression();
+                } else {
+                    return current;
+                }
+            }
         }
 
         private DependencyGraphBuilder.CallEffects memberReferenceEffects(
@@ -775,6 +852,15 @@ public final class StaticDecisionAnalyzer {
                     && opaqueLibraries.contains(resolution.location().orElseThrow());
         }
 
+        private Set<String> enclosingFieldNames(MethodLocation location) {
+            Element method = trees.getElement(location.path());
+            if (!(method instanceof ExecutableElement executable)) return Set.of();
+            return executable.getEnclosingElement().getEnclosedElements().stream()
+                    .filter(member -> member.getKind() == ElementKind.FIELD)
+                    .map(member -> member.getSimpleName().toString())
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+
         private boolean referenceValue(MethodLocation location, Tree tree) {
             TreePath path = TreePath.getPath(location.unit(), tree);
             TypeMirror type = path == null ? null : trees.getTypeMirror(path);
@@ -952,9 +1038,19 @@ public final class StaticDecisionAnalyzer {
                 return new Extraction(predecessor, List.of(new Tail(predecessor, "result")));
             }
             var dependencies = new DependencyGraphBuilder().build(
-                    location.method(), call -> callEffects(location, call));
-            Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies, effectRoots);
+                    location.method(), enclosingFieldNames(location),
+                    (call, activeDefinitions) -> callEffects(location, call, activeDefinitions));
+            Set<ThrowTree> locallyCaughtThrows = CaughtThrowResolver.resolve(
+                    location.path(), dependencies.throwStatements(), dependencies.parents(), trees, types);
+            Set<Tree> slice = new BackwardDecisionSlicer().slice(
+                    dependencies, effectRoots, locallyCaughtThrows);
             Set<Tree> unknownResultEffects = unknownResultEffects(location, dependencies, slice);
+            AnalysisDecisionAuditor.excludedConstructs(
+                    location.method(), dependencies, slice, unknownResultEffects).forEach(tree ->
+                    builder.addAnalysisDecision(
+                            AnalysisManifest.AnalysisAction.EXCLUDED,
+                            AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT,
+                            mapping(location, tree), List.of(), ""));
             var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
                     unknownResultEffects, predecessor);
             flow.scan(new TreePath(location.path(), location.method().getBody()), null);
@@ -1011,7 +1107,8 @@ public final class StaticDecisionAnalyzer {
             }
 
             var dependencies = new DependencyGraphBuilder().build(
-                    location.method(), call -> callEffects(location, call));
+                    location.method(), enclosingFieldNames(location),
+                    (call, activeDefinitions) -> callEffects(location, call, activeDefinitions));
             Set<Tree> slice = new BackwardDecisionSlicer().slice(dependencies);
             var last = new String[] { predecessor };
             var predicateNodes = new LinkedHashMap<Tree, String>();
@@ -1654,14 +1751,29 @@ public final class StaticDecisionAnalyzer {
                 int candidate = 0;
                 for (TypeElement implementation : index.types()) {
                     if (!implementation.getKind().isClass()
-                            || implementation.getModifiers().contains(Modifier.ABSTRACT)
-                            || !isCompatibleDispatchTarget(implementation, owner, receiverType)) continue;
+                            || !isContractSubtype(implementation, owner)) continue;
+                    if (implementation.getModifiers().contains(Modifier.ABSTRACT)) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.ABSTRACT_IMPLEMENTATION, List.of());
+                        continue;
+                    }
+                    if (!isCompatibleDispatchTarget(implementation, owner, receiverType)) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION, List.of());
+                        continue;
+                    }
                     String alternative = builder.addNode(
                             BusinessDecisionGraph.NodeKind.COMPUTATION,
                             businessRuleLabel(implementation),
                             Map.of(), null, null, "", "");
                     candidate++;
                     String candidateEdge = builder.addEdge(dispatch, alternative, "selected rule");
+                    auditDispatchCandidate(node, implementation,
+                            AnalysisManifest.AnalysisAction.INCLUDED,
+                            AnalysisManifest.AnalysisReason.DISPATCH_CANDIDATE,
+                            List.of(dispatch, alternative));
                     MethodLocation implementationMethod = implementationOf(contract, implementation);
                     if (implementationMethod == null) {
                         resultTails.add(new Tail(alternative, "result"));
@@ -1677,13 +1789,25 @@ public final class StaticDecisionAnalyzer {
                 else frontier = List.copyOf(resultTails);
             }
 
+            private void auditDispatchCandidate(
+                    MethodInvocationTree invocation,
+                    TypeElement implementation,
+                    AnalysisManifest.AnalysisAction action,
+                    AnalysisManifest.AnalysisReason reason,
+                    List<String> nodeIds) {
+                builder.addAnalysisDecision(action, reason, mapping(location, invocation), nodeIds,
+                        implementation.getQualifiedName().toString());
+            }
+
             private ExecutableElement reflectedContract(
                     MethodInvocationTree invocation, ExecutableElement called) {
                 if (!isReflectionInvoke(called)
                         || !(invocation.getMethodSelect() instanceof MemberSelectTree invokeSelect)
                         || !(invokeSelect.getExpression() instanceof IdentifierTree methodVariable)) return null;
-                Tree definition = dependencies.definitions().get(methodVariable.getName().toString());
-                if (!(definition instanceof MethodInvocationTree lookup)
+                List<Tree> definitions = dependencies.definitions()
+                        .getOrDefault(methodVariable.getName().toString(), List.of());
+                if (definitions.size() != 1
+                        || !(definitions.getFirst() instanceof MethodInvocationTree lookup)
                         || lookup.getArguments().isEmpty()
                         || !(lookup.getArguments().getFirst() instanceof LiteralTree methodName)
                         || !(methodName.getValue() instanceof String name)
@@ -1742,6 +1866,11 @@ public final class StaticDecisionAnalyzer {
                     String mutation = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                             memberReferenceMutationLabel(node, executable), node, null);
                     advance(mutation);
+                    if (enclosingCallbackInvocations(node).stream().anyMatch(this::isPredicateOperation)
+                            && executable.getReturnType().getKind() == TypeKind.BOOLEAN) {
+                        addCoverageGap(node,
+                                "Boolean result of mutating method-reference callback cannot be reconstructed");
+                    }
                     return null;
                 }
                 if (isOpaqueLibraryReferenceOperation(executable)) return null;
@@ -1767,14 +1896,27 @@ public final class StaticDecisionAnalyzer {
 
             private String memberReferenceMutationLabel(
                     MemberReferenceTree reference, ExecutableElement executable) {
-                Tree parent = dependencies.parents().get(reference);
                 String target = expression(reference.getQualifierExpression());
-                if (parent instanceof MethodInvocationTree callback
+                MethodInvocationTree callback = enclosingCallbackInvocations(reference).stream()
+                        .findFirst().orElse(null);
+                if (callback != null
                         && callback.getMethodSelect() instanceof MemberSelectTree select) {
                     String source = expression(callbackSource(select.getExpression()));
                     return words(executable.getSimpleName().toString()) + " " + source + " to " + target;
                 }
                 return words(executable.getSimpleName().toString()) + " " + target;
+            }
+
+            private List<MethodInvocationTree> enclosingCallbackInvocations(
+                    MemberReferenceTree reference) {
+                Tree current = reference;
+                Tree parent = dependencies.parents().get(current);
+                while (parent instanceof ParenthesizedTree || parent instanceof TypeCastTree) {
+                    current = parent;
+                    parent = dependencies.parents().get(current);
+                }
+                if (parent instanceof MethodInvocationTree invocation) return List.of(invocation);
+                return dependencies.invocationUsesByDefinition().getOrDefault(current, List.of());
             }
 
             @Override public Void visitReturn(ReturnTree node, Void unused) {
@@ -2586,6 +2728,11 @@ public final class StaticDecisionAnalyzer {
                 return types.isSubtype(types.erasure(implementation.asType()), types.erasure(contractOwner.asType()));
             }
 
+            private boolean isContractSubtype(TypeElement implementation, TypeElement contractOwner) {
+                return types.isSubtype(
+                        types.erasure(implementation.asType()), types.erasure(contractOwner.asType()));
+            }
+
             private boolean hasDecisionBearingOverrides(ExecutableElement contract, TypeElement owner) {
                 if (owner.getKind() != ElementKind.INTERFACE) return false;
                 return index.types().stream()
@@ -2736,20 +2883,7 @@ public final class StaticDecisionAnalyzer {
                 Tree tree,
                 Set<Tree> slice,
                 DependencyGraphBuilder.MethodDependencies dependencies) {
-            if (slice.contains(tree)) return true;
-            for (Tree item : slice) {
-                Tree current = item;
-                while (current != null && current != dependencies.method()) {
-                    if (current == tree) return true;
-                    current = dependencies.parents().get(current);
-                }
-            }
-            Tree current = tree;
-            while (current != null && current != dependencies.method()) {
-                if (slice.contains(current)) return true;
-                current = dependencies.parents().get(current);
-            }
-            return false;
+            return DecisionRelevance.isRelevant(tree, slice, dependencies);
         }
 
         private static boolean isPredicateExpression(Tree expression) {
@@ -3104,6 +3238,9 @@ public final class StaticDecisionAnalyzer {
                 || qualifiedName.equals("java.util.OptionalInt")
                 || qualifiedName.equals("java.util.OptionalLong")
                 || qualifiedName.equals("java.util.OptionalDouble")) return true;
+        if (qualifiedName.equals("java.lang.Enum") && Set.of(
+                "name", "ordinal", "equals", "hashCode", "compareTo",
+                "getDeclaringClass", "describeConstable", "valueOf").contains(method)) return true;
         if (qualifiedName.startsWith("java.util.") && Set.of(
                 "size", "isEmpty", "indexOf", "lastIndexOf", "peek", "peekFirst", "peekLast", "element",
                 "first", "last", "keySet", "values", "entrySet", "iterator", "listIterator",

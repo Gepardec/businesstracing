@@ -61,6 +61,14 @@ final class LocalAliasResolver {
         return merged;
     }
 
+    static Set<String> changedBindings(LocalAliasResolver first, LocalAliasResolver second) {
+        var names = new LinkedHashSet<String>();
+        names.addAll(first.aliases.keySet());
+        names.addAll(second.aliases.keySet());
+        names.removeIf(name -> first.resolution(name).equals(second.resolution(name)));
+        return Set.copyOf(names);
+    }
+
     private Resolution identityRoots(Tree value) {
         return switch (value) {
             case IdentifierTree identifier -> resolution(identifier.getName().toString());
