@@ -2,6 +2,7 @@ package at.gepardec.fachtracing.analysis;
 
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.DoWhileLoopTree;
@@ -73,6 +74,10 @@ final class ReachingDefinitionIndex {
             if (state.reachable() && node.getInitializer() != null) {
                 state.assign(node.getName().toString(), node.getInitializer());
             }
+            return null;
+        }
+
+        @Override public Void visitClass(ClassTree node, Void unused) {
             return null;
         }
 

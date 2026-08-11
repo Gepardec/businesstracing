@@ -67,6 +67,7 @@ public final class StaticDecisionAnalyzerTest {
         usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
         appliesExactExternalMethodContractsWithoutGuessing();
         supportsExplicitOpaqueLibraryBoundaries();
+        supportsAggregateCompositionAcrossCaughtPlatformCallsAndGeneratedDispatch();
         analyzesEveryAnnotatedEntry();
         supportsJakartaPlatformOperations();
         treatsPlatformValueOperationsAsDecisionFacts();
@@ -1720,6 +1721,205 @@ public final class StaticDecisionAnalyzerTest {
             @Override public String providerId() { return id; }
             @Override public List<ExternalMethodContract> contracts() { return contracts; }
         };
+    }
+
+    private static void supportsAggregateCompositionAcrossCaughtPlatformCallsAndGeneratedDispatch() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-aggregate-composition-");
+            Path librarySource = root.resolve("library-source/external");
+            Path libraryClasses = root.resolve("library-classes");
+            Path untrustedSource = root.resolve("untrusted-source/untrusted");
+            Path untrustedClasses = root.resolve("untrusted-classes");
+            Path applicationSource = root.resolve("application-source/application");
+            Path applicationClasses = root.resolve("application-classes");
+            Files.createDirectories(librarySource);
+            Files.createDirectories(libraryClasses);
+            Files.createDirectories(untrustedSource);
+            Files.createDirectories(untrustedClasses);
+            Files.createDirectories(applicationSource);
+            Files.createDirectories(applicationClasses);
+
+            Path archiveStrings = librarySource.resolve("ArchiveStrings.java");
+            Path archiveCollections = librarySource.resolve("ArchiveCollections.java");
+            Path archiveMapperFactory = librarySource.resolve("ArchiveMapperFactory.java");
+            Files.writeString(archiveStrings, """
+                    package external;
+                    public final class ArchiveStrings {
+                        private ArchiveStrings() { }
+                        public static boolean isEmpty(String value) {
+                            return value == null || value.isEmpty();
+                        }
+                    }
+                    """);
+            Files.writeString(archiveCollections, """
+                    package external;
+                    import java.util.Collection;
+                    import java.util.List;
+                    public final class ArchiveCollections {
+                        private ArchiveCollections() { }
+                        public static <T> Collection<T> emptyIfNull(Collection<T> values) {
+                            return values == null ? List.of() : values;
+                        }
+                    }
+                    """);
+            Files.writeString(archiveMapperFactory, """
+                    package external;
+                    public final class ArchiveMapperFactory {
+                        private ArchiveMapperFactory() { }
+                        public static <T> T getMapper(Class<T> type) {
+                            throw new UnsupportedOperationException();
+                        }
+                    }
+                    """);
+            int libraryCompilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", libraryClasses.toString(),
+                    archiveStrings.toString(), archiveCollections.toString(), archiveMapperFactory.toString());
+            assert libraryCompilation == 0 : "could not compile the aggregate library fixture";
+            Path archive = root.resolve("aggregate-library.jar");
+            createJar(libraryClasses, archive);
+
+            Path untrustedDecision = untrustedSource.resolve("UntrustedDecision.java");
+            Files.writeString(untrustedDecision, """
+                    package untrusted;
+                    public final class UntrustedDecision {
+                        private UntrustedDecision() { }
+                        public static boolean approves(String value) {
+                            return value.trim().length() > 3;
+                        }
+                    }
+                    """);
+            int untrustedCompilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", untrustedClasses.toString(), untrustedDecision.toString());
+            assert untrustedCompilation == 0 : "could not compile the untrusted binary fixture";
+
+            Path reading = applicationSource.resolve("Reading.java");
+            Path generatedMapper = applicationSource.resolve("GeneratedMapper.java");
+            Path generatedMapperImplementation = applicationSource.resolve("GeneratedMapperImpl.java");
+            Path policy = applicationSource.resolve("AggregatePolicy.java");
+            Path unsupportedPolicy = applicationSource.resolve("UnsupportedCatchPolicy.java");
+            Files.writeString(reading, """
+                    package application;
+                    import java.time.Instant;
+                    public record Reading(Instant observedAt, String value) { }
+                    """);
+            Files.writeString(generatedMapper, """
+                    package application;
+                    import external.ArchiveMapperFactory;
+                    import java.util.List;
+                    public interface GeneratedMapper {
+                        GeneratedMapper INSTANCE = ArchiveMapperFactory.getMapper(GeneratedMapper.class);
+                        List<String> map(List<Reading> readings);
+                    }
+                    """);
+            Files.writeString(generatedMapperImplementation, """
+                    package application;
+                    import java.util.ArrayList;
+                    import java.util.List;
+                    public final class GeneratedMapperImpl implements GeneratedMapper {
+                        @Override public List<String> map(List<Reading> readings) {
+                            if (readings == null) return null;
+                            List<String> result = new ArrayList<>();
+                            for (Reading reading : readings) result.add(reading.value());
+                            return result;
+                        }
+                    }
+                    """);
+            Files.writeString(policy, """
+                    package application;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import external.ArchiveCollections;
+                    import external.ArchiveStrings;
+                    import java.time.Instant;
+                    import java.time.format.DateTimeParseException;
+                    import java.util.Comparator;
+                    import java.util.List;
+                    public final class AggregatePolicy {
+                        private final List<Reading> readings;
+                        public AggregatePolicy(List<Reading> readings) {
+                            this.readings = readings;
+                        }
+                        @FachTracing("aggregate data maximum")
+                        public List<String> data(boolean today, Integer maximum, String from) {
+                            Instant fromTime = parse(from);
+                            if (today) fromTime = Instant.now();
+                            List<Reading> selected = select(maximum, fromTime);
+                            return GeneratedMapper.INSTANCE.map(selected);
+                        }
+                        @FachTracing("aggregate watering maximum")
+                        public List<Reading> watering(boolean today, Integer maximum, String from) {
+                            Instant fromTime = parse(from);
+                            if (today) fromTime = Instant.now();
+                            return select(maximum, fromTime);
+                        }
+                        private Instant parse(String value) {
+                            if (ArchiveStrings.isEmpty(value)) return null;
+                            try {
+                                return Instant.parse(value);
+                            } catch (DateTimeParseException failure) {
+                                throw new IllegalArgumentException("invalid date", failure);
+                            }
+                        }
+                        private List<Reading> select(Integer maximum, Instant from) {
+                            Comparator<Reading> comparator = new Comparator<>() {
+                                @Override public int compare(Reading left, Reading right) {
+                                    return left.observedAt().compareTo(right.observedAt());
+                                }
+                            };
+                            long limit = maximum == null || maximum < 0 ? readings.size() : maximum;
+                            return ArchiveCollections.emptyIfNull(readings).stream()
+                                    .filter(reading -> from == null || !reading.observedAt().isBefore(from))
+                                    .sorted(comparator).limit(limit).toList();
+                        }
+                    }
+                    """);
+            Files.writeString(unsupportedPolicy, """
+                    package application;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import untrusted.UntrustedDecision;
+                    public final class UnsupportedCatchPolicy {
+                        @FachTracing("unsupported caught decision")
+                        public boolean decide(String value) {
+                            try {
+                                return UntrustedDecision.approves(value);
+                            } catch (RuntimeException failure) {
+                                return false;
+                            }
+                        }
+                    }
+                    """);
+
+            int applicationCompilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-classpath",
+                    CLASSPATH.getFirst() + System.getProperty("path.separator") + archive
+                            + System.getProperty("path.separator") + untrustedClasses,
+                    "-d", applicationClasses.toString(), reading.toString(), generatedMapper.toString(),
+                    generatedMapperImplementation.toString(), policy.toString(), unsupportedPolicy.toString());
+            assert applicationCompilation == 0 : "could not compile the aggregate application fixture";
+
+            AnalysisRequest request = AnalysisRequest.of(
+                    List.of(reading, generatedMapper, generatedMapperImplementation, policy, unsupportedPolicy),
+                    List.of(CLASSPATH.getFirst(), applicationClasses, archive, untrustedClasses));
+            var results = new StaticDecisionAnalyzer().analyzeAll(
+                    request, OpaqueLibraryBoundary.of(List.of(archive)));
+            var data = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("aggregate data maximum")).findFirst().orElseThrow();
+            var watering = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("aggregate watering maximum")).findFirst().orElseThrow();
+            assert data.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : data;
+            assert watering.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : watering;
+            var unsupported = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("unsupported caught decision")).findFirst().orElseThrow();
+            assert unsupported.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : unsupported;
+            assert unsupported.graph().coverageGaps().stream().anyMatch(gap ->
+                    gap.description().contains("exception-triggering decision logic is unavailable"))
+                    : unsupported.graph().coverageGaps();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
     }
 
     private static void analyzesEveryAnnotatedEntry() {

@@ -8,6 +8,7 @@ import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.CatchTree;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
@@ -972,6 +973,10 @@ public final class StaticDecisionAnalyzer {
             var aliases = new LocalAliasResolver();
 
             new TreePathScanner<Void, Void>() {
+                @Override public Void visitClass(ClassTree node, Void unused) {
+                    return null;
+                }
+
                 @Override public Void visitVariable(VariableTree node, Void unused) {
                     if (node.getInitializer() != null) {
                         aliases.assign(node.getName().toString(), node.getInitializer());
@@ -1504,6 +1509,10 @@ public final class StaticDecisionAnalyzer {
                 return List.copyOf(frontier);
             }
 
+            @Override public Void visitClass(ClassTree node, Void unused) {
+                return null;
+            }
+
             @Override public Void visitIf(IfTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitIf(node, unused);
                 if (!(unwrapParentheses(node.getCondition()) instanceof ConditionalExpressionTree)) {
@@ -1650,6 +1659,10 @@ public final class StaticDecisionAnalyzer {
                 int[] uses = { 0 };
                 int[] validationReceivers = { 0 };
                 new TreeScanner<Void, Void>() {
+                    @Override public Void visitClass(ClassTree node, Void unused) {
+                        return null;
+                    }
+
                     @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
                         if (identifier.getName().contentEquals(name)) uses[0]++;
                         return super.visitIdentifier(identifier, unused);
@@ -2708,24 +2721,32 @@ public final class StaticDecisionAnalyzer {
             private boolean hasUnavailableExceptionTrigger(Tree tree) {
                 var unavailable = new boolean[1];
                 new TreeScanner<Void, Void>() {
+                    @Override public Void visitClass(ClassTree node, Void unused) {
+                        return null;
+                    }
+
                     @Override public Void visitMethodInvocation(MethodInvocationTree node, Void unused) {
                         if (!relevant(node, slice, dependencies)) return super.visitMethodInvocation(node, unused);
                         TreePath path = TreePath.getPath(location.unit(), node);
                         Element called = path == null ? null : trees.getElement(path);
-                        if (!(called instanceof ExecutableElement executable)) {
-                            unavailable[0] = true;
-                        } else {
-                            MethodLocation source = index.methods().get(executable);
-                            if ((source == null || source.method().getBody() == null)
-                                    && externalMethodContract(executable).kind()
-                                    != ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
-                                unavailable[0] = true;
-                            }
-                        }
+                        if (!(called instanceof ExecutableElement executable)
+                                || !supportedExceptionTrigger(node, executable)) unavailable[0] = true;
                         return super.visitMethodInvocation(node, unused);
                     }
                 }.scan(tree, null);
                 return unavailable[0];
+            }
+
+            private boolean supportedExceptionTrigger(
+                    MethodInvocationTree invocation,
+                    ExecutableElement executable) {
+                return index.methods().get(executable) != null
+                        || externalMethodContract(executable).kind()
+                        == ExternalMethodContractRegistry.ResolutionKind.RESOLVED
+                        || isSupportedLibraryOperation(executable)
+                        || isOpaqueLibraryReferenceOperation(executable)
+                        || (isOpaqueLibraryBooleanOperation(executable)
+                        && isSourceControlPredicate(invocation));
             }
 
             private boolean resourcesAreDecisionSafe(TryTree tree) {
