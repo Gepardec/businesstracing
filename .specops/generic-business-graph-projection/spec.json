@@ -1,10 +1,10 @@
 {
   "id": "generic-business-graph-projection",
   "type": "feature",
-  "status": "draft",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-11T09:17:19Z",
-  "updated": "2026-08-11T09:17:19Z",
+  "updated": "2026-08-11T10:03:47Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {"name": "lucostus", "email": "constantin.winkler@gepardec.com"},
@@ -16,5 +16,28 @@
   "specDependencies": [
     {"specId": "external-method-semantic-contracts", "reason": "The projector consumes reusable method semantics.", "required": true}
   ],
-  "relatedSpecs": ["external-method-semantic-contracts", "mermaid-diagram-rendering", "developer-graph-json-schema"]
+  "relatedSpecs": ["external-method-semantic-contracts", "mermaid-diagram-rendering", "developer-graph-json-schema"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"criteriaTestability": 9, "criteriaCompleteness": 9, "designCoherence": 9, "taskCoverage": 9},
+      "evaluatedAt": "2026-08-11T09:17:19Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"functionality": 9, "codeQuality": 9, "testCoverage": 9, "specCompliance": 9},
+      "evaluatedAt": "2026-08-11T10:03:47Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 1912,
+    "filesChanged": 24,
+    "linesAdded": 1099,
+    "linesRemoved": 42,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 14,
+    "specDurationMinutes": 47
+  }
 }

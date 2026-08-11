@@ -26,6 +26,7 @@ CP="fachtracing-api/target/classes:fachtracing-engine/target/classes:fachtracing
 JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.model.ApiModelTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.analysis.StaticDecisionAnalyzerTest
+"$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.business.BusinessGraphProjectionTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.runtime.RuntimeCollectorTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.store.DecisionRecordProtocolTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.diagram.ExecutionPathResolverTest

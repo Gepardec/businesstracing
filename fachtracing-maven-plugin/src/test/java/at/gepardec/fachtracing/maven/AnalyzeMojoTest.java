@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+import at.gepardec.fachtracing.business.BusinessGraphJsonExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
@@ -288,6 +289,7 @@ public final class AnalyzeMojoTest {
     private static void generatesBothFormatsAndIndexWithoutDeletingUnrelatedFiles() throws Exception {
         Path output = Files.createTempDirectory("fachtracing-plugin-output");
         Files.writeString(output.resolve("old-structure.mmd"), "stale");
+        Files.writeString(output.resolve("old-business.json"), "stale");
         Files.writeString(output.resolve("keep.txt"), "application-owned");
         var result = new ProjectGraphGenerator().generate(
                 List.of(FIXTURES.resolve("eligibility/EligibilityPolicy.java")), CLASSPATH,
@@ -295,8 +297,29 @@ public final class AnalyzeMojoTest {
         assert result.graphCount() == 1 && !result.skipped() : result;
         assert Files.exists(output.resolve("customer-eligibility-structure.mmd"));
         assert Files.exists(output.resolve("customer-eligibility-structure.puml"));
-        assert Files.readString(output.resolve("index.md")).contains("customer eligibility");
+        assert Files.exists(output.resolve("customer-eligibility-business.mmd"));
+        assert Files.exists(output.resolve("customer-eligibility-business.puml"));
+        Path businessJson = output.resolve("customer-eligibility-business.json");
+        Path businessSchema = output.resolve("fachtracing-business-graph-v1.schema.json");
+        assert Files.exists(businessJson);
+        assert Files.exists(businessSchema);
+        Map<String, Object> document = object(new JsonParser(Files.readString(businessJson)).parse());
+        assert document.get("schema").equals(BusinessGraphJsonExporter.SCHEMA) : document;
+        assert document.keySet().equals(Set.of(
+                "schema", "graphId", "version", "decision", "completeness",
+                "entryNodeIds", "nodes", "edges")) : document.keySet();
+        assert !array(document.get("entryNodeIds")).isEmpty() : document;
+        assert !array(document.get("nodes")).isEmpty() : document;
+        Map<String, Object> schema = object(new JsonParser(Files.readString(businessSchema)).parse());
+        assert schema.get("$schema").equals("https://json-schema.org/draft/2020-12/schema") : schema;
+        assert schema.get("$id").equals(BusinessGraphJsonExporter.SCHEMA) : schema;
+        assertRequired(schema, "schema", "graphId", "version", "decision", "completeness",
+                "entryNodeIds", "nodes", "edges");
+        String index = Files.readString(output.resolve("index.md"));
+        assert index.contains("customer eligibility") : index;
+        assert index.indexOf("Business Mermaid") < index.indexOf("Technical developer artifacts") : index;
         assert !Files.exists(output.resolve("old-structure.mmd"));
+        assert !Files.exists(output.resolve("old-business.json"));
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
     }
 
@@ -443,6 +466,10 @@ public final class AnalyzeMojoTest {
 
         Files.delete(output.resolve("guarded-approval-structure.mmd"));
         Files.delete(output.resolve("guarded-approval-structure.puml"));
+        Files.delete(output.resolve("guarded-approval-business.mmd"));
+        Files.delete(output.resolve("guarded-approval-business.puml"));
+        Files.delete(output.resolve("guarded-approval-business.json"));
+        Files.delete(output.resolve("fachtracing-business-graph-v1.schema.json"));
         Files.delete(output.resolve("index.md"));
         Files.delete(output.resolve("keep.txt"));
         Files.delete(output);

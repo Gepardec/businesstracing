@@ -1000,6 +1000,36 @@
       "task": "Task 2",
       "date": "2026-08-11",
       "completedAt": "2026-08-11T09:44:03Z"
+    },
+    {
+      "specId": "generic-business-graph-projection",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Keep one business result for each exact terminal edge",
+      "rationale": "Path-specific results preserve successful, correction, and failure outcomes even when labels are equal.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T10:03:47Z"
+    },
+    {
+      "specId": "generic-business-graph-projection",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Collapse loop bodies into one existence rule",
+      "rationale": "Business readers need the searched condition, not iteration variables and loop back edges.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T10:03:47Z"
+    },
+    {
+      "specId": "generic-business-graph-projection",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Generate business artifacts additively",
+      "rationale": "The exact graph stays available for runtime correlation and current developer consumers.",
+      "task": "Task 3",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T10:03:47Z"
     }
   ]
 }

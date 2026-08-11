@@ -425,3 +425,14 @@ calls keep the existing opaque-boundary or fail-closed behavior.
 The focused API and analyzer contracts passed. The full pull-request gate passed with the 5,000
 decision load, external release proof, five complete Mega graphs, and the current three PetClinic
 graphs. No dependency, Spring rule, or application vocabulary was added.
+
+### generic-business-graph-projection (feature) — 2026-08-11
+
+Completed all three tasks. Fachtracing now has a separate build-time graph with only rules,
+actions, named results, and explicit gaps. Generic projection removes entry and stop markers,
+temporary calculations, route strings, raw Boolean outcomes, and loop mechanics. Each loop search
+becomes one existence rule. A strict guard rejects technical vocabulary.
+
+Maven writes business Mermaid, PlantUML, JSON V1, and its Draft 2020-12 schema by default. It lists
+these artifacts before the compatible exact structure and optional developer artifacts. Focused
+projection and Maven tests passed, followed by the full pull-request gate and both external corpora.
