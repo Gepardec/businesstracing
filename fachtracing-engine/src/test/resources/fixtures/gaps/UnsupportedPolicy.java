@@ -4,11 +4,15 @@ import at.gepardec.fachtracing.api.FachTracing;
 
 public final class UnsupportedPolicy {
     @FachTracing("guarded approval")
-    public boolean decide(String value) {
+    public boolean decide(DecisionService decisions, String value) {
         try {
-            return Integer.parseInt(value) > 10;
-        } catch (NumberFormatException ignored) {
+            return decisions.approves(value);
+        } catch (RuntimeException ignored) {
             return false;
         }
     }
+}
+
+interface DecisionService {
+    boolean approves(String value);
 }
