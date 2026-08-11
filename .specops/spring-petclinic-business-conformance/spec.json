@@ -1,10 +1,10 @@
 {
   "id": "spring-petclinic-business-conformance",
   "type": "feature",
-  "status": "draft",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-11T09:17:19Z",
-  "updated": "2026-08-11T09:17:19Z",
+  "updated": "2026-08-11T11:19:06Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {"name": "lucostus", "email": "constantin.winkler@gepardec.com"},
@@ -18,5 +18,28 @@
     {"specId": "generic-business-graph-projection", "reason": "Conformance reviews the projected business graph.", "required": true},
     {"specId": "spring-business-semantics-adapter", "reason": "Conformance needs reusable Spring semantics.", "required": true}
   ],
-  "relatedSpecs": ["spring-petclinic-conformance"]
+  "relatedSpecs": ["spring-petclinic-conformance"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"criteriaTestability": 9, "criteriaCompleteness": 9, "designCoherence": 9, "taskCoverage": 9},
+      "evaluatedAt": "2026-08-11T09:17:19Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"functionality": 9, "codeQuality": 9, "testCoverage": 9, "specCompliance": 9},
+      "evaluatedAt": "2026-08-11T11:19:06Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 1700,
+    "filesChanged": 34,
+    "linesAdded": 1151,
+    "linesRemoved": 331,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 14,
+    "specDurationMinutes": 122
+  }
 }

@@ -1,4 +1,4 @@
-/** Optional exact Spring method semantics for Fachtracing analysis. */
+/** Optional Spring method semantics for Fachtracing analysis. */
 module at.gepardec.fachtracing.spring {
     requires at.gepardec.fachtracing.engine;
 

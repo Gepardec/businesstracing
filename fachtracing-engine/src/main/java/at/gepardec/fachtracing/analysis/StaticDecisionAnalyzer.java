@@ -112,7 +112,7 @@ public final class StaticDecisionAnalyzer {
         return analyzeAll(boundary, opaqueLibraries, List.of());
     }
 
-    /** Analyzes every graph entry with technical archives and exact external method contracts. */
+    /** Analyzes every graph entry with technical archives and external method contracts. */
     public List<AnalysisManifest.AnalysisResult> analyzeAll(
             ApplicationSourceBoundary boundary,
             OpaqueLibraryBoundary opaqueLibraries,
@@ -904,7 +904,23 @@ public final class StaticDecisionAnalyzer {
             if (source != null && source.method().getBody() != null) {
                 return ExternalMethodContractRegistry.empty().resolve(externalMethodReference(executable));
             }
-            return externalMethodContracts.resolve(externalMethodReference(executable));
+            return externalMethodContracts.resolve(
+                    externalMethodReference(executable), ownerTypeBinaryNames(executable));
+        }
+
+        private Set<String> ownerTypeBinaryNames(ExecutableElement executable) {
+            var result = new LinkedHashSet<String>();
+            var pending = new java.util.ArrayDeque<TypeMirror>();
+            pending.add(executable.getEnclosingElement().asType());
+            while (!pending.isEmpty()) {
+                TypeMirror current = pending.removeFirst();
+                Element element = types.asElement(types.erasure(current));
+                if (!(element instanceof TypeElement type)) continue;
+                String binaryName = elements.getBinaryName(type).toString();
+                if (!result.add(binaryName)) continue;
+                pending.addAll(types.directSupertypes(current));
+            }
+            return Set.copyOf(result);
         }
 
         private ExternalMethodReference externalMethodReference(ExecutableElement executable) {

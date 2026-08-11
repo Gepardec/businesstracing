@@ -1,8 +1,0 @@
-decision: determine whether an entity is new
-completeness: COMPLETE
-node 1: ENTRY | Start
-node 2: PREDICATE | value is absent
-node 3: OUTCOME | Stop
-edge 1 -> 2 | next
-edge 2 -> 3 | true; returns whether value is absent
-edge 2 -> 3 | false; returns whether value is absent

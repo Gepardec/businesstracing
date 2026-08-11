@@ -1,119 +1,110 @@
-# Spring PetClinic conformance report
+# Spring PetClinic business-graph conformance report
 
-Status: **passed**
-Pinned source: `spring-projects/spring-petclinic@88e37c15cf6fc8490b01bc3e8e2c800cec1ac272`
-Run date: 2026-08-07, Java 21
+- Status: **passed locally**
+- Pinned source: `spring-projects/spring-petclinic@88e37c15cf6fc8490b01bc3e8e2c800cec1ac272`
+- Run date: 2026-08-11, Java 21
 
-## What this test shows
+## What the test shows
 
-Fachtracing finds methods marked with one public annotation. It reads the reachable Java logic and creates a business graph. It removes Java names that do not add business meaning. If the analyzer cannot prove a result-relevant effect, it adds a visible coverage gap.
+The source overlay adds only three `@FachTracing` annotations. Fachtracing combines source analysis with the optional Spring contract adapter. It then creates a separate business graph. The exact analysis graph stays unchanged for developer checks and runtime tracing.
 
-The PetClinic suite shows this behavior at three levels. No Spring integration or PetClinic-specific production configuration exists.
+All three workflows are complete for the annotated Java method. There are no business `GAP` nodes. Spring request binding and `@Valid` results are method inputs.
 
-## 1. A simple state decision
-
-The source returns whether the persistence value is absent. Fachtracing converts this into one complete business predicate with both results connected to one Stop.
+## Owner search
 
 ```mermaid
 flowchart LR
-    n1(["Start"])
-    n2{"value is absent"}
-    n3(["Stop"])
-    n1 --> n2
-    n2 -->|"true; returns whether value is absent"| n3
-    n2 -->|"false; returns whether value is absent"| n3
+    n1{"last name is absent"}
+    n2{"result page is empty"}
+    n3["record field validation error"]
+    n4{"total result count equals 1"}
+    n5(["no matching records"])
+    n6(["one matching record"])
+    n7(["multiple matching records"])
+    n1 -->|"yes"| n2
+    n1 -->|"no"| n2
+    n2 -->|"yes"| n3
+    n2 -->|"no"| n4
+    n3 --> n5
+    n4 -->|"yes"| n6
+    n4 -->|"no"| n7
 ```
 
-Result: **complete**, 3 nodes, 3 edges.
+Result: **complete**, 7 business nodes and 7 business edges.
 
-## 2. A domain lookup
-
-The source searches the owner's pets by name. It can exclude a matching pet that is not saved yet. Fachtracing shows the loop, the atomic name checks, the eligibility checks, the early found result, and the absent result after the loop.
+## Visit booking
 
 ```mermaid
 flowchart LR
-    n1(["Start"])
-    n2{"for each pet in pets"}
-    n3["derive comp name as pet name"]
-    n4{"comp name exists"}
-    n5{"comp name equals ignore case name"}
-    n6["evaluate is new"]
-    n7{"value is absent"}
-    n8{"not ignore new"}
-    n9{"not pet is new"}
-    n10(["Stop"])
-    n1 --> n2
-    n2 -->|"item"| n3
-    n4 -->|"true"| n5
+    n1{"visit date exists"}
+    n2{"visit date is today or earlier"}
+    n3["record field validation error"]
+    n4{"validation has errors"}
+    n5["save record"]
+    n6["add response message"]
+    n7(["correction required"])
+    n8(["visit booking completed"])
+    n1 -->|"yes"| n2
+    n2 -->|"yes"| n3
     n3 --> n4
-    n5 -->|"true"| n6
-    n6 --> n7
-    n8 -->|"false"| n9
-    n7 -->|"true"| n8
-    n7 -->|"false"| n8
-    n8 -->|"true; returns pet"| n10
-    n9 -->|"true; returns pet"| n10
-    n9 -->|"next item"| n2
-    n4 -->|"next item"| n2
-    n5 -->|"next item"| n2
-    n2 -->|"done; returns absent"| n10
+    n1 -->|"no"| n4
+    n2 -->|"no"| n4
+    n4 -->|"no"| n5
+    n5 --> n6
+    n4 -->|"yes"| n7
+    n6 --> n8
 ```
 
-Result: **complete**, 10 nodes, 15 edges.
+Result: **complete**, 8 business nodes and 9 business edges.
 
-## 3. An application workflow with proof limits
-
-The new-pet controller uses compiled Spring validation objects and persistence calls. Fachtracing can prove the visible error-result predicate, the duplicate-name exception check, the escaping failure, and the terminal view or redirect results. It cannot reconstruct five result-relevant binary side effects. The graph shows these limits as explicit gap nodes.
+## Pet registration
 
 ```mermaid
 flowchart LR
-    n1(["Start"])
-    n2{{"analysis incomplete: a possible side effect on the returned decision cannot be reconstructed"}}
-    n3{{"analysis incomplete: a possible side effect on the returned decision cannot be reconstructed"}}
-    n4{{"analysis incomplete: binary method contains an unsupported call, monitor, switch, or dynamic instruction"}}
-    n5{"result has errors"}
-    n6(["Stop"])
-    n7{"select decision result path"}
-    n8{{"analysis incomplete: a possible side effect on the returned decision cannot be reconstructed"}}
-    n9["evaluate is duplicate pet name violation"]
-    n10["derive message as ex message"]
-    n11{"message exists"}
-    n12{"message to lower case contains unique_owner_pet_name"}
-    n13{"is not duplicate pet name violation ex"}
-    n14["decision cannot continue"]
-    n15{{"analysis incomplete: a possible side effect on the returned decision cannot be reconstructed"}}
-    n1 -->|"unresolved"| n2
-    n2 -->|"unresolved"| n3
-    n3 -->|"unresolved"| n4
+    n1{"text is present"}
+    n2{"pet is new"}
+    n3{"a pet with this name exists"}
+    n4["record field validation error"]
+    n5{"pet birth date exists"}
+    n6{"pet birth date is in the future"}
+    n7["record field validation error"]
+    n8{"validation has errors"}
+    n9["save record"]
+    n10{"persistence failure is not a duplicate record"}
+    n11["record field validation error"]
+    n12["add response message"]
+    n13(["correction required"])
+    n14(["operation failed"])
+    n15(["correction required"])
+    n16(["pet registration completed"])
+    n1 -->|"yes"| n2
+    n2 -->|"yes"| n3
+    n3 -->|"yes"| n4
     n4 --> n5
-    n5 -->|"true; returns views pets create or update form"| n6
-    n5 -->|"false"| n7
-    n7 -->|"unresolved"| n8
-    n7 -->|"alternative result 1"| n9
-    n9 --> n10
-    n10 --> n11
-    n11 -->|"true"| n12
-    n11 -->|"false"| n13
-    n12 -->|"true"| n13
-    n12 -->|"false"| n13
-    n13 -->|"true"| n14
-    n14 -->|"fails"| n6
-    n13 -->|"unresolved"| n15
-    n15 -->|"returns views pets create or update form"| n6
-    n8 -->|"returns redirect:/owners/{ownerId}"| n6
-    coverage["Incomplete analysis<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision<br/>- binary method contains an unsupported call, monitor, switch, or dynamic instruction affects the decision<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision<br/>- a possible side effect on the returned decision cannot be reconstructed affects the decision"]
+    n1 -->|"no"| n5
+    n2 -->|"no"| n5
+    n3 -->|"no"| n5
+    n5 -->|"yes"| n6
+    n6 -->|"yes"| n7
+    n7 --> n8
+    n5 -->|"no"| n8
+    n6 -->|"no"| n8
+    n8 -->|"no"| n9
+    n8 -->|"no"| n10
+    n10 -->|"no"| n11
+    n9 --> n12
+    n8 -->|"yes"| n13
+    n10 -->|"yes"| n14
+    n11 --> n15
+    n12 --> n16
 ```
 
-Result: **incomplete**, 15 nodes, 19 edges, 5 explicit gaps.
-
-This is a conformance success. The graph tells the reader which paths are proved and which paths need more source or supported bytecode semantics.
+Result: **complete**, 16 business nodes and 20 business edges.
 
 ## Reproduce the result
-
-Clone the pinned PetClinic repository to `/tmp/fachtracing-spring-petclinic`, or set `SPRING_PETCLINIC_DIR` to its location. Then run:
 
 ```sh
 ./scripts/verify-spring-petclinic.sh
 ```
 
-The command checks the clean revision, applies only `annotation-overlay.patch`, analyzes all 30 main Java files, compares immutable semantic oracles, and writes disposable output under `target/generated`.
+The command checks the clean pinned revision, applies the annotation-only overlay, analyzes the full main source set, compares the reviewed JSON oracles, validates the JSON schema, and writes generated artifacts under `conformance/spring-petclinic/target/generated`.

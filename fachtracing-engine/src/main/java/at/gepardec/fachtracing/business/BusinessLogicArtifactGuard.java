@@ -24,6 +24,8 @@ public final class BusinessLogicArtifactGuard {
             Pattern.compile("(^|\\s)(true|false)($|\\s)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\b[A-Za-z_$][A-Za-z0-9_$]*\\.java\\b"),
             Pattern.compile("java\\.|org\\.springframework\\.|jakarta\\.", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bnull\\b|\\bidentifiers?\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bex\\b|to lower case", Pattern.CASE_INSENSITIVE),
             Pattern.compile("==|!=|&&|\\|\\||->|[{};]"));
 
     /** Returns all prohibited labels and outcomes. */

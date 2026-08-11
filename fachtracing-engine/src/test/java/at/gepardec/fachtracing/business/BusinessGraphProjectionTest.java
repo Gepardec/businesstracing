@@ -13,10 +13,12 @@ public final class BusinessGraphProjectionTest {
 
     public static void main(String[] args) {
         foldsLoopMechanicsIntoOneRule();
+        usesTheFoldedLoopResultForTheFollowingBusinessBranch();
         preservesRulesActionsReturnsAndFailures();
         preservesIncompleteAnalysisAsBusinessGap();
         acceptsBusinessVocabularyThatContainsStructuralWords();
         rejectsTechnicalVocabulary();
+        producesStableBusinessIdsForEquivalentExactGraphs();
         exportsAllFormatsWithOneTopology();
     }
 
@@ -51,6 +53,51 @@ public final class BusinessGraphProjectionTest {
                 .equals(List.of("pet", "no matching result")) : projected.nodes();
         assert projected.edges().stream().map(BusinessLogicGraph.Edge::outcome).toList()
                 .containsAll(List.of("yes", "no")) : projected.edges();
+    }
+
+    private static void usesTheFoldedLoopResultForTheFollowingBusinessBranch() {
+        BusinessDecisionGraph exact = graph("pet registration", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        node("loop", BusinessDecisionGraph.NodeKind.PREDICATE, "for each pet in pets"),
+                        node("match", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "pet name equals requested name"),
+                        node("wrapper", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "pet name and true exists"),
+                        node("duplicate", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "record field validation error"),
+                        node("date", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "pet birth date is in the future"),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "loop", "next"),
+                        edge("e2", "loop", "match", "item"),
+                        edge("e3", "match", "wrapper", "true"),
+                        edge("e4", "match", "loop", "next item"),
+                        edge("e5", "loop", "wrapper", "done"),
+                        edge("e6", "wrapper", "duplicate", "true"),
+                        edge("e7", "wrapper", "date", "false"),
+                        edge("e8", "duplicate", "date", "next"),
+                        edge("e9", "date", "stop", "true; returns correction required"),
+                        edge("e10", "date", "stop", "false; returns completed")),
+                List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+        String loop = projected.nodes().stream()
+                .filter(node -> node.label().equals("a pet with this name exists"))
+                .map(BusinessLogicGraph.Node::nodeId).findFirst().orElseThrow();
+        String duplicate = projected.nodes().stream()
+                .filter(node -> node.label().equals("record field validation error"))
+                .map(BusinessLogicGraph.Node::nodeId).findFirst().orElseThrow();
+        String date = projected.nodes().stream()
+                .filter(node -> node.label().equals("pet birth date is in the future"))
+                .map(BusinessLogicGraph.Node::nodeId).findFirst().orElseThrow();
+        assert projected.edges().stream().anyMatch(edge -> edge.fromNodeId().equals(loop)
+                && edge.toNodeId().equals(duplicate) && edge.outcome().equals("yes")) : projected.edges();
+        assert projected.edges().stream().anyMatch(edge -> edge.fromNodeId().equals(loop)
+                && edge.toNodeId().equals(date) && edge.outcome().equals("no")) : projected.edges();
+        assert projected.edges().stream().noneMatch(edge -> edge.fromNodeId().equals(loop)
+                && edge.toNodeId().equals(duplicate) && edge.outcome().equals("no")) : projected.edges();
     }
 
     private static void preservesRulesActionsReturnsAndFailures() {
@@ -103,7 +150,8 @@ public final class BusinessGraphProjectionTest {
 
     private static void rejectsTechnicalVocabulary() {
         for (String prohibited : List.of("Start", "for each item", "derive temporary value",
-                "redirect:/owners/12", "true", "Policy.java")) {
+                "redirect:/owners/12", "true", "Policy.java", "null", "identifier",
+                "failure ex", "message to lower case")) {
             var graph = new BusinessLogicGraph("guard", 1, "guard", List.of("node"),
                     List.of(new BusinessLogicGraph.Node(
                             "node", BusinessLogicGraph.NodeKind.RESULT, prohibited)),
@@ -115,6 +163,28 @@ public final class BusinessGraphProjectionTest {
                 assert expected.getMessage().contains(prohibited) : expected.getMessage();
             }
         }
+    }
+
+    private static void producesStableBusinessIdsForEquivalentExactGraphs() {
+        String first = new BusinessGraphJsonExporter().export(
+                new BusinessGraphProjector().project(analysis(equivalentExactGraph("first"))));
+        String second = new BusinessGraphJsonExporter().export(
+                new BusinessGraphProjector().project(analysis(equivalentExactGraph("second"))));
+        assert first.equals(second) : first + "\n" + second;
+    }
+
+    private static BusinessDecisionGraph equivalentExactGraph(String prefix) {
+        return new BusinessDecisionGraph(prefix + "-graph", 1, "approval", prefix + "-start",
+                List.of(
+                        node(prefix + "-start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        node(prefix + "-rule", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "application is eligible"),
+                        node(prefix + "-stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge(prefix + "-e1", prefix + "-start", prefix + "-rule", "next"),
+                        edge(prefix + "-e2", prefix + "-rule", prefix + "-stop", "true; returns approved"),
+                        edge(prefix + "-e3", prefix + "-rule", prefix + "-stop", "false; returns declined")),
+                BusinessDecisionGraph.Completeness.COMPLETE, List.of());
     }
 
     private static void acceptsBusinessVocabularyThatContainsStructuralWords() {

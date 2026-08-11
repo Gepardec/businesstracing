@@ -12,12 +12,12 @@ what annotated business methods do without reading their Java implementation.
 
 ## Acceptance Criteria
 
-- [ ] WHEN the conformance gate analyzes owner search, visit booking, and pet registration THE SYSTEM SHALL report all three business graphs as complete.
-- [ ] THE SYSTEM SHALL cover every return and failure path inside each annotated method.
-- [ ] THE SYSTEM SHALL generate and review business Mermaid, PlantUML, and JSON artifacts.
-- [ ] THE SYSTEM SHALL compare business JSON with committed reviewed oracles.
-- [ ] THE SYSTEM SHALL reject prohibited technical vocabulary in business artifacts.
-- [ ] THE SYSTEM SHALL reject PetClinic knowledge in all production modules, including the Spring adapter.
+- [x] WHEN the conformance gate analyzes owner search, visit booking, and pet registration THE SYSTEM SHALL report all three business graphs as complete.
+- [x] THE SYSTEM SHALL cover every return and failure path inside each annotated method.
+- [x] THE SYSTEM SHALL generate and review business Mermaid, PlantUML, and JSON artifacts.
+- [x] THE SYSTEM SHALL compare business JSON with committed reviewed oracles.
+- [x] THE SYSTEM SHALL reject prohibited technical vocabulary in business artifacts.
+- [x] THE SYSTEM SHALL reject PetClinic knowledge in all production modules, including the Spring adapter.
 
 ## Constraints
 

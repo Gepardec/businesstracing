@@ -45,6 +45,7 @@ require_tracked conformance/spring-petclinic/README.md
 require_tracked conformance/spring-petclinic/selection.md
 require_tracked conformance/spring-petclinic/annotation-overlay.patch
 require_tracked conformance/spring-petclinic/conformance-report.md
+require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/BusinessJsonSchemaConformance.java
 require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicConformanceTest.java
 require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java
 require_tracked conformance/spring-petclinic/src/test/resources/oracles/README.md
@@ -84,19 +85,19 @@ check_hash 7a30ee2b6912fb8727ae1b6d686fcc8e1af3be4e78c4b26b9dc2c2f48b0f8148 \
   conformance/mega-backend/src/test/resources/oracles/validate-journey-direction.txt
 
 for oracle in \
-  determine-whether-an-entity-is-new \
-  find-an-eligible-pet-by-name \
-  register-a-new-pet
+  owner-search \
+  pet-registration \
+  visit-booking
 do
-  require_tracked "conformance/spring-petclinic/src/test/resources/oracles/$oracle.txt"
+  require_tracked "conformance/spring-petclinic/src/test/resources/oracles/$oracle-business.json"
 done
 
-check_hash 72c426152fd2e4aea025d4758da7d85faf3b7a1ac47824ba9f56d83df247b5b0 \
-  conformance/spring-petclinic/src/test/resources/oracles/determine-whether-an-entity-is-new.txt
-check_hash ccb613cd380454d5aaf939c210adab10d40e89fdbda312fe985a436bc13bed9d \
-  conformance/spring-petclinic/src/test/resources/oracles/find-an-eligible-pet-by-name.txt
-check_hash 27db9b109a2e479ec26d76e843dab9b4d3339cd786664ac3fe7b046e4f1eac02 \
-  conformance/spring-petclinic/src/test/resources/oracles/register-a-new-pet.txt
+check_hash 85ef2d1f851f0c9df88bfe0f980752efcccd81359a00b14ec3955b86796df9a7 \
+  conformance/spring-petclinic/src/test/resources/oracles/owner-search-business.json
+check_hash d1657f14ea2c1c0606a5bfc1fc6bcd391c0a4a69468f4618ff0f6365ba6ff1e7 \
+  conformance/spring-petclinic/src/test/resources/oracles/pet-registration-business.json
+check_hash e0148a8cf3ec8f42210b0df765310c3e58d88cbf7bf6e428a5343822c2c587b3 \
+  conformance/spring-petclinic/src/test/resources/oracles/visit-booking-business.json
 
 for spec_file in .specops/*/spec.json
 do

@@ -29,12 +29,13 @@ TEST_CLASSES="$ROOT/conformance/spring-petclinic/target/test-classes"
 mkdir -p "$TEST_CLASSES"
 JAVA_HOME_21=$(/usr/libexec/java_home -v 21)
 "$JAVA_HOME_21/bin/javac" --release 21 \
-  -cp "$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes" \
+  -cp "$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-spring/target/classes" \
   -d "$TEST_CLASSES" \
+  "$ROOT/conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/BusinessJsonSchemaConformance.java" \
   "$ROOT/conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicConformanceTest.java" \
   "$ROOT/conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java"
 
-CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$TEST_CLASSES:$MAVEN_REPOSITORY/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$MAVEN_REPOSITORY/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$ROOT/fachtracing-spring/target/classes:$TEST_CLASSES:$MAVEN_REPOSITORY/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$MAVEN_REPOSITORY/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -cp "$CP" \
   at.gepardec.fachtracing.conformance.SpringPetClinicIsolationTest "$ROOT"
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -cp "$CP" \
