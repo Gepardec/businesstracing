@@ -436,3 +436,12 @@ becomes one existence rule. A strict guard rejects technical vocabulary.
 Maven writes business Mermaid, PlantUML, JSON V1, and its Draft 2020-12 schema by default. It lists
 these artifacts before the compatible exact structure and optional developer artifacts. Focused
 projection and Maven tests passed, followed by the full pull-request gate and both external corpora.
+
+### hogajama-business-time-vocabulary (bugfix) — 2026-08-11
+
+Completed one task. The business graph guard now treats `Start` and `Stop` as technical only when
+the full label is that structural marker. Longer business phrases keep their ordinary meaning.
+
+The focused contract failed before the change and passed after it. The full pull-request gate
+passed. A disposable integration worktree combined this fix with the strict aggregate fix, and the
+real Hogajama reactor produced two complete business graphs.

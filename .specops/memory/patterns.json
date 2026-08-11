@@ -18,8 +18,8 @@
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 4,
-      "pattern": "Preserve result-relevant optionality as absent/exists while stripping language- and persistence-specific vocabulary from business projections."
+      "count": 5,
+      "pattern": "Preserve result-relevant optionality as absent/exists, strip language- and persistence-specific vocabulary, and reject structural terms only in their structural context."
     },
     {
       "category": "build-tool-adapter",
