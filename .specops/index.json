@@ -340,5 +340,13 @@
     "author": "lucostus",
     "updated": "2026-08-11T09:17:19Z",
     "partOf": "business-graph-conformance"
+  },
+  {
+    "id": "hogajama-strict-aggregate-regression",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-11T09:40:22Z"
   }
 ]

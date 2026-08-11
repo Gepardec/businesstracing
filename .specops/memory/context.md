@@ -425,3 +425,17 @@ calls keep the existing opaque-boundary or fail-closed behavior.
 The focused API and analyzer contracts passed. The full pull-request gate passed with the 5,000
 decision load, external release proof, five complete Mega graphs, and the current three PetClinic
 graphs. No dependency, Spring rule, or application vocabulary was added.
+
+### hogajama-strict-aggregate-regression (bugfix) — 2026-08-11
+
+Completed one task. Supported platform operations inside source-visible catches no longer create
+an unavailable exception-trigger gap. Method-local dependency, definition, mutation, validation,
+and audit scans stop at nested class bodies; lambdas stay in their enclosing executable and nested
+methods remain separately indexed.
+
+One compiled generic fixture combines explicit opaque libraries, caught platform parsing, an
+anonymous comparator, generated source dispatch, and an untrusted binary counterexample. Strict
+analysis of the real Hogajama reactor reports `getAllDataMaxNumber` and
+`getAllWateringDataMaxNumber` as complete with exact Morphia, Commons Lang, and Commons Collections
+technical boundaries. The full pull-request gate passed with five complete Mega graphs, all Spring
+PetClinic expectations, and 5,000 load decisions with zero correctness failures.
