@@ -7,6 +7,11 @@ import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.api.FachTracing;
+import at.gepardec.fachtracing.business.BusinessGraphJsonExporter;
+import at.gepardec.fachtracing.business.BusinessGraphJsonSchema;
+import at.gepardec.fachtracing.business.BusinessGraphProjector;
+import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
+import at.gepardec.fachtracing.business.BusinessPlantUmlRenderer;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
@@ -31,12 +36,18 @@ import java.util.stream.Collectors;
 final class ProjectGraphGenerator {
     private static final String DEVELOPER_SCHEMA_V1 = "fachtracing-developer-graph-v1.schema.json";
     private static final String LEGACY_DEVELOPER_SCHEMA_V2 = "fachtracing-developer-graph-v2.schema.json";
+    private static final String BUSINESS_SCHEMA_V1 = "fachtracing-business-graph-v1.schema.json";
 
     private final StaticDecisionAnalyzer analyzer = new StaticDecisionAnalyzer();
     private final DeveloperGraphExporter developerJson = new DeveloperGraphExporter();
     private final DeveloperGraphJsonSchema developerSchema = new DeveloperGraphJsonSchema();
     private final MermaidRenderer mermaid = new MermaidRenderer();
     private final PlantUmlRenderer plantUml = new PlantUmlRenderer();
+    private final BusinessGraphProjector businessProjector = new BusinessGraphProjector();
+    private final BusinessMermaidRenderer businessMermaid = new BusinessMermaidRenderer();
+    private final BusinessPlantUmlRenderer businessPlantUml = new BusinessPlantUmlRenderer();
+    private final BusinessGraphJsonExporter businessJson = new BusinessGraphJsonExporter();
+    private final BusinessGraphJsonSchema businessSchema = new BusinessGraphJsonSchema();
 
     GenerationResult generate(
             List<Path> sourceFiles,
@@ -148,6 +159,10 @@ final class ProjectGraphGenerator {
                 .collect(Collectors.groupingBy(
                         result -> slug(result.graph().decisionLabel()), HashMap::new, Collectors.counting()));
         var index = new StringBuilder("# Fachtracing decision graphs\n\n");
+        Files.writeString(outputDirectory.resolve(BUSINESS_SCHEMA_V1),
+                businessSchema.generate(), StandardCharsets.UTF_8);
+        index.append("Business JSON Schema: [V1](")
+                .append(BUSINESS_SCHEMA_V1).append(")\n\n");
         if (revision != null) {
             Files.writeString(outputDirectory.resolve(DEVELOPER_SCHEMA_V1),
                     developerSchema.generate(), StandardCharsets.UTF_8);
@@ -165,15 +180,29 @@ final class ProjectGraphGenerator {
             }
             String base = slug(graph.decisionLabel());
             if (slugCounts.get(base) > 1) base += "-" + graph.graphId().substring(0, 8);
+            var businessGraph = businessProjector.project(analysis);
+            String businessMermaidName = base + "-business.mmd";
+            String businessPlantUmlName = base + "-business.puml";
+            String businessJsonName = base + "-business.json";
             String mermaidName = base + "-structure.mmd";
             String plantUmlName = base + "-structure.puml";
             String developerJsonName = base + "-developer.json";
+            Files.writeString(outputDirectory.resolve(businessMermaidName),
+                    businessMermaid.render(businessGraph), charset);
+            Files.writeString(outputDirectory.resolve(businessPlantUmlName),
+                    businessPlantUml.render(businessGraph), charset);
+            Files.writeString(outputDirectory.resolve(businessJsonName),
+                    businessJson.export(businessGraph), StandardCharsets.UTF_8);
             Files.writeString(outputDirectory.resolve(mermaidName), mermaid.structure(graph), charset);
             Files.writeString(outputDirectory.resolve(plantUmlName), plantUml.structure(graph), charset);
             index.append("- **").append(markdown(graph.decisionLabel())).append("** — ")
                     .append(graph.completeness()).append(" — ")
-                    .append("[Mermaid](").append(mermaidName).append(") · ")
-                    .append("[PlantUML](").append(plantUmlName).append(')');
+                    .append("[Business Mermaid](").append(businessMermaidName).append(") · ")
+                    .append("[Business PlantUML](").append(businessPlantUmlName).append(") · ")
+                    .append("[Business JSON](").append(businessJsonName).append(")\n")
+                    .append("  - Technical developer artifacts: ")
+                    .append("[structure Mermaid](").append(mermaidName).append(") · ")
+                    .append("[structure PlantUML](").append(plantUmlName).append(')');
             if (revision != null) {
                 Files.writeString(outputDirectory.resolve(developerJsonName),
                         developerJson.export(analysis, sourceCatalog),
@@ -198,6 +227,8 @@ final class ProjectGraphGenerator {
                 String name = file.getFileName().toString();
                 if (name.equals("index.md") || name.endsWith("-structure.mmd")
                         || name.endsWith("-structure.puml") || name.endsWith("-developer.json")
+                        || name.endsWith("-business.mmd") || name.endsWith("-business.puml")
+                        || name.endsWith("-business.json") || name.equals(BUSINESS_SCHEMA_V1)
                         || name.equals(DEVELOPER_SCHEMA_V1)
                         || name.equals(LEGACY_DEVELOPER_SCHEMA_V2)) {
                     Files.delete(file);

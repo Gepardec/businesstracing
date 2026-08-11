@@ -4,10 +4,9 @@ Fachtracing is an embeddable Java 21 library that learns a business-decision gra
 unknown method marked with `@FachTracing`, correlates one runtime path with opaque graph IDs,
 and stores a typed explanation of what was decided, why, and how.
 
-Every generated decision has one business `Start` and one `Stop`. All normal and exceptional
-paths converge on that `Stop`; normal terminal edges say what is returned. Technical identifier
-suffixes are removed, while result-relevant Java null checks are expressed as the business facts
-“absent” or “exists.”
+The exact analysis graph keeps all paths that runtime tracing needs. A separate build-time business
+graph contains only rules, actions, named results, and explicit analysis gaps. It removes entry and
+stop markers, loop mechanics, temporary calculations, raw Boolean branches, and route strings.
 
 The generic extractor supports exact paths for source-proven structured exception flow,
 synchronized business logic, atomic short-circuit predicates, ternaries, Java 21 switches,
@@ -23,8 +22,9 @@ For static business diagrams, add `fachtracing-api`, annotate decision methods, 
 mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 ```
 
-The module receives a Markdown index plus Mermaid and PlantUML diagrams under
-`target/fachtracing`. Maven supplies the current module's decision-entry roots plus the active
+The module receives a Markdown index, business Mermaid, business PlantUML, and business JSON under
+`target/fachtracing`. It also receives exact structure diagrams as technical developer artifacts.
+Maven supplies the current module's decision-entry roots plus the active
 reactor's source and compile-classpath union. Interface implementations in sibling reactor modules
 are therefore available for dispatch resolution, but sibling annotations do not create duplicate
 diagrams in the current module. A single-module build uses the same behavior as before. No analysis
@@ -66,9 +66,10 @@ or stack trace.
 
 ## Visualization exports and source navigation
 
-PlantUML and Mermaid are formats for business diagrams. Developer tools can use the
-`fachtracing-developer-graph/v1` JSON data format. It contains `nodes`, `edges`, stable opaque IDs,
-coverage gaps, and developer source data.
+The default `*-business.mmd`, `*-business.puml`, and `*-business.json` files explain application
+behavior. Business JSON uses `fachtracing-business-graph/v1`; its generated JSON Schema uses Draft
+2020-12. The compatible `*-structure.*` files show the exact technical graph. Developer tools can
+also use the opt-in `fachtracing-developer-graph/v1` JSON data format with source data.
 
 The Maven plugin writes `fachtracing-developer-graph-v1.schema.json` when developer JSON is enabled.
 Give the frontend developer the `*-developer.json` file and this schema file. The one V1 contract

@@ -12,9 +12,18 @@ mvn compile at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 
 This command needs no plugin block. It writes these files for each decision:
 
+- `<decision>-business.mmd`
+- `<decision>-business.puml`
+- `<decision>-business.json`
 - `<decision>-structure.mmd`
 - `<decision>-structure.puml`
+- `fachtracing-business-graph-v1.schema.json`
 - `index.md`
+
+The business files contain only rules, actions, results, and explicit analysis gaps. They remove
+entry markers, loop mechanics, temporary calculations, raw Boolean branches, and route strings.
+The `*-structure.*` files are exact technical developer artifacts. Runtime correlation continues to
+use that exact graph.
 
 ## Lifecycle analysis
 
@@ -225,6 +234,12 @@ analyzer does not use priority or prefix matching.
 Enabling a provider is a trust decision. Keep its catalog small and verify every signature against
 the supported library version. The optional Spring provider and Maven service loading are separate
 modules; the generic engine does not depend on Spring.
+
+## Business-only artifacts
+
+Business JSON is always available. It uses the `fachtracing-business-graph/v1` identifier and JSON
+Schema Draft 2020-12. The generated index lists business artifacts before technical developer
+artifacts.
 
 ## Developer JSON and source links
 

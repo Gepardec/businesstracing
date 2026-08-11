@@ -3,7 +3,7 @@
   "title": "Business Graph Conformance",
   "description": "Add generic external method contracts, a separate business-only graph projection, an optional Spring adapter, and complete Spring PetClinic business conformance without application-specific production rules.",
   "created": "2026-08-11T09:17:19Z",
-  "updated": "2026-08-11T09:44:03Z",
+  "updated": "2026-08-11T10:03:47Z",
   "author": "lucostus",
   "specs": [
     "external-method-semantic-contracts",
