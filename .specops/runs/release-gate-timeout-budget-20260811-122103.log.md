@@ -39,3 +39,11 @@ phases: [1, 2, 3]
 - Edit: Raise the focused minimum first; it rejects the old 60-minute workflow.
 - Edit: Raise only `release-gate.timeout-minutes` to 90.
 - Result: Focused routing and budget contracts and the full local pull-request gate passed.
+
+### [14:22:09] Step 5: Preserve live release evidence
+
+- Evidence: Main run `31491965409` reached 90 minutes and GitHub canceled a live Java process.
+- Finding: The capture helper buffered all output, so the log could not identify the blocking gate.
+- Edit: Stream through a POSIX FIFO while retaining the producer and `tee` exit statuses.
+- Result: The new live-output regression failed before the edit and passed after it. The complete
+  local pull-request gate also passed.

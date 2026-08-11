@@ -14,8 +14,10 @@ to 45 minutes. The current clean gate has more required work. Run `31371139242` 
 nightly runs reached the job limit and ended as canceled. The last output had no test failure before
 GitHub stopped the job.
 
-The focused budget contract accepts any limit of at least 50 minutes, so it protects the obsolete
-budget instead of the current required gate.
+The focused budget contract accepted any limit of at least 50 minutes, so it protected the obsolete
+budget instead of the current required gate. A 90-minute remediation run then reached its new limit.
+The release output helper buffered all command output until completion, so GitHub showed no stage
+progress and the canceled run could not identify the blocking sub-gate.
 
 ## Impact Assessment
 
@@ -29,6 +31,8 @@ budget instead of the current required gate.
 
 - `.github/workflows/verify.yml`: Sets the upper bound for non-PR release runs.
 - `scripts/test-release-workflow-budget.sh`: Enforces the minimum accepted bound.
+- `scripts/capture-gate-output.sh`: Captures evidence but currently hides all live progress.
+- `scripts/test-capture-gate-output.sh`: Protects exact failure propagation and live output.
 - `scripts/verify.sh`: Runs the budget contract in local and PR verification.
 - `scripts/test-fast-pr-workflow.sh`: Protects event routing and the unchanged release command.
 
@@ -40,10 +44,12 @@ budget instead of the current required gate.
 | A future limit below 90 minutes fails | Must-Test | Negative focused contract |
 | PR and release event routing stays unchanged | Must-Test | Fast workflow contract |
 | Functional and conformance behavior stays unchanged | Nice-To-Test | Full PR gate |
+| Release output streams without hiding failures | Must-Test | Streaming and exit-status contract |
 
 ## Proposed Fix
 
-Set the release job limit and its focused minimum contract to 90 minutes. Do not change the release
+Set the release job limit and its focused minimum contract to 90 minutes. Stream captured release
+output through a FIFO while retaining the producer and `tee` statuses. Do not change the release
 command, gate content, event routing, concurrency, permissions, or PR timeout.
 
 ## Testing Plan
@@ -62,6 +68,8 @@ command, gate content, event routing, concurrency, permissions, or PR timeout.
 - Run the fast workflow contract.
 - Run the full pull-request gate, including both pinned corpora and the short load test.
 - Confirm the hosted PostgreSQL and pull-request gates pass.
+- Confirm live evidence reaches both the terminal and evidence file before the producer exits.
+- Confirm a producer failure still exits with the exact producer status.
 
 ## Acceptance Criteria
 
@@ -70,6 +78,8 @@ command, gate content, event routing, concurrency, permissions, or PR timeout.
 - [ ] WHEN standard verification runs THE SYSTEM SHALL accept the 90-minute workflow budget.
 - [ ] THE SYSTEM SHALL keep PR routing, release routing, permissions, and release commands unchanged.
 - [ ] THE SYSTEM SHALL pass local and hosted pull-request checks.
+- [ ] WHILE the release command runs THE SYSTEM SHALL stream the same output to the job log and evidence file.
+- [ ] IF the release command fails THEN THE SYSTEM SHALL return its exact nonzero status.
 - [ ] WHEN the fix reaches `main` THE RELEASE JOB SHALL complete without the old timeout cancellation.
 
 ## Scope Assessment

@@ -17,6 +17,8 @@ clean release workload.
 2. Raise the release job timeout to 90 minutes.
 3. Run focused, full local, and hosted checks.
 4. Commit, push, open a focused PR, merge it, and monitor the final `main` release gate.
+5. Stream the captured release output while preserving exact failure status after the 90-minute
+   run proves that the timeout increase alone is insufficient.
 
 **Acceptance Criteria:**
 
@@ -26,6 +28,8 @@ clean release workload.
 - [ ] The full pull-request gate passes.
 - [ ] Hosted PR and PostgreSQL checks pass.
 - [ ] The final `main` release gate completes.
+- [ ] Release output reaches the terminal and evidence file before producer completion.
+- [ ] Producer failures retain their exact exit status.
 
 ## Progress
 

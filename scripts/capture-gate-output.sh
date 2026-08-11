@@ -8,15 +8,24 @@ fi
 
 OUTPUT=$1
 shift
-TEMPORARY=$(mktemp "${TMPDIR:-/tmp}/fachtracing-gate-output.XXXXXX")
-cleanup() { rm -f "$TEMPORARY"; }
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/fachtracing-gate-output.XXXXXX")
+PIPE="$WORK/output"
+cleanup() { rm -rf "$WORK"; }
 trap cleanup EXIT INT TERM
 
+mkdir -p "$(dirname "$OUTPUT")"
+mkfifo "$PIPE"
+tee "$OUTPUT" < "$PIPE" &
+TEE_PID=$!
+
 set +e
-"$@" > "$TEMPORARY" 2>&1
+"$@" > "$PIPE" 2>&1
 STATUS=$?
+wait "$TEE_PID"
+TEE_STATUS=$?
 set -e
 
-mkdir -p "$(dirname "$OUTPUT")"
-tee "$OUTPUT" < "$TEMPORARY"
-exit "$STATUS"
+if [ "$STATUS" -ne 0 ]; then
+  exit "$STATUS"
+fi
+exit "$TEE_STATUS"

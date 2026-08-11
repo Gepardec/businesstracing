@@ -11,7 +11,7 @@ Implementation is pending.
 - Steering directory: verified; stale repo map refreshed from 215 discovered files.
 - Memory directory: verified; release-gate integrity pattern loaded.
 - Vertical: infrastructure for a Java library release workflow.
-- Affected files: `.github/workflows/verify.yml` and `scripts/test-release-workflow-budget.sh`.
+- Affected files: workflow timeout, budget contract, and release output capture helper and contract.
 - Project state: brownfield.
 - Scope assessment: one coupled timeout-and-contract fix; no decomposition.
 
@@ -27,6 +27,7 @@ Implementation is pending.
 | # | Decision | Rationale | Task | Timestamp |
 | --- | --- | --- | --- | --- |
 | 1 | Use a 90-minute bounded release budget. | Current runs reach 60 minutes; 90 preserves a bound and allows corpus growth and cold-run variance. | 1 | 2026-08-11T12:21:03Z |
+| 2 | Stream through a POSIX FIFO and preserve both process statuses. | The 90-minute run exposed no stage output, so another timeout increase would be guesswork. | 1 | 2026-08-11T14:22:09Z |
 
 ## Verification
 
@@ -37,4 +38,11 @@ Implementation is pending.
 - Short load: 5,000 decisions, zero errors, mismatches, drops, or contamination.
 - Mega: five complete graphs from 420 source files.
 - Spring PetClinic: three complete business graphs from 30 source files.
-- Hosted PR, PostgreSQL, and final `main` release checks: pending.
+- PR #25 hosted PR and PostgreSQL checks: PASS.
+- PR #25 merged at `c5ff6933bdd210e578eba4f9125ef28df0db97e9`.
+- Main run `31491965409`: PostgreSQL passed; release command canceled at 90 minutes with no buffered output.
+- Streaming regression: failed before the helper change and passed after it.
+- Exact failure propagation, timeout budget, and event routing contracts: PASS.
+- Full local pull-request gate after streaming fix: PASS with five complete Mega graphs, three
+  complete PetClinic business graphs, and zero short-load correctness failures.
+- Final live-output diagnosis and `main` release completion: pending.
