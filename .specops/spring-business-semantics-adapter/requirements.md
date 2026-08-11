@@ -12,11 +12,11 @@ can produce complete business graphs without source changes other than annotatio
 
 ## Acceptance Criteria
 
-- [ ] WHERE the Spring adapter is enabled THE SYSTEM SHALL provide exact contracts for supported Spring utility, validation, page, repository, exception, and redirect APIs.
-- [ ] THE SYSTEM SHALL keep production adapter code free of a Spring dependency.
-- [ ] THE SYSTEM SHALL use Spring dependencies only in adapter tests.
-- [ ] THE SYSTEM SHALL contain no PetClinic package, type, method, or business vocabulary.
-- [ ] WHEN a Spring signature is not in the catalog THE SYSTEM SHALL remain fail-closed.
+- [x] WHERE the Spring adapter is enabled THE SYSTEM SHALL provide exact contracts for supported Spring utility, validation, page, repository, exception, and redirect APIs.
+- [x] THE SYSTEM SHALL keep production adapter code free of a Spring dependency.
+- [x] THE SYSTEM SHALL use Spring dependencies only in adapter tests.
+- [x] THE SYSTEM SHALL contain no PetClinic package, type, method, or business vocabulary.
+- [x] WHEN a Spring signature is not in the catalog THE SYSTEM SHALL remain fail-closed.
 
 ## Constraints
 

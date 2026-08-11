@@ -1030,6 +1030,26 @@
       "task": "Task 3",
       "date": "2026-08-11",
       "completedAt": "2026-08-11T10:03:47Z"
+    },
+    {
+      "specId": "spring-business-semantics-adapter",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Load optional providers from the Maven plugin realm",
+      "rationale": "A plugin dependency can enable Spring semantics without coupling the engine or plugin to Spring.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T10:18:03Z"
+    },
+    {
+      "specId": "spring-business-semantics-adapter",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Verify string contracts against real test-scope Spring APIs",
+      "rationale": "Reflection proves each exact symbolic owner, method, and descriptor without a production Spring dependency.",
+      "task": "Task 2",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T10:18:03Z"
     }
   ]
 }

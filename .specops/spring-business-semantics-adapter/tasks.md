@@ -4,14 +4,14 @@
 
 | Dependent Spec | Reason | Required | Status |
 | --- | --- | --- | --- |
-| `external-method-semantic-contracts` | Supplies the provider interface. | Yes | draft |
-| `generic-business-graph-projection` | Consumes the business semantics supplied by the adapter. | Yes | draft |
+| `external-method-semantic-contracts` | Supplies the provider interface. | Yes | completed |
+| `generic-business-graph-projection` | Consumes the business semantics supplied by the adapter. | Yes | completed |
 
 ## Task Breakdown
 
 ### Task 1: Add the optional adapter module
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Required specifications
 **Priority:** High
@@ -28,9 +28,9 @@ Add the module, service registration, and one Spring contract provider.
 
 **Acceptance Criteria:**
 
-- [ ] Production code imports no Spring types.
-- [ ] All catalog entries use exact method keys.
-- [ ] Provider discovery is deterministic.
+- [x] Production code imports no Spring types.
+- [x] All catalog entries use exact method keys.
+- [x] Provider discovery is deterministic.
 
 **Files to Modify:**
 
@@ -39,13 +39,13 @@ Add the module, service registration, and one Spring contract provider.
 
 **Tests Required:**
 
-- [ ] Module and provider-loading tests.
+- [x] Module and provider-loading tests.
 
 ---
 
 ### Task 2: Verify general Spring behavior
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 1
 **Priority:** High
@@ -63,9 +63,9 @@ general fixtures.
 
 **Acceptance Criteria:**
 
-- [ ] Supported Spring calls produce their declared semantics.
-- [ ] Unsupported calls stay incomplete.
-- [ ] The adapter has no application vocabulary.
+- [x] Supported Spring calls produce their declared semantics.
+- [x] Unsupported calls stay incomplete.
+- [x] The adapter has no application vocabulary.
 
 **Files to Modify:**
 
@@ -74,5 +74,5 @@ general fixtures.
 
 **Tests Required:**
 
-- [ ] Utility, validation, page, repository, exception, redirect, and isolation tests.
-- [ ] Pull-request verification.
+- [x] Utility, validation, page, repository, exception, redirect, and isolation tests.
+- [x] Pull-request verification.

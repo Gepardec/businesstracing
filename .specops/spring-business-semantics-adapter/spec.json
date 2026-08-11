@@ -1,10 +1,10 @@
 {
   "id": "spring-business-semantics-adapter",
   "type": "feature",
-  "status": "draft",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-11T09:17:19Z",
-  "updated": "2026-08-11T09:17:19Z",
+  "updated": "2026-08-11T10:18:03Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {"name": "lucostus", "email": "constantin.winkler@gepardec.com"},
@@ -17,5 +17,28 @@
     {"specId": "external-method-semantic-contracts", "reason": "The adapter implements the generic provider API.", "required": true},
     {"specId": "generic-business-graph-projection", "reason": "The adapter labels are verified in business projection output.", "required": true}
   ],
-  "relatedSpecs": ["spring-petclinic-business-conformance"]
+  "relatedSpecs": ["spring-petclinic-business-conformance"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"criteriaTestability": 9, "criteriaCompleteness": 9, "designCoherence": 9, "taskCoverage": 9},
+      "evaluatedAt": "2026-08-11T09:17:19Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"functionality": 9, "codeQuality": 9, "testCoverage": 9, "specCompliance": 9},
+      "evaluatedAt": "2026-08-11T10:18:03Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 1561,
+    "filesChanged": 26,
+    "linesAdded": 706,
+    "linesRemoved": 34,
+    "tasksCompleted": 2,
+    "acceptanceCriteriaVerified": 12,
+    "specDurationMinutes": 61
+  }
 }
