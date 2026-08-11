@@ -1,0 +1,47 @@
+{
+  "id": "release-gate-timeout-budget",
+  "type": "bugfix",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-11T12:21:03Z",
+  "updated": "2026-08-11T12:24:49Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus",
+    "email": "constantin.winkler@gepardec.com"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "ci-isolated-maven-repository",
+      "reason": "It introduced the bounded release job and its focused budget contract.",
+      "required": true
+    },
+    {
+      "specId": "fast-pr-ci-pipeline",
+      "reason": "It defines the release event routing that this fix must preserve.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "spring-petclinic-conformance",
+    "spring-petclinic-business-conformance"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-11T12:21:03Z"
+    }
+  }
+}
