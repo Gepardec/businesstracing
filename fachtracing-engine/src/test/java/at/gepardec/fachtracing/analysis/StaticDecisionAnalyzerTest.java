@@ -1553,6 +1553,7 @@ public final class StaticDecisionAnalyzerTest {
                         private ExternalRules() { }
                         public static native boolean hasErrors(State state);
                         public static native void reject(State state);
+                        public static native void notify(State state);
                         public static native void save(State state) throws DuplicateFailure;
                     }
                     """);
@@ -1564,6 +1565,7 @@ public final class StaticDecisionAnalyzerTest {
             Path policy = applicationSource.resolve("ExternalContractPolicy.java");
             Path sourceRules = applicationSource.resolve("SourceRules.java");
             Path sourcePolicy = applicationSource.resolve("SourceContractPolicy.java");
+            Path actionPolicy = applicationSource.resolve("ExternalActionPolicy.java");
             Files.writeString(policy, """
                     package application;
                     import at.gepardec.fachtracing.api.FachTracing;
@@ -1586,6 +1588,19 @@ public final class StaticDecisionAnalyzerTest {
                             } catch (IllegalStateException unexpected) {
                                 return null;
                             }
+                        }
+                    }
+                    """);
+            Files.writeString(actionPolicy, """
+                    package application;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import external.ExternalRules;
+                    import external.State;
+                    public final class ExternalActionPolicy {
+                        @FachTracing("result independent external action")
+                        public String decide(State state) {
+                            ExternalRules.notify(state);
+                            return "notified";
                         }
                     }
                     """);
@@ -1628,16 +1643,25 @@ public final class StaticDecisionAnalyzerTest {
                     ExternalMethodContract.StateEffect.NONE,
                     java.util.Map.of(0, ExternalMethodContract.StateEffect.MUTATE),
                     java.util.Set.of("external.DuplicateFailure"));
+            var notify = new ExternalMethodContract(
+                    new ExternalMethodReference(
+                            "external.ExternalRules", "notify", "(Lexternal/State;)V"),
+                    ExternalMethodContract.OperationKind.ACTION,
+                    "notify interested parties",
+                    ExternalMethodContract.ResultBehavior.NONE,
+                    ExternalMethodContract.StateEffect.NONE,
+                    java.util.Map.of(),
+                    java.util.Set.of());
             var ignoredSourceContract = ExternalMethodContract.predicate(
                     new ExternalMethodReference(
                             "application.SourceRules", "hasErrors", "(Lexternal/State;)Z"),
                     "provider must not replace source");
             ExternalMethodContractProvider provider = provider(
-                    "fixture:external", List.of(hasErrors, reject, save, ignoredSourceContract));
+                    "fixture:external", List.of(hasErrors, reject, save, notify, ignoredSourceContract));
             var request = new AnalysisRequest(
-                    List.of(policy, sourceRules, sourcePolicy),
+                    List.of(policy, sourceRules, sourcePolicy, actionPolicy),
                     List.of(CLASSPATH.getFirst(), binaryClasses), StandardCharsets.UTF_8,
-                    List.of(policy, sourcePolicy));
+                    List.of(policy, sourcePolicy, actionPolicy));
 
             var withoutContracts = new StaticDecisionAnalyzer().analyzeAll(request).stream()
                     .filter(result -> result.graph().decisionLabel().equals("external contract decision"))
@@ -1665,6 +1689,13 @@ public final class StaticDecisionAnalyzerTest {
                     .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
             assert source.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : source;
             assert !sourceLabels.contains("provider must not replace source") : sourceLabels;
+
+            var action = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("result independent external action")).findFirst().orElseThrow();
+            String actionLabels = action.graph().nodes().stream()
+                    .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+            assert action.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : action;
+            assert actionLabels.contains("notify interested parties") : actionLabels;
 
             ExternalMethodContractProvider conflict = provider("fixture:conflict", List.of(hasErrors));
             var conflicted = new StaticDecisionAnalyzer().analyzeAll(

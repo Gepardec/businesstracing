@@ -1707,8 +1707,12 @@ public final class StaticDecisionAnalyzer {
                     }
                     return super.visitMethodInvocation(node, unused);
                 }
-                boolean resultRelevant = relevant(node, slice, dependencies);
                 ExternalMethodContractRegistry.Resolution contract = externalMethodContract(executable);
+                boolean declaredAction = contract.kind()
+                        == ExternalMethodContractRegistry.ResolutionKind.RESOLVED
+                        && contract.contract().orElseThrow().operationKind()
+                        == ExternalMethodContract.OperationKind.ACTION;
+                boolean resultRelevant = relevant(node, slice, dependencies) || declaredAction;
                 if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.CONFLICT) {
                     if (!resultRelevant && !unknownResultEffects.contains(node)) {
                         return super.visitMethodInvocation(node, unused);
