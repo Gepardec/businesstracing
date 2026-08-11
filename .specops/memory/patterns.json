@@ -53,7 +53,7 @@
     },
     {
       "category": "platform-operation-classification",
-      "count": 1,
+      "count": 2,
       "pattern": "Classify equivalent current and legacy platform namespaces at one boundary while unsupported application binary logic stays fail-closed."
     },
     {
@@ -80,6 +80,11 @@
       "category": "path-sensitive-definition-flow",
       "count": 1,
       "pattern": "Let control-flow state decide which definitions reach each use; keep callback call-site definitions separate from result-slice use-site definitions."
+    },
+    {
+      "category": "executable-body-scope",
+      "count": 1,
+      "pattern": "Keep method-local dependency, effect, validation, and audit scans out of nested class bodies while retaining lambdas in the enclosing executable."
     }
   ],
   "fileOverlaps": [
@@ -133,9 +138,10 @@
         "context-label-symbol-correctness",
         "integrate-main-pr15",
         "implicit-field-local-callback-correctness",
-        "path-sensitive-definition-integration"
+        "path-sensitive-definition-integration",
+        "hogajama-strict-aggregate-regression"
       ],
-      "count": 19
+      "count": 20
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -149,8 +155,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
-      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration"],
-      "count": 10
+      "specs": ["generic-tracing-walking-skeleton", "generic-java-extractor-completion", "outcome-evidence-cancellation-slice-label-correctness", "jdk-mutation-alias-effect-correctness", "conditional-alias-method-reference-effects", "review-followup-correctness", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "hogajama-strict-aggregate-regression"],
+      "count": 11
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java",
+      "specs": ["path-sensitive-definition-integration", "hogajama-strict-aggregate-regression"],
+      "count": 2
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/LocalAliasResolver.java",
@@ -159,18 +170,18 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration"],
-      "count": 18
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "hogajama-strict-aggregate-regression"],
+      "count": 19
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
-      "count": 16
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "hogajama-strict-aggregate-regression"],
+      "count": 17
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java",
-      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
-      "count": 2
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "hogajama-strict-aggregate-regression"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java",
@@ -184,8 +195,8 @@
     },
     {
       "file": "docs/java-capabilities.json",
-      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "integrate-main-pr15", "implicit-field-local-callback-correctness"],
-      "count": 10
+      "specs": ["generic-application-readiness", "generic-java-extractor-completion", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "integrate-main-pr15", "implicit-field-local-callback-correctness", "hogajama-strict-aggregate-regression"],
+      "count": 11
     },
     {
       "file": "docs/maven-plugin.md",
@@ -230,8 +241,8 @@
     },
     {
       "file": "fachtracing-maven-plugin/src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java",
-      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries"],
-      "count": 5
+      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries", "hogajama-strict-aggregate-regression"],
+      "count": 6
     },
     {
       "file": "fachtracing-maven-plugin/pom.xml",

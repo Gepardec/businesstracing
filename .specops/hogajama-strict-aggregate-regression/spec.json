@@ -1,0 +1,67 @@
+{
+  "id": "hogajama-strict-aggregate-regression",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-11T09:14:44Z",
+  "updated": "2026-08-11T09:40:22Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "explicit-opaque-library-boundaries",
+      "reason": "It defines the exact trusted archive contract used by the reproduction.",
+      "required": true
+    },
+    {
+      "specId": "path-sensitive-definition-integration",
+      "reason": "It supplies the current shared dependency and relevance model corrected here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "fix-hogarama-aggregate-completeness",
+    "annotation-processor-output-analysis",
+    "result-relevance-review-findings"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-11T09:14:44Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 10,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-11T09:40:22Z"
+    }
+  },
+  "metrics": {
+    "durationMinutes": 26,
+    "specArtifactTokensEstimate": 2500,
+    "filesChanged": 21,
+    "linesAdded": 904,
+    "linesRemoved": 25,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 5
+  }
+}

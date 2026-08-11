@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.analysis;
 
 import com.sun.source.tree.AssignmentTree;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.IfTree;
@@ -64,6 +65,10 @@ public final class DependencyGraphBuilder {
                     aliases.assign(node.getName().toString(), node.getInitializer());
                 }
                 return super.visitVariable(node, parent);
+            }
+
+            @Override public Void visitClass(ClassTree node, Tree parent) {
+                return null;
             }
 
             @Override public Void visitAssignment(AssignmentTree node, Tree parent) {
@@ -270,6 +275,10 @@ public final class DependencyGraphBuilder {
     static Set<String> collectIdentifiers(Tree tree) {
         var result = new LinkedHashSet<String>();
         new TreeScanner<Void, Void>() {
+            @Override public Void visitClass(ClassTree node, Void unused) {
+                return null;
+            }
+
             @Override public Void visitIdentifier(IdentifierTree node, Void unused) {
                 result.add(node.getName().toString());
                 return super.visitIdentifier(node, unused);

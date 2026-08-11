@@ -414,3 +414,17 @@ visible when only some paths overwrite it, while a fully overwritten definition 
 The focused regression failed before the fix and passed after it. The complete pull-request gate
 passed. Five Mega graphs and three Spring PetClinic graphs passed; two reviewed Mega oracles now
 include the source-backed absent-warning and main-working-location initializers.
+
+### hogajama-strict-aggregate-regression (bugfix) — 2026-08-11
+
+Completed one task. Supported platform operations inside source-visible catches no longer create
+an unavailable exception-trigger gap. Method-local dependency, definition, mutation, validation,
+and audit scans stop at nested class bodies; lambdas stay in their enclosing executable and nested
+methods remain separately indexed.
+
+One compiled generic fixture combines explicit opaque libraries, caught platform parsing, an
+anonymous comparator, generated source dispatch, and an untrusted binary counterexample. Strict
+analysis of the real Hogajama reactor reports `getAllDataMaxNumber` and
+`getAllWateringDataMaxNumber` as complete with exact Morphia, Commons Lang, and Commons Collections
+technical boundaries. The full pull-request gate passed with five complete Mega graphs, all Spring
+PetClinic expectations, and 5,000 load decisions with zero correctness failures.
