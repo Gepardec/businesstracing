@@ -3,7 +3,7 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 WORKFLOW="$ROOT/.github/workflows/verify.yml"
-MINIMUM_TIMEOUT_MINUTES=50
+MINIMUM_TIMEOUT_MINUTES=90
 
 timeout_minutes=$(awk '
   /^  release-gate:/ { in_release_gate = 1; next }

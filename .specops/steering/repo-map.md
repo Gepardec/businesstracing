@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-11T09:36:23Z"
-_sourceHash: "55d361bd4d284a5b94c57430c540378fdb59312005cdb960686c188cd11432f5"
+_generatedAt: "2026-08-11T12:21:03Z"
+_sourceHash: "dad66adff01a31913236bb84b73d0d877faf776980ecb86e57ff49e93b55e491"
 ---
 
 ## Project Structure Map
@@ -19,7 +19,7 @@ fachtracing/
   fachtracing-api/
     src/main/java/at/gepardec/fachtracing/api/
   fachtracing-engine/
-    src/main/java/at/gepardec/fachtracing/{analysis,developer,diagram,explain,mermaid,model,plantuml,runtime,store}/
+    src/main/java/at/gepardec/fachtracing/{analysis,business,developer,diagram,explain,mermaid,model,plantuml,runtime,store}/
     src/test/java/at/gepardec/fachtracing/
     src/test/resources/{fixtures,snapshots}/
   fachtracing-agent/
@@ -29,6 +29,9 @@ fachtracing/
     src/main/java/at/gepardec/fachtracing/maven/
     src/test/java/at/gepardec/fachtracing/maven/
     src/test/resources/it/{annotation-processor,basic,external-release,reactor}/
+  fachtracing-spring/
+    src/main/java/at/gepardec/fachtracing/spring/
+    src/test/java/at/gepardec/fachtracing/spring/
   fachtracing-storage-jdbc/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
@@ -59,7 +62,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (76 files)
+#### fachtracing-engine/ (91 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -108,6 +111,12 @@ fachtracing/
   - `public final class StaticDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`
   - use-site local reaching definitions
+- `src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java`
+  - exact-to-business graph projection
+- `src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java`
+  - rejects technical vocabulary in business artifacts
+- `src/main/java/at/gepardec/fachtracing/business/BusinessGraphJsonExporter.java`
+  - deterministic business graph V1 export
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessStatementRenderer.java`
   - `public final class BusinessStatementRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/DecisionExplanationProjector.java`
@@ -146,7 +155,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-agent/ (12 files)
+#### fachtracing-agent/ (13 files)
 
 - `src/main/java/at/gepardec/fachtracing/agent/FachtracingAgent.java`
   - `public final class FachtracingAgent`
@@ -157,7 +166,7 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (29 files)
+#### fachtracing-maven-plugin/ (36 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
@@ -170,11 +179,19 @@ fachtracing/
 - `src/main/java/at/gepardec/fachtracing/maven/SourceInputResolver.java`
   - project, external, and source-artifact discovery
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
-  - self-traced developer graph export policy
+  - self-traced developer and business graph export policy
 - `src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
 - `src/test/resources/it/basic/` — external-style one-off and lifecycle Maven fixtures
 - `src/test/resources/it/reactor/` — two-module JPMS implementation-resolution fixture
 - `src/test/resources/it/annotation-processor/` — generated-Java analysis through both Maven goals
+- `pom.xml`
+
+#### fachtracing-spring/ (6 files)
+
+- `src/main/java/at/gepardec/fachtracing/spring/SpringMethodContractProvider.java`
+  - optional exact application-neutral Spring method contracts
+- `src/test/java/at/gepardec/fachtracing/spring/SpringMethodContractProviderTest.java`
+- `src/main/java/module-info.java`
 - `pom.xml`
 
 #### fachtracing-storage-jdbc/ (5 files)
