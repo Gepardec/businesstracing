@@ -445,3 +445,17 @@ the full label is that structural marker. Longer business phrases keep their ord
 The focused contract failed before the change and passed after it. The full pull-request gate
 passed. A disposable integration worktree combined this fix with the strict aggregate fix, and the
 real Hogajama reactor produced two complete business graphs.
+
+### hogajama-strict-aggregate-regression (bugfix) — 2026-08-11
+
+Completed one task. Supported platform operations inside source-visible catches no longer create
+an unavailable exception-trigger gap. Method-local dependency, definition, mutation, validation,
+and audit scans stop at nested class bodies; lambdas stay in their enclosing executable and nested
+methods remain separately indexed.
+
+One compiled generic fixture combines explicit opaque libraries, caught platform parsing, an
+anonymous comparator, generated source dispatch, and an untrusted binary counterexample. Strict
+analysis of the real Hogajama reactor reports `getAllDataMaxNumber` and
+`getAllWateringDataMaxNumber` as complete with exact Morphia, Commons Lang, and Commons Collections
+technical boundaries. The full pull-request gate passed with five complete Mega graphs, all Spring
+PetClinic expectations, and 5,000 load decisions with zero correctness failures.

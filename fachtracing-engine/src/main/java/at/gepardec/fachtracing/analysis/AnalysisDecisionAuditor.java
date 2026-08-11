@@ -1,5 +1,6 @@
 package at.gepardec.fachtracing.analysis;
 
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreeScanner;
@@ -29,6 +30,10 @@ final class AnalysisDecisionAuditor {
             }
         }
         new TreeScanner<Void, Void>() {
+            @Override public Void visitClass(ClassTree node, Void unused) {
+                return null;
+            }
+
             @Override public Void scan(Tree tree, Void unused) {
                 if (tree == null) return null;
                 if (unresolved.contains(tree)) return null;
