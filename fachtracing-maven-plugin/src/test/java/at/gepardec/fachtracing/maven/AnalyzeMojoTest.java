@@ -397,13 +397,16 @@ public final class AnalyzeMojoTest {
                 import at.gepardec.fachtracing.api.FachTracing;
                 public final class Policy {
                     @FachTracing("guarded approval")
-                    public boolean decide(String value) {
+                    public boolean decide(DecisionService decisions, String value) {
                         try {
-                            return Integer.parseInt(value) > 10;
-                        } catch (NumberFormatException ignored) {
+                            return decisions.approves(value);
+                        } catch (RuntimeException ignored) {
                             return false;
                         }
                     }
+                }
+                interface DecisionService {
+                    boolean approves(String value);
                 }
                 """, StandardCharsets.UTF_8);
         initializeGitRepository(repository);
