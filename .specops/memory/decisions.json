@@ -1050,6 +1050,46 @@
       "task": "Task 2",
       "date": "2026-08-11",
       "completedAt": "2026-08-11T10:18:03Z"
+    },
+    {
+      "specId": "hogajama-business-time-vocabulary",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Match structural terminal markers as complete labels",
+      "rationale": "The words start and stop have valid business meaning inside longer phrases.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T10:42:56Z"
+    },
+    {
+      "specId": "hogajama-strict-aggregate-regression",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Reuse supported-operation evidence for caught calls",
+      "rationale": "A call that is supported in normal flow must not become unavailable only because source catches its exception.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T09:40:22Z"
+    },
+    {
+      "specId": "hogajama-strict-aggregate-regression",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Keep method-local scans inside one executable body",
+      "rationale": "A nested class has its own receiver, parameters, and method effects.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T09:40:22Z"
+    },
+    {
+      "specId": "hogajama-strict-aggregate-regression",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Keep the existing generated-source dispatch contract",
+      "rationale": "The documented same-invocation compile and analysis flow already supplies generated Java and selects the mapper implementation.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T09:40:22Z"
     }
   ]
 }

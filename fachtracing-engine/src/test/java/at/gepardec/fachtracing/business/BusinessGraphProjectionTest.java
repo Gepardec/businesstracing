@@ -16,6 +16,7 @@ public final class BusinessGraphProjectionTest {
         usesTheFoldedLoopResultForTheFollowingBusinessBranch();
         preservesRulesActionsReturnsAndFailures();
         preservesIncompleteAnalysisAsBusinessGap();
+        acceptsBusinessVocabularyThatContainsStructuralWords();
         rejectsTechnicalVocabulary();
         producesStableBusinessIdsForEquivalentExactGraphs();
         exportsAllFormatsWithOneTopology();
@@ -184,6 +185,18 @@ public final class BusinessGraphProjectionTest {
                         edge(prefix + "-e2", prefix + "-rule", prefix + "-stop", "true; returns approved"),
                         edge(prefix + "-e3", prefix + "-rule", prefix + "-stop", "false; returns declined")),
                 BusinessDecisionGraph.Completeness.COMPLETE, List.of());
+    }
+
+    private static void acceptsBusinessVocabularyThatContainsStructuralWords() {
+        var graph = new BusinessLogicGraph("business-words", 1, "business words", List.of("time"),
+                List.of(
+                        new BusinessLogicGraph.Node("time", BusinessLogicGraph.NodeKind.ACTION,
+                                "set from date to today start time"),
+                        new BusinessLogicGraph.Node("location", BusinessLogicGraph.NodeKind.RULE,
+                                "preferred bus stop is open")),
+                List.of(), BusinessLogicGraph.Completeness.COMPLETE);
+
+        new BusinessLogicArtifactGuard().requireClean(graph);
     }
 
     private static void exportsAllFormatsWithOneTopology() {

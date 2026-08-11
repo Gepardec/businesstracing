@@ -18,7 +18,7 @@ checks that every entry names an executable contract and appears in this documen
 - `exact-async-callback-position`, `skipped-stage-callback-lifecycle`, `async-submission-lifecycle`, `nested-async-reservation-identity`, `transparent-future-cancellation`, `external-cancellation-call-site`
 - `unsupported-async-boundary-gap`, `java17-java21-projects`
 - `owned-external-jpms-source`, `owned-automatic-module-source`
-- `try-with-resources`, `resource-close-result-gap`, `pattern-matching`, `sealed-types`, `nested-classes`, `method-references`
+- `try-with-resources`, `supported-platform-catch`, `resource-close-result-gap`, `pattern-matching`, `sealed-types`, `nested-classes`, `nested-class-effect-scope`, `method-references`
 - `business-java-vocabulary`, `call-role-label-lowering`, `receiver-preserving-call-label`, `context-aware-operation-label`
 
 Static relevance is determined by backwards data/control dependence from returned values. The
@@ -64,12 +64,12 @@ This audit data does not enter the business graph or runtime activation JSON.
 | Java 21 pattern switch | Records the selected pattern edge and each evaluated guard atom; compiler type-switch helpers stay hidden |
 | Boolean ternary expression | Records the selector and only the selected Boolean value path as exact atomic edges |
 | `for`, enhanced `for`, `while`, `do while` | Creates a business iteration/choice node and analyzes the result-relevant body; canonical indexed collection loops omit the counter, size check, indexed access, and update |
-| Source-proven `try`, multi-catch, and `finally` | Retains primary and alternative business results; handler mechanics and exception types stay outside the business graph |
+| Source-proven `try`, multi-catch, and `finally` | Retains primary and alternative business results; handler mechanics and exception types stay outside the business graph. A caught call that the supported platform or selected opaque-library operation contract accepts does not create a second unavailable-trigger gap |
 | Synchronized block | Removes synchronization mechanics and retains result-relevant business logic in the block |
 | Try-with-resources | Removes resource mechanics when source proves that `close` has no result-relevant behavior; otherwise reports a located gap |
 | Pattern matching | Retains result-relevant type patterns and their bound business facts |
 | Sealed type dispatch | Includes each source-visible permitted implementation as a candidate |
-| Nested class call | Resolves and expands source-visible nested-class decision logic |
+| Nested class call | Resolves and expands source-visible nested-class decision logic. Method-local dependency and effect scans do not include a nested or anonymous class body; each nested method keeps its own scope |
 | Direct method reference | Resolves and expands a source-visible referenced decision method. Direct, parenthesized, cast, and local-variable bound mutating callbacks use the same receiver-effect contract as a normal call and show the source-to-target transfer. A platform mutator Boolean used as a predicate callback keeps the mutation but creates a located gap for its unsupported outcome topology |
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
 | Exact external method contract | An explicitly enabled provider describes one exact binary owner, method name, and JVM descriptor. The analyzer uses source first, then one matching contract, then an explicit opaque-library boundary, and finally a coverage gap. A contract can prove a predicate, action, receiver or argument mutation, result behavior, and possible exception types. Two matches create a source-located conflict gap; the analyzer does not use provider priority |
