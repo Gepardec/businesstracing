@@ -1,24 +1,24 @@
-diff --git a/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java b/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java
-index 6babed5..11cc24e 100644
---- a/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java
-+++ b/src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java
-@@ -19,0 +20 @@ import java.io.Serializable;
+diff --git a/src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java b/src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java
+index 0bf6c7e..dbed53a 100644
+--- a/src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java
++++ b/src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java
+@@ -21,0 +22 @@ import java.util.Optional;
 +import at.gepardec.fachtracing.api.FachTracing;
-@@ -46,0 +48 @@ public class BaseEntity implements Serializable {
-+	@FachTracing("determine whether an entity is new")
-diff --git a/src/main/java/org/springframework/samples/petclinic/owner/Owner.java b/src/main/java/org/springframework/samples/petclinic/owner/Owner.java
-index 480a7a6..3d4cb86 100644
---- a/src/main/java/org/springframework/samples/petclinic/owner/Owner.java
-+++ b/src/main/java/org/springframework/samples/petclinic/owner/Owner.java
-@@ -21,0 +22 @@ import java.util.Objects;
+@@ -94,0 +96 @@ class OwnerController {
++	@FachTracing("owner search")
+diff --git a/src/main/java/org/springframework/samples/petclinic/owner/VisitController.java b/src/main/java/org/springframework/samples/petclinic/owner/VisitController.java
+index c832189..0f0a797 100644
+--- a/src/main/java/org/springframework/samples/petclinic/owner/VisitController.java
++++ b/src/main/java/org/springframework/samples/petclinic/owner/VisitController.java
+@@ -19,0 +20 @@ import java.util.Optional;
 +import at.gepardec.fachtracing.api.FachTracing;
-@@ -134,0 +136 @@ public class Owner extends Person {
-+	@FachTracing("find an eligible pet by name")
+@@ -97,0 +99 @@ class VisitController {
++	@FachTracing("visit booking")
 diff --git a/src/main/java/org/springframework/samples/petclinic/owner/PetController.java b/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
-index 845c116..3b0920d 100644
+index 845c116..20c4128 100644
 --- a/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
 +++ b/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
 @@ -22,0 +23 @@ import java.util.Optional;
 +import at.gepardec.fachtracing.api.FachTracing;
 @@ -107,0 +109 @@ class PetController {
-+	@FachTracing("register a new pet")
++	@FachTracing("pet registration")

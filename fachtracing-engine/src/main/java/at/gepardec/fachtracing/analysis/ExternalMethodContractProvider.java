@@ -1,6 +1,8 @@
 package at.gepardec.fachtracing.analysis;
 
 import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
 
 /** Supplies trusted semantic facts for exact source-unavailable methods. */
 public interface ExternalMethodContractProvider {
@@ -9,4 +11,16 @@ public interface ExternalMethodContractProvider {
 
     /** Exact method contracts supplied by this provider. */
     Collection<ExternalMethodContract> contracts();
+
+    /**
+     * Resolves a contextual method to one exact contract.
+     *
+     * <p>The default does not match. A provider can use proven owner supertypes for APIs whose
+     * framework contract defines application-declared methods. The returned contract must use the
+     * requested exact method key.
+     */
+    default Optional<ExternalMethodContract> contextualContract(
+            ExternalMethodReference method, Set<String> ownerTypeBinaryNames) {
+        return Optional.empty();
+    }
 }

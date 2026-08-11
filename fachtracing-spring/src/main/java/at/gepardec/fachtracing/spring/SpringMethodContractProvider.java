@@ -7,9 +7,10 @@ import at.gepardec.fachtracing.analysis.ExternalMethodReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-/** Exact, application-neutral method semantics for supported Spring APIs. */
+/** Application-neutral method semantics for supported Spring APIs. */
 public final class SpringMethodContractProvider implements ExternalMethodContractProvider {
     private static final String DATA_INTEGRITY_FAILURE =
             "org.springframework.dao.DataIntegrityViolationException";
@@ -25,12 +26,40 @@ public final class SpringMethodContractProvider implements ExternalMethodContrac
         return CONTRACTS;
     }
 
+    @Override
+    public Optional<ExternalMethodContract> contextualContract(
+            ExternalMethodReference method, Set<String> ownerTypeBinaryNames) {
+        boolean springDataRepository = ownerTypeBinaryNames.contains(
+                "org.springframework.data.repository.Repository");
+        boolean derivedPageQuery = method.methodName().matches(
+                "(?:find|read|get|query|search|stream).*By.+")
+                && method.descriptor().endsWith(")Lorg/springframework/data/domain/Page;");
+        if (!springDataRepository || !derivedPageQuery) return Optional.empty();
+        return Optional.of(new ExternalMethodContract(method,
+                ExternalMethodContract.OperationKind.READ, "find matching records",
+                ExternalMethodContract.ResultBehavior.VALUE,
+                ExternalMethodContract.StateEffect.NONE, Map.of(),
+                Set.of("org.springframework.dao.DataAccessException")));
+    }
+
     private static List<ExternalMethodContract> buildContracts() {
         var contracts = new ArrayList<ExternalMethodContract>();
         contracts.add(predicate("org.springframework.util.StringUtils", "hasText",
                 "(Ljava/lang/CharSequence;)Z", "text is present"));
         contracts.add(predicate("org.springframework.util.StringUtils", "hasText",
                 "(Ljava/lang/String;)Z", "text is present"));
+        contracts.add(check("org.springframework.util.Assert", "notNull",
+                "(Ljava/lang/Object;Ljava/lang/String;)V", "required value is present",
+                "java.lang.IllegalArgumentException"));
+        contracts.add(check("org.springframework.util.Assert", "notNull",
+                "(Ljava/lang/Object;Ljava/util/function/Supplier;)V", "required value is present",
+                "java.lang.IllegalArgumentException"));
+        contracts.add(check("org.springframework.util.Assert", "state",
+                "(ZLjava/lang/String;)V", "required condition is met",
+                "java.lang.IllegalStateException"));
+        contracts.add(check("org.springframework.util.Assert", "state",
+                "(ZLjava/util/function/Supplier;)V", "required condition is met",
+                "java.lang.IllegalStateException"));
 
         for (String owner : List.of(
                 "org.springframework.validation.Errors",
@@ -73,6 +102,16 @@ public final class SpringMethodContractProvider implements ExternalMethodContrac
                 "total result count"));
         contracts.add(read("org.springframework.data.domain.Page", "getTotalPages", "()I",
                 "total page count"));
+        contracts.add(read("org.springframework.data.domain.PageRequest", "of",
+                "(II)Lorg/springframework/data/domain/PageRequest;", "page request"));
+        contracts.add(read("org.springframework.data.domain.PageRequest", "of",
+                "(IILorg/springframework/data/domain/Sort;)Lorg/springframework/data/domain/PageRequest;",
+                "page request"));
+        contracts.add(read("org.springframework.data.domain.PageRequest", "of",
+                "(IILorg/springframework/data/domain/Sort$Direction;[Ljava/lang/String;)Lorg/springframework/data/domain/PageRequest;",
+                "page request"));
+        contracts.add(read("org.springframework.data.domain.PageRequest", "ofSize",
+                "(I)Lorg/springframework/data/domain/PageRequest;", "page request"));
 
         for (String owner : List.of(
                 "org.springframework.data.repository.CrudRepository",
@@ -116,6 +155,15 @@ public final class SpringMethodContractProvider implements ExternalMethodContrac
                 ExternalMethodContract.OperationKind.ACTION, label,
                 ExternalMethodContract.ResultBehavior.NONE,
                 ExternalMethodContract.StateEffect.MUTATE, argumentEffects, possibleExceptions);
+    }
+
+    private static ExternalMethodContract check(
+            String owner, String name, String descriptor, String label, String exceptionType) {
+        return new ExternalMethodContract(new ExternalMethodReference(owner, name, descriptor),
+                ExternalMethodContract.OperationKind.READ, label,
+                ExternalMethodContract.ResultBehavior.NONE,
+                ExternalMethodContract.StateEffect.NONE, Map.of(),
+                Set.of(exceptionType));
     }
 
     private static ExternalMethodContract persistence(

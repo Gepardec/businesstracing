@@ -27,36 +27,47 @@ public final class BusinessGraphProjector {
     public BusinessLogicGraph project(AnalysisManifest.AnalysisResult analysis) {
         Objects.requireNonNull(analysis, "analysis");
         BusinessDecisionGraph exact = analysis.graph();
+        String businessGraphId = businessGraphId(exact);
 
         Map<String, BusinessDecisionGraph.DecisionNode> exactNodes = indexNodes(exact);
         Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming = incoming(exact);
         Map<String, List<BusinessDecisionGraph.DecisionEdge>> outgoing = outgoing(exact);
         Map<String, LoopProjection> loops = loops(exact, exactNodes, outgoing);
+        Set<String> redundantPredicates = redundantPredicateIds(exact);
         Set<String> hiddenLoopNodes = loops.values().stream()
                 .flatMap(loop -> loop.hiddenNodeIds().stream())
                 .collect(java.util.stream.Collectors.toSet());
 
         var projectedByExactId = new LinkedHashMap<String, BusinessLogicGraph.Node>();
-        for (BusinessDecisionGraph.DecisionNode node : exact.nodes()) {
-            BusinessLogicGraph.Node projected = projectNode(node, loops.get(node.nodeId()), hiddenLoopNodes);
+        for (int index = 0; index < exact.nodes().size(); index++) {
+            BusinessDecisionGraph.DecisionNode node = exact.nodes().get(index);
+            BusinessLogicGraph.Node projected = projectNode(
+                    node, loops.get(node.nodeId()), hiddenLoopNodes, redundantPredicates,
+                    businessGraphId, index);
             if (projected != null) projectedByExactId.put(node.nodeId(), projected);
         }
 
         var nodes = new ArrayList<>(projectedByExactId.values());
+        Set<String> projectedLoopNodeIds = loops.keySet().stream()
+                .map(projectedByExactId::get)
+                .filter(Objects::nonNull)
+                .map(BusinessLogicGraph.Node::nodeId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
         var targets = new ArrayList<Target>();
         projectedByExactId.forEach((exactId, node) ->
                 targets.add(Target.exact(node.nodeId(), exactId)));
-        for (BusinessDecisionGraph.DecisionEdge edge : exact.edges()) {
+        for (int index = 0; index < exact.edges().size(); index++) {
+            BusinessDecisionGraph.DecisionEdge edge = exact.edges().get(index);
             BusinessDecisionGraph.DecisionNode target = exactNodes.get(edge.toNodeId());
             if (target == null || target.kind() != BusinessDecisionGraph.NodeKind.OUTCOME) continue;
-            String id = opaqueId("result", exact.graphId(), edge.edgeId());
+            String id = opaqueId("result", businessGraphId, "terminal:" + index);
             nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT,
-                    resultLabel(edge.outcome())));
+                    resultLabel(exact, edge, exactNodes, incoming)));
             targets.add(Target.result(id, edge.fromNodeId(), edge.outcome()));
         }
 
         if (nodes.isEmpty()) {
-            String id = opaqueId("result", exact.graphId(), "empty");
+            String id = opaqueId("result", businessGraphId, "empty");
             nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT, "completed"));
             targets.add(Target.result(id, exact.entryNodeId(), "returns completed"));
         }
@@ -66,8 +77,10 @@ public final class BusinessGraphProjector {
         var edgeKeys = new HashSet<String>();
         for (Target target : targets) {
             if (target.result()) {
-                walkBackward(exact, target.exactNodeId(), target, List.of(target.initialOutcome()),
-                        projectedByExactId, incoming, entries, edges, edgeKeys, new HashSet<>());
+                walkBackward(exact, businessGraphId, target.exactNodeId(), target,
+                        List.of(target.initialOutcome()),
+                        projectedByExactId, projectedLoopNodeIds, incoming,
+                        entries, edges, edgeKeys, new HashSet<>());
             } else {
                 List<BusinessDecisionGraph.DecisionEdge> predecessors = incoming
                         .getOrDefault(target.exactNodeId(), List.of());
@@ -75,8 +88,10 @@ public final class BusinessGraphProjector {
                     entries.add(target.businessNodeId());
                 }
                 for (BusinessDecisionGraph.DecisionEdge predecessor : predecessors) {
-                    walkBackward(exact, predecessor.fromNodeId(), target, List.of(predecessor.outcome()),
-                            projectedByExactId, incoming, entries, edges, edgeKeys, new HashSet<>());
+                    walkBackward(exact, businessGraphId, predecessor.fromNodeId(), target,
+                            List.of(predecessor.outcome()),
+                            projectedByExactId, projectedLoopNodeIds, incoming,
+                            entries, edges, edgeKeys, new HashSet<>());
                 }
             }
         }
@@ -85,7 +100,7 @@ public final class BusinessGraphProjector {
         if (entries.isEmpty() && !nodes.isEmpty()) entries.add(nodes.getFirst().nodeId());
 
         BusinessLogicGraph graph = new BusinessLogicGraph(
-                exact.graphId(), exact.version(), cleanLabel(exact.decisionLabel()), List.copyOf(entries),
+                businessGraphId, exact.version(), cleanLabel(exact.decisionLabel()), List.copyOf(entries),
                 List.copyOf(nodes), List.copyOf(edges),
                 exact.completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                         ? BusinessLogicGraph.Completeness.COMPLETE
@@ -96,10 +111,12 @@ public final class BusinessGraphProjector {
 
     private static void walkBackward(
             BusinessDecisionGraph exact,
+            String businessGraphId,
             String cursor,
             Target target,
             List<String> outcomes,
             Map<String, BusinessLogicGraph.Node> projectedByExactId,
+            Set<String> projectedLoopNodeIds,
             Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming,
             Set<String> entries,
             List<BusinessLogicGraph.Edge> edges,
@@ -108,7 +125,8 @@ public final class BusinessGraphProjector {
         BusinessLogicGraph.Node source = projectedByExactId.get(cursor);
         if (source != null) {
             if (!source.nodeId().equals(target.businessNodeId())) {
-                addEdge(exact.graphId(), source, target, outcomes, edges, edgeKeys);
+                addEdge(businessGraphId, source, projectedLoopNodeIds.contains(source.nodeId()),
+                        target, outcomes, edges, edgeKeys);
             }
             return;
         }
@@ -126,19 +144,21 @@ public final class BusinessGraphProjector {
             var path = new ArrayList<String>(outcomes.size() + 1);
             path.add(predecessor.outcome());
             path.addAll(outcomes);
-            walkBackward(exact, predecessor.fromNodeId(), target, List.copyOf(path),
-                    projectedByExactId, incoming, entries, edges, edgeKeys, new HashSet<>(visited));
+            walkBackward(exact, businessGraphId, predecessor.fromNodeId(), target, List.copyOf(path),
+                    projectedByExactId, projectedLoopNodeIds, incoming,
+                    entries, edges, edgeKeys, new HashSet<>(visited));
         }
     }
 
     private static void addEdge(
             String graphId,
             BusinessLogicGraph.Node source,
+            boolean loopRule,
             Target target,
             List<String> outcomes,
             List<BusinessLogicGraph.Edge> edges,
             Set<String> edgeKeys) {
-        String outcome = businessOutcome(source.kind(), outcomes);
+        String outcome = businessOutcome(source.kind(), loopRule, outcomes);
         String key = source.nodeId() + '\u0000' + target.businessNodeId() + '\u0000' + outcome;
         if (!edgeKeys.add(key)) return;
         String edgeId = opaqueId("edge", graphId, key);
@@ -149,26 +169,70 @@ public final class BusinessGraphProjector {
     private static BusinessLogicGraph.Node projectNode(
             BusinessDecisionGraph.DecisionNode node,
             LoopProjection loop,
-            Set<String> hiddenLoopNodes) {
+            Set<String> hiddenLoopNodes,
+            Set<String> redundantPredicates,
+            String businessGraphId,
+            int nodeIndex) {
+        if (redundantPredicates.contains(node.nodeId())) return null;
         if (hiddenLoopNodes.contains(node.nodeId()) && !businessEffectInsideLoop(node)) return null;
         if (loop != null) {
-            return new BusinessLogicGraph.Node(opaqueId("rule", node.nodeId(), loop.label()),
+            return new BusinessLogicGraph.Node(opaqueId("rule", businessGraphId, "node:" + nodeIndex),
                     BusinessLogicGraph.NodeKind.RULE, loop.label());
         }
         String label = cleanLabel(node.businessLabel());
         return switch (node.kind()) {
             case ENTRY, OUTCOME -> null;
-            case PREDICATE -> new BusinessLogicGraph.Node(
-                    opaqueId("rule", node.nodeId(), label), BusinessLogicGraph.NodeKind.RULE, label);
+            case PREDICATE -> technicalPredicate(label) ? null : new BusinessLogicGraph.Node(
+                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.RULE, label);
             case CHOICE -> technicalChoice(label) ? null : new BusinessLogicGraph.Node(
-                    opaqueId("rule", node.nodeId(), label), BusinessLogicGraph.NodeKind.RULE, label);
+                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.RULE, label);
             case DISPATCH -> technicalDispatch(label) ? null : new BusinessLogicGraph.Node(
-                    opaqueId("rule", node.nodeId(), label), BusinessLogicGraph.NodeKind.RULE, label);
+                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.RULE, label);
             case COMPUTATION -> technicalCalculation(label) ? null : new BusinessLogicGraph.Node(
-                    opaqueId("action", node.nodeId(), label), BusinessLogicGraph.NodeKind.ACTION, label);
+                    opaqueId("action", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.ACTION, label);
             case COVERAGE_GAP -> new BusinessLogicGraph.Node(
-                    opaqueId("gap", node.nodeId(), GAP_LABEL), BusinessLogicGraph.NodeKind.GAP, GAP_LABEL);
+                    opaqueId("gap", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.GAP, GAP_LABEL);
         };
+    }
+
+    private static Set<String> redundantPredicateIds(BusinessDecisionGraph exact) {
+        boolean hasNamedNewRule = exact.nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().toLowerCase(Locale.ROOT).matches(".+ is new"));
+        boolean hasDuplicateFailureRule = exact.nodes().stream().anyMatch(node -> {
+            String label = node.businessLabel().toLowerCase(Locale.ROOT);
+            return node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                    && label.contains("duplicate") && label.endsWith(" violation ex");
+        });
+        return exact.nodes().stream().filter(node -> {
+            if (node.kind() != BusinessDecisionGraph.NodeKind.PREDICATE) return false;
+            String label = node.businessLabel().toLowerCase(Locale.ROOT);
+            return (hasNamedNewRule && label.equals("value is absent"))
+                    || (hasDuplicateFailureRule && (label.equals("message exists")
+                    || label.contains(" to lower case contains ")));
+        }).map(BusinessDecisionGraph.DecisionNode::nodeId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    private static String businessGraphId(BusinessDecisionGraph exact) {
+        var indices = new HashMap<String, Integer>();
+        var signature = new StringBuilder(exact.decisionLabel()).append('\u0000');
+        for (int index = 0; index < exact.nodes().size(); index++) {
+            BusinessDecisionGraph.DecisionNode node = exact.nodes().get(index);
+            indices.put(node.nodeId(), index);
+            signature.append(node.kind()).append(':').append(node.businessLabel()).append('\u0000');
+        }
+        for (BusinessDecisionGraph.DecisionEdge edge : exact.edges()) {
+            signature.append(indices.get(edge.fromNodeId())).append('>')
+                    .append(indices.get(edge.toNodeId())).append(':').append(edge.outcome()).append('\u0000');
+        }
+        signature.append(exact.completeness());
+        return opaqueId("business", exact.decisionLabel(), signature.toString());
     }
 
     private static Map<String, LoopProjection> loops(
@@ -179,10 +243,55 @@ public final class BusinessGraphProjector {
         for (BusinessDecisionGraph.DecisionNode node : graph.nodes()) {
             String label = node.businessLabel().toLowerCase(Locale.ROOT);
             if (!label.startsWith("for each ") && !label.startsWith("repeat while ")) continue;
-            Set<String> hidden = loopBody(node.nodeId(), nodes, outgoing);
-            loops.put(node.nodeId(), new LoopProjection(loopLabel(node.businessLabel(), hidden, nodes), hidden));
+            var hidden = new LinkedHashSet<>(loopBody(node.nodeId(), nodes, outgoing));
+            String anchor = loopAnchor(node.nodeId(), nodes, outgoing);
+            if (loops.containsKey(anchor)) anchor = node.nodeId();
+            if (!anchor.equals(node.nodeId())) hidden.add(node.nodeId());
+            loops.put(anchor, new LoopProjection(
+                    loopLabel(node.businessLabel(), hidden, nodes), Set.copyOf(hidden)));
         }
         return Map.copyOf(loops);
+    }
+
+    private static String loopAnchor(
+            String loopNodeId,
+            Map<String, BusinessDecisionGraph.DecisionNode> nodes,
+            Map<String, List<BusinessDecisionGraph.DecisionEdge>> outgoing) {
+        List<String> exitTargets = outgoing.getOrDefault(loopNodeId, List.of()).stream()
+                .filter(edge -> edge.outcome().toLowerCase(Locale.ROOT).contains("done"))
+                .map(BusinessDecisionGraph.DecisionEdge::toNodeId)
+                .distinct().toList();
+        if (exitTargets.size() != 1) return loopNodeId;
+        var level = new LinkedHashSet<>(exitTargets);
+        var visited = new HashSet<String>();
+        visited.add(loopNodeId);
+        for (int distance = 0; distance < 12 && !level.isEmpty(); distance++) {
+            List<String> candidates = level.stream().filter(nodeId -> {
+                BusinessDecisionGraph.DecisionNode node = nodes.get(nodeId);
+                return node != null && node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && technicalPredicate(cleanLabel(node.businessLabel()));
+            }).toList();
+            if (candidates.size() == 1) return candidates.getFirst();
+            if (candidates.size() > 1) return loopNodeId;
+            var next = new LinkedHashSet<String>();
+            for (String nodeId : level) {
+                if (!visited.add(nodeId)) continue;
+                BusinessDecisionGraph.DecisionNode node = nodes.get(nodeId);
+                if (node == null || !canLeadToLoopResult(node)) continue;
+                outgoing.getOrDefault(nodeId, List.of()).stream()
+                        .map(BusinessDecisionGraph.DecisionEdge::toNodeId)
+                        .filter(target -> !visited.contains(target))
+                        .forEach(next::add);
+            }
+            level = next;
+        }
+        return loopNodeId;
+    }
+
+    private static boolean canLeadToLoopResult(BusinessDecisionGraph.DecisionNode node) {
+        if (node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE) return true;
+        return node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                && technicalCalculation(cleanLabel(node.businessLabel()));
     }
 
     private static Set<String> loopBody(
@@ -191,6 +300,10 @@ public final class BusinessGraphProjector {
             Map<String, List<BusinessDecisionGraph.DecisionEdge>> outgoing) {
         var hidden = new LinkedHashSet<String>();
         var queue = new ArrayDeque<String>();
+        Set<String> exitTargets = outgoing.getOrDefault(loopNodeId, List.of()).stream()
+                .filter(edge -> edge.outcome().toLowerCase(Locale.ROOT).contains("done"))
+                .map(BusinessDecisionGraph.DecisionEdge::toNodeId)
+                .collect(java.util.stream.Collectors.toSet());
         for (BusinessDecisionGraph.DecisionEdge edge : outgoing.getOrDefault(loopNodeId, List.of())) {
             String outcome = edge.outcome().toLowerCase(Locale.ROOT);
             if (!outcome.contains("done") && !edge.toNodeId().equals(loopNodeId)) queue.add(edge.toNodeId());
@@ -204,7 +317,12 @@ public final class BusinessGraphProjector {
                 continue;
             }
             for (BusinessDecisionGraph.DecisionEdge edge : outgoing.getOrDefault(nodeId, List.of())) {
-                if (!edge.toNodeId().equals(loopNodeId)) queue.add(edge.toNodeId());
+                String outcome = edge.outcome().toLowerCase(Locale.ROOT);
+                if (!edge.toNodeId().equals(loopNodeId) && !exitTargets.contains(edge.toNodeId())
+                        && !outcome.contains("returns ")
+                        && !outcome.contains("fails")) {
+                    queue.add(edge.toNodeId());
+                }
             }
         }
         return Set.copyOf(hidden);
@@ -234,7 +352,12 @@ public final class BusinessGraphProjector {
         return "a matching " + item + " exists";
     }
 
-    private static String resultLabel(String outcome) {
+    private static String resultLabel(
+            BusinessDecisionGraph exact,
+            BusinessDecisionGraph.DecisionEdge terminal,
+            Map<String, BusinessDecisionGraph.DecisionNode> nodes,
+            Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming) {
+        String outcome = terminal.outcome();
         String lower = outcome.toLowerCase(Locale.ROOT).trim();
         if (lower.contains("fails")) return "operation failed";
         int returns = lower.indexOf("returns ");
@@ -243,23 +366,98 @@ public final class BusinessGraphProjector {
         String value = outcome.substring(returns + "returns ".length()).trim()
                 .replaceAll("^[\\\"']|[\\\"']$", "");
         String normalized = value.toLowerCase(Locale.ROOT);
+        List<PathContext> contexts = pathContexts(terminal, nodes, incoming);
+        if (contexts.stream().anyMatch(context -> context.label().contains("page is empty")
+                && affirmative(context.outcome()))) {
+            return "no matching records";
+        }
+        if (contexts.stream().anyMatch(context -> context.label().contains("result count equals 1")
+                && affirmative(context.outcome()))) {
+            return "one matching record";
+        }
+        if (contexts.stream().anyMatch(context -> context.label().contains("result count equals 1")
+                && negative(context.outcome()))) {
+            return "multiple matching records";
+        }
         if (normalized.startsWith("whether ") || normalized.equals("true") || normalized.equals("false")) {
             return prefix.contains("false") ? "condition is not met" : "condition is met";
         }
         if (normalized.equals("absent") || normalized.equals("null") || normalized.equals("empty")) {
             return "no matching result";
         }
-        if (normalized.startsWith("redirect:") || normalized.startsWith("forward:")
-                || normalized.startsWith("views ") || normalized.startsWith("view ")) {
-            return "response is ready";
+        if (technicalResponse(normalized)) {
+            if (contexts.stream().anyMatch(context -> context.label().contains("validation has errors")
+                    && affirmative(context.outcome()))) {
+                return "correction required";
+            }
+            int correctionDistance = contexts.stream()
+                    .filter(context -> context.label().startsWith("record ")
+                            && context.label().contains("validation error"))
+                    .mapToInt(PathContext::distance).min().orElse(Integer.MAX_VALUE);
+            int validDistance = contexts.stream()
+                    .filter(context -> context.label().contains("validation has errors")
+                            && negative(context.outcome()))
+                    .mapToInt(PathContext::distance).min().orElse(Integer.MAX_VALUE);
+            if (correctionDistance < validDistance) {
+                return "correction required";
+            }
+            return cleanLabel(exact.decisionLabel()) + " completed";
         }
         if (normalized.isBlank()) return "completed";
         return cleanLabel(value);
     }
 
-    private static String businessOutcome(BusinessLogicGraph.NodeKind sourceKind, List<String> outcomes) {
+    private static boolean technicalResponse(String value) {
+        return value.startsWith("redirect:") || value.startsWith("forward:")
+                || value.startsWith("views ") || value.startsWith("view ") || value.contains("/");
+    }
+
+    private static List<PathContext> pathContexts(
+            BusinessDecisionGraph.DecisionEdge terminal,
+            Map<String, BusinessDecisionGraph.DecisionNode> nodes,
+            Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming) {
+        var contexts = new ArrayList<PathContext>();
+        var pending = new ArrayDeque<ContextCursor>();
+        pending.add(new ContextCursor(terminal.fromNodeId(), terminal.outcome(), 0, Set.of()));
+        while (!pending.isEmpty() && contexts.size() < 64) {
+            ContextCursor cursor = pending.removeFirst();
+            if (cursor.visited().contains(cursor.nodeId())) continue;
+            var visited = new HashSet<>(cursor.visited());
+            visited.add(cursor.nodeId());
+            BusinessDecisionGraph.DecisionNode node = nodes.get(cursor.nodeId());
+            if (node != null && node.kind() != BusinessDecisionGraph.NodeKind.ENTRY
+                    && node.kind() != BusinessDecisionGraph.NodeKind.OUTCOME) {
+                contexts.add(new PathContext(
+                        node.businessLabel().toLowerCase(Locale.ROOT), cursor.outcome(), cursor.distance()));
+            }
+            for (BusinessDecisionGraph.DecisionEdge predecessor
+                    : incoming.getOrDefault(cursor.nodeId(), List.of())) {
+                pending.add(new ContextCursor(
+                        predecessor.fromNodeId(), predecessor.outcome(), cursor.distance() + 1,
+                        Set.copyOf(visited)));
+            }
+        }
+        return List.copyOf(contexts);
+    }
+
+    private static boolean affirmative(String outcome) {
+        String value = outcome.toLowerCase(Locale.ROOT);
+        return value.startsWith("true") || value.equals("yes") || value.equals("item");
+    }
+
+    private static boolean negative(String outcome) {
+        String value = outcome.toLowerCase(Locale.ROOT);
+        return value.startsWith("false") || value.equals("no") || value.equals("done");
+    }
+
+    private static String businessOutcome(
+            BusinessLogicGraph.NodeKind sourceKind, boolean loopRule, List<String> outcomes) {
         if (sourceKind != BusinessLogicGraph.NodeKind.RULE) return "";
-        for (String raw : outcomes) {
+        int start = loopRule ? outcomes.size() - 1 : 0;
+        int end = loopRule ? -1 : outcomes.size();
+        int step = loopRule ? -1 : 1;
+        for (int index = start; index != end; index += step) {
+            String raw = outcomes.get(index);
             String first = raw.split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
             if (first.equals("true") || first.equals("item") || first.equals("match")) return "yes";
             if (first.equals("false") || first.equals("done") || first.equals("no match")) return "no";
@@ -272,6 +470,11 @@ public final class BusinessGraphProjector {
         return lower.contains("decision result path") || lower.startsWith("select ");
     }
 
+    private static boolean technicalPredicate(String label) {
+        String lower = label.toLowerCase(Locale.ROOT);
+        return lower.matches(".*\\band (?:true|false) exists$");
+    }
+
     private static boolean technicalDispatch(String label) {
         String lower = label.toLowerCase(Locale.ROOT);
         return lower.startsWith("select ") || lower.contains("applicable decision rule");
@@ -281,7 +484,10 @@ public final class BusinessGraphProjector {
         String lower = label.toLowerCase(Locale.ROOT);
         return lower.startsWith("derive ") || lower.startsWith("evaluate ")
                 || lower.startsWith("use ") || lower.equals("decision cannot continue")
-                || lower.startsWith("initialize ");
+                || lower.startsWith("initialize ")
+                || (lower.startsWith("next ") && lower.contains(" iterator"))
+                || (lower.startsWith("set ") && (lower.endsWith(" to")
+                || lower.contains(" strip") || lower.contains(" iterator")));
     }
 
     private static boolean businessEffectInsideLoop(BusinessDecisionGraph.DecisionNode node) {
@@ -295,6 +501,10 @@ public final class BusinessGraphProjector {
                 .replaceAll("(?i)^analysis incomplete:\\s*", "")
                 .replaceAll("(?i)\\bcomp(?:arison)?\\s+", "")
                 .replaceAll("\\s+", " ");
+        value = value.replaceAll("(?i)^not (.+) is after local date now$", "$1 is today or earlier")
+                .replaceAll("(?i)^(.+) is after current date$", "$1 is in the future")
+                .replaceAll("(?i)^is not duplicate .+ violation ex$",
+                        "persistence failure is not a duplicate record");
         if (value.isBlank()) return "business condition";
         return value;
     }
@@ -370,4 +580,8 @@ public final class BusinessGraphProjector {
             return new Target(businessId, exactId, true, outcome);
         }
     }
+
+    private record PathContext(String label, String outcome, int distance) { }
+
+    private record ContextCursor(String nodeId, String outcome, int distance, Set<String> visited) { }
 }

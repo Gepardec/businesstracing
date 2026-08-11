@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /** Executable contracts for the optional Spring semantic adapter. */
 public final class SpringMethodContractProviderTest {
@@ -32,10 +33,33 @@ public final class SpringMethodContractProviderTest {
     public static void main(String[] args) {
         loadsTheProviderAsAService();
         matchesOnlyRealExactSpringSignatures();
+        matchesDerivedPageQueriesOnlyForRepositorySubtypes();
         completesGeneralSpringWorkflows();
         keepsUnsupportedSpringCallsIncomplete();
         containsNoApplicationVocabulary();
         productionHasNoSpringLinkageOrApplicationRules();
+    }
+
+    private static void matchesDerivedPageQueriesOnlyForRepositorySubtypes() {
+        var method = new ExternalMethodReference(
+                "fixture.spring.FrameworkWorkflow$EntryRepository", "findByNameStartingWith",
+                "(Ljava/lang/String;Lorg/springframework/data/domain/Pageable;)"
+                        + "Lorg/springframework/data/domain/Page;");
+        var registry = ExternalMethodContractRegistry.of(List.of(new SpringMethodContractProvider()));
+        var resolved = registry.resolve(method, Set.of(
+                "fixture.spring.FrameworkWorkflow$EntryRepository",
+                "org.springframework.data.repository.Repository"));
+        assert resolved.kind() == ExternalMethodContractRegistry.ResolutionKind.RESOLVED : resolved;
+        assert resolved.contract().orElseThrow().businessLabel().equals("find matching records");
+        assert resolved.contract().orElseThrow().possibleExceptionTypes()
+                .equals(Set.of("org.springframework.dao.DataAccessException"));
+        assert registry.resolve(method, Set.of("fixture.spring.FrameworkWorkflow$EntryRepository")).kind()
+                == ExternalMethodContractRegistry.ResolutionKind.ABSENT;
+
+        var unsupported = new ExternalMethodReference(
+                method.ownerBinaryName(), "loadMatchingEntries", method.descriptor());
+        assert registry.resolve(unsupported, Set.of("org.springframework.data.repository.Repository")).kind()
+                == ExternalMethodContractRegistry.ResolutionKind.ABSENT;
     }
 
     private static void loadsTheProviderAsAService() {
@@ -70,7 +94,8 @@ public final class SpringMethodContractProviderTest {
         var request = AnalysisRequest.of(List.of(FIXTURE), CLASSPATH)
                 .withExternalMethodContractProviders(List.of(new SpringMethodContractProvider()));
         var results = new StaticDecisionAnalyzer().analyzeAll(request);
-        for (String label : List.of("classify result page", "submit valid record")) {
+        for (String label : List.of(
+                "classify result page", "search repository records", "submit valid record")) {
             var result = results.stream().filter(candidate -> candidate.graph().decisionLabel().equals(label))
                     .findFirst().orElseThrow();
             assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
@@ -96,11 +121,14 @@ public final class SpringMethodContractProviderTest {
     private static void keepsUnsupportedSpringCallsIncomplete() {
         var request = AnalysisRequest.of(List.of(FIXTURE), CLASSPATH)
                 .withExternalMethodContractProviders(List.of(new SpringMethodContractProvider()));
-        var result = new StaticDecisionAnalyzer().analyzeAll(request).stream()
-                .filter(candidate -> candidate.graph().decisionLabel().equals("unsupported Spring helper"))
-                .findFirst().orElseThrow();
-        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result;
-        assert !result.graph().coverageGaps().isEmpty() : result;
+        var results = new StaticDecisionAnalyzer().analyzeAll(request);
+        for (String label : List.of("unsupported Spring helper", "unsupported custom page query")) {
+            var result = results.stream()
+                    .filter(candidate -> candidate.graph().decisionLabel().equals(label))
+                    .findFirst().orElseThrow();
+            assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result;
+            assert !result.graph().coverageGaps().isEmpty() : result;
+        }
     }
 
     private static void containsNoApplicationVocabulary() {

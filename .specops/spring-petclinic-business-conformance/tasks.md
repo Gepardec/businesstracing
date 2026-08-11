@@ -4,15 +4,15 @@
 
 | Dependent Spec | Reason | Required | Status |
 | --- | --- | --- | --- |
-| `external-method-semantic-contracts` | Supplies exact compiled-method facts. | Yes | draft |
-| `generic-business-graph-projection` | Supplies business graph files. | Yes | draft |
-| `spring-business-semantics-adapter` | Supplies general Spring semantics. | Yes | draft |
+| `external-method-semantic-contracts` | Supplies exact compiled-method facts. | Yes | completed |
+| `generic-business-graph-projection` | Supplies business graph files. | Yes | completed |
+| `spring-business-semantics-adapter` | Supplies general Spring semantics. | Yes | completed |
 
 ## Task Breakdown
 
 ### Task 1: Select and annotate three business workflows
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Required specifications
 **Priority:** High
@@ -29,8 +29,8 @@ Replace technical examples with owner search, visit booking, and pet registratio
 
 **Acceptance Criteria:**
 
-- [ ] The overlay contains only annotation imports and annotations.
-- [ ] Exactly three intended controller methods are graph roots.
+- [x] The overlay contains only annotation imports and annotations.
+- [x] Exactly three intended controller methods are graph roots.
 
 **Files to Modify:**
 
@@ -40,13 +40,13 @@ Replace technical examples with owner search, visit booking, and pet registratio
 
 **Tests Required:**
 
-- [ ] Overlay and decision-selection assertions.
+- [x] Overlay and decision-selection assertions.
 
 ---
 
 ### Task 2: Add reviewed business artifacts
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 1
 **Priority:** High
@@ -63,9 +63,9 @@ Require complete graphs and compare generated business JSON with reviewed oracle
 
 **Acceptance Criteria:**
 
-- [ ] All three graphs are complete.
-- [ ] Every expected result path is present.
-- [ ] Business artifacts contain no prohibited vocabulary.
+- [x] All three graphs are complete.
+- [x] Every expected result path is present.
+- [x] Business artifacts contain no prohibited vocabulary.
 
 **Files to Modify:**
 
@@ -75,14 +75,14 @@ Require complete graphs and compare generated business JSON with reviewed oracle
 
 **Tests Required:**
 
-- [ ] Exact JSON oracle comparison.
-- [ ] JSON schema validation.
+- [x] Exact JSON oracle comparison.
+- [x] JSON schema validation.
 
 ---
 
 ### Task 3: Verify isolation and complete CI
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** M
 **Dependencies:** Task 2
 **Priority:** High
@@ -99,8 +99,8 @@ Run repository, PetClinic, Maven, and PostgreSQL verification and enforce generi
 
 **Acceptance Criteria:**
 
-- [ ] Production modules contain no PetClinic knowledge.
-- [ ] All local verification gates pass.
+- [x] Production modules contain no PetClinic knowledge.
+- [x] All local verification gates pass.
 - [ ] CI, including configured PostgreSQL verification, passes.
 
 **Files to Modify:**
@@ -111,6 +111,6 @@ Run repository, PetClinic, Maven, and PostgreSQL verification and enforce generi
 
 **Tests Required:**
 
-- [ ] PetClinic gate.
-- [ ] Pull-request gate.
+- [x] PetClinic gate.
+- [x] Pull-request gate.
 - [ ] Hosted PostgreSQL CI gate.

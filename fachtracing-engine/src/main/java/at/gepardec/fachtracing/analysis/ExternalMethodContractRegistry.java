@@ -8,15 +8,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /** Validates providers and resolves zero or one exact method contract without priority rules. */
 public final class ExternalMethodContractRegistry {
-    private static final ExternalMethodContractRegistry EMPTY = new ExternalMethodContractRegistry(Map.of());
+    private static final ExternalMethodContractRegistry EMPTY =
+            new ExternalMethodContractRegistry(Map.of(), List.of());
 
     private final Map<ExternalMethodReference, List<Match>> matches;
+    private final List<Provider> providers;
 
-    private ExternalMethodContractRegistry(Map<ExternalMethodReference, List<Match>> matches) {
+    private ExternalMethodContractRegistry(
+            Map<ExternalMethodReference, List<Match>> matches,
+            List<Provider> providers) {
         this.matches = matches;
+        this.providers = providers;
     }
 
     /** Creates an empty fail-closed registry. */
@@ -34,8 +40,10 @@ public final class ExternalMethodContractRegistry {
                         .thenComparing(provider -> provider.getClass().getName()))
                 .toList();
         var collected = new LinkedHashMap<ExternalMethodReference, List<Match>>();
+        var registeredProviders = new ArrayList<Provider>();
         for (ExternalMethodContractProvider provider : orderedProviders) {
             String providerId = providerId(provider);
+            registeredProviders.add(new Provider(providerId, provider));
             Collection<ExternalMethodContract> contracts = Objects.requireNonNull(
                     provider.contracts(), "contracts from " + providerId);
             for (ExternalMethodContract contract : contracts) {
@@ -49,12 +57,42 @@ public final class ExternalMethodContractRegistry {
         collected.entrySet().stream().sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> immutable.put(entry.getKey(), List.copyOf(entry.getValue())));
         return immutable.isEmpty()
-                ? EMPTY : new ExternalMethodContractRegistry(Map.copyOf(immutable));
+                && registeredProviders.isEmpty()
+                ? EMPTY : new ExternalMethodContractRegistry(
+                        Map.copyOf(immutable), List.copyOf(registeredProviders));
     }
 
     /** Resolves an exact method key. More than one match is an explicit conflict. */
     public Resolution resolve(ExternalMethodReference method) {
-        List<Match> found = matches.getOrDefault(Objects.requireNonNull(method, "method"), List.of());
+        return resolution(matches.getOrDefault(Objects.requireNonNull(method, "method"), List.of()));
+    }
+
+    /** Resolves exact and contextual matches. More than one provider match is a conflict. */
+    public Resolution resolve(
+            ExternalMethodReference method,
+            Set<String> ownerTypeBinaryNames) {
+        Objects.requireNonNull(method, "method");
+        ownerTypeBinaryNames = Set.copyOf(Objects.requireNonNull(
+                ownerTypeBinaryNames, "ownerTypeBinaryNames"));
+        var found = new ArrayList<>(matches.getOrDefault(method, List.of()));
+        var matchedProviders = found.stream().map(Match::providerId)
+                .collect(java.util.stream.Collectors.toSet());
+        for (Provider provider : providers) {
+            if (matchedProviders.contains(provider.providerId())) continue;
+            Optional<ExternalMethodContract> contextual = Objects.requireNonNull(
+                    provider.provider().contextualContract(method, ownerTypeBinaryNames),
+                    "contextual contract from " + provider.providerId());
+            contextual.ifPresent(contract -> {
+                if (!contract.method().equals(method)) {
+                    throw new IllegalArgumentException("contextual contract must use the requested exact method key");
+                }
+                found.add(new Match(provider.providerId(), contract));
+            });
+        }
+        return resolution(found);
+    }
+
+    private static Resolution resolution(List<Match> found) {
         if (found.isEmpty()) return new Resolution(ResolutionKind.ABSENT, Optional.empty(), List.of());
         if (found.size() == 1) {
             return new Resolution(ResolutionKind.RESOLVED,
@@ -90,4 +128,6 @@ public final class ExternalMethodContractRegistry {
     public enum ResolutionKind { ABSENT, RESOLVED, CONFLICT }
 
     private record Match(String providerId, ExternalMethodContract contract) { }
+
+    private record Provider(String providerId, ExternalMethodContractProvider provider) { }
 }

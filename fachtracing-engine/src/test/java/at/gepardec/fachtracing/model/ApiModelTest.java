@@ -14,6 +14,8 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /** Plain-Java contract tests which avoid a framework dependency. */
 public final class ApiModelTest {
@@ -29,6 +31,7 @@ public final class ApiModelTest {
         unknownValuesAreRejectedWithoutStringification();
         analysisDecisionAuditIsImmutableAndNotActivated();
         externalMethodContractsAreExactImmutableAndFailClosed();
+        contextualMethodContractsUseProvenOwnerTypesAndFailClosed();
         activationBundleRoundTripsWithoutRuntimeSourceAnalysis();
     }
 
@@ -69,6 +72,58 @@ public final class ApiModelTest {
         return new ExternalMethodContractProvider() {
             @Override public String providerId() { return id; }
             @Override public List<ExternalMethodContract> contracts() { return List.of(contract); }
+        };
+    }
+
+    private static void contextualMethodContractsUseProvenOwnerTypesAndFailClosed() {
+        var reference = new ExternalMethodReference(
+                "example.RecordRepository", "findByName", "(Ljava/lang/String;)Ljava/lang/Object;");
+        var contract = ExternalMethodContract.read(
+                reference, "find matching records", ExternalMethodContract.ResultBehavior.VALUE);
+        ExternalMethodContractProvider contextual = contextualProvider(
+                "example:contextual", reference, contract);
+        var registry = ExternalMethodContractRegistry.of(List.of(contextual));
+
+        assert registry.resolve(reference).kind() == ExternalMethodContractRegistry.ResolutionKind.ABSENT;
+        assert registry.resolve(reference, Set.of("example.Repository")).kind()
+                == ExternalMethodContractRegistry.ResolutionKind.RESOLVED;
+        assert registry.resolve(reference, Set.of("example.OtherType")).kind()
+                == ExternalMethodContractRegistry.ResolutionKind.ABSENT;
+
+        var conflict = ExternalMethodContractRegistry.of(List.of(
+                contextual,
+                contextualProvider("example:second", reference, contract)))
+                .resolve(reference, Set.of("example.Repository"));
+        assert conflict.kind() == ExternalMethodContractRegistry.ResolutionKind.CONFLICT : conflict;
+        assert conflict.providerIds().equals(List.of("example:contextual", "example:second"))
+                : conflict.providerIds();
+
+        var wrongReference = new ExternalMethodReference(
+                "example.RecordRepository", "findByCode", "(Ljava/lang/String;)Ljava/lang/Object;");
+        try {
+            ExternalMethodContractRegistry.of(List.of(contextualProvider(
+                            "example:invalid", reference,
+                            ExternalMethodContract.read(wrongReference, "find record",
+                                    ExternalMethodContract.ResultBehavior.VALUE))))
+                    .resolve(reference, Set.of("example.Repository"));
+            throw new AssertionError("a contextual provider changed the requested method key");
+        } catch (IllegalArgumentException expected) {
+            assert expected.getMessage().contains("requested exact method key") : expected.getMessage();
+        }
+    }
+
+    private static ExternalMethodContractProvider contextualProvider(
+            String id,
+            ExternalMethodReference expected,
+            ExternalMethodContract contract) {
+        return new ExternalMethodContractProvider() {
+            @Override public String providerId() { return id; }
+            @Override public List<ExternalMethodContract> contracts() { return List.of(); }
+            @Override public Optional<ExternalMethodContract> contextualContract(
+                    ExternalMethodReference method, Set<String> ownerTypeBinaryNames) {
+                return method.equals(expected) && ownerTypeBinaryNames.contains("example.Repository")
+                        ? Optional.of(contract) : Optional.empty();
+            }
         };
     }
 
