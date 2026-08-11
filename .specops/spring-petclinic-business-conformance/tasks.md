@@ -82,7 +82,7 @@ Require complete graphs and compare generated business JSON with reviewed oracle
 
 ### Task 3: Verify isolation and complete CI
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 2
 **Priority:** High
@@ -101,7 +101,7 @@ Run repository, PetClinic, Maven, and PostgreSQL verification and enforce generi
 
 - [x] Production modules contain no PetClinic knowledge.
 - [x] All local verification gates pass.
-- [ ] CI, including configured PostgreSQL verification, passes.
+- [x] CI, including configured PostgreSQL verification, passes.
 
 **Files to Modify:**
 
@@ -113,4 +113,4 @@ Run repository, PetClinic, Maven, and PostgreSQL verification and enforce generi
 
 - [x] PetClinic gate.
 - [x] Pull-request gate.
-- [ ] Hosted PostgreSQL CI gate.
+- [x] Hosted PostgreSQL CI gate.

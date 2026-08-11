@@ -33,4 +33,4 @@ The implementation adds reusable contextual contracts for application-declared S
 - `./scripts/verify-pr.sh` passed, including the five unchanged Mega graphs and three complete PetClinic graphs.
 - All three PetClinic JSON files matched their reviewed oracles and passed schema validation.
 - PostgreSQL 18.4 passed locally in a temporary container: `POSTGRES_JDBC_OK`.
-- Hosted CI is pending because this environment cannot create the GitHub pull request.
+- All four stacked draft pull requests passed the hosted PR and PostgreSQL gates.

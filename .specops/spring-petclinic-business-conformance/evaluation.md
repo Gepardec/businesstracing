@@ -13,4 +13,6 @@
 
 ## Implementation Evaluation
 
-The local implementation passes all repository, PR, conformance, schema, vocabulary, and PostgreSQL checks. The exact Mega graph oracles remain unchanged. Hosted CI is pending until GitHub permits pull-request creation.
+The implementation passes all local and hosted repository, PR, conformance, schema, vocabulary, and PostgreSQL checks. The exact Mega graph oracles remain unchanged.
+
+**Result:** Passed.

@@ -317,28 +317,28 @@
   {
     "id": "generic-business-graph-projection",
     "type": "feature",
-    "status": "draft",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-11T09:17:19Z",
+    "updated": "2026-08-11T10:03:47Z",
     "partOf": "business-graph-conformance"
   },
   {
     "id": "spring-business-semantics-adapter",
     "type": "feature",
-    "status": "draft",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-11T09:17:19Z",
+    "updated": "2026-08-11T10:18:03Z",
     "partOf": "business-graph-conformance"
   },
   {
     "id": "spring-petclinic-business-conformance",
     "type": "feature",
-    "status": "draft",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-11T11:09:17Z",
+    "updated": "2026-08-11T11:19:06Z",
     "partOf": "business-graph-conformance"
   }
 ]

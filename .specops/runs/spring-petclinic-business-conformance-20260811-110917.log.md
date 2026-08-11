@@ -7,4 +7,5 @@
 - Added reviewed business JSON oracles and JSON Schema validation.
 - Passed `./scripts/verify.sh` and `./scripts/verify-pr.sh`.
 - Passed the PostgreSQL 18.4 storage test locally with `POSTGRES_JDBC_OK`.
-- Hosted CI remains pending because GitHub pull-request creation is not authorized in this environment.
+- Created the four stacked draft pull requests.
+- All four hosted PR and PostgreSQL gates passed.
