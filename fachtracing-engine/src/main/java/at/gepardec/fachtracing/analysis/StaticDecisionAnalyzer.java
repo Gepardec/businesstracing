@@ -364,6 +364,8 @@ public final class StaticDecisionAnalyzer {
             if (roots.isEmpty()) return List.of();
 
             Map<String, String> sourceFingerprints = fingerprints(request);
+            ExternalMethodContractRegistry externalMethodContracts = ExternalMethodContractRegistry.of(
+                    request.externalMethodContractProviders());
             var results = new ArrayList<AnalysisManifest.AnalysisResult>();
             for (MethodLocation root : roots) {
                 String label = annotationLabel(root.method());
@@ -375,7 +377,7 @@ public final class StaticDecisionAnalyzer {
                 var diagnostics = new ArrayList<AnalysisManifest.AnalysisDiagnostic>();
                 var extractor = new Extractor(
                         trees, task.getTypes(), task.getElements(), index, builder, diagnostics,
-                        request.compilationClasspath(), opaqueLibraries);
+                        request.compilationClasspath(), opaqueLibraries, externalMethodContracts);
                 String entry = extractor.addEntry(root);
                 extractor.extract(root, entry, true, new HashSet<>());
                 var built = builder.build(entry, sourceFingerprints, diagnostics);
@@ -449,6 +451,7 @@ public final class StaticDecisionAnalyzer {
         private final List<Path> binaryClasspath;
         private final BinaryTypeOriginResolver binaryTypeOrigins;
         private final OpaqueLibraryBoundary opaqueLibraries;
+        private final ExternalMethodContractRegistry externalMethodContracts;
         private final List<String> pendingFailureNodes = new ArrayList<>();
         private final Map<ExecutableElement, MutationSummary> mutationSummaries = new HashMap<>();
         private final Set<ExecutableElement> activeMutationSummaries = new HashSet<>();
@@ -462,7 +465,8 @@ public final class StaticDecisionAnalyzer {
                 DecisionGraphBuilder builder,
                 List<AnalysisManifest.AnalysisDiagnostic> diagnostics,
                 List<Path> binaryClasspath,
-                OpaqueLibraryBoundary opaqueLibraries) {
+                OpaqueLibraryBoundary opaqueLibraries,
+                ExternalMethodContractRegistry externalMethodContracts) {
             this.trees = trees;
             this.types = types;
             this.elements = elements;
@@ -472,6 +476,7 @@ public final class StaticDecisionAnalyzer {
             this.binaryClasspath = List.copyOf(binaryClasspath);
             this.binaryTypeOrigins = new BinaryTypeOriginResolver(binaryClasspath);
             this.opaqueLibraries = opaqueLibraries;
+            this.externalMethodContracts = externalMethodContracts;
         }
 
         private String addEntry(MethodLocation method) {
@@ -531,6 +536,15 @@ public final class StaticDecisionAnalyzer {
                         call, summary.receiverUnknown(), summary.parameterUnknown());
                 return mergeEffects(callbackEffects,
                         new DependencyGraphBuilder.CallEffects(proven, possible));
+            }
+            ExternalMethodContractRegistry.Resolution contract = externalMethodContract(executable);
+            if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
+                return mergeEffects(callbackEffects,
+                        contractEffects(caller, call, contract.contract().orElseThrow()));
+            }
+            if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.CONFLICT) {
+                return mergeEffects(callbackEffects, new DependencyGraphBuilder.CallEffects(
+                        Set.of(), possibleReferenceRoots(caller, call)));
             }
             if (isOpaqueLibraryReferenceOperation(executable)) {
                 return mergeEffects(callbackEffects, new DependencyGraphBuilder.CallEffects(
@@ -676,6 +690,29 @@ public final class StaticDecisionAnalyzer {
                     possible.addAll(callbackInputs);
                 }
                 return new DependencyGraphBuilder.CallEffects(proven, possible);
+            }
+            ExternalMethodContractRegistry.Resolution contract = externalMethodContract(executable);
+            if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
+                ExternalMethodContract facts = contract.contract().orElseThrow();
+                var proven = new LinkedHashSet<String>();
+                var possible = new LinkedHashSet<String>();
+                Set<String> receiverRoots = memberReferenceReceiverRoots(caller, reference);
+                if (facts.receiverEffect() == ExternalMethodContract.StateEffect.MUTATE) {
+                    if (receiverRoots.isEmpty() && !executable.getModifiers().contains(Modifier.STATIC)) {
+                        possible.addAll(callbackInputs);
+                    } else {
+                        proven.addAll(receiverRoots);
+                    }
+                }
+                if (facts.argumentEffects().containsValue(ExternalMethodContract.StateEffect.MUTATE)) {
+                    possible.addAll(callbackInputs);
+                }
+                return new DependencyGraphBuilder.CallEffects(proven, possible);
+            }
+            if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.CONFLICT) {
+                var possible = new LinkedHashSet<>(callbackInputs);
+                possible.addAll(memberReferenceReceiverRoots(caller, reference));
+                return new DependencyGraphBuilder.CallEffects(Set.of(), possible);
             }
             if (isOpaqueLibraryReferenceOperation(executable)) {
                 Set<String> receiverRoots = memberReferenceReceiverRoots(caller, reference);
@@ -831,6 +868,38 @@ public final class StaticDecisionAnalyzer {
             if (receiver != null && Set.of(ElementKind.CLASS, ElementKind.INTERFACE, ElementKind.ENUM,
                     ElementKind.RECORD, ElementKind.PACKAGE).contains(receiver.getKind())) return Set.of();
             return stateRoots(member.getExpression());
+        }
+
+        private DependencyGraphBuilder.CallEffects contractEffects(
+                MethodLocation caller,
+                MethodInvocationTree call,
+                ExternalMethodContract contract) {
+            var writes = new LinkedHashSet<String>();
+            if (contract.receiverEffect() == ExternalMethodContract.StateEffect.MUTATE) {
+                writes.addAll(opaqueLibraryReceiverRoots(caller, call));
+            }
+            contract.argumentEffects().forEach((index, effect) -> {
+                if (effect == ExternalMethodContract.StateEffect.MUTATE
+                        && index < call.getArguments().size()) {
+                    writes.addAll(stateRoots(call.getArguments().get(index)));
+                }
+            });
+            return new DependencyGraphBuilder.CallEffects(writes, Set.of());
+        }
+
+        private ExternalMethodContractRegistry.Resolution externalMethodContract(
+                ExecutableElement executable) {
+            MethodLocation source = index.methods().get(executable);
+            if (source != null && source.method().getBody() != null) {
+                return ExternalMethodContractRegistry.empty().resolve(externalMethodReference(executable));
+            }
+            return externalMethodContracts.resolve(externalMethodReference(executable));
+        }
+
+        private ExternalMethodReference externalMethodReference(ExecutableElement executable) {
+            TypeElement owner = (TypeElement) executable.getEnclosingElement();
+            return new ExternalMethodReference(elements.getBinaryName(owner).toString(),
+                    executable.getSimpleName().toString(), methodDescriptor(executable));
         }
 
         private boolean isOpaqueLibraryReferenceOperation(ExecutableElement executable) {
@@ -1642,13 +1711,34 @@ public final class StaticDecisionAnalyzer {
             }
 
             @Override public Void visitMethodInvocation(MethodInvocationTree node, Void unused) {
+                Element called = trees.getElement(getCurrentPath());
+                if (!(called instanceof ExecutableElement executable)) {
+                    if (unknownResultEffects.contains(node)) {
+                        addCoverageGap(node,
+                                "a possible side effect on the returned decision cannot be reconstructed");
+                        return null;
+                    }
+                    return super.visitMethodInvocation(node, unused);
+                }
+                ExternalMethodContractRegistry.Resolution contract = externalMethodContract(executable);
+                boolean declaredAction = contract.kind()
+                        == ExternalMethodContractRegistry.ResolutionKind.RESOLVED
+                        && contract.contract().orElseThrow().operationKind()
+                        == ExternalMethodContract.OperationKind.ACTION;
+                boolean resultRelevant = relevant(node, slice, dependencies) || declaredAction;
+                if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.CONFLICT) {
+                    if (!resultRelevant && !unknownResultEffects.contains(node)) {
+                        return super.visitMethodInvocation(node, unused);
+                    }
+                    addCoverageGap(node, "conflicting external method contracts from "
+                            + String.join(", ", contract.providerIds()));
+                    return null;
+                }
                 if (unknownResultEffects.contains(node)) {
                     addCoverageGap(node, "a possible side effect on the returned decision cannot be reconstructed");
                     return null;
                 }
-                if (!relevant(node, slice, dependencies)) return super.visitMethodInvocation(node, unused);
-                Element called = trees.getElement(getCurrentPath());
-                if (!(called instanceof ExecutableElement executable)) return super.visitMethodInvocation(node, unused);
+                if (!resultRelevant) return super.visitMethodInvocation(node, unused);
                 ExecutableElement reflected = reflectedContract(node, executable);
                 if (reflected != null) {
                     scan(node.getArguments(), unused);
@@ -1666,6 +1756,17 @@ public final class StaticDecisionAnalyzer {
                     String mutation = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
                             platformMutationLabel(node, executable), node, null);
                     advance(mutation);
+                    return null;
+                }
+                if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
+                    ExternalMethodContract facts = contract.contract().orElseThrow();
+                    scan(node.getMethodSelect(), unused);
+                    scan(node.getArguments(), unused);
+                    if (facts.operationKind() == ExternalMethodContract.OperationKind.ACTION) {
+                        String action = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                facts.businessLabel(), node, null);
+                        advance(action);
+                    }
                     return null;
                 }
                 if (isSupportedLibraryOperation(executable)) return super.visitMethodInvocation(node, unused);
@@ -2121,7 +2222,8 @@ public final class StaticDecisionAnalyzer {
                 if (!resourcesAreDecisionSafe(node)) {
                     addCoverageGap(node, "resource close logic can change the decision but is unavailable");
                 }
-                if (node.getCatches().isEmpty()) {
+                List<CatchTree> activeCatches = activeCatches(node);
+                if (activeCatches.isEmpty()) {
                     if (node.getFinallyBlock() == null) {
                         scan(node.getBlock(), unused);
                         return null;
@@ -2159,7 +2261,7 @@ public final class StaticDecisionAnalyzer {
 
                 var merged = new ArrayList<Tail>(normalTails);
                 int alternativeIndex = 0;
-                for (CatchTree caught : node.getCatches()) {
+                for (CatchTree caught : activeCatches) {
                     String outcome = "alternative result " + (++alternativeIndex);
                     var inputs = new ArrayList<Tail>();
                     inputs.add(new Tail(choice, outcome));
@@ -2189,6 +2291,64 @@ public final class StaticDecisionAnalyzer {
                             "exception-triggering decision logic is unavailable");
                 }
                 return null;
+            }
+
+            private List<CatchTree> activeCatches(TryTree statement) {
+                if (statement.getCatches().isEmpty()) return List.of();
+                var exceptions = new LinkedHashSet<String>();
+                boolean[] exactExternalOnly = { true };
+                boolean[] hasExternalContract = { false };
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitThrow(ThrowTree node, Void unused) {
+                        exactExternalOnly[0] = false;
+                        return super.visitThrow(node, unused);
+                    }
+
+                    @Override public Void visitMethodInvocation(MethodInvocationTree node, Void unused) {
+                        if (!relevant(node, slice, dependencies)) {
+                            return super.visitMethodInvocation(node, unused);
+                        }
+                        TreePath path = TreePath.getPath(location.unit(), node);
+                        Element called = path == null ? null : trees.getElement(path);
+                        if (!(called instanceof ExecutableElement executable)) {
+                            exactExternalOnly[0] = false;
+                            return super.visitMethodInvocation(node, unused);
+                        }
+                        MethodLocation source = index.methods().get(executable);
+                        if (source != null && source.method().getBody() != null) {
+                            exactExternalOnly[0] = false;
+                            return super.visitMethodInvocation(node, unused);
+                        }
+                        ExternalMethodContractRegistry.Resolution resolution =
+                                externalMethodContract(executable);
+                        if (resolution.kind() != ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
+                            exactExternalOnly[0] = false;
+                            return super.visitMethodInvocation(node, unused);
+                        }
+                        hasExternalContract[0] = true;
+                        exceptions.addAll(resolution.contract().orElseThrow().possibleExceptionTypes());
+                        return super.visitMethodInvocation(node, unused);
+                    }
+                }.scan(statement.getBlock(), null);
+                if (!exactExternalOnly[0] || !hasExternalContract[0]) {
+                    return statement.getCatches().stream().map(caught -> (CatchTree) caught).toList();
+                }
+                return statement.getCatches().stream()
+                        .map(caught -> (CatchTree) caught)
+                        .filter(caught -> exceptions.stream().anyMatch(type -> caughtBy(type, caught)))
+                        .toList();
+            }
+
+            private boolean caughtBy(String exceptionType, CatchTree caught) {
+                TypeElement exception = elements.getTypeElement(exceptionType.replace('$', '.'));
+                TreePath path = TreePath.getPath(location.unit(), caught.getParameter().getType());
+                TypeMirror caughtType = path == null ? null : trees.getTypeMirror(path);
+                if (exception == null || caughtType == null) return false;
+                if (caughtType.getKind() == TypeKind.UNION) {
+                    return ((javax.lang.model.type.UnionType) caughtType).getAlternatives().stream()
+                            .anyMatch(alternative -> types.isAssignable(exception.asType(), alternative));
+                }
+                return types.isAssignable(exception.asType(), caughtType);
             }
 
             @Override public Void visitSynchronized(SynchronizedTree node, Void unused) {
@@ -2253,10 +2413,24 @@ public final class StaticDecisionAnalyzer {
                     return new PredicatePlan(left.entryNodeId(), List.copyOf(trueTails), right.falseTails());
                 }
                 String id = add(BusinessDecisionGraph.NodeKind.PREDICATE,
-                        expression(unwrapped), unwrapped, AnalysisManifest.ProbeKind.PREDICATE);
+                        predicateLabel(unwrapped), unwrapped, AnalysisManifest.ProbeKind.PREDICATE);
                 addEvidenceTargets(id, unwrapped);
                 builder.setBranchCompletions(id, List.of(completion));
                 return new PredicatePlan(id, List.of(new Tail(id, "true")), List.of(new Tail(id, "false")));
+            }
+
+            private String predicateLabel(Tree predicate) {
+                if (!(predicate instanceof MethodInvocationTree invocation)) return expression(predicate);
+                TreePath path = TreePath.getPath(location.unit(), invocation);
+                Element called = path == null ? null : trees.getElement(path);
+                if (!(called instanceof ExecutableElement executable)) return expression(predicate);
+                ExternalMethodContractRegistry.Resolution resolution = externalMethodContract(executable);
+                if (resolution.kind() != ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
+                    return expression(predicate);
+                }
+                ExternalMethodContract contract = resolution.contract().orElseThrow();
+                return contract.operationKind() == ExternalMethodContract.OperationKind.PREDICATE
+                        ? contract.businessLabel() : expression(predicate);
             }
 
             private void addEvidenceTargets(String nodeId, Tree predicate) {
@@ -2513,6 +2687,8 @@ public final class StaticDecisionAnalyzer {
                     MethodInvocationTree invocation,
                     ExecutableElement executable) {
                 return index.methods().get(executable) != null
+                        || externalMethodContract(executable).kind()
+                        == ExternalMethodContractRegistry.ResolutionKind.RESOLVED
                         || isSupportedLibraryOperation(executable)
                         || isOpaqueLibraryReferenceOperation(executable)
                         || (isOpaqueLibraryBooleanOperation(executable)

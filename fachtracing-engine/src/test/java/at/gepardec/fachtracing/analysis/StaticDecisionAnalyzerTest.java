@@ -65,6 +65,7 @@ public final class StaticDecisionAnalyzerTest {
         exposesRelevantCoverageGaps();
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
         usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
+        appliesExactExternalMethodContractsWithoutGuessing();
         supportsExplicitOpaqueLibraryBoundaries();
         supportsAggregateCompositionAcrossCaughtPlatformCallsAndGeneratedDispatch();
         analyzesEveryAnnotatedEntry();
@@ -1523,6 +1524,203 @@ public final class StaticDecisionAnalyzerTest {
         } finally {
             if (root != null) deleteTree(root);
         }
+    }
+
+    private static void appliesExactExternalMethodContractsWithoutGuessing() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-method-contracts-");
+            Path binarySource = root.resolve("binary-source/external");
+            Path binaryClasses = root.resolve("binary-classes");
+            Path applicationSource = root.resolve("application-source/application");
+            Files.createDirectories(binarySource);
+            Files.createDirectories(binaryClasses);
+            Files.createDirectories(applicationSource);
+
+            Path state = binarySource.resolve("State.java");
+            Path duplicate = binarySource.resolve("DuplicateFailure.java");
+            Path rules = binarySource.resolve("ExternalRules.java");
+            Files.writeString(state, """
+                    package external;
+                    public final class State { public boolean invalid; }
+                    """);
+            Files.writeString(duplicate, """
+                    package external;
+                    public final class DuplicateFailure extends Exception { }
+                    """);
+            Files.writeString(rules, """
+                    package external;
+                    public final class ExternalRules {
+                        private ExternalRules() { }
+                        public static native boolean hasErrors(State state);
+                        public static native void reject(State state);
+                        public static native void notify(State state);
+                        public static native void save(State state) throws DuplicateFailure;
+                    }
+                    """);
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", binaryClasses.toString(),
+                    state.toString(), duplicate.toString(), rules.toString());
+            assert compilation == 0 : "could not compile external method contract fixture";
+
+            Path policy = applicationSource.resolve("ExternalContractPolicy.java");
+            Path sourceRules = applicationSource.resolve("SourceRules.java");
+            Path sourcePolicy = applicationSource.resolve("SourceContractPolicy.java");
+            Path actionPolicy = applicationSource.resolve("ExternalActionPolicy.java");
+            Files.writeString(policy, """
+                    package application;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import external.DuplicateFailure;
+                    import external.ExternalRules;
+                    import external.State;
+                    public final class ExternalContractPolicy {
+                        @FachTracing("external contract decision")
+                        public State decide(State state) {
+                            if (ExternalRules.hasErrors(state)) {
+                                ExternalRules.reject(state);
+                                return state;
+                            }
+                            try {
+                                ExternalRules.save(state);
+                                return state;
+                            } catch (DuplicateFailure failure) {
+                                ExternalRules.reject(state);
+                                return state;
+                            } catch (IllegalStateException unexpected) {
+                                return null;
+                            }
+                        }
+                    }
+                    """);
+            Files.writeString(actionPolicy, """
+                    package application;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import external.ExternalRules;
+                    import external.State;
+                    public final class ExternalActionPolicy {
+                        @FachTracing("result independent external action")
+                        public String decide(State state) {
+                            ExternalRules.notify(state);
+                            return "notified";
+                        }
+                    }
+                    """);
+            Files.writeString(sourceRules, """
+                    package application;
+                    import external.State;
+                    final class SourceRules {
+                        static boolean hasErrors(State state) { return state.invalid; }
+                    }
+                    """);
+            Files.writeString(sourcePolicy, """
+                    package application;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import external.State;
+                    public final class SourceContractPolicy {
+                        @FachTracing("source contract precedence")
+                        public boolean decide(State state) { return SourceRules.hasErrors(state); }
+                    }
+                    """);
+
+            var hasErrors = ExternalMethodContract.predicate(
+                    new ExternalMethodReference(
+                            "external.ExternalRules", "hasErrors", "(Lexternal/State;)Z"),
+                    "validation has errors");
+            var reject = new ExternalMethodContract(
+                    new ExternalMethodReference(
+                            "external.ExternalRules", "reject", "(Lexternal/State;)V"),
+                    ExternalMethodContract.OperationKind.ACTION,
+                    "record validation error",
+                    ExternalMethodContract.ResultBehavior.NONE,
+                    ExternalMethodContract.StateEffect.NONE,
+                    java.util.Map.of(0, ExternalMethodContract.StateEffect.MUTATE),
+                    java.util.Set.of());
+            var save = new ExternalMethodContract(
+                    new ExternalMethodReference(
+                            "external.ExternalRules", "save", "(Lexternal/State;)V"),
+                    ExternalMethodContract.OperationKind.ACTION,
+                    "save state",
+                    ExternalMethodContract.ResultBehavior.NONE,
+                    ExternalMethodContract.StateEffect.NONE,
+                    java.util.Map.of(0, ExternalMethodContract.StateEffect.MUTATE),
+                    java.util.Set.of("external.DuplicateFailure"));
+            var notify = new ExternalMethodContract(
+                    new ExternalMethodReference(
+                            "external.ExternalRules", "notify", "(Lexternal/State;)V"),
+                    ExternalMethodContract.OperationKind.ACTION,
+                    "notify interested parties",
+                    ExternalMethodContract.ResultBehavior.NONE,
+                    ExternalMethodContract.StateEffect.NONE,
+                    java.util.Map.of(),
+                    java.util.Set.of());
+            var ignoredSourceContract = ExternalMethodContract.predicate(
+                    new ExternalMethodReference(
+                            "application.SourceRules", "hasErrors", "(Lexternal/State;)Z"),
+                    "provider must not replace source");
+            ExternalMethodContractProvider provider = provider(
+                    "fixture:external", List.of(hasErrors, reject, save, notify, ignoredSourceContract));
+            var request = new AnalysisRequest(
+                    List.of(policy, sourceRules, sourcePolicy, actionPolicy),
+                    List.of(CLASSPATH.getFirst(), binaryClasses), StandardCharsets.UTF_8,
+                    List.of(policy, sourcePolicy, actionPolicy));
+
+            var withoutContracts = new StaticDecisionAnalyzer().analyzeAll(request).stream()
+                    .filter(result -> result.graph().decisionLabel().equals("external contract decision"))
+                    .findFirst().orElseThrow();
+            assert withoutContracts.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : withoutContracts;
+
+            var results = new StaticDecisionAnalyzer().analyzeAll(
+                    request.withExternalMethodContractProviders(List.of(provider)));
+            var resolved = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("external contract decision")).findFirst().orElseThrow();
+            assert resolved.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                    : resolved.graph().coverageGaps();
+            String labels = resolved.graph().nodes().stream()
+                    .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+            assert labels.contains("validation has errors") : labels;
+            assert labels.contains("record validation error") : labels;
+            assert labels.contains("save state") : labels;
+            assert resolved.graph().edges().stream().noneMatch(edge ->
+                    edge.outcome().contains("returns absent")) : resolved.graph().edges();
+
+            var source = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("source contract precedence")).findFirst().orElseThrow();
+            String sourceLabels = source.graph().nodes().stream()
+                    .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+            assert source.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : source;
+            assert !sourceLabels.contains("provider must not replace source") : sourceLabels;
+
+            var action = results.stream().filter(result -> result.graph().decisionLabel()
+                    .equals("result independent external action")).findFirst().orElseThrow();
+            String actionLabels = action.graph().nodes().stream()
+                    .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+            assert action.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : action;
+            assert actionLabels.contains("notify interested parties") : actionLabels;
+
+            ExternalMethodContractProvider conflict = provider("fixture:conflict", List.of(hasErrors));
+            var conflicted = new StaticDecisionAnalyzer().analyzeAll(
+                    request.withExternalMethodContractProviders(List.of(provider, conflict))).stream()
+                    .filter(result -> result.graph().decisionLabel().equals("external contract decision"))
+                    .findFirst().orElseThrow();
+            assert conflicted.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : conflicted;
+            assert conflicted.graph().coverageGaps().stream().anyMatch(gap ->
+                    gap.description().contains("conflicting external method contracts"))
+                    : conflicted.graph().coverageGaps();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static ExternalMethodContractProvider provider(
+            String id, List<ExternalMethodContract> contracts) {
+        return new ExternalMethodContractProvider() {
+            @Override public String providerId() { return id; }
+            @Override public List<ExternalMethodContract> contracts() { return contracts; }
+        };
     }
 
     private static void supportsAggregateCompositionAcrossCaughtPlatformCallsAndGeneratedDispatch() {

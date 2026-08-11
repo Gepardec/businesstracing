@@ -11,10 +11,20 @@ public record AnalysisRequest(
         List<Path> sourceFiles,
         List<Path> compilationClasspath,
         Charset charset,
-        List<Path> rootSourceFiles) {
+        List<Path> rootSourceFiles,
+        List<ExternalMethodContractProvider> externalMethodContractProviders) {
+    /** Keeps the project-aware contract without external method providers. */
+    public AnalysisRequest(
+            List<Path> sourceFiles,
+            List<Path> compilationClasspath,
+            Charset charset,
+            List<Path> rootSourceFiles) {
+        this(sourceFiles, compilationClasspath, charset, rootSourceFiles, List.of());
+    }
+
     /** Keeps the original contract: all supplied sources can contain graph roots. */
     public AnalysisRequest(List<Path> sourceFiles, List<Path> compilationClasspath, Charset charset) {
-        this(sourceFiles, compilationClasspath, charset, sourceFiles);
+        this(sourceFiles, compilationClasspath, charset, sourceFiles, List.of());
     }
 
     /** Creates a defensive request. Root sources must be part of the complete Java source set. */
@@ -23,6 +33,7 @@ public record AnalysisRequest(
         compilationClasspath = List.copyOf(compilationClasspath);
         charset = Objects.requireNonNull(charset, "charset");
         rootSourceFiles = List.copyOf(rootSourceFiles);
+        externalMethodContractProviders = List.copyOf(externalMethodContractProviders);
         if (sourceFiles.isEmpty()) throw new IllegalArgumentException("at least one source file is required");
         if (rootSourceFiles.isEmpty()) throw new IllegalArgumentException("at least one root source file is required");
         if (sourceFiles.stream().anyMatch(path -> !isJava(path))
@@ -38,6 +49,14 @@ public record AnalysisRequest(
     /** Creates a UTF-8 request with an explicit compilation classpath. */
     public static AnalysisRequest of(List<Path> sourceFiles, List<Path> compilationClasspath) {
         return new AnalysisRequest(sourceFiles, compilationClasspath, StandardCharsets.UTF_8);
+    }
+
+    /** Returns the same source request with explicit trusted method-level semantic providers. */
+    public AnalysisRequest withExternalMethodContractProviders(
+            List<? extends ExternalMethodContractProvider> providers) {
+        Objects.requireNonNull(providers, "providers");
+        return new AnalysisRequest(sourceFiles, compilationClasspath, charset, rootSourceFiles,
+                List.copyOf(providers));
     }
 
     private static boolean isJava(Path path) {

@@ -415,6 +415,17 @@ The focused regression failed before the fix and passed after it. The complete p
 passed. Five Mega graphs and three Spring PetClinic graphs passed; two reviewed Mega oracles now
 include the source-backed absent-warning and main-working-location initializers.
 
+### external-method-semantic-contracts (feature) — 2026-08-11
+
+Completed all three tasks. The engine now accepts exact method contracts for source-unavailable
+predicates, actions, receiver and argument mutations, result behavior, and possible exception types.
+Source code has precedence. Two matching providers create one source-located gap, and unmatched
+calls keep the existing opaque-boundary or fail-closed behavior.
+
+The focused API and analyzer contracts passed. The full pull-request gate passed with the 5,000
+decision load, external release proof, five complete Mega graphs, and the current three PetClinic
+graphs. No dependency, Spring rule, or application vocabulary was added.
+
 ### hogajama-strict-aggregate-regression (bugfix) — 2026-08-11
 
 Completed one task. Supported platform operations inside source-visible catches no longer create
