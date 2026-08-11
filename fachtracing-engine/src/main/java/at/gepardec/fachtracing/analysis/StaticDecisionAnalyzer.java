@@ -109,8 +109,18 @@ public final class StaticDecisionAnalyzer {
     public List<AnalysisManifest.AnalysisResult> analyzeAll(
             ApplicationSourceBoundary boundary,
             OpaqueLibraryBoundary opaqueLibraries) {
+        return analyzeAll(boundary, opaqueLibraries, List.of());
+    }
+
+    /** Analyzes every graph entry with technical archives and exact external method contracts. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries,
+            List<ExternalMethodContractProvider> externalMethodContractProviders) {
         Objects.requireNonNull(boundary, "boundary");
         Objects.requireNonNull(opaqueLibraries, "opaqueLibraries");
+        externalMethodContractProviders = List.copyOf(Objects.requireNonNull(
+                externalMethodContractProviders, "externalMethodContractProviders"));
         String searchedBoundary = "searched projects " + boundary.projects().stream()
                 .map(ApplicationSourceBoundary.ProjectSources::projectId).sorted().toList()
                 + ", external sources " + boundary.externalResolutionSources().stream()
@@ -133,7 +143,8 @@ public final class StaticDecisionAnalyzer {
                     .flatMap(item -> item.compilationClasspath().stream()).distinct()
                     .sorted(Comparator.comparing(Path::toString)).toList();
             var request = new AnalysisRequest(
-                    sources, classpath, project.compilerModel().charset(), project.entrySourceFiles());
+                    sources, classpath, project.compilerModel().charset(), project.entrySourceFiles())
+                    .withExternalMethodContractProviders(externalMethodContractProviders);
             if (modular) {
                 results.addAll(analyzeModular(request, analysisClosure, boundary, opaqueLibraries));
             } else {
@@ -2420,17 +2431,60 @@ public final class StaticDecisionAnalyzer {
             }
 
             private String predicateLabel(Tree predicate) {
-                if (!(predicate instanceof MethodInvocationTree invocation)) return expression(predicate);
+                String contracted = contractedPredicateLabel(predicate);
+                return contracted == null ? expression(predicate) : contracted;
+            }
+
+            private String contractedPredicateLabel(Tree predicate) {
+                if (predicate instanceof ParenthesizedTree parenthesized) {
+                    return contractedPredicateLabel(parenthesized.getExpression());
+                }
+                if (predicate instanceof UnaryTree unary
+                        && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT) {
+                    String label = contractedPredicateLabel(unary.getExpression());
+                    return label == null ? null : negateBusinessLabel(label);
+                }
+                if (predicate instanceof BinaryTree binary && isComparison(binary.getKind())) {
+                    String left = contractedOperandLabel(binary.getLeftOperand());
+                    String right = contractedOperandLabel(binary.getRightOperand());
+                    if (left != null || right != null) {
+                        return (left == null ? expression(binary.getLeftOperand()) : left)
+                                + binaryOperator(binary.getKind())
+                                + (right == null ? expression(binary.getRightOperand()) : right);
+                    }
+                }
+                if (!(predicate instanceof MethodInvocationTree invocation)) return null;
+                return contractedInvocationLabel(invocation, ExternalMethodContract.OperationKind.PREDICATE);
+            }
+
+            private String contractedOperandLabel(Tree operand) {
+                Tree unwrapped = operand instanceof ParenthesizedTree parenthesized
+                        ? parenthesized.getExpression() : operand;
+                if (!(unwrapped instanceof MethodInvocationTree invocation)) return null;
+                return contractedInvocationLabel(invocation, ExternalMethodContract.OperationKind.READ);
+            }
+
+            private String contractedInvocationLabel(
+                    MethodInvocationTree invocation,
+                    ExternalMethodContract.OperationKind expectedKind) {
                 TreePath path = TreePath.getPath(location.unit(), invocation);
                 Element called = path == null ? null : trees.getElement(path);
-                if (!(called instanceof ExecutableElement executable)) return expression(predicate);
+                if (!(called instanceof ExecutableElement executable)) return null;
                 ExternalMethodContractRegistry.Resolution resolution = externalMethodContract(executable);
                 if (resolution.kind() != ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
-                    return expression(predicate);
+                    return null;
                 }
                 ExternalMethodContract contract = resolution.contract().orElseThrow();
-                return contract.operationKind() == ExternalMethodContract.OperationKind.PREDICATE
-                        ? contract.businessLabel() : expression(predicate);
+                return contract.operationKind() == expectedKind ? contract.businessLabel() : null;
+            }
+
+            private String negateBusinessLabel(String label) {
+                if (label.endsWith(" is present")) {
+                    return label.substring(0, label.length() - " is present".length()) + " is absent";
+                }
+                if (label.startsWith("has ")) return "does not have " + label.substring(4);
+                if (label.contains(" has ")) return label.replaceFirst(" has ", " does not have ");
+                return "not " + label;
             }
 
             private void addEvidenceTargets(String nodeId, Tree predicate) {

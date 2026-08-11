@@ -23,7 +23,7 @@
     },
     {
       "category": "build-tool-adapter",
-      "count": 6,
+      "count": 7,
       "pattern": "Let the build tool provide source roots, resolved classpaths, explicit module ownership, and repository settings, while the engine owns graph and provenance contracts."
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "category": "static-effect-proof",
-      "count": 5,
+      "count": 6,
       "pattern": "Treat namespace support and purity as separate proofs; use exact trusted method facts when enabled, keep attributed state roots, merge reachable alias and callback definitions, and report an exact gap for unproved or conflicting result-relevant effects."
     },
     {
@@ -68,7 +68,7 @@
     },
     {
       "category": "external-library-boundary",
-      "count": 3,
+      "count": 4,
       "pattern": "Require an explicit exact-artifact trust declaration before excluding dependency mechanics. Preserve source-visible receiver controls, and keep unselected and direct binary decisions fail-closed."
     },
     {

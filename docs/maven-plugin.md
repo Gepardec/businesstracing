@@ -235,6 +235,27 @@ Enabling a provider is a trust decision. Keep its catalog small and verify every
 the supported library version. The optional Spring provider and Maven service loading are separate
 modules; the generic engine does not depend on Spring.
 
+To enable the general Spring catalog, add the adapter as a dependency of the Maven plugin:
+
+```xml
+<plugin>
+  <groupId>at.gepardec.fachtracing</groupId>
+  <artifactId>fachtracing-maven-plugin</artifactId>
+  <version>0.1.0-rc.1</version>
+  <dependencies>
+    <dependency>
+      <groupId>at.gepardec.fachtracing</groupId>
+      <artifactId>fachtracing-spring</artifactId>
+      <version>0.1.0-rc.1</version>
+    </dependency>
+  </dependencies>
+</plugin>
+```
+
+The plugin loads visible providers through `ExternalMethodContractProvider`. The adapter matches
+only its exact catalog. An unsupported Spring call stays incomplete. The adapter production code
+has no Spring dependency and contains no application rule.
+
 ## Business-only artifacts
 
 Business JSON is always available. It uses the `fachtracing-business-graph/v1` identifier and JSON

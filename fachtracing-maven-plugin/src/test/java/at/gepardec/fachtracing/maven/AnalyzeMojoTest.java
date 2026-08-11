@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.maven;
 
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
+import at.gepardec.fachtracing.analysis.ExternalMethodContractProviders;
 import at.gepardec.fachtracing.business.BusinessGraphJsonExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
@@ -41,6 +42,7 @@ public final class AnalyzeMojoTest {
 
     public static void main(String[] args) throws Exception {
         generatesBothFormatsAndIndexWithoutDeletingUnrelatedFiles();
+        loadsOptionalContractProvidersFromThePluginRealm();
         generatesDeveloperGraphSchemasFromCode();
         generatesParsedDeveloperJsonFromCleanRevision();
         validatesDeveloperOutputSettings();
@@ -57,6 +59,13 @@ public final class AnalyzeMojoTest {
         skipsUnannotatedSources();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
         createsSafeDeterministicSlugs();
+    }
+
+    private static void loadsOptionalContractProvidersFromThePluginRealm() {
+        var providers = ExternalMethodContractProviders.load(ProjectGraphGenerator.class.getClassLoader());
+        assert providers.stream().map(provider -> provider.providerId()).toList()
+                .contains("spring:framework") : providers;
+        new ProjectGraphGenerator();
     }
 
     private static void mapsExternalModuleOwnershipConfiguration() throws Exception {

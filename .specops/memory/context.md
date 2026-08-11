@@ -437,6 +437,17 @@ Maven writes business Mermaid, PlantUML, JSON V1, and its Draft 2020-12 schema b
 these artifacts before the compatible exact structure and optional developer artifacts. Focused
 projection and Maven tests passed, followed by the full pull-request gate and both external corpora.
 
+### spring-business-semantics-adapter (feature) — 2026-08-11
+
+Completed both tasks. The optional `fachtracing-spring` module supplies exact, application-neutral
+contracts for supported Spring utility, validation, page, repository, persistence-failure, and
+response APIs. Production adapter code depends only on the engine. Spring Framework 7.0.8 and
+Spring Data 4.1.0 have test scope and verify every signature.
+
+Maven discovers the adapter from a plugin dependency through the generic provider service. General
+Spring fixtures are complete, while an unmatched method stays incomplete. The full pull-request
+gate and both external corpora passed.
+
 ### hogajama-business-time-vocabulary (bugfix) — 2026-08-11
 
 Completed one task. The business graph guard now treats `Start` and `Stop` as technical only when

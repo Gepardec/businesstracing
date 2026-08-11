@@ -5,6 +5,8 @@ module at.gepardec.fachtracing.engine {
     requires org.objectweb.asm;
     requires org.objectweb.asm.tree;
 
+    uses at.gepardec.fachtracing.analysis.ExternalMethodContractProvider;
+
     exports at.gepardec.fachtracing;
     exports at.gepardec.fachtracing.model;
     exports at.gepardec.fachtracing.analysis;

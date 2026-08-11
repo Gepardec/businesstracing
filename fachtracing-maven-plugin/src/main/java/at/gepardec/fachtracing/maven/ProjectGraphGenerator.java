@@ -4,6 +4,8 @@ import at.gepardec.fachtracing.analysis.AnalysisRequest;
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
+import at.gepardec.fachtracing.analysis.ExternalMethodContractProvider;
+import at.gepardec.fachtracing.analysis.ExternalMethodContractProviders;
 import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.api.FachTracing;
@@ -39,6 +41,7 @@ final class ProjectGraphGenerator {
     private static final String BUSINESS_SCHEMA_V1 = "fachtracing-business-graph-v1.schema.json";
 
     private final StaticDecisionAnalyzer analyzer = new StaticDecisionAnalyzer();
+    private final List<ExternalMethodContractProvider> externalMethodContractProviders;
     private final DeveloperGraphExporter developerJson = new DeveloperGraphExporter();
     private final DeveloperGraphJsonSchema developerSchema = new DeveloperGraphJsonSchema();
     private final MermaidRenderer mermaid = new MermaidRenderer();
@@ -48,6 +51,15 @@ final class ProjectGraphGenerator {
     private final BusinessPlantUmlRenderer businessPlantUml = new BusinessPlantUmlRenderer();
     private final BusinessGraphJsonExporter businessJson = new BusinessGraphJsonExporter();
     private final BusinessGraphJsonSchema businessSchema = new BusinessGraphJsonSchema();
+
+    ProjectGraphGenerator() {
+        this(ExternalMethodContractProviders.load(ProjectGraphGenerator.class.getClassLoader()));
+    }
+
+    ProjectGraphGenerator(List<ExternalMethodContractProvider> externalMethodContractProviders) {
+        this.externalMethodContractProviders = List.copyOf(Objects.requireNonNull(
+                externalMethodContractProviders, "externalMethodContractProviders"));
+    }
 
     GenerationResult generate(
             List<Path> sourceFiles,
@@ -95,7 +107,8 @@ final class ProjectGraphGenerator {
         }
 
         var analyses = analyzer.analyzeAll(
-                new AnalysisRequest(sourceFiles, classpath, charset, rootSourceFiles));
+                new AnalysisRequest(sourceFiles, classpath, charset, rootSourceFiles)
+                        .withExternalMethodContractProviders(externalMethodContractProviders));
         return write(analyses, charset, outputDirectory, failOnIncomplete, developerOutput);
     }
 
@@ -132,7 +145,8 @@ final class ProjectGraphGenerator {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true, List.of());
         }
-        return write(analyzer.analyzeAll(boundary, opaqueLibraries), outputCharset, outputDirectory,
+        return write(analyzer.analyzeAll(boundary, opaqueLibraries, externalMethodContractProviders),
+                outputCharset, outputDirectory,
                 failOnIncomplete, developerOutput);
     }
 

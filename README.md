@@ -33,6 +33,10 @@ launcher, plugin block, or path assembly is required. See the copyable
 many modules. When repository and source-link settings are present, the same goal also writes
 revision-pinned developer JSON that another tool can visualize.
 
+Spring applications can add the optional `fachtracing-spring` artifact as a Maven plugin
+dependency. It supplies exact, application-neutral contracts for supported validation, page,
+persistence, and response APIs. The generic engine does not depend on Spring.
+
 See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
 generates from its own Maven plugin policy.
 
