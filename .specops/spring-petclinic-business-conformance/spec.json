@@ -1,0 +1,22 @@
+{
+  "id": "spring-petclinic-business-conformance",
+  "type": "feature",
+  "status": "draft",
+  "version": 1,
+  "created": "2026-08-11T09:17:19Z",
+  "updated": "2026-08-11T09:17:19Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {"name": "lucostus", "email": "constantin.winkler@gepardec.com"},
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "business-graph-conformance",
+  "specDependencies": [
+    {"specId": "external-method-semantic-contracts", "reason": "Conformance needs exact compiled-method facts.", "required": true},
+    {"specId": "generic-business-graph-projection", "reason": "Conformance reviews the projected business graph.", "required": true},
+    {"specId": "spring-business-semantics-adapter", "reason": "Conformance needs reusable Spring semantics.", "required": true}
+  ],
+  "relatedSpecs": ["spring-petclinic-conformance"]
+}

@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-10T08:34:44Z"
-_sourceHash: "0ac61659b9dc9838b3236540c7c2a9ae4c0ab9507f24efde3d8a3df2901ac54b"
+_generatedAt: "2026-08-11T09:36:23Z"
+_sourceHash: "55d361bd4d284a5b94c57430c540378fdb59312005cdb960686c188cd11432f5"
 ---
 
 ## Project Structure Map
@@ -59,7 +59,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (72 files)
+#### fachtracing-engine/ (76 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -69,6 +69,14 @@ fachtracing/
   - excluded graph-eligible source construct audit
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java`
   - `public record AnalysisRequest`
+- `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodReference.java`
+  - exact binary method identity
+- `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContract.java`
+  - immutable source-unavailable method semantics
+- `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContractProvider.java`
+  - trusted exact contract provider
+- `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContractRegistry.java`
+  - deterministic exact resolution and conflict detection
 - `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
   - `public record ApplicationSourceBoundary`
   - `public enum LanguageVersionMode`

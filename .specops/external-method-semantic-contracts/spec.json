@@ -1,0 +1,41 @@
+{
+  "id": "external-method-semantic-contracts",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-11T09:17:19Z",
+  "updated": "2026-08-11T09:44:03Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {"name": "lucostus", "email": "constantin.winkler@gepardec.com"},
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "partOf": "business-graph-conformance",
+  "specDependencies": [],
+  "relatedSpecs": ["explicit-opaque-library-boundaries", "generic-business-graph-projection"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"criteriaTestability": 9, "criteriaCompleteness": 9, "designCoherence": 9, "taskCoverage": 9},
+      "evaluatedAt": "2026-08-11T09:17:19Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"functionality": 9, "codeQuality": 9, "testCoverage": 9, "specCompliance": 9},
+      "evaluatedAt": "2026-08-11T09:44:03Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 2209,
+    "filesChanged": 41,
+    "linesAdded": 1764,
+    "linesRemoved": 28,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 18,
+    "specDurationMinutes": 27
+  }
+}

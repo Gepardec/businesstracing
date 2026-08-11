@@ -206,6 +206,26 @@ A selected reference-returning operation is opaque, and source-visible receiver 
 the graph. A selected Boolean call is opaque only when the source call is already a control
 predicate. A direct binary Boolean decision stays fail-closed.
 
+## Exact external method contracts
+
+Engine integrations can enable trusted, method-level facts without declaring a complete JAR opaque.
+Implement `ExternalMethodContractProvider`, return contracts keyed by binary owner, method name, and
+JVM descriptor, and add the provider to the analysis request:
+
+```java
+AnalysisRequest configured = request.withExternalMethodContractProviders(List.of(provider));
+```
+
+A contract states one business label, operation kind, result behavior, receiver or argument
+mutations, and possible exception type names. The analyzer uses source code first. It then uses one
+exact contract, an explicitly selected opaque library, or a coverage gap in that order. If two
+providers match the same key, the graph stays incomplete and identifies both provider IDs. The
+analyzer does not use priority or prefix matching.
+
+Enabling a provider is a trust decision. Keep its catalog small and verify every signature against
+the supported library version. The optional Spring provider and Maven service loading are separate
+modules; the generic engine does not depend on Spring.
+
 ## Developer JSON and source links
 
 Developer JSON is opt-in because source browsers need repository-specific URLs. Set both values:

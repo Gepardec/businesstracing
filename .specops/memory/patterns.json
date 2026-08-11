@@ -38,8 +38,8 @@
     },
     {
       "category": "static-effect-proof",
-      "count": 4,
-      "pattern": "Treat namespace support and purity as separate proofs; keep attributed state roots, merge reachable alias and callback definitions, and report an exact gap for unproved result-relevant effects."
+      "count": 5,
+      "pattern": "Treat namespace support and purity as separate proofs; use exact trusted method facts when enabled, keep attributed state roots, merge reachable alias and callback definitions, and report an exact gap for unproved or conflicting result-relevant effects."
     },
     {
       "category": "build-artifact-boundary",
@@ -133,9 +133,10 @@
         "context-label-symbol-correctness",
         "integrate-main-pr15",
         "implicit-field-local-callback-correctness",
-        "path-sensitive-definition-integration"
+        "path-sensitive-definition-integration",
+        "external-method-semantic-contracts"
       ],
-      "count": 19
+      "count": 20
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -144,8 +145,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion"],
-      "count": 3
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "external-method-semantic-contracts"],
+      "count": 4
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/DependencyGraphBuilder.java",
@@ -159,13 +160,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration"],
-      "count": 18
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts"],
+      "count": 19
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings"],
-      "count": 16
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "external-method-semantic-contracts"],
+      "count": 17
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java",
@@ -189,8 +190,8 @@
     },
     {
       "file": "docs/maven-plugin.md",
-      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries", "developer-graph-json-schema"],
-      "count": 6
+      "specs": ["maven-developer-graph-export", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries", "developer-graph-json-schema", "external-method-semantic-contracts"],
+      "count": 7
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java",

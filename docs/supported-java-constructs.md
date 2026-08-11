@@ -72,6 +72,7 @@ This audit data does not enter the business graph or runtime activation JSON.
 | Nested class call | Resolves and expands source-visible nested-class decision logic |
 | Direct method reference | Resolves and expands a source-visible referenced decision method. Direct, parenthesized, cast, and local-variable bound mutating callbacks use the same receiver-effect contract as a normal call and show the source-to-target transfer. A platform mutator Boolean used as a predicate callback keeps the mutation but creates a located gap for its unsupported outcome topology |
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
+| Exact external method contract | An explicitly enabled provider describes one exact binary owner, method name, and JVM descriptor. The analyzer uses source first, then one matching contract, then an explicit opaque-library boundary, and finally a coverage gap. A contract can prove a predicate, action, receiver or argument mutation, result behavior, and possible exception types. Two matches create a source-located conflict gap; the analyzer does not use provider priority |
 | Explicit opaque library boundary | By default, source-unavailable dependency operations remain incomplete. A caller can select exact technical library JARs. A reference-returning operation from a selected JAR stays outside the graph. An instance operation keeps its receiver in the result slice, so source-visible predicates that configure fluent query or options objects remain visible. A Boolean call from a selected JAR is transparent only inside an explicit source control condition, where the call site is already the graph predicate. Direct Boolean decisions, other primitive results, unselected JARs, and application class directories stay fail-closed |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
 | Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location. This includes Boolean dependency decisions that the controlled fallback cannot prove |
@@ -109,7 +110,9 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 
 ## Failure and privacy boundary
 
-- Unsupported application decision logic is never reported as complete. Source-unavailable dependency code stays fail-closed unless the caller selects its exact technical-library JAR. Source-visible application predicates around a selected boundary remain in the graph.
+- Unsupported application decision logic is never reported as complete. Source-unavailable dependency code stays fail-closed unless one exact enabled method contract proves its semantics or the caller selects its exact technical-library JAR. Source-visible application predicates around a selected boundary remain in the graph.
+- External method providers are trusted method-level facts. A provider cannot replace a source-visible
+  implementation. Contract matching never uses package prefixes, provider priority, or a best match.
 - The binary fallback rejects exception tables, calls, monitors, switches, dynamic instructions,
   native methods, and every shape outside its declared comparison subset.
 - A source/class fingerprint mismatch prevents transformation.

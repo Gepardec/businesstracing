@@ -3,6 +3,11 @@ package at.gepardec.fachtracing.model;
 import at.gepardec.fachtracing.api.DecisionValueAdapter;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.analysis.AnalysisRequest;
+import at.gepardec.fachtracing.analysis.ExternalMethodContract;
+import at.gepardec.fachtracing.analysis.ExternalMethodContractProvider;
+import at.gepardec.fachtracing.analysis.ExternalMethodContractRegistry;
+import at.gepardec.fachtracing.analysis.ExternalMethodReference;
 import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 
 import java.math.BigDecimal;
@@ -23,7 +28,48 @@ public final class ApiModelTest {
         collectionsPreserveTypedElementsWithoutArbitraryStringification();
         unknownValuesAreRejectedWithoutStringification();
         analysisDecisionAuditIsImmutableAndNotActivated();
+        externalMethodContractsAreExactImmutableAndFailClosed();
         activationBundleRoundTripsWithoutRuntimeSourceAnalysis();
+    }
+
+    private static void externalMethodContractsAreExactImmutableAndFailClosed() {
+        var reference = new ExternalMethodReference(
+                "example.ExternalRules", "hasErrors", "(Lexample/State;)Z");
+        var contract = ExternalMethodContract.predicate(reference, "validation has errors");
+        ExternalMethodContractProvider first = provider("example:first", contract);
+        var registry = ExternalMethodContractRegistry.of(List.of(first));
+        var resolved = registry.resolve(reference);
+        assert resolved.kind() == ExternalMethodContractRegistry.ResolutionKind.RESOLVED : resolved;
+        assert resolved.contract().orElseThrow().equals(contract);
+        assert registry.resolve(new ExternalMethodReference(
+                "example.ExternalRules", "hasErrors", "(Ljava/lang/Object;)Z")).kind()
+                == ExternalMethodContractRegistry.ResolutionKind.ABSENT;
+
+        var conflict = ExternalMethodContractRegistry.of(List.of(
+                first, provider("example:second", contract))).resolve(reference);
+        assert conflict.kind() == ExternalMethodContractRegistry.ResolutionKind.CONFLICT : conflict;
+        assert conflict.contract().isEmpty();
+        assert conflict.providerIds().equals(List.of("example:first", "example:second"))
+                : conflict.providerIds();
+
+        var request = new AnalysisRequest(
+                List.of(Path.of("Policy.java")), List.of(), java.nio.charset.StandardCharsets.UTF_8,
+                List.of(Path.of("Policy.java"))).withExternalMethodContractProviders(List.of(first));
+        assert request.externalMethodContractProviders().equals(List.of(first));
+        try {
+            request.externalMethodContractProviders().clear();
+            throw new AssertionError("external contract providers were mutable");
+        } catch (UnsupportedOperationException expected) {
+            // The request is immutable.
+        }
+    }
+
+    private static ExternalMethodContractProvider provider(
+            String id, ExternalMethodContract contract) {
+        return new ExternalMethodContractProvider() {
+            @Override public String providerId() { return id; }
+            @Override public List<ExternalMethodContract> contracts() { return List.of(contract); }
+        };
     }
 
     private static void analysisDecisionAuditIsImmutableAndNotActivated() {
