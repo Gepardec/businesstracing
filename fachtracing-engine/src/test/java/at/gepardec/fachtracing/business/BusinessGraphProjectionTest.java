@@ -15,6 +15,7 @@ public final class BusinessGraphProjectionTest {
         foldsLoopMechanicsIntoOneRule();
         preservesRulesActionsReturnsAndFailures();
         preservesIncompleteAnalysisAsBusinessGap();
+        acceptsBusinessVocabularyThatContainsStructuralWords();
         rejectsTechnicalVocabulary();
         exportsAllFormatsWithOneTopology();
     }
@@ -114,6 +115,18 @@ public final class BusinessGraphProjectionTest {
                 assert expected.getMessage().contains(prohibited) : expected.getMessage();
             }
         }
+    }
+
+    private static void acceptsBusinessVocabularyThatContainsStructuralWords() {
+        var graph = new BusinessLogicGraph("business-words", 1, "business words", List.of("time"),
+                List.of(
+                        new BusinessLogicGraph.Node("time", BusinessLogicGraph.NodeKind.ACTION,
+                                "set from date to today start time"),
+                        new BusinessLogicGraph.Node("location", BusinessLogicGraph.NodeKind.RULE,
+                                "preferred bus stop is open")),
+                List.of(), BusinessLogicGraph.Completeness.COMPLETE);
+
+        new BusinessLogicArtifactGuard().requireClean(graph);
     }
 
     private static void exportsAllFormatsWithOneTopology() {

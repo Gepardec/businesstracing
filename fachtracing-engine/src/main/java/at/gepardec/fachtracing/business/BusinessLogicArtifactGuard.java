@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
 /** Rejects implementation vocabulary in business-only artifacts. */
 public final class BusinessLogicArtifactGuard {
     private static final List<Pattern> PROHIBITED = List.of(
-            Pattern.compile("\\bstart\\b", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("\\bstop\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^start$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^stop$", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bfor each\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\brepeat while\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bnext item\\b", Pattern.CASE_INSENSITIVE),

@@ -1,0 +1,61 @@
+{
+  "id": "hogajama-business-time-vocabulary",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-11T10:33:26Z",
+  "updated": "2026-08-11T10:44:43Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "It introduced the business-only artifact guard.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "fix-hogarama-aggregate-completeness",
+    "context-aware-operation-labels"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-11T10:33:26Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-11T10:42:56Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 2972,
+    "filesChanged": 14,
+    "linesAdded": 551,
+    "linesRemoved": 6,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 12,
+    "specDurationMinutes": 11
+  }
+}

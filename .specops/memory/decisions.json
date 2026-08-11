@@ -1032,6 +1032,16 @@
       "completedAt": "2026-08-11T10:03:47Z"
     },
     {
+      "specId": "hogajama-business-time-vocabulary",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Match structural terminal markers as complete labels",
+      "rationale": "The words start and stop have valid business meaning inside longer phrases.",
+      "task": "Task 1",
+      "date": "2026-08-11",
+      "completedAt": "2026-08-11T10:42:56Z"
+    },
+    {
       "specId": "hogajama-strict-aggregate-regression",
       "specType": "bugfix",
       "number": 1,
