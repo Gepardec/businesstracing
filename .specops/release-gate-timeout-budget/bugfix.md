@@ -1,88 +1,86 @@
-# Bug Fix: Release Gate Timeout Budget
+# Bug Fix: Three-Minute CI Budget
 
 ## Overview
 
-The required `main` release gate is canceled at its 60-minute job limit before the clean release
-command can finish. The gate has grown since the 60-minute limit was set. It now includes pinned
-Spring PetClinic verification in addition to clean builds, external activation, Mega conformance,
-and the 600-second load proof.
+The required CI does not give timely feedback. A pull-request gate has taken 3 minutes 49 seconds.
+The clean release gate was canceled after 90 minutes. All required CI jobs must now finish within a
+three-minute execution budget.
 
 ## Root Cause Analysis
 
-The workflow still uses the 60-minute limit introduced when the cold release gate needed about 35
-to 45 minutes. The current clean gate has more required work. Run `31371139242` and the following
-nightly runs reached the job limit and ended as canceled. The last output had no test failure before
-GitHub stopped the job.
+The pull-request job runs the core suite, Mega Backend conformance, and Spring PetClinic
+conformance in one serial job. The release job also creates a clean clone, uses an empty Maven
+repository, and runs a 60-second baseline plus a 600-second load test. This serial release command
+cannot finish in three minutes.
 
-The focused budget contract accepted any limit of at least 50 minutes, so it protected the obsolete
-budget instead of the current required gate. A 90-minute remediation run then reached its new limit.
-The release output helper buffered all command output until completion, so GitHub showed no stage
-progress and the canceled run could not identify the blocking sub-gate.
+The timeout contract checked for a minimum timeout. It allowed slow jobs instead of rejecting them.
 
 ## Impact Assessment
 
-- Severity: High. The repository cannot produce complete required release evidence on `main`.
-- Product behavior: Unchanged. This defect affects only the hosted release-job limit.
-- Data and security: Unchanged. No credential, permission, or runtime dependency changes.
+- Severity: High. CI feedback is too slow and the release job cannot complete.
+- Product behavior: Unchanged. This fix changes only CI scheduling and budgets.
+- Data and security: Unchanged.
 
 ## Regression Risk Analysis
 
 ### Blast Radius
 
-- `.github/workflows/verify.yml`: Sets the upper bound for non-PR release runs.
-- `scripts/test-release-workflow-budget.sh`: Enforces the minimum accepted bound.
-- `scripts/capture-gate-output.sh`: Captures evidence but currently hides all live progress.
-- `scripts/test-capture-gate-output.sh`: Protects exact failure propagation and live output.
-- `scripts/verify.sh`: Runs the budget contract in local and PR verification.
-- `scripts/test-fast-pr-workflow.sh`: Protects event routing and the unchanged release command.
+- `.github/workflows/verify.yml`: Splits required work into parallel jobs.
+- `scripts/test-release-workflow-budget.sh`: Enforces the maximum job budget.
+- `scripts/test-fast-pr-workflow.sh`: Enforces parallel gate content and event routing.
+- `scripts/capture-gate-output.sh`: Keeps useful live output for manual release evidence.
+- Release documentation: Separates required CI from optional long evidence.
 
 ### Behavior Inventory and Risk Tier
 
 | Behavior | Risk | Required evidence |
 | --- | --- | --- |
-| Release runs stay bounded | Must-Test | Focused budget contract reads 90 minutes |
-| A future limit below 90 minutes fails | Must-Test | Negative focused contract |
-| PR and release event routing stays unchanged | Must-Test | Fast workflow contract |
-| Functional and conformance behavior stays unchanged | Nice-To-Test | Full PR gate |
-| Release output streams without hiding failures | Must-Test | Streaming and exit-status contract |
+| Each required job has a three-minute limit | Must-Test | Workflow budget contract |
+| The required workflow has no long release command | Must-Test | Workflow routing contract |
+| Core, Mega, PetClinic, and PostgreSQL checks run | Must-Test | Local and hosted checks |
+| The long load command stays available for manual evidence | Nice-To-Test | Script and documentation review |
+| Captured output streams and keeps exact failures | Must-Test | Output helper contract |
 
 ## Proposed Fix
 
-Set the release job limit and its focused minimum contract to 90 minutes. Stream captured release
-output through a FIFO while retaining the producer and `tee` statuses. Do not change the release
-command, gate content, event routing, concurrency, permissions, or PR timeout.
+Run the core suite, Mega Backend conformance, Spring PetClinic conformance, and PostgreSQL contract
+as independent parallel jobs for every workflow event. Give each job a three-minute timeout. Use the
+Maven and immutable source caches. Do not call the clean-clone release command from the required
+workflow. Keep it as an optional manual evidence command.
 
 ## Testing Plan
 
 ### Current Behavior
 
-- Set the minimum contract to 90 while the workflow remains at 60 and confirm that it fails.
+- Change the budget contract to a maximum of three minutes and confirm that the current workflow
+  fails because its jobs use 10, 15, and 90 minutes.
 
 ### Expected Behavior
 
-- Confirm that the focused contract reports `timeout_minutes=90` after the workflow update.
-- Confirm that the final `main` release job can run past the old 60-minute limit and complete.
+- Confirm that every required job has `timeout-minutes: 3`.
+- Confirm that all four jobs start independently for pull requests and release events.
+- Confirm that no required job calls `verify-release.sh` or the 600-second load test.
 
 ### Unchanged Behavior
 
-- Run the fast workflow contract.
-- Run the full pull-request gate, including both pinned corpora and the short load test.
-- Confirm the hosted PostgreSQL and pull-request gates pass.
-- Confirm live evidence reaches both the terminal and evidence file before the producer exits.
-- Confirm a producer failure still exits with the exact producer status.
+- Run the complete core suite.
+- Run both pinned conformance suites.
+- Run the PostgreSQL contract in GitHub Actions.
+- Confirm that the optional release evidence command remains executable.
+- Confirm that captured output streams and returns the exact producer status.
 
 ## Acceptance Criteria
 
-- [ ] THE RELEASE JOB SHALL have a bounded 90-minute timeout.
-- [ ] THE BUDGET CONTRACT SHALL reject a release timeout below 90 minutes.
-- [ ] WHEN standard verification runs THE SYSTEM SHALL accept the 90-minute workflow budget.
-- [ ] THE SYSTEM SHALL keep PR routing, release routing, permissions, and release commands unchanged.
-- [ ] THE SYSTEM SHALL pass local and hosted pull-request checks.
-- [ ] WHILE the release command runs THE SYSTEM SHALL stream the same output to the job log and evidence file.
-- [ ] IF the release command fails THEN THE SYSTEM SHALL return its exact nonzero status.
-- [ ] WHEN the fix reaches `main` THE RELEASE JOB SHALL complete without the old timeout cancellation.
+- [ ] THE WORKFLOW SHALL give each required job a three-minute timeout.
+- [ ] THE BUDGET CONTRACT SHALL reject a required job timeout above three minutes.
+- [ ] THE WORKFLOW SHALL run core, Mega, PetClinic, and PostgreSQL checks in parallel.
+- [ ] THE WORKFLOW SHALL run the same required jobs for pull requests and release events.
+- [ ] THE REQUIRED WORKFLOW SHALL NOT call the 600-second release gate.
+- [ ] THE OPTIONAL RELEASE COMMAND SHALL remain available for manual long evidence.
+- [ ] THE SYSTEM SHALL pass local and hosted checks.
+- [ ] EACH HOSTED REQUIRED JOB SHALL complete within its three-minute execution limit.
 
 ## Scope Assessment
 
-This is one infrastructure bug fix. The workflow limit and its contract are one coupled change. No
+This is one CI budget fix. Scheduling, job limits, and their contracts are one coupled change. No
 decomposition is needed.

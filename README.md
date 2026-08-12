@@ -141,7 +141,7 @@ Run the smaller Spring PetClinic teaching and conformance suite (optionally set 
 It adds three annotations to a disposable pinned source tree and shows complete entity and domain
 graphs plus explicit framework-boundary gaps. See [the PetClinic graph report](conformance/spring-petclinic/conformance-report.md).
 
-Run the required load comparison (60 total disabled baseline seconds paired across ten minutes
+Run the optional long load comparison (60 total disabled baseline seconds paired across ten minutes
 enabled at 1,000 requests/second):
 
 ```sh

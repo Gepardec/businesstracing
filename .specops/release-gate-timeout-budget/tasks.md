@@ -1,35 +1,35 @@
-# Tasks: Release Gate Timeout Budget
+# Tasks: Three-Minute CI Budget
 
-## Task 1: Correct and verify the release time budget
+## Task 1: Parallelize and bound required CI
 
 **Status:** In Progress
 **Priority:** High
-**Effort:** S
+**Effort:** M
 **Dependencies:** None
 **IssueID:** None
 
-**Description:** Align the hosted release timeout and its regression contract with the current
-clean release workload.
+**Description:** Make all required CI work finish within a three-minute job execution budget.
 
 **Implementation Steps:**
 
-1. Raise the focused minimum and prove that the old workflow fails.
-2. Raise the release job timeout to 90 minutes.
-3. Run focused, full local, and hosted checks.
-4. Commit, push, open a focused PR, merge it, and monitor the final `main` release gate.
-5. Stream the captured release output while preserving exact failure status after the 90-minute
-   run proves that the timeout increase alone is insufficient.
+1. Make the budget contract reject every timeout above three minutes and prove the old workflow
+   fails.
+2. Split core, Mega, PetClinic, and PostgreSQL work into four independent jobs.
+3. Set all four job limits to three minutes and keep required work off the long release command.
+4. Update the workflow contract and release documentation.
+5. Run focused and full local checks.
+6. Commit, push, update PR #26, and verify hosted jobs.
+7. Merge the PR and verify the final `main` workflow.
 
 **Acceptance Criteria:**
 
-- [ ] The old 60-minute workflow fails the updated focused contract.
-- [ ] The 90-minute workflow passes the focused contract.
-- [ ] Event routing and release commands remain unchanged.
-- [ ] The full pull-request gate passes.
-- [ ] Hosted PR and PostgreSQL checks pass.
-- [ ] The final `main` release gate completes.
-- [ ] Release output reaches the terminal and evidence file before producer completion.
-- [ ] Producer failures retain their exact exit status.
+- [ ] The old workflow fails the maximum budget contract.
+- [ ] All four required jobs have a three-minute timeout.
+- [ ] Required work runs in parallel for all workflow events.
+- [ ] The hosted workflow does not call the long release gate.
+- [ ] Local core and conformance checks pass.
+- [ ] Hosted PR jobs pass within three minutes.
+- [ ] The final `main` jobs pass within three minutes.
 
 ## Progress
 
