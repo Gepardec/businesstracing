@@ -1,36 +1,42 @@
-# Design: Release Gate Timeout Budget
+# Design: Three-Minute CI Budget
 
 ## Approach
 
-Change `release-gate.timeout-minutes` from 60 to 90. Change
-`MINIMUM_TIMEOUT_MINUTES` in the focused shell contract from 50 to 90.
+Keep `pr-gate` as the core verification job. Move Mega Backend and Spring PetClinic conformance to
+two independent jobs. Keep PostgreSQL as a fourth independent job. Run all four jobs for pull
+requests, pushes to `main`, version tags, schedules, and manual dispatches.
 
-The 90-minute value is evidence-based. The clean release gate needed about 45 minutes before the
-Spring PetClinic work. Current runs now reach 60 minutes without a reported test failure. Ninety
-minutes gives the additional corpus and cold-run variance 30 minutes beyond the observed limit.
+Set `timeout-minutes: 3` on all four jobs. Each macOS job uses the Maven cache. Each conformance job
+uses only its immutable source cache, builds the Fachtracing artifacts, and runs one pinned corpus.
+The workflow does not call `verify-release.sh`. That script remains an optional manual command for
+long evidence.
+
+Change the budget contract from a minimum release timeout to a maximum timeout for every required
+job. Change the workflow contract to reject serial corpus work in `pr-gate`, a `release-gate` job,
+or a hosted call to `verify-release.sh`.
 
 ## Boundaries
 
-- Keep `pr-gate.timeout-minutes` at 10.
-- Keep PostgreSQL at 15 minutes.
-- Keep `verify-release.sh` and all sub-gates unchanged.
-- Keep event routing, concurrency, permissions, runner images, and actions unchanged.
+- Measure job execution after GitHub assigns a runner. GitHub queue time is outside repository
+  control.
+- Keep read-only workflow permissions and current concurrency behavior.
+- Keep the test content. Only the ten-minute load proof moves off the required path.
 - Add no dependency.
+- Keep the optional clean-clone release command and historical evidence.
 
 ## Failure Behavior
 
-The workflow remains fail-closed. GitHub cancels it if it exceeds 90 minutes. Local and PR
-verification fail if a later workflow edit lowers the release limit below 90 minutes.
+Each job fails closed after three minutes. Other parallel jobs can finish and show which independent
+check failed. The workflow fails if any required job fails or reaches its limit.
 
 ## Verification
 
-1. Run the focused contract against the old 60-minute workflow after raising its minimum; expect a
-   failure.
-2. Set the workflow to 90 and rerun the focused and event-routing contracts; expect success.
-3. Run the complete pull-request gate.
-4. Push a focused PR, require hosted PR and PostgreSQL success, merge it, and monitor the final
-   `main` release job to completion.
+1. Update the budget contract first and prove that the 10-, 15-, and 90-minute workflow fails.
+2. Split the jobs, set each limit to three minutes, and run the focused contracts.
+3. Run core, Mega, and PetClinic verification locally.
+4. Push the PR and confirm that all hosted jobs pass within three minutes.
+5. Merge the PR and confirm the same result on `main`.
 
 ## Dependency Decisions
 
-No new dependency is required.
+No dependency is added, removed, or updated.

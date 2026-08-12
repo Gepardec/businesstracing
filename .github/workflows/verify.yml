@@ -18,9 +18,21 @@ concurrency:
 
 jobs:
   pr-gate:
-    if: github.event_name == 'pull_request'
     runs-on: macos-15
-    timeout-minutes: 10
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run core verification
+        run: ./scripts/verify.sh
+
+  mega:
+    runs-on: macos-15
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
@@ -39,6 +51,24 @@ jobs:
         run: |
           git clone -q https://github.com/Gepardec/mega-backend.git "${{ runner.temp }}/fachtracing-mega-backend"
           git -C "${{ runner.temp }}/fachtracing-mega-backend" checkout -q 782cdec8dfe5b4062eb5c1859e6a9e53afe02770
+      - name: Build Fachtracing classes
+        run: mvn -q -DskipTests package
+      - name: Run Mega Backend conformance
+        env:
+          FACHTRACING_SKIP_PROJECT_BUILD: 'true'
+          MEGA_BACKEND_DIR: ${{ runner.temp }}/fachtracing-mega-backend
+        run: ./scripts/verify-mega-backend.sh
+
+  petclinic:
+    runs-on: macos-15
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
       - name: Restore pinned Spring PetClinic source
         id: petclinic-cache
         uses: actions/cache@v6
@@ -50,43 +80,17 @@ jobs:
         run: |
           git clone -q https://github.com/spring-projects/spring-petclinic.git "${{ runner.temp }}/fachtracing-spring-petclinic"
           git -C "${{ runner.temp }}/fachtracing-spring-petclinic" checkout -q 88e37c15cf6fc8490b01bc3e8e2c800cec1ac272
-      - name: Run cached pull-request verification
+      - name: Build Fachtracing classes
+        run: mvn -q -DskipTests package
+      - name: Run Spring PetClinic conformance
         env:
-          MEGA_BACKEND_DIR: ${{ runner.temp }}/fachtracing-mega-backend
+          FACHTRACING_SKIP_PROJECT_BUILD: 'true'
           SPRING_PETCLINIC_DIR: ${{ runner.temp }}/fachtracing-spring-petclinic
-        run: ./scripts/verify-pr.sh
-
-  release-gate:
-    if: github.event_name != 'pull_request'
-    runs-on: macos-15
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
-      - name: Restore pinned Spring PetClinic source
-        id: release-petclinic-cache
-        uses: actions/cache@v6
-        with:
-          path: ${{ runner.temp }}/fachtracing-spring-petclinic
-          key: spring-petclinic-${{ runner.os }}-88e37c15cf6fc8490b01bc3e8e2c800cec1ac272
-      - name: Prepare pinned Spring PetClinic source
-        if: steps.release-petclinic-cache.outputs.cache-hit != 'true'
-        run: |
-          git clone -q https://github.com/spring-projects/spring-petclinic.git "${{ runner.temp }}/fachtracing-spring-petclinic"
-          git -C "${{ runner.temp }}/fachtracing-spring-petclinic" checkout -q 88e37c15cf6fc8490b01bc3e8e2c800cec1ac272
-      - name: Run standard, external, Mega Backend, PetClinic, and 1,000-RPS gates
-        env:
-          SPRING_PETCLINIC_DIR: ${{ runner.temp }}/fachtracing-spring-petclinic
-        run: ./scripts/verify-release.sh
+        run: ./scripts/verify-spring-petclinic.sh
 
   postgres:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 3
     services:
       postgres:
         image: postgres:18.4

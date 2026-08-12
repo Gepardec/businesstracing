@@ -361,8 +361,8 @@
     "id": "release-gate-timeout-budget",
     "type": "bugfix",
     "status": "implementing",
-    "version": 1,
+    "version": 2,
     "author": "lucostus",
-    "updated": "2026-08-11T12:24:49Z"
+    "updated": "2026-08-12T07:09:21Z"
   }
 ]

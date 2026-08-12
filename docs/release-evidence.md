@@ -1,6 +1,6 @@
 # Release evidence
 
-Release candidate `0.1.0-rc.1` uses `scripts/verify-release.sh` as its mandatory release gate. The
+Release candidate `0.1.0-rc.1` uses `scripts/verify-release.sh` for optional long evidence. The
 gate refuses a dirty source tree, creates a non-local clone, uses an empty Maven local repository,
 and runs repository integrity, Java capability, generic engine, agent, Maven, JDBC, isolated external
 release, and pinned Mega tests.
@@ -23,17 +23,15 @@ Run:
 ./scripts/verify-release.sh
 ```
 
-The specification can be marked complete only after this command prints `RELEASE_GATE_OK` and its
-evidence file contains successful generic, external, Mega, and long-load results.
+The command prints `RELEASE_GATE_OK` after its evidence file contains successful generic, external,
+Mega, PetClinic, and long-load results. It is not part of required hosted CI because its 600-second
+load phase cannot fit in the required three-minute budget.
 
-Pull requests run `scripts/verify-pr.sh` on Java 21. This gate uses the Maven dependency cache and
-an immutable cache of the pinned Mega source checkout. It still runs the standard, external-release,
-short-load, and five-graph Mega checks. It does not cache generated graphs or Fachtracing build
-outputs. Superseded pull-request runs are canceled.
-
-Pushes to `main`, version tags, nightly schedules, and manual dispatches run the unchanged clean-clone
-release gate. Thus, these events still use an empty Maven repository and the full 600-second load
-proof. A separate PostgreSQL 18.4 service runs `scripts/verify-postgres.sh` for all events. The
+Pull requests, pushes to `main`, version tags, nightly schedules, and manual dispatches run four
+parallel required jobs on Java 21. The jobs run the core suite, pinned Mega conformance, pinned
+Spring PetClinic conformance, and the PostgreSQL 18.4 storage contract. Each job has a three-minute
+execution limit and uses its applicable Maven or immutable source cache. The workflow does not cache
+generated graphs or Fachtracing build outputs. Superseded pull-request runs are canceled. The
 workflow has read-only repository permissions and no application database or Mega credentials.
 
 ## RC 1 corrected result

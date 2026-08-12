@@ -15,3 +15,17 @@
 | Task Coverage | One task covers test-first proof through final CI. | The hosted release wait can be long. | 9 | Pass |
 
 **Verdict:** PASS.
+
+### Iteration 2
+
+**Evaluated at:** 2026-08-12T07:09:21Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Result |
+| --- | --- | --- | --- | --- |
+| Criteria Testability | Exact three-minute maximum and named required jobs | Queue time is outside job control. | 10 | Pass |
+| Criteria Completeness | Current, expected, and unchanged behavior are explicit. | The long proof becomes optional. | 10 | Pass |
+| Design Coherence | Independent checks run in independent jobs. | Each corpus job builds its own artifacts. | 9 | Pass |
+| Task Coverage | One task covers test-first proof through final main CI. | Hosted timing is the final proof. | 10 | Pass |
+
+**Verdict:** PASS.
