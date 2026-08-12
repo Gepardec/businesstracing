@@ -60,6 +60,10 @@ public final class AnalyzeMojo extends AbstractMojo {
     @Parameter(defaultValue = "false", property = "fachtracing.skip")
     private boolean skip;
 
+    /** Exact Java methods that become graph roots without source annotations. */
+    @Parameter
+    private List<BusinessEntryPointConfiguration> businessEntryPoints;
+
     /** Browser-facing repository URL stored in developer JSON. */
     @Parameter(property = "fachtracing.repositoryUrl")
     private String repositoryUrl;
@@ -118,9 +122,10 @@ public final class AnalyzeMojo extends AbstractMojo {
             OpaqueLibraryBoundary opaqueLibraries = OpaqueLibraryArtifactResolver.resolve(
                     analysisProjects, opaqueLibraryArtifacts);
             result = generator.generate(boundary, opaqueLibraries, charset, outputDirectory.toPath(),
-                    failOnIncomplete, developerOutput(sourceOrigins(artifacts)));
+                    failOnIncomplete, developerOutput(sourceOrigins(artifacts)), businessEntryPoints());
             if (result.skipped()) {
-                getLog().info("No @FachTracing decision found in " + module + "; skipping");
+                getLog().info("No annotated or configured business decision found in "
+                        + module + "; skipping");
                 return;
             }
             if (result.incompleteCount() > 0) {
@@ -139,6 +144,12 @@ public final class AnalyzeMojo extends AbstractMojo {
         } catch (IOException error) {
             throw new MojoExecutionException("Could not write Fachtracing output for " + module, error);
         }
+    }
+
+    private List<at.gepardec.fachtracing.analysis.BusinessEntryPoint> businessEntryPoints() {
+        if (businessEntryPoints == null) return List.of();
+        return businessEntryPoints.stream().filter(Objects::nonNull)
+                .map(BusinessEntryPointConfiguration::selection).toList();
     }
 
     private ApplicationSourceBoundary boundary(

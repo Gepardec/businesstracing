@@ -470,3 +470,14 @@ analysis of the real Hogajama reactor reports `getAllDataMaxNumber` and
 `getAllWateringDataMaxNumber` as complete with exact Morphia, Commons Lang, and Commons Collections
 technical boundaries. The full pull-request gate passed with five complete Mega graphs, all Spring
 PetClinic expectations, and 5,000 load decisions with zero correctness failures.
+
+### configured-endpoint-business-tracing (feature) — 2026-08-12
+
+Completed all four tasks. The analyzer now accepts exact configured method roots, and both Maven
+goals use one configuration contract. The opt-in agent mode activates a bundle and writes one
+redacted business text file and Mermaid file for each completed call from a daemon sink.
+
+Mega now selects its five reviewed roots without a source overlay. A pinned Keycloak workflow
+selects `UsersResource.getUsers`, writes its exact activation graph, and supplies a concise reviewed
+user-search flow. The full repository gate, five Mega graphs, three Spring PetClinic graphs, and the
+Keycloak conformance command passed. No dependency was added.

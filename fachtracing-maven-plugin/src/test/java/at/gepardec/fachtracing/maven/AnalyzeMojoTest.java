@@ -57,6 +57,7 @@ public final class AnalyzeMojoTest {
         resolvesExplicitOpaqueLibraryArtifacts();
         skipsSourceEmptyModuleWithReactorSources();
         skipsUnannotatedSources();
+        configuresUnannotatedBusinessEntryPoints();
         enforcesStrictIncompleteCoverageAfterWritingArtifacts();
         createsSafeDeterministicSlugs();
     }
@@ -542,6 +543,37 @@ public final class AnalyzeMojoTest {
         assert result.skipped() && result.graphCount() == 0 : result;
         assert !Files.exists(output.resolve("old-structure.mmd"));
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
+    }
+
+    private static void configuresUnannotatedBusinessEntryPoints() throws Exception {
+        Path root = Files.createTempDirectory("fachtracing-plugin-configured-entry");
+        Path source = root.resolve("example/UserEndpoint.java");
+        Files.createDirectories(source.getParent());
+        Files.writeString(source, """
+                package example;
+                public final class UserEndpoint {
+                    public boolean search(String query) {
+                        return !query.isBlank();
+                    }
+                }
+                """);
+        var configuration = new BusinessEntryPointConfiguration();
+        configuration.setOwner("example.UserEndpoint");
+        configuration.setMethod("search");
+        configuration.setParameterTypes(List.of("java.lang.String"));
+        configuration.setLabel("search users");
+        assert configuration.getOwner().equals("example.UserEndpoint");
+        assert configuration.getMethod().equals("search");
+        assert configuration.getParameterTypes().equals(List.of("java.lang.String"));
+        assert configuration.getLabel().equals("search users");
+
+        Path output = root.resolve("output");
+        var result = new ProjectGraphGenerator().generate(
+                List.of(source), List.of(source), CLASSPATH, StandardCharsets.UTF_8,
+                output, false, Optional.empty(), List.of(configuration.selection()));
+        assert result.graphCount() == 1 && !result.skipped() : result;
+        assert Files.exists(output.resolve("search-users-business.mmd")) : output;
+        assert Files.readString(output.resolve("index.md")).contains("search users");
     }
 
     private static void resolvesReactorSourcesWithoutGeneratingSiblingEntries() throws Exception {

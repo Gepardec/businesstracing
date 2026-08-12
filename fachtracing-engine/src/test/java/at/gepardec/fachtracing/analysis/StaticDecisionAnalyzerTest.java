@@ -69,6 +69,9 @@ public final class StaticDecisionAnalyzerTest {
         supportsExplicitOpaqueLibraryBoundaries();
         supportsAggregateCompositionAcrossCaughtPlatformCallsAndGeneratedDispatch();
         analyzesEveryAnnotatedEntry();
+        selectsUnannotatedAndOverloadedBusinessEntryPoints();
+        combinesAndDeduplicatesAnnotatedAndConfiguredEntryPoints();
+        routesConfiguredEntryPointsToOneBoundaryProject();
         supportsJakartaPlatformOperations();
         treatsPlatformValueOperationsAsDecisionFacts();
         supportsCollectionFactsAndRecordEquality();
@@ -1932,6 +1935,135 @@ public final class StaticDecisionAnalyzerTest {
         assert results.stream().map(result -> result.graph().decisionLabel()).distinct().count() == 2 : results;
         assert results.stream().allMatch(result ->
                 result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE) : results;
+    }
+
+    private static void selectsUnannotatedAndOverloadedBusinessEntryPoints() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-configured-entry-");
+            Path source = root.resolve("selected/UserEndpoint.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package selected;
+                    public final class UserEndpoint {
+                        public boolean search(String query) {
+                            return !query.isBlank();
+                        }
+                        public boolean search(int identifier) {
+                            return identifier > 0;
+                        }
+                    }
+                    """);
+            var analyzer = new StaticDecisionAnalyzer();
+            var selected = analyzer.analyze(AnalysisRequest.of(List.of(source), List.of())
+                    .withBusinessEntryPoints(List.of(new BusinessEntryPoint(
+                            "selected.UserEndpoint", "search", List.of("java.lang.String"), "search users"))));
+            assert selected.graph().decisionLabel().equals("search users") : selected.graph();
+
+            try {
+                analyzer.analyze(AnalysisRequest.of(List.of(source), List.of())
+                        .withBusinessEntryPoints(List.of(BusinessEntryPoint.of(
+                                "selected.UserEndpoint", "search", "search users"))));
+                throw new AssertionError("ambiguous selection was accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("ambiguous") : expected.getMessage();
+                assert expected.getMessage().contains("add parameter types") : expected.getMessage();
+            }
+
+            try {
+                analyzer.analyze(AnalysisRequest.of(List.of(source), List.of())
+                        .withBusinessEntryPoints(List.of(BusinessEntryPoint.of(
+                                "selected.UserEndpoint", "remove", "remove user"))));
+                throw new AssertionError("missing selection was accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("not found") : expected.getMessage();
+                assert expected.getMessage().contains("selected.UserEndpoint#remove()")
+                        : expected.getMessage();
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void combinesAndDeduplicatesAnnotatedAndConfiguredEntryPoints() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-combined-entry-");
+            Path source = root.resolve("selected/CombinedEndpoint.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package selected;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    public final class CombinedEndpoint {
+                        @FachTracing("technical search label")
+                        public boolean search(String query) {
+                            return !query.isBlank();
+                        }
+                        @FachTracing("count active users")
+                        public boolean count(boolean active) {
+                            return active;
+                        }
+                    }
+                    """);
+            var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                            List.of(source), CLASSPATH)
+                    .withBusinessEntryPoints(List.of(new BusinessEntryPoint(
+                            "selected.CombinedEndpoint", "search", List.of("java.lang.String"),
+                            "search users"))));
+            assert results.size() == 2 : results;
+            assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
+                    .equals(List.of("count active users", "search users")) : results;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void routesConfiguredEntryPointsToOneBoundaryProject() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-configured-boundary-");
+            Path annotated = root.resolve("first/AnnotatedPolicy.java");
+            Path configured = root.resolve("second/UserEndpoint.java");
+            Files.createDirectories(annotated.getParent());
+            Files.createDirectories(configured.getParent());
+            Files.writeString(annotated, """
+                    package first;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    public final class AnnotatedPolicy {
+                        @FachTracing("approve request")
+                        public boolean approve(boolean allowed) { return allowed; }
+                    }
+                    """);
+            Files.writeString(configured, """
+                    package second;
+                    public final class UserEndpoint {
+                        public boolean search(String query) { return !query.isBlank(); }
+                    }
+                    """);
+            var compiler = ApplicationSourceBoundary.CompilerModel.java21();
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "first", List.of(annotated), List.of(annotated), CLASSPATH,
+                            compiler, List.of()),
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "second", List.of(configured), List.of(configured), List.of(),
+                            compiler, List.of())), List.of());
+            var results = new StaticDecisionAnalyzer().analyzeAll(
+                    boundary, OpaqueLibraryBoundary.empty(), List.of(),
+                    List.of(new BusinessEntryPoint(
+                            "second.UserEndpoint", "search", List.of("java.lang.String"),
+                            "search users")));
+            assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
+                    .equals(List.of("approve request", "search users")) : results;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
     }
 
     private static void supportsJakartaPlatformOperations() {

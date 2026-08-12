@@ -15,6 +15,7 @@ public final class ForbiddenReferenceTest {
                 root.resolve("fachtracing-api/src/main"),
                 root.resolve("fachtracing-engine/src/main"),
                 root.resolve("fachtracing-agent/src/main"),
+                root.resolve("fachtracing-maven-plugin/src/main"),
                 root.resolve("pom.xml"));
         for (Path path : guarded) {
             if (Files.isDirectory(path)) {
@@ -31,7 +32,7 @@ public final class ForbiddenReferenceTest {
         try {
             String content = Files.readString(file).toLowerCase();
             for (String forbidden : List.of("com.gepardec.mega", "mega-backend", "journeydirectionvalidator",
-                    "timeoverlapcalculator", "monthendclarification")) {
+                    "timeoverlapcalculator", "monthendclarification", "org.keycloak", "usersresource")) {
                 assert !content.contains(forbidden) : "reference-specific token in " + file + ": " + forbidden;
             }
         } catch (IOException error) {

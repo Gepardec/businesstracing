@@ -186,7 +186,19 @@ public class RuntimeCollector implements TraceContextCarrier {
         try {
             markUnresolvedDispatches(context);
             Definition definition = definition(context);
-            var encoded = definition.codec().encode(result, definition.graph().decisionLabel(), "final decision");
+            DecisionExecution.DecisionValue encoded;
+            if (result == null) {
+                encoded = new DecisionExecution.DecisionValue("none", "NONE", "No result");
+            } else {
+                try {
+                    encoded = definition.codec().encode(
+                            result, definition.graph().decisionLabel(), "final decision");
+                } catch (IllegalArgumentException unsupported) {
+                    encoded = new DecisionExecution.DecisionValue(
+                            "unknown", "UNKNOWN", "Result not recorded");
+                    context.addRuntimeCoverageGap("final result has no safe value adapter");
+                }
+            }
             var evidence = new java.util.LinkedHashMap<>(context.consumeEvidence(nodeId));
             evidence.put("result", encoded);
             context.observe(nodeId, "result", Map.copyOf(evidence), null);

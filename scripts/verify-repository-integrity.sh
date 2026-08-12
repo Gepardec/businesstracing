@@ -31,16 +31,19 @@ require_tracked scripts/verify-pr.sh
 require_tracked scripts/verify-release.sh
 require_tracked scripts/verify-release-gates.sh
 require_tracked scripts/verify-mega-backend.sh
+require_tracked scripts/verify-keycloak.sh
 require_tracked scripts/verify-spring-petclinic.sh
 require_tracked scripts/verify-postgres.sh
 require_tracked .github/workflows/verify.yml
 require_tracked conformance/mega-backend/README.md
 require_tracked conformance/mega-backend/selection.md
-require_tracked conformance/mega-backend/annotation-overlay.patch
 require_tracked conformance/mega-backend/conformance-report.md
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java
 require_tracked conformance/mega-backend/src/test/resources/oracles/README.md
+require_tracked conformance/keycloak/README.md
+require_tracked conformance/keycloak/selection.md
+require_tracked conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java
 require_tracked conformance/spring-petclinic/README.md
 require_tracked conformance/spring-petclinic/selection.md
 require_tracked conformance/spring-petclinic/annotation-overlay.patch
@@ -53,6 +56,8 @@ require_tracked docs/self-tracing.md
 
 test -z "$(git ls-files conformance/mega-backend/generated)" \
   || fail "generated Mega artifacts must not be tracked: use conformance/mega-backend/target/generated"
+test -z "$(git ls-files conformance/keycloak/target)" \
+  || fail "generated Keycloak artifacts must not be tracked: use conformance/keycloak/target/generated"
 test -z "$(git ls-files conformance/spring-petclinic/generated)" \
   || fail "generated PetClinic artifacts must not be tracked: use conformance/spring-petclinic/target/generated"
 

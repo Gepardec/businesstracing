@@ -16,6 +16,29 @@ Start the application with the matching agent artifact:
 java -javaagent:/path/to/fachtracing-agent-0.1.0-rc.1.jar -jar application.jar
 ```
 
+For automatic business output, give the agent the build-generated activation file and one output
+directory:
+
+```sh
+java \
+  -javaagent:/path/to/fachtracing-agent-0.1.0-rc.1.jar=activation=/path/to/activation.json,output=/path/to/business-traces \
+  -jar application.jar
+```
+
+The agent reads all graph definitions, enables redacted capture, and writes one `.txt` file and one
+`.mmd` file for each completed selected call. The files contain the business decision, evaluated
+steps, result, and coverage state. Adapted values are always stored as `REDACTED`. A `null` result is
+stored as `No result`. A result type without a safe adapter is stored as `Result not recorded`, and
+the trace is incomplete. Endpoint threads do not write files. One daemon consumer writes the files
+with an atomic move.
+
+Both agent options are required in automatic mode. Unknown, duplicate, partial, or malformed options
+stop agent startup. Paths must not contain a comma. Use an application-owned output directory with
+restricted access. The agent JAR is not an aggregate JAR. Make the matching Fachtracing API and
+engine artifacts, and the matching ASM artifacts, visible on the application startup class path.
+
+The no-argument command keeps the existing programmatic setup:
+
 At startup, read `target/fachtracing/activation.json` with
 `RuntimeActivationBundle.fromJson`, call `FachtracingAgent.configure(bundle)`, and register each
 bundle graph in `RuntimeCollector` with an application-owned redaction policy. The activation path

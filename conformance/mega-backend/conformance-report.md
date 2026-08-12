@@ -2,17 +2,17 @@
 
 Status: **passed**
 Pinned source: `Gepardec/mega-backend@782cdec8dfe5b4062eb5c1859e6a9e53afe02770`
-Run date: 2026-08-10, Java 21
+Run date: 2026-08-12, Java 21
 
 ## Reproduction and isolation
 
 `./scripts/verify-mega-backend.sh` verifies the clean pinned checkout, creates a disposable
-worktree, compiles the application, applies only `annotation-overlay.patch`, scans production
-source and generic configuration for forbidden reference hints, analyzes all 420 main Java source
-files, compares immutable semantic oracles exactly, executes a real polymorphic decision, and
-writes reproducible artifacts under `target/generated/`.
+worktree, compiles the unchanged application, selects five exact methods from conformance
+configuration, scans production source and generic configuration for forbidden reference hints,
+analyzes all 420 main Java source files, compares immutable semantic oracles exactly, executes a
+real polymorphic decision, and writes reproducible artifacts under `target/generated/`.
 
-Mega-specific revision, paths, annotations, invocation data, and expectations exist only in this
+Mega-specific revision, paths, method selections, invocation data, and expectations exist only in this
 conformance harness. The analyzer, agent, typed-value protocol, explanation projector, and renderer
 are the same artifacts used by non-Mega applications.
 

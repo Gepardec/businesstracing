@@ -20,6 +20,7 @@ public final class DecisionExplanationProjectorTest {
         rendersFailedExecutionWithoutTechnicalData();
         preservesRedactionAndRejectsMissingAdapters();
         unknownEvidenceMakesCoverageExplicit();
+        rendersBusinessExecutionMermaid();
     }
 
     private static void explanationMatchesBusinessSnapshot() throws Exception {
@@ -80,6 +81,17 @@ public final class DecisionExplanationProjectorTest {
                 graph(), execution(DecisionExecution.DecisionValue.of(true), observations));
         assert explanation.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
         assert !explanation.coverageGaps().isEmpty();
+    }
+
+    private static void rendersBusinessExecutionMermaid() {
+        var projector = new DecisionExplanationProjector();
+        String diagram = new BusinessExecutionMermaidRenderer().render(
+                projector.project(graph(), execution()));
+        assert diagram.startsWith("flowchart TD\n") : diagram;
+        assert diagram.contains("Decision: customer eligibility") : diagram;
+        assert diagram.contains("age is below 24 (age was 20)") : diagram;
+        assert diagram.contains("Result: true") : diagram;
+        assertNoTechnicalLanguage(diagram);
     }
 
     public static BusinessDecisionGraph graph() {

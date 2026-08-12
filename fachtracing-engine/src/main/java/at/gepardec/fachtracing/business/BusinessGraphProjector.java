@@ -18,6 +18,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /** Projects an exact analysis graph into a concise build-time business graph. */
 public final class BusinessGraphProjector {
@@ -403,8 +404,18 @@ public final class BusinessGraphProjector {
             }
             return cleanLabel(exact.decisionLabel()) + " completed";
         }
+        if (technicalResultExpression(normalized)) {
+            return cleanLabel(exact.decisionLabel()) + " completed";
+        }
         if (normalized.isBlank()) return "completed";
         return cleanLabel(value);
+    }
+
+    private static boolean technicalResultExpression(String value) {
+        long conjunctions = Pattern.compile("\\band\\b").matcher(value).results().count();
+        return value.contains(" new ") || value.contains("<>")
+                || value.matches(".*\\b(?:true|false)\\b.*")
+                || conjunctions >= 3;
     }
 
     private static boolean technicalResponse(String value) {
@@ -485,6 +496,8 @@ public final class BusinessGraphProjector {
         return lower.startsWith("derive ") || lower.startsWith("evaluate ")
                 || lower.startsWith("use ") || lower.equals("decision cannot continue")
                 || lower.startsWith("initialize ")
+                || lower.contains(" != ") || lower.contains(" == ") || lower.contains(" ? ")
+                || lower.contains(" new ") || lower.contains("<>")
                 || (lower.startsWith("next ") && lower.contains(" iterator"))
                 || (lower.startsWith("set ") && (lower.endsWith(" to")
                 || lower.contains(" strip") || lower.contains(" iterator")));

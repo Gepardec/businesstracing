@@ -27,6 +27,7 @@ public final class RuntimeCollectorTest {
         automaticWrappersAreIdentitySafeAndDelayPublication();
         implementationEdgesRequireTheExpectedDispatch();
         unresolvedImplementationCreatesExecutionGap();
+        completesNullAndUnsupportedFinalResults();
         matchesNestedDispatchExpectationsInStackOrder();
         isolatesThirtyTwoConcurrentInvocations();
         tracingFailuresDoNotEscape();
@@ -114,6 +115,25 @@ public final class RuntimeCollectorTest {
         assert !execution.toString().contains(applicationFailure.getClass().getName());
         assert !execution.toString().contains(applicationFailure.getMessage());
         assert collector.completedCount() == 0;
+    }
+
+    private static void completesNullAndUnsupportedFinalResults() {
+        RuntimeCollector collector = collector();
+        collector.begin("graph", 1);
+        collector.complete("outcome", null);
+        var noResult = collector.pollCompleted().orElseThrow();
+        assert noResult.finalResult().type().equals("none") : noResult;
+        assert noResult.finalResult().displayValue().equals("No result") : noResult;
+        assert noResult.completeness() == BusinessDecisionGraph.Completeness.COMPLETE : noResult;
+
+        collector.begin("graph", 1);
+        collector.complete("outcome", new Object());
+        var unsupported = collector.pollCompleted().orElseThrow();
+        assert unsupported.finalResult().type().equals("unknown") : unsupported;
+        assert unsupported.finalResult().displayValue().equals("Result not recorded") : unsupported;
+        assert unsupported.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unsupported;
+        assert unsupported.coverageGaps().contains("final result has no safe value adapter")
+                : unsupported.coverageGaps();
     }
 
     private static void failedChildKeepsParentDispatchState() {

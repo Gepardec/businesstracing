@@ -23,16 +23,7 @@ fi
 mvn -q -f "$WORKTREE/pom.xml" -DskipTests test-compile
 mvn -q -f "$WORKTREE/pom.xml" dependency:build-classpath \
   -Dmdep.outputFile="$WORKTREE/target/conformance-classpath.txt" -DincludeScope=test
-git -C "$WORKTREE" apply "$ROOT/conformance/mega-backend/annotation-overlay.patch"
-
-OVERLAY_CLASSES="$WORKTREE/target/conformance-overlay-classes"
-mkdir -p "$OVERLAY_CLASSES"
 MEGA_CP=$(cat "$WORKTREE/target/conformance-classpath.txt")
-"$(/usr/libexec/java_home -v 21)/bin/javac" --release 21 \
-  -cp "$ROOT/fachtracing-api/target/classes:$WORKTREE/target/classes:$MEGA_CP" \
-  -d "$OVERLAY_CLASSES" \
-  "$WORKTREE/src/main/java/com/gepardec/mega/domain/calculation/time/TimeOverlapCalculator.java" \
-  "$WORKTREE/src/main/java/com/gepardec/mega/service/helper/WarningCalculatorsManager.java"
 
 TEST_CLASSES="$ROOT/conformance/mega-backend/target/test-classes"
 mkdir -p "$TEST_CLASSES"
@@ -50,4 +41,4 @@ CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes
   at.gepardec.fachtracing.conformance.MegaBackendConformanceTest \
   "$ROOT" "$WORKTREE" "$WORKTREE/target/conformance-classpath.txt" \
   "$ROOT/conformance/mega-backend/target/generated" \
-  "$ROOT/conformance/mega-backend/src/test/resources/oracles" "$OVERLAY_CLASSES"
+  "$ROOT/conformance/mega-backend/src/test/resources/oracles"

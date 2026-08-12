@@ -17,6 +17,7 @@ public final class BusinessGraphProjectionTest {
         preservesRulesActionsReturnsAndFailures();
         preservesIncompleteAnalysisAsBusinessGap();
         acceptsBusinessVocabularyThatContainsStructuralWords();
+        removesJavaExpressionsFromBusinessProjection();
         rejectsTechnicalVocabulary();
         producesStableBusinessIdsForEquivalentExactGraphs();
         exportsAllFormatsWithOneTopology();
@@ -197,6 +198,29 @@ public final class BusinessGraphProjectionTest {
                 List.of(), BusinessLogicGraph.Completeness.COMPLETE);
 
         new BusinessLogicArtifactGuard().requireClean(graph);
+    }
+
+    private static void removesJavaExpressionsFromBusinessProjection() {
+        BusinessDecisionGraph exact = graph("search users", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        node("first", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "set first result to first result != absent ? first result : -1"),
+                        node("maximum", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "set max results to max results != absent ? max results : constants default max results"),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "first", "next"),
+                        edge("e2", "first", "maximum", "next"),
+                        edge("e3", "maximum", "stop",
+                                "returns search for user new hash map<> and realm and evaluator and first result and max results and false")),
+                List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+
+        assert projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList()
+                .equals(List.of("search users completed")) : projected.nodes();
+        new BusinessLogicArtifactGuard().requireClean(projected);
     }
 
     private static void exportsAllFormatsWithOneTopology() {

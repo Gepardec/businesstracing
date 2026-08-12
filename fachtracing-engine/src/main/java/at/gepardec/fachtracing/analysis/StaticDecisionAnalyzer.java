@@ -84,7 +84,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/** Framework-neutral Java 21 source analyzer for {@code @FachTracing} entry points. */
+/** Framework-neutral Java 21 source analyzer for annotated and configured entry points. */
 public final class StaticDecisionAnalyzer {
     /** Analyzes the first graph entry from a project-aware application boundary. */
     public AnalysisManifest.AnalysisResult analyze(ApplicationSourceBoundary boundary) {
@@ -117,10 +117,23 @@ public final class StaticDecisionAnalyzer {
             ApplicationSourceBoundary boundary,
             OpaqueLibraryBoundary opaqueLibraries,
             List<ExternalMethodContractProvider> externalMethodContractProviders) {
+        return analyzeAll(boundary, opaqueLibraries, externalMethodContractProviders, List.of());
+    }
+
+    /** Analyzes every annotated or configured graph entry in a project-aware boundary. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries,
+            List<ExternalMethodContractProvider> externalMethodContractProviders,
+            List<BusinessEntryPoint> businessEntryPoints) {
         Objects.requireNonNull(boundary, "boundary");
         Objects.requireNonNull(opaqueLibraries, "opaqueLibraries");
         externalMethodContractProviders = List.copyOf(Objects.requireNonNull(
                 externalMethodContractProviders, "externalMethodContractProviders"));
+        businessEntryPoints = List.copyOf(Objects.requireNonNull(
+                businessEntryPoints, "businessEntryPoints"));
+        Map<String, List<BusinessEntryPoint>> entryPointsByProject =
+                routeBusinessEntryPoints(boundary, businessEntryPoints);
         String searchedBoundary = "searched projects " + boundary.projects().stream()
                 .map(ApplicationSourceBoundary.ProjectSources::projectId).sorted().toList()
                 + ", external sources " + boundary.externalResolutionSources().stream()
@@ -144,7 +157,8 @@ public final class StaticDecisionAnalyzer {
                     .sorted(Comparator.comparing(Path::toString)).toList();
             var request = new AnalysisRequest(
                     sources, classpath, project.compilerModel().charset(), project.entrySourceFiles())
-                    .withExternalMethodContractProviders(externalMethodContractProviders);
+                    .withExternalMethodContractProviders(externalMethodContractProviders)
+                    .withBusinessEntryPoints(entryPointsByProject.getOrDefault(project.projectId(), List.of()));
             if (modular) {
                 results.addAll(analyzeModular(request, analysisClosure, boundary, opaqueLibraries));
             } else {
@@ -154,6 +168,55 @@ public final class StaticDecisionAnalyzer {
         return results.stream()
                 .map(result -> withSearchedBoundary(result, searchedBoundary))
                 .toList();
+    }
+
+    private static Map<String, List<BusinessEntryPoint>> routeBusinessEntryPoints(
+            ApplicationSourceBoundary boundary,
+            List<BusinessEntryPoint> selections) {
+        var routed = new LinkedHashMap<String, List<BusinessEntryPoint>>();
+        for (BusinessEntryPoint selection : selections) {
+            List<ApplicationSourceBoundary.ProjectSources> matches = boundary.projects().stream()
+                    .filter(project -> declaresOwner(project, selection.owner()))
+                    .toList();
+            if (matches.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Configured business entry point not found: " + selection.identity());
+            }
+            if (matches.size() > 1) {
+                throw new IllegalArgumentException("Configured business entry point owner occurs in multiple "
+                        + "entry projects: " + selection.identity() + "; projects: "
+                        + matches.stream().map(ApplicationSourceBoundary.ProjectSources::projectId).toList());
+            }
+            String projectId = matches.getFirst().projectId();
+            var projectSelections = new ArrayList<>(routed.getOrDefault(projectId, List.of()));
+            projectSelections.add(selection);
+            routed.put(projectId, List.copyOf(projectSelections));
+        }
+        return Map.copyOf(routed);
+    }
+
+    private static boolean declaresOwner(
+            ApplicationSourceBoundary.ProjectSources project,
+            String owner) {
+        for (Path source : project.entrySourceFiles()) {
+            try {
+                String content = Files.readString(source, project.compilerModel().charset());
+                var packageMatch = PACKAGE_DECLARATION.matcher(content);
+                String packageName = packageMatch.find() ? packageMatch.group(1) : "";
+                String prefix = packageName.isEmpty() ? "" : packageName + ".";
+                if (!owner.startsWith(prefix)) continue;
+                String relativeOwner = owner.substring(prefix.length());
+                String topLevelType = relativeOwner.split("\\.", 2)[0];
+                String fileName = source.getFileName().toString();
+                if (fileName.equals(topLevelType + ".java")) return true;
+                String declaration = "(?s).*\\b(?:class|interface|record|enum)\\s+"
+                        + Pattern.quote(topLevelType) + "\\b.*";
+                if (content.matches(declaration)) return true;
+            } catch (IOException error) {
+                throw new IllegalStateException("Could not read entry source " + source, error);
+            }
+        }
+        return false;
     }
 
     private static List<ApplicationSourceBoundary.ProjectSources> projectClosure(
@@ -367,10 +430,11 @@ public final class StaticDecisionAnalyzer {
 
             Trees trees = Trees.instance(task);
             SourceIndex index = SourceIndex.create(units, trees, request.rootSourceFiles());
-            List<MethodLocation> roots = index.annotatedMethods().stream()
+            List<SelectedRoot> roots = selectedRoots(index, request.businessEntryPoints(), task.getTypes()).stream()
                     .sorted(Comparator
-                            .comparing((MethodLocation location) -> location.unit().getSourceFile().toUri().toString())
-                            .thenComparingLong(MethodLocation::startPosition))
+                            .comparing((SelectedRoot root) ->
+                                    root.location().unit().getSourceFile().toUri().toString())
+                            .thenComparingLong(root -> root.location().startPosition()))
                     .toList();
             if (roots.isEmpty()) return List.of();
 
@@ -378,11 +442,10 @@ public final class StaticDecisionAnalyzer {
             ExternalMethodContractRegistry externalMethodContracts = ExternalMethodContractRegistry.of(
                     request.externalMethodContractProviders());
             var results = new ArrayList<AnalysisManifest.AnalysisResult>();
-            for (MethodLocation root : roots) {
-                String label = annotationLabel(root.method());
-                if (label.isBlank()) label = words(root.method().getName().toString());
-                Element rootElement = trees.getElement(root.path());
-                String identity = rootElement == null ? root.method().toString() : rootElement.toString();
+            for (SelectedRoot selectedRoot : roots) {
+                MethodLocation root = selectedRoot.location();
+                String label = selectedRoot.label();
+                String identity = selectedRoot.element().toString();
                 String graphId = hash("graph", root.unit().getSourceFile().toUri(), identity);
                 var builder = new DecisionGraphBuilder(graphId, label);
                 var diagnostics = new ArrayList<AnalysisManifest.AnalysisDiagnostic>();
@@ -3184,15 +3247,20 @@ public final class StaticDecisionAnalyzer {
             TreePath path,
             long startPosition) { }
 
+    private record SelectedRoot(
+            ExecutableElement element,
+            MethodLocation location,
+            String label) { }
+
     private record SourceIndex(
-            List<MethodLocation> annotatedMethods,
+            Map<ExecutableElement, MethodLocation> rootMethods,
             Map<ExecutableElement, MethodLocation> methods,
             List<TypeElement> types) {
         private static SourceIndex create(
                 List<CompilationUnitTree> units,
                 Trees trees,
                 List<Path> rootSourceFiles) {
-            var annotated = new ArrayList<MethodLocation>();
+            var rootMethods = new LinkedHashMap<ExecutableElement, MethodLocation>();
             var methods = new LinkedHashMap<ExecutableElement, MethodLocation>();
             var types = new ArrayList<TypeElement>();
             Set<Path> rootSources = rootSourceFiles.stream()
@@ -3209,7 +3277,7 @@ public final class StaticDecisionAnalyzer {
                             var location = new MethodLocation(unit, node, getCurrentPath(),
                                     positions.getStartPosition(unit, node));
                             methods.put(executable, location);
-                            if (graphRootSource && hasFachTracing(node)) annotated.add(location);
+                            if (graphRootSource) rootMethods.put(executable, location);
                         }
                         return super.visitMethod(node, unused);
                     }
@@ -3221,8 +3289,62 @@ public final class StaticDecisionAnalyzer {
                     }
                 }.scan(unit, null);
             }
-            return new SourceIndex(List.copyOf(annotated), Map.copyOf(methods), List.copyOf(types));
+            return new SourceIndex(Map.copyOf(rootMethods), Map.copyOf(methods), List.copyOf(types));
         }
+    }
+
+    private static List<SelectedRoot> selectedRoots(
+            SourceIndex index,
+            List<BusinessEntryPoint> selections,
+            javax.lang.model.util.Types types) {
+        var roots = new LinkedHashMap<ExecutableElement, SelectedRoot>();
+        index.rootMethods().forEach((element, location) -> {
+            if (!hasFachTracing(location.method())) return;
+            String label = annotationLabel(location.method());
+            if (label.isBlank()) label = words(location.method().getName().toString());
+            roots.put(element, new SelectedRoot(element, location, label));
+        });
+        for (BusinessEntryPoint selection : selections) {
+            List<Map.Entry<ExecutableElement, MethodLocation>> matches = index.rootMethods().entrySet().stream()
+                    .filter(entry -> matches(entry.getKey(), selection, types))
+                    .toList();
+            if (matches.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Configured business entry point not found: " + selection.identity());
+            }
+            if (matches.size() > 1) {
+                String candidates = matches.stream().map(entry -> parameterTypes(entry.getKey(), types))
+                        .map(parameters -> "(" + String.join(",", parameters) + ")")
+                        .sorted().collect(Collectors.joining(", "));
+                throw new IllegalArgumentException("Configured business entry point is ambiguous: "
+                        + selection.identity() + "; add parameter types; candidates: " + candidates);
+            }
+            var match = matches.getFirst();
+            roots.put(match.getKey(), new SelectedRoot(match.getKey(), match.getValue(), selection.label()));
+        }
+        return List.copyOf(roots.values());
+    }
+
+    private static boolean matches(
+            ExecutableElement method,
+            BusinessEntryPoint selection,
+            javax.lang.model.util.Types types) {
+        Element owner = method.getEnclosingElement();
+        if (!(owner instanceof TypeElement type)
+                || !type.getQualifiedName().contentEquals(selection.owner())
+                || !method.getSimpleName().contentEquals(selection.method())) {
+            return false;
+        }
+        return selection.parameterTypes().isEmpty()
+                || selection.parameterTypes().equals(parameterTypes(method, types));
+    }
+
+    private static List<String> parameterTypes(
+            ExecutableElement method,
+            javax.lang.model.util.Types types) {
+        return method.getParameters().stream()
+                .map(parameter -> types.erasure(parameter.asType()).toString())
+                .toList();
     }
 
     private static boolean hasFachTracing(MethodTree method) {
