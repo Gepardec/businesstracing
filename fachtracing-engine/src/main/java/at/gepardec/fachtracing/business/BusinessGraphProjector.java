@@ -495,9 +495,11 @@ public final class BusinessGraphProjector {
         String lower = label.toLowerCase(Locale.ROOT);
         return lower.startsWith("derive ") || lower.startsWith("evaluate ")
                 || lower.startsWith("use ") || lower.equals("decision cannot continue")
+                || lower.equals("attributes") || lower.startsWith("put attributes with ")
+                || lower.startsWith("put all attributes with ")
                 || lower.startsWith("initialize ")
                 || lower.contains(" != ") || lower.contains(" == ") || lower.contains(" ? ")
-                || lower.contains(" new ") || lower.contains("<>")
+                || lower.contains(" new ") || lower.contains("<>") || lower.contains("::")
                 || (lower.startsWith("next ") && lower.contains(" iterator"))
                 || (lower.startsWith("set ") && (lower.endsWith(" to")
                 || lower.contains(" strip") || lower.contains(" iterator")));

@@ -61,6 +61,16 @@ test -z "$(git ls-files conformance/keycloak/target)" \
 test -z "$(git ls-files conformance/spring-petclinic/generated)" \
   || fail "generated PetClinic artifacts must not be tracked: use conformance/spring-petclinic/target/generated"
 
+KEYCLOAK_HARNESS=conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java
+if grep -E -q 'reviewedOverview|overviewNode|overviewEdge|new BusinessLogicGraph' "$KEYCLOAK_HARNESS"
+then
+  fail "the Keycloak diagram must not use a manually constructed graph"
+fi
+if grep -E -q '^[[:space:]]*flowchart[[:space:]]' conformance/keycloak/README.md
+then
+  fail "the Keycloak guide must not embed a fixed Mermaid flowchart"
+fi
+
 for oracle in \
   authorize-clarification-resolution \
   detect-overlapping-time-entries \

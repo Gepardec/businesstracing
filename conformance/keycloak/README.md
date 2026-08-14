@@ -1,39 +1,12 @@
 # Keycloak endpoint business tracing
 
 This example traces the pinned Keycloak user-search endpoint without changing Keycloak source. It
-generates a reviewed non-technical Mermaid overview and a runtime activation file for `search users`.
+generates a non-technical Mermaid graph and a runtime activation file for `search users`.
 
-```mermaid
-flowchart LR
-    permission{"the caller can query users"}
-    general{"a general search was supplied"}
-    prefix{"the general search uses prefix terms"}
-    details{"one or more detailed filters were supplied"}
-    termSearch["search matching prefix terms"]
-    filterSearch["search by supplied filters"]
-    list["list users"]
-    visible{"each returned user is visible to the caller"}
-    permitted(["permitted users"])
-    forbidden(["request forbidden"])
-    gap{{"some authorization and storage rules are outside this source"}}
-    permission -->|yes| general
-    permission -->|no| forbidden
-    general -->|yes| prefix
-    general -->|no| details
-    prefix -->|yes| termSearch
-    prefix -->|no| filterSearch
-    details -->|yes| filterSearch
-    details -->|no| list
-    termSearch --> visible
-    filterSearch --> visible
-    list --> visible
-    visible -->|yes| permitted
-    visible -->|no| gap
-```
-
-The harness checks the overview against required rule anchors in the exact 169-node analysis. The
-overview groups repeated filter-building operations so a non-technical reader can use it. The
-runtime activation keeps the exact graph, so each called endpoint still records its actual path.
+The harness creates the Mermaid graph from the generic business projection of the endpoint
+analysis. It checks required rule anchors in both the exact and projected graphs. These anchors are
+assertions only; they do not supply nodes or edges to the diagram. The runtime activation keeps the
+exact graph, so each called endpoint still records its actual path.
 
 ## Generate the graph and activation
 
@@ -56,7 +29,7 @@ conformance command and is not part of pull-request CI.
 
 The command writes these disposable files under `conformance/keycloak/target/generated`:
 
-- `search-users-business.mmd`: the reviewed static non-technical overview.
+- `search-users-business.mmd`: the generated non-technical business projection.
 - `activation.json`: exact probes and class fingerprints for the pinned build.
 
 ## Call the endpoint and get the evaluated flow

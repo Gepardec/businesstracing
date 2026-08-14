@@ -18,6 +18,7 @@ public final class BusinessGraphProjectionTest {
         preservesIncompleteAnalysisAsBusinessGap();
         acceptsBusinessVocabularyThatContainsStructuralWords();
         removesJavaExpressionsFromBusinessProjection();
+        removesTechnicalDataBuildingFromBusinessProjection();
         rejectsTechnicalVocabulary();
         producesStableBusinessIdsForEquivalentExactGraphs();
         exportsAllFormatsWithOneTopology();
@@ -152,7 +153,7 @@ public final class BusinessGraphProjectionTest {
     private static void rejectsTechnicalVocabulary() {
         for (String prohibited : List.of("Start", "for each item", "derive temporary value",
                 "redirect:/owners/12", "true", "Policy.java", "null", "identifier",
-                "failure ex", "message to lower case")) {
+                "failure ex", "message to lower case", "users evaluator::can view")) {
             var graph = new BusinessLogicGraph("guard", 1, "guard", List.of("node"),
                     List.of(new BusinessLogicGraph.Node(
                             "node", BusinessLogicGraph.NodeKind.RESULT, prohibited)),
@@ -220,6 +221,37 @@ public final class BusinessGraphProjectionTest {
 
         assert projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList()
                 .equals(List.of("search users completed")) : projected.nodes();
+        new BusinessLogicArtifactGuard().requireClean(projected);
+    }
+
+    private static void removesTechnicalDataBuildingFromBusinessProjection() {
+        BusinessDecisionGraph exact = graph("search users", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        node("attributes", BusinessDecisionGraph.NodeKind.COMPUTATION, "attributes"),
+                        node("put", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "put attributes with email and email"),
+                        node("filter", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "set user models to items in user models match users evaluator::can view"),
+                        node("rule", BusinessDecisionGraph.NodeKind.PREDICATE, "search exists"),
+                        node("hold", BusinessDecisionGraph.NodeKind.COMPUTATION, "put order on hold"),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "attributes", "next"),
+                        edge("e2", "attributes", "put", "next"),
+                        edge("e3", "put", "filter", "next"),
+                        edge("e4", "filter", "rule", "next"),
+                        edge("e5", "rule", "hold", "true"),
+                        edge("e6", "hold", "stop", "returns matching users"),
+                        edge("e7", "rule", "stop", "false; returns all users")),
+                List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+        List<String> labels = projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList();
+
+        assert labels.containsAll(List.of("search exists", "put order on hold")) : labels;
+        assert labels.stream().noneMatch(label -> label.equals("attributes")
+                || label.startsWith("put attributes with ") || label.contains("::")) : labels;
         new BusinessLogicArtifactGuard().requireClean(projected);
     }
 

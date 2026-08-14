@@ -491,3 +491,16 @@ diagnostics or result access.
 The real pinned Keycloak token and user-search calls returned HTTP 200 and generated one redacted
 text/Mermaid pair. The full repository gate, five Mega decisions, three Spring PetClinic decisions,
 and pinned Keycloak conformance passed with no dependency change.
+
+### generated-keycloak-diagram-correctness (bugfix) — 2026-08-14
+
+Completed both tasks. The pinned Keycloak conformance diagram now comes directly from the generic
+business projection of the endpoint analysis. Reviewed Keycloak labels remain assertions only and
+do not provide nodes or edges. Repository integrity rejects manual Keycloak graph construction and
+a fixed Mermaid flowchart in the guide.
+
+Pinned artifact inspection also exposed Java method references and technical data-building actions
+in the generic projection. The projector now removes only those technical forms, while a regression
+keeps an ordinary `put order on hold` business action. The business guard rejects Java
+method-reference syntax. The full repository gate and final pinned Keycloak conformance passed; the
+activation still contains one exact 169-node decision with probe sites and class fingerprints.

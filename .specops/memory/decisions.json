@@ -1160,6 +1160,26 @@
       "task": "Task 2",
       "date": "2026-08-14",
       "completedAt": "2026-08-14T08:24:56Z"
+    },
+    {
+      "specId": "generated-keycloak-diagram-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Use reviewed Keycloak labels only as assertions",
+      "rationale": "Assertions detect semantic loss without supplying topology to the generated graph.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:58:18Z"
+    },
+    {
+      "specId": "generated-keycloak-diagram-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Filter technical calculation forms generically",
+      "rationale": "Reference-application filtering would reproduce the same conformance shortcut in production.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:58:18Z"
     }
   ]
 }

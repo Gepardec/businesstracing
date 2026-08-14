@@ -3,8 +3,8 @@
   "decisionCategories": [
     {
       "category": "reference-application-isolation",
-      "count": 2,
-      "pattern": "Keep pinned brownfield knowledge in conformance artifacts; production gains only target-neutral construct support."
+      "count": 3,
+      "pattern": "Keep pinned brownfield knowledge in conformance assertions; never use it as generated topology, and add only target-neutral production support."
     },
     {
       "category": "runtime-correlation",
@@ -18,8 +18,8 @@
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 6,
-      "pattern": "Preserve result-relevant optionality as absent/exists, strip language- and persistence-specific vocabulary, and reject structural terms only in their structural context."
+      "count": 7,
+      "pattern": "Preserve result-relevant optionality as absent/exists, strip language- and persistence-specific vocabulary including method references, and reject structural terms only in their structural context."
     },
     {
       "category": "build-tool-adapter",
@@ -43,8 +43,8 @@
     },
     {
       "category": "build-artifact-boundary",
-      "count": 1,
-      "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
+      "count": 2,
+      "pattern": "Track immutable reviewed oracle inputs, generate conformance projections under the build-output directory, and reject recommitted or hard-coded diagrams."
     },
     {
       "category": "source-context-labeling",
@@ -105,7 +105,27 @@
     },
     {
       "file": "conformance/keycloak/README.md",
-      "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness"],
+      "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness", "generated-keycloak-diagram-correctness"],
+      "count": 3
+    },
+    {
+      "file": "conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java",
+      "specs": ["configured-endpoint-business-tracing", "generated-keycloak-diagram-correctness"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java",
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java",
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/business/BusinessGraphProjectionTest.java",
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
       "count": 2
     },
     {
@@ -283,8 +303,8 @@
     },
     {
       "file": "scripts/verify-repository-integrity.sh",
-      "specs": ["generic-application-readiness", "self-dogfood-business-tracing"],
-      "count": 2
+      "specs": ["generic-application-readiness", "self-dogfood-business-tracing", "generated-keycloak-diagram-correctness"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java",

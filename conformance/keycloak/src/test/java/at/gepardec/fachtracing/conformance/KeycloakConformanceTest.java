@@ -6,9 +6,10 @@ import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.BusinessEntryPoint;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.business.BusinessGraphProjector;
+import at.gepardec.fachtracing.business.BusinessLogicArtifactGuard;
 import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
-import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 import at.gepardec.fachtracing.model.BusinessLogicGraph;
+import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,7 +57,7 @@ public final class KeycloakConformanceTest {
                 : new BusinessArtifactGuard().violations(analysis.graph());
 
         var fullBusinessGraph = new BusinessGraphProjector().project(analysis);
-        new at.gepardec.fachtracing.business.BusinessLogicArtifactGuard().requireClean(fullBusinessGraph);
+        new BusinessLogicArtifactGuard().requireClean(fullBusinessGraph);
         List<String> exactLabels = analysis.graph().nodes().stream()
                 .map(node -> node.businessLabel().toLowerCase(java.util.Locale.ROOT)).toList();
         for (String required : List.of(
@@ -66,6 +67,14 @@ public final class KeycloakConformanceTest {
             assert exactLabels.contains(required) : "reviewed flow anchor is absent: " + required;
         }
         assert exactLabels.stream().noneMatch(label -> label.contains("schema")) : exactLabels;
+        List<String> businessLabels = fullBusinessGraph.nodes().stream()
+                .map(node -> node.label().toLowerCase(java.util.Locale.ROOT)).toList();
+        for (String required : List.of("search query is absent", "search exists", "prefix exists")) {
+            assert businessLabels.contains(required) : "projected business anchor is absent: " + required;
+        }
+        assert fullBusinessGraph.nodes().stream()
+                .anyMatch(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
+                : "projected business graph must identify incomplete coverage";
         for (String required : List.of("search query is absent", "search exists", "prefix exists")) {
             String nodeId = analysis.graph().nodes().stream()
                     .filter(node -> node.businessLabel().equalsIgnoreCase(required))
@@ -74,7 +83,7 @@ public final class KeycloakConformanceTest {
             assert analysis.manifest().branchTargets().stream().anyMatch(target -> target.nodeId().equals(nodeId))
                     : "runtime branch binding is absent for " + required;
         }
-        String businessDiagram = new BusinessMermaidRenderer().render(reviewedOverview());
+        String businessDiagram = new BusinessMermaidRenderer().render(fullBusinessGraph);
         assert businessDiagram.startsWith("flowchart LR\n") : businessDiagram;
         assert !businessDiagram.contains("org.keycloak") : businessDiagram;
         assert !businessDiagram.contains("UsersResource") : businessDiagram;
@@ -92,59 +101,6 @@ public final class KeycloakConformanceTest {
         System.out.println("KEYCLOAK_BUSINESS_TRACE_READY " + output);
         System.out.println("search users: " + analysis.graph().nodes().size() + " exact nodes, "
                 + analysis.graph().completeness());
-    }
-
-    private static BusinessLogicGraph reviewedOverview() {
-        var nodes = List.of(
-                overviewNode("permission", BusinessLogicGraph.NodeKind.RULE,
-                        "the caller can query users"),
-                overviewNode("general", BusinessLogicGraph.NodeKind.RULE,
-                        "a general search was supplied"),
-                overviewNode("prefix", BusinessLogicGraph.NodeKind.RULE,
-                        "the general search uses prefix terms"),
-                overviewNode("details", BusinessLogicGraph.NodeKind.RULE,
-                        "one or more detailed filters were supplied"),
-                overviewNode("term-search", BusinessLogicGraph.NodeKind.ACTION,
-                        "search matching prefix terms"),
-                overviewNode("filter-search", BusinessLogicGraph.NodeKind.ACTION,
-                        "search by supplied filters"),
-                overviewNode("list", BusinessLogicGraph.NodeKind.ACTION,
-                        "list users"),
-                overviewNode("visible", BusinessLogicGraph.NodeKind.RULE,
-                        "each returned user is visible to the caller"),
-                overviewNode("permitted", BusinessLogicGraph.NodeKind.RESULT,
-                        "permitted users"),
-                overviewNode("forbidden", BusinessLogicGraph.NodeKind.RESULT,
-                        "request forbidden"),
-                overviewNode("gap", BusinessLogicGraph.NodeKind.GAP,
-                        "some authorization and storage rules are outside this source"));
-        var edges = List.of(
-                overviewEdge("permission", "general", "yes"),
-                overviewEdge("permission", "forbidden", "no"),
-                overviewEdge("general", "prefix", "yes"),
-                overviewEdge("general", "details", "no"),
-                overviewEdge("prefix", "term-search", "yes"),
-                overviewEdge("prefix", "filter-search", "no"),
-                overviewEdge("details", "filter-search", "yes"),
-                overviewEdge("details", "list", "no"),
-                overviewEdge("term-search", "visible", ""),
-                overviewEdge("filter-search", "visible", ""),
-                overviewEdge("list", "visible", ""),
-                overviewEdge("visible", "permitted", "yes"),
-                overviewEdge("visible", "gap", "no"));
-        return new BusinessLogicGraph(
-                "keycloak-user-search-overview", 1, "search users", List.of("permission"),
-                nodes, edges, BusinessLogicGraph.Completeness.INCOMPLETE);
-    }
-
-    private static BusinessLogicGraph.Node overviewNode(
-            String id, BusinessLogicGraph.NodeKind kind, String label) {
-        return new BusinessLogicGraph.Node(id, kind, label);
-    }
-
-    private static BusinessLogicGraph.Edge overviewEdge(
-            String from, String to, String outcome) {
-        return new BusinessLogicGraph.Edge(from + "-" + to + "-" + outcome, from, to, outcome);
     }
 
     private static Map<String, String> classFingerprints(
