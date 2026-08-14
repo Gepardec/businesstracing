@@ -177,7 +177,7 @@
 
 ### Task 5: Replace duplicate call gaps with generic boundary rules
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 4
 **Priority:** High
@@ -204,7 +204,7 @@
 - [x] The Keycloak overview has at most three visible, justified gap regions.
 - [x] Two live Keycloak diagrams are connected and contain no contradictory rule outcomes.
 - [x] Production code contains no Keycloak, Mega, reviewed label, method, or topology rule.
-- [ ] Pull-request CI passes.
+- [x] Pull-request CI passes.
 
 **Files to Modify:**
 
@@ -228,7 +228,7 @@
 - [x] Repository integrity gate.
 - [x] Keycloak static and live conformance proof.
 - [x] Mega and PetClinic external gates.
-- [ ] Full pull-request verification and hosted CI.
+- [x] Full pull-request verification and hosted CI.
 
 ## Implementation Order
 
@@ -241,7 +241,7 @@
 ## Progress Tracking
 
 - Total Tasks: 5
-- Completed: 4
-- In Progress: 1
+- Completed: 5
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

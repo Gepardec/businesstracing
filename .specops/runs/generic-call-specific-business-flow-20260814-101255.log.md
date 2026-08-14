@@ -55,3 +55,9 @@ Started at 2026-08-14T10:12:55Z.
 - External proof: Mega and PetClinic conformance pass.
 - Full local proof: `./scripts/verify-pr.sh` passes. PostgreSQL was skipped because no connection was configured.
 - Result: Hosted CI and manual non-Java review remain pending.
+
+### [11:17:35] Task 5: Complete
+
+- Published: Commit `e4118c6` on `codex/endpoint-business-tracing`; draft PR 27 updated.
+- Hosted proof: `pr-gate`, `mega`, `petclinic`, and `postgres` pass.
+- Result: Task 5 is complete. The specification stays open for the manual non-Java graph review.

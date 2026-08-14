@@ -2,8 +2,8 @@
 
 ## Summary
 
-All five implementation tasks pass local and live verification. The latest hosted CI run and the
-manual non-Java definition-of-done review are pending.
+All five implementation tasks pass local, live, and hosted verification. The manual non-Java
+definition-of-done review is pending.
 
 ## Phase 1 Context Summary
 
@@ -115,4 +115,15 @@ Local verification passes the focused engine and Spring suites, repository integ
 - Completed Task 5 with two new single-purpose production components and target-neutral synthetic fixtures.
 - Updated the static analyzer, runtime execution projector, Spring contract test, Keycloak assertions, documentation, and integrity checks.
 - Documented two deviations: a source-visible Spring rule replaces an old unsupported-call gap, and equivalent call-site nodes need an explicit-gap segment connector.
-- All focused, full, and external local gates pass. Hosted CI remains before the task can close.
+- All focused, full, external, and hosted gates pass.
+
+### Session 7 — Task 5 completed (2026-08-14)
+
+Published commit `e4118c6` to draft PR 27. Hosted `pr-gate`, `mega`, `petclinic`, and `postgres` jobs all pass. Task 5 is complete. The feature specification remains in implementation status only because the definition of done requires the user to validate one live graph without Java knowledge.
+
+## Phase 4 Verification Summary
+
+- Implementation evaluation passes with scores 9, 8, 8, and 9.
+- All Story 5 criteria and Task 5 checks pass.
+- The repository map and documentation are current.
+- The spec remains open for the manual non-Java graph review. No code or automated gate remains pending.
