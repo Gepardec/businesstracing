@@ -1,0 +1,56 @@
+{
+  "id": "self-runtime-tracing",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-14T08:37:34Z",
+  "updated": "2026-08-14T08:47:57Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": [
+    "self-dogfood-business-tracing",
+    "runtime-decision-path-capture",
+    "release-gate-timeout-budget"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-14T08:37:47Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 9,
+        "codeQuality": 9,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-14T08:47:57Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3600,
+    "filesChanged": 14,
+    "linesAdded": 1069,
+    "linesRemoved": 32,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 15,
+    "specDurationMinutes": 13
+  }
+}

@@ -364,5 +364,13 @@
     "version": 2,
     "author": "lucostus",
     "updated": "2026-08-12T07:09:21Z"
+  },
+  {
+    "id": "self-runtime-tracing",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-14T08:47:57Z"
   }
 ]

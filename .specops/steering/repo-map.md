@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-11T12:21:03Z"
-_sourceHash: "dad66adff01a31913236bb84b73d0d877faf776980ecb86e57ff49e93b55e491"
+_generatedAt: "2026-08-14T08:47:57Z"
+_sourceHash: "4a6f0fd3b23659ec082e55cb8715e2305b43063dd4f410e12b0d7437fdfbcc7e"
 ---
 
 ## Project Structure Map
@@ -166,7 +166,7 @@ fachtracing/
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (36 files)
+#### fachtracing-maven-plugin/ (37 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
@@ -181,6 +181,8 @@ fachtracing/
 - `src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java`
   - self-traced developer and business graph export policy
 - `src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java`
+- `src/test/java/at/gepardec/fachtracing/maven/SelfTracingRuntimeTest.java`
+  - executable two-pass self-tracing runtime contract
 - `src/test/resources/it/basic/` — external-style one-off and lifecycle Maven fixtures
 - `src/test/resources/it/reactor/` — two-module JPMS implementation-resolution fixture
 - `src/test/resources/it/annotation-processor/` — generated-Java analysis through both Maven goals

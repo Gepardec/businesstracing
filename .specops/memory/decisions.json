@@ -1090,6 +1090,36 @@
       "task": "Task 1",
       "date": "2026-08-11",
       "completedAt": "2026-08-11T09:40:22Z"
+    },
+    {
+      "specId": "self-runtime-tracing",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Generate activation before runtime self-capture",
+      "rationale": "The agent needs the completed probe plan and exact class fingerprints before it transforms the production policy.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:47:57Z"
+    },
+    {
+      "specId": "self-runtime-tracing",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Verify declared runtime evidence gaps",
+      "rationale": "Exact selected edges remain valid when the activation bundle explicitly says that a derived local predicate has no exact raw-argument evidence mapping.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:47:57Z"
+    },
+    {
+      "specId": "self-runtime-tracing",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Adapt Optional results as presence state",
+      "rationale": "An exact adapter records the business result without arbitrary object string conversion or a new production dependency.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:47:57Z"
     }
   ]
 }
