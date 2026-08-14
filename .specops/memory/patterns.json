@@ -13,8 +13,8 @@
     },
     {
       "category": "multi-format-projection",
-      "count": 2,
-      "pattern": "Resolve graph semantics once and keep text formats as deterministic dependency-free projections."
+      "count": 4,
+      "pattern": "Resolve graph semantics and classification once, then keep text formats as deterministic dependency-free projections that do not infer content."
     },
     {
       "category": "business-vocabulary-normalization",
@@ -28,7 +28,7 @@
     },
     {
       "category": "source-provenance",
-      "count": 5,
+      "count": 6,
       "pattern": "Keep source, module, and analysis-decision provenance outside business records, and verify files, binary fingerprints, and exact commit blobs before using external logic."
     },
     {
@@ -171,8 +171,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression"],
-      "count": 20
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "deterministic-self-analysis-audits"],
+      "count": 21
     },
     {
       "file": "docs/supported-java-constructs.md",
@@ -181,8 +181,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java",
-      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "hogajama-strict-aggregate-regression"],
-      "count": 3
+      "specs": ["explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "hogajama-strict-aggregate-regression", "deterministic-self-analysis-audits"],
+      "count": 4
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java",
+      "specs": ["generic-business-graph-projection", "deterministic-self-analysis-audits"],
+      "count": 2
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java",
@@ -217,8 +222,8 @@
     },
     {
       "file": "scripts/verify.sh",
-      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository", "fast-pr-ci-pipeline", "annotation-processor-output-analysis", "self-dogfood-business-tracing"],
-      "count": 8
+      "specs": ["reactor-wide-implementation-resolution", "jpms-reactor-source-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "ci-isolated-maven-repository", "fast-pr-ci-pipeline", "annotation-processor-output-analysis", "self-dogfood-business-tracing", "deterministic-self-analysis-audits"],
+      "count": 9
     },
     {
       "file": "scripts/verify-mega-backend.sh",
@@ -227,8 +232,8 @@
     },
     {
       "file": "fachtracing-maven-plugin/src/main/java/at/gepardec/fachtracing/maven/ProjectGraphGenerator.java",
-      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "self-dogfood-business-tracing", "explicit-opaque-library-boundaries", "developer-graph-json-schema"],
-      "count": 6
+      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "self-dogfood-business-tracing", "explicit-opaque-library-boundaries", "developer-graph-json-schema", "deterministic-self-analysis-audits"],
+      "count": 7
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BinaryTypeOriginResolver.java",
@@ -242,8 +247,8 @@
     },
     {
       "file": "fachtracing-maven-plugin/src/test/java/at/gepardec/fachtracing/maven/AnalyzeMojoTest.java",
-      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries", "hogajama-strict-aggregate-regression"],
-      "count": 6
+      "specs": ["maven-project-analysis", "maven-developer-graph-export", "reactor-wide-implementation-resolution", "annotation-processor-output-analysis", "explicit-opaque-library-boundaries", "hogajama-strict-aggregate-regression", "deterministic-self-analysis-audits"],
+      "count": 7
     },
     {
       "file": "fachtracing-maven-plugin/pom.xml",

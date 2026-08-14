@@ -14,6 +14,7 @@ import at.gepardec.fachtracing.business.BusinessGraphJsonSchema;
 import at.gepardec.fachtracing.business.BusinessGraphProjector;
 import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
 import at.gepardec.fachtracing.business.BusinessPlantUmlRenderer;
+import at.gepardec.fachtracing.developer.DecisionAuditMermaidRenderer;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
@@ -51,6 +52,7 @@ final class ProjectGraphGenerator {
     private final BusinessPlantUmlRenderer businessPlantUml = new BusinessPlantUmlRenderer();
     private final BusinessGraphJsonExporter businessJson = new BusinessGraphJsonExporter();
     private final BusinessGraphJsonSchema businessSchema = new BusinessGraphJsonSchema();
+    private final DecisionAuditMermaidRenderer decisionAuditMermaid = new DecisionAuditMermaidRenderer();
 
     ProjectGraphGenerator() {
         this(ExternalMethodContractProviders.load(ProjectGraphGenerator.class.getClassLoader()));
@@ -194,12 +196,15 @@ final class ProjectGraphGenerator {
             }
             String base = slug(graph.decisionLabel());
             if (slugCounts.get(base) > 1) base += "-" + graph.graphId().substring(0, 8);
-            var businessGraph = businessProjector.project(analysis);
+            var projection = businessProjector.projectWithAudit(analysis);
+            var businessGraph = projection.graph();
             String businessMermaidName = base + "-business.mmd";
             String businessPlantUmlName = base + "-business.puml";
             String businessJsonName = base + "-business.json";
             String mermaidName = base + "-structure.mmd";
             String plantUmlName = base + "-structure.puml";
+            String analysisAuditName = base + "-analysis-audit.mmd";
+            String projectionAuditName = base + "-projection-audit.mmd";
             String developerJsonName = base + "-developer.json";
             Files.writeString(outputDirectory.resolve(businessMermaidName),
                     businessMermaid.render(businessGraph), charset);
@@ -209,6 +214,10 @@ final class ProjectGraphGenerator {
                     businessJson.export(businessGraph), StandardCharsets.UTF_8);
             Files.writeString(outputDirectory.resolve(mermaidName), mermaid.structure(graph), charset);
             Files.writeString(outputDirectory.resolve(plantUmlName), plantUml.structure(graph), charset);
+            Files.writeString(outputDirectory.resolve(analysisAuditName),
+                    decisionAuditMermaid.analysis(analysis), charset);
+            Files.writeString(outputDirectory.resolve(projectionAuditName),
+                    decisionAuditMermaid.projection(projection), charset);
             index.append("- **").append(markdown(graph.decisionLabel())).append("** — ")
                     .append(graph.completeness()).append(" — ")
                     .append("[Business Mermaid](").append(businessMermaidName).append(") · ")
@@ -216,7 +225,9 @@ final class ProjectGraphGenerator {
                     .append("[Business JSON](").append(businessJsonName).append(")\n")
                     .append("  - Technical developer artifacts: ")
                     .append("[structure Mermaid](").append(mermaidName).append(") · ")
-                    .append("[structure PlantUML](").append(plantUmlName).append(')');
+                    .append("[structure PlantUML](").append(plantUmlName).append(") · ")
+                    .append("[analysis audit Mermaid](").append(analysisAuditName).append(") · ")
+                    .append("[projection audit Mermaid](").append(projectionAuditName).append(')');
             if (revision != null) {
                 Files.writeString(outputDirectory.resolve(developerJsonName),
                         developerJson.export(analysis, sourceCatalog),
@@ -241,6 +252,8 @@ final class ProjectGraphGenerator {
                 String name = file.getFileName().toString();
                 if (name.equals("index.md") || name.endsWith("-structure.mmd")
                         || name.endsWith("-structure.puml") || name.endsWith("-developer.json")
+                        || name.endsWith("-analysis-audit.mmd")
+                        || name.endsWith("-projection-audit.mmd")
                         || name.endsWith("-business.mmd") || name.endsWith("-business.puml")
                         || name.endsWith("-business.json") || name.equals(BUSINESS_SCHEMA_V1)
                         || name.equals(DEVELOPER_SCHEMA_V1)

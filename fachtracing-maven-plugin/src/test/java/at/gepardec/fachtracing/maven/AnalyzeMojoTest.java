@@ -299,6 +299,8 @@ public final class AnalyzeMojoTest {
         Path output = Files.createTempDirectory("fachtracing-plugin-output");
         Files.writeString(output.resolve("old-structure.mmd"), "stale");
         Files.writeString(output.resolve("old-business.json"), "stale");
+        Files.writeString(output.resolve("old-analysis-audit.mmd"), "stale");
+        Files.writeString(output.resolve("old-projection-audit.mmd"), "stale");
         Files.writeString(output.resolve("keep.txt"), "application-owned");
         var result = new ProjectGraphGenerator().generate(
                 List.of(FIXTURES.resolve("eligibility/EligibilityPolicy.java")), CLASSPATH,
@@ -308,6 +310,17 @@ public final class AnalyzeMojoTest {
         assert Files.exists(output.resolve("customer-eligibility-structure.puml"));
         assert Files.exists(output.resolve("customer-eligibility-business.mmd"));
         assert Files.exists(output.resolve("customer-eligibility-business.puml"));
+        Path analysisAudit = output.resolve("customer-eligibility-analysis-audit.mmd");
+        Path projectionAudit = output.resolve("customer-eligibility-projection-audit.mmd");
+        assert Files.exists(analysisAudit);
+        assert Files.exists(projectionAudit);
+        String analysisAuditText = Files.readString(analysisAudit);
+        String projectionAuditText = Files.readString(projectionAudit);
+        assert analysisAuditText.contains("EXCLUDED / NO_RESULT_EFFECT") : analysisAuditText;
+        assert analysisAuditText.contains("System.getProperty") : analysisAuditText;
+        assert projectionAuditText.contains("REMOVED / STRUCTURAL_ENTRY") : projectionAuditText;
+        assert projectionAuditText.contains("KEPT / BUSINESS_RULE") : projectionAuditText;
+        assert projectionAuditText.contains("REPLACED / TERMINAL_RESULT") : projectionAuditText;
         Path businessJson = output.resolve("customer-eligibility-business.json");
         Path businessSchema = output.resolve("fachtracing-business-graph-v1.schema.json");
         assert Files.exists(businessJson);
@@ -327,8 +340,12 @@ public final class AnalyzeMojoTest {
         String index = Files.readString(output.resolve("index.md"));
         assert index.contains("customer eligibility") : index;
         assert index.indexOf("Business Mermaid") < index.indexOf("Technical developer artifacts") : index;
+        assert index.contains("[analysis audit Mermaid](customer-eligibility-analysis-audit.mmd)") : index;
+        assert index.contains("[projection audit Mermaid](customer-eligibility-projection-audit.mmd)") : index;
         assert !Files.exists(output.resolve("old-structure.mmd"));
         assert !Files.exists(output.resolve("old-business.json"));
+        assert !Files.exists(output.resolve("old-analysis-audit.mmd"));
+        assert !Files.exists(output.resolve("old-projection-audit.mmd"));
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
     }
 
@@ -478,6 +495,8 @@ public final class AnalyzeMojoTest {
 
         Files.delete(output.resolve("guarded-approval-structure.mmd"));
         Files.delete(output.resolve("guarded-approval-structure.puml"));
+        Files.delete(output.resolve("guarded-approval-analysis-audit.mmd"));
+        Files.delete(output.resolve("guarded-approval-projection-audit.mmd"));
         Files.delete(output.resolve("guarded-approval-business.mmd"));
         Files.delete(output.resolve("guarded-approval-business.puml"));
         Files.delete(output.resolve("guarded-approval-business.json"));

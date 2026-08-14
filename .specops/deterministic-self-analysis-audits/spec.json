@@ -1,0 +1,71 @@
+{
+  "id": "deterministic-self-analysis-audits",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-14T09:13:23Z",
+  "updated": "2026-08-14T09:29:21Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "self-runtime-tracing",
+      "reason": "The production self-analysis gate supplies the proof path.",
+      "required": true
+    },
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "reason": "The completed analysis manifest supplies source decisions.",
+      "required": true
+    },
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "The completed business projector supplies the classification boundary.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "self-dogfood-business-tracing",
+    "maven-developer-graph-export"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-14T09:13:23Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 8,
+        "codeQuality": 8,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-14T09:25:55Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 5237,
+    "filesChanged": 22,
+    "linesAdded": 1298,
+    "linesRemoved": 59,
+    "tasksCompleted": 2,
+    "acceptanceCriteriaVerified": 26,
+    "specDurationMinutes": 13
+  }
+}

@@ -17,13 +17,17 @@ This command needs no plugin block. It writes these files for each decision:
 - `<decision>-business.json`
 - `<decision>-structure.mmd`
 - `<decision>-structure.puml`
+- `<decision>-analysis-audit.mmd`
+- `<decision>-projection-audit.mmd`
 - `fachtracing-business-graph-v1.schema.json`
 - `index.md`
 
 The business files contain only rules, actions, results, and explicit analysis gaps. They remove
 entry markers, loop mechanics, temporary calculations, raw Boolean branches, and route strings.
 The `*-structure.*` files are exact technical developer artifacts. Runtime correlation continues to
-use that exact graph.
+use that exact graph. The analysis audit explains why source constructs enter the exact graph. The
+projection audit explains why exact nodes stay in or leave the business graph. The tool creates both
+audits from recorded decisions without AI or a decision-specific diagram.
 
 ## Lifecycle analysis
 

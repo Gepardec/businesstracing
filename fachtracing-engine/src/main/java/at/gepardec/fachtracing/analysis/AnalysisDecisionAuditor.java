@@ -11,6 +11,8 @@ import java.util.Set;
 
 /** Finds graph-eligible source constructs that cannot affect the sliced result. */
 final class AnalysisDecisionAuditor {
+    private static final int SUBJECT_LIMIT = 160;
+
     private AnalysisDecisionAuditor() { }
 
     /** Returns the first excluded construct in each excluded source subtree. */
@@ -47,6 +49,13 @@ final class AnalysisDecisionAuditor {
             }
         }.scan(method.getBody(), null);
         return List.copyOf(excluded);
+    }
+
+    /** Returns a bounded one-line description of one source construct. */
+    static String subject(Tree tree) {
+        String value = tree.toString().replaceAll("\\s+", " ").strip();
+        if (value.length() <= SUBJECT_LIMIT) return value;
+        return value.substring(0, SUBJECT_LIMIT - 3).stripTrailing() + "...";
     }
 
     private static boolean graphEligible(Tree tree) {

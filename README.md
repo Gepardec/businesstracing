@@ -72,8 +72,10 @@ or stack trace.
 
 The default `*-business.mmd`, `*-business.puml`, and `*-business.json` files explain application
 behavior. Business JSON uses `fachtracing-business-graph/v1`; its generated JSON Schema uses Draft
-2020-12. The compatible `*-structure.*` files show the exact technical graph. Developer tools can
-also use the opt-in `fachtracing-developer-graph/v1` JSON data format with source data.
+2020-12. The compatible `*-structure.*` files show the exact technical graph. The default
+`*-analysis-audit.mmd` and `*-projection-audit.mmd` files show the recorded source-relevance and
+technical-to-business decisions. Developer tools can also use the opt-in
+`fachtracing-developer-graph/v1` JSON data format with source data.
 
 The Maven plugin writes `fachtracing-developer-graph-v1.schema.json` when developer JSON is enabled.
 Give the frontend developer the `*-developer.json` file and this schema file. The one V1 contract

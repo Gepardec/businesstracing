@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-14T08:47:57Z"
-_sourceHash: "4a6f0fd3b23659ec082e55cb8715e2305b43063dd4f410e12b0d7437fdfbcc7e"
+_generatedAt: "2026-08-14T09:29:00Z"
+_sourceHash: "966f81f30078cbad78be3a966174a016eac47b7ccbde5263a29365c45c40e6cf"
 ---
 
 ## Project Structure Map
@@ -62,7 +62,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (91 files)
+#### fachtracing-engine/ (94 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -113,6 +113,8 @@ fachtracing/
   - use-site local reaching definitions
 - `src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java`
   - exact-to-business graph projection
+- `src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjection.java`
+  - immutable business graph and final projection decisions
 - `src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java`
   - rejects technical vocabulary in business artifacts
 - `src/main/java/at/gepardec/fachtracing/business/BusinessGraphJsonExporter.java`
@@ -137,6 +139,8 @@ fachtracing/
   - `public final class DeveloperGraphExporter`
 - `src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphJsonSchema.java`
   - `public final class DeveloperGraphJsonSchema`
+- `src/main/java/at/gepardec/fachtracing/developer/DecisionAuditMermaidRenderer.java`
+  - deterministic analysis and projection audit formatting
 - `src/main/java/at/gepardec/fachtracing/mermaid/MermaidRenderer.java`
   - `public final class MermaidRenderer`
 - `src/main/java/at/gepardec/fachtracing/runtime/InvocationContext.java`

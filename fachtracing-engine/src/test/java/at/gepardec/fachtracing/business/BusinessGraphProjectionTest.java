@@ -18,6 +18,7 @@ public final class BusinessGraphProjectionTest {
         preservesIncompleteAnalysisAsBusinessGap();
         acceptsBusinessVocabularyThatContainsStructuralWords();
         rejectsTechnicalVocabulary();
+        recordsFinalProjectionDecisions();
         producesStableBusinessIdsForEquivalentExactGraphs();
         exportsAllFormatsWithOneTopology();
     }
@@ -163,6 +164,57 @@ public final class BusinessGraphProjectionTest {
                 assert expected.getMessage().contains(prohibited) : expected.getMessage();
             }
         }
+    }
+
+    private static void recordsFinalProjectionDecisions() {
+        BusinessDecisionGraph exact = graph("audit", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        node("derive", BusinessDecisionGraph.NodeKind.COMPUTATION, "derive repository flag"),
+                        node("rule", BusinessDecisionGraph.NodeKind.PREDICATE, "repository is configured"),
+                        node("orphan", BusinessDecisionGraph.NodeKind.COMPUTATION, "store audit copy"),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "derive", "next"),
+                        edge("e2", "derive", "rule", "next"),
+                        edge("e3", "rule", "stop", "true; returns enabled"),
+                        edge("e4", "rule", "stop", "false; returns disabled")),
+                List.of());
+
+        BusinessGraphProjection projection = new BusinessGraphProjector().projectWithAudit(analysis(exact));
+
+        List<BusinessGraphProjection.Decision> nodeDecisions = projection.decisions().stream()
+                .filter(decision -> decision.subjectKind() == BusinessGraphProjection.SubjectKind.NODE)
+                .toList();
+        assert nodeDecisions.size() == exact.nodes().size() : projection.decisions();
+        assertDecision(projection, "start", BusinessGraphProjection.Action.REMOVED,
+                BusinessGraphProjection.Reason.STRUCTURAL_ENTRY);
+        assertDecision(projection, "derive", BusinessGraphProjection.Action.REMOVED,
+                BusinessGraphProjection.Reason.TECHNICAL_CALCULATION);
+        assertDecision(projection, "rule", BusinessGraphProjection.Action.KEPT,
+                BusinessGraphProjection.Reason.BUSINESS_RULE);
+        assertDecision(projection, "orphan", BusinessGraphProjection.Action.REMOVED,
+                BusinessGraphProjection.Reason.UNREACHABLE);
+        assertDecision(projection, "stop", BusinessGraphProjection.Action.REMOVED,
+                BusinessGraphProjection.Reason.STRUCTURAL_OUTCOME);
+        assert projection.decisions().stream().filter(decision ->
+                        decision.subjectKind() == BusinessGraphProjection.SubjectKind.TERMINAL_EDGE)
+                .count() == 2 : projection.decisions();
+        assert projection.decisions().stream().filter(decision ->
+                        decision.reason() == BusinessGraphProjection.Reason.TERMINAL_RESULT)
+                .allMatch(decision -> decision.action() == BusinessGraphProjection.Action.REPLACED
+                        && decision.businessNodeIds().size() == 1) : projection.decisions();
+    }
+
+    private static void assertDecision(
+            BusinessGraphProjection projection,
+            String subjectId,
+            BusinessGraphProjection.Action action,
+            BusinessGraphProjection.Reason reason) {
+        assert projection.decisions().stream().anyMatch(decision ->
+                decision.subjectId().equals(subjectId)
+                        && decision.action() == action
+                        && decision.reason() == reason) : projection.decisions();
     }
 
     private static void producesStableBusinessIdsForEquivalentExactGraphs() {

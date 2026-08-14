@@ -470,3 +470,15 @@ analysis of the real Hogajama reactor reports `getAllDataMaxNumber` and
 `getAllWateringDataMaxNumber` as complete with exact Morphia, Commons Lang, and Commons Collections
 technical boundaries. The full pull-request gate passed with five complete Mega graphs, all Spring
 PetClinic expectations, and 5,000 load decisions with zero correctness failures.
+
+### deterministic-self-analysis-audits (feature) — 2026-08-14
+
+Completed both tasks. Fachtracing now records one final projection decision for every exact node
+and terminal result. Stable actions and reasons explain structural nodes, technical mechanics,
+business rules and actions, gaps, terminal replacements, and unreachable output. Source exclusions
+also have bounded one-line subjects.
+
+Maven writes an analysis audit Mermaid and a projection audit Mermaid for every analyzed decision.
+One generic formatter uses recorded data and contains no method-specific graph. The self gate proves
+current production classifications, checks that the formatter has no self-specific content, and
+compares two equal outputs. Focused contracts and the full repository gate passed.

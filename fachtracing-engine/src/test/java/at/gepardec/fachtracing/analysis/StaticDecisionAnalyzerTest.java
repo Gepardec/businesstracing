@@ -724,6 +724,8 @@ public final class StaticDecisionAnalyzerTest {
                         && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
                         && decision.constructKind().equals("METHOD_INVOCATION")
                         && decision.line() > 0
+                        && !decision.subject().isBlank()
+                        && decision.subject().length() <= 160
                         && decision.nodeIds().isEmpty()) : decisions;
 
         var incomplete = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");

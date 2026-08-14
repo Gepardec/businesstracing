@@ -25,25 +25,14 @@ fingerprints before the agent can transform a loaded class.
 
 ## The Traced Business Decision
 
-The source method has `@FachTracing("enable developer graph export")`. The checked static graph is:
+The source method has `@FachTracing("enable developer graph export")`. The static pass checks its
+current graph.
 
-```mermaid
-flowchart LR
-    n1(["Start"])
-    n2["derive has repository as repository url exists and not repository url is blank"]
-    n3["derive has template as source url template exists and not source url template is blank"]
-    n4{"has repository does not equal has template"}
-    n5["decision cannot continue"]
-    n6(["Stop"])
-    n7{"does not have repository"}
-    n1 --> n2
-    n2 --> n3
-    n3 --> n4
-    n4 -->|"true"| n5
-    n5 -->|"fails"| n6
-    n4 -->|"false"| n7
-    n7 -->|"true; returns optional empty"| n6
-    n7 -->|"false; returns optional of new developer output repository root repository url source url template"| n6
+The repository does not store a copy of this graph. The tool creates it from the current method.
+After the self-tracing command finishes, inspect the generated Mermaid:
+
+```sh
+cat target/fachtracing/enable-developer-graph-export-structure.mmd
 ```
 
 The graph has three paths:
@@ -79,16 +68,18 @@ converts it only to `present` or `empty`. The adapter does not call an applicati
 
 ## How the General Algorithm Works
 
-```mermaid
-flowchart LR
-    source["Annotated Java source"] --> maven["Maven reactor adapter"]
-    maven --> engine["Static analysis and business graph"]
-    engine --> activation["Activation bundle and class fingerprints"]
-    activation --> agent["Java agent and ASM probes"]
-    agent --> call["Production method call"]
-    call --> collector["Runtime collector"]
-    collector --> record["DecisionExecution"]
+The tool also creates two audit graphs. These graphs explain its algorithm for the analyzed method:
+
+```sh
+cat target/fachtracing/enable-developer-graph-export-analysis-audit.mmd
+cat target/fachtracing/enable-developer-graph-export-projection-audit.mmd
 ```
+
+The analysis audit relates each source construct to an `INCLUDED`, `EXCLUDED`, or `GAP` decision,
+its stable reason, and its exact graph nodes. The projection audit relates each exact node to a
+`KEPT`, `REMOVED`, or `REPLACED` decision, its stable reason, and its business graph nodes. The
+analyzer and projector record these facts. A generic Java formatter writes Mermaid. It does not
+use AI, network access, a method-specific label list, or a stored diagram body.
 
 1. The Maven adapter collects reactor source roots, output directories, dependencies, and external
    source boundaries.
@@ -140,6 +131,8 @@ The static pass writes these main files under `target/fachtracing`:
 
 - `enable-developer-graph-export-structure.mmd`;
 - `enable-developer-graph-export-structure.puml`;
+- `enable-developer-graph-export-analysis-audit.mmd`;
+- `enable-developer-graph-export-projection-audit.mmd`;
 - `index.md`; and
 - `activation.json`.
 

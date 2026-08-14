@@ -25,6 +25,11 @@ public final class BusinessGraphProjector {
 
     /** Projects one exact analysis result without changing that result. */
     public BusinessLogicGraph project(AnalysisManifest.AnalysisResult analysis) {
+        return projectWithAudit(analysis).graph();
+    }
+
+    /** Projects one exact result and records the final classification of each input. */
+    public BusinessGraphProjection projectWithAudit(AnalysisManifest.AnalysisResult analysis) {
         Objects.requireNonNull(analysis, "analysis");
         BusinessDecisionGraph exact = analysis.graph();
         String businessGraphId = businessGraphId(exact);
@@ -38,13 +43,15 @@ public final class BusinessGraphProjector {
                 .flatMap(loop -> loop.hiddenNodeIds().stream())
                 .collect(java.util.stream.Collectors.toSet());
 
+        var projectionsByExactId = new LinkedHashMap<String, NodeProjection>();
         var projectedByExactId = new LinkedHashMap<String, BusinessLogicGraph.Node>();
         for (int index = 0; index < exact.nodes().size(); index++) {
             BusinessDecisionGraph.DecisionNode node = exact.nodes().get(index);
-            BusinessLogicGraph.Node projected = projectNode(
+            NodeProjection projection = projectNode(
                     node, loops.get(node.nodeId()), hiddenLoopNodes, redundantPredicates,
                     businessGraphId, index);
-            if (projected != null) projectedByExactId.put(node.nodeId(), projected);
+            projectionsByExactId.put(node.nodeId(), projection);
+            if (projection.node() != null) projectedByExactId.put(node.nodeId(), projection.node());
         }
 
         var nodes = new ArrayList<>(projectedByExactId.values());
@@ -54,6 +61,7 @@ public final class BusinessGraphProjector {
                 .map(BusinessLogicGraph.Node::nodeId)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
         var targets = new ArrayList<Target>();
+        var terminalProjections = new ArrayList<TerminalProjection>();
         projectedByExactId.forEach((exactId, node) ->
                 targets.add(Target.exact(node.nodeId(), exactId)));
         for (int index = 0; index < exact.edges().size(); index++) {
@@ -61,15 +69,18 @@ public final class BusinessGraphProjector {
             BusinessDecisionGraph.DecisionNode target = exactNodes.get(edge.toNodeId());
             if (target == null || target.kind() != BusinessDecisionGraph.NodeKind.OUTCOME) continue;
             String id = opaqueId("result", businessGraphId, "terminal:" + index);
-            nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT,
-                    resultLabel(exact, edge, exactNodes, incoming)));
+            String label = resultLabel(exact, edge, exactNodes, incoming);
+            nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT, label));
             targets.add(Target.result(id, edge.fromNodeId(), edge.outcome()));
+            terminalProjections.add(new TerminalProjection(edge, id, terminalLabel(edge, exactNodes)));
         }
 
+        String fallbackId = null;
         if (nodes.isEmpty()) {
-            String id = opaqueId("result", businessGraphId, "empty");
-            nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT, "completed"));
-            targets.add(Target.result(id, exact.entryNodeId(), "returns completed"));
+            fallbackId = opaqueId("result", businessGraphId, "empty");
+            nodes.add(new BusinessLogicGraph.Node(
+                    fallbackId, BusinessLogicGraph.NodeKind.RESULT, "completed"));
+            targets.add(Target.result(fallbackId, exact.entryNodeId(), "returns completed"));
         }
 
         var entries = new LinkedHashSet<String>();
@@ -106,7 +117,39 @@ public final class BusinessGraphProjector {
                         ? BusinessLogicGraph.Completeness.COMPLETE
                         : BusinessLogicGraph.Completeness.INCOMPLETE);
         new BusinessLogicArtifactGuard().requireClean(graph);
-        return graph;
+        Set<String> finalNodeIds = graph.nodes().stream().map(BusinessLogicGraph.Node::nodeId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        var decisions = new ArrayList<BusinessGraphProjection.Decision>();
+        for (BusinessDecisionGraph.DecisionNode exactNode : exact.nodes()) {
+            NodeProjection projection = projectionsByExactId.get(exactNode.nodeId());
+            BusinessLogicGraph.Node businessNode = projection.node();
+            boolean reachable = businessNode != null && finalNodeIds.contains(businessNode.nodeId());
+            decisions.add(new BusinessGraphProjection.Decision(
+                    exactNode.nodeId(), BusinessGraphProjection.SubjectKind.NODE,
+                    exactNode.kind().name(), exactNode.businessLabel(),
+                    reachable ? BusinessGraphProjection.Action.KEPT : BusinessGraphProjection.Action.REMOVED,
+                    businessNode != null && !reachable
+                            ? BusinessGraphProjection.Reason.UNREACHABLE
+                            : projection.reason(),
+                    reachable ? List.of(businessNode.nodeId()) : List.of()));
+        }
+        for (TerminalProjection terminal : terminalProjections) {
+            boolean reachable = finalNodeIds.contains(terminal.businessNodeId());
+            decisions.add(new BusinessGraphProjection.Decision(
+                    terminal.edge().edgeId(), BusinessGraphProjection.SubjectKind.TERMINAL_EDGE,
+                    "TERMINAL_EDGE", terminal.label(),
+                    reachable ? BusinessGraphProjection.Action.REPLACED : BusinessGraphProjection.Action.REMOVED,
+                    reachable ? BusinessGraphProjection.Reason.TERMINAL_RESULT
+                            : BusinessGraphProjection.Reason.UNREACHABLE,
+                    reachable ? List.of(terminal.businessNodeId()) : List.of()));
+        }
+        if (fallbackId != null) {
+            decisions.add(new BusinessGraphProjection.Decision(
+                    businessGraphId + ":fallback", BusinessGraphProjection.SubjectKind.GRAPH,
+                    "GRAPH", exact.decisionLabel(), BusinessGraphProjection.Action.REPLACED,
+                    BusinessGraphProjection.Reason.COMPLETED_FALLBACK, List.of(fallbackId)));
+        }
+        return new BusinessGraphProjection(graph, decisions);
     }
 
     private static void walkBackward(
@@ -166,37 +209,57 @@ public final class BusinessGraphProjector {
                 edgeId, source.nodeId(), target.businessNodeId(), outcome));
     }
 
-    private static BusinessLogicGraph.Node projectNode(
+    private static NodeProjection projectNode(
             BusinessDecisionGraph.DecisionNode node,
             LoopProjection loop,
             Set<String> hiddenLoopNodes,
             Set<String> redundantPredicates,
             String businessGraphId,
             int nodeIndex) {
-        if (redundantPredicates.contains(node.nodeId())) return null;
-        if (hiddenLoopNodes.contains(node.nodeId()) && !businessEffectInsideLoop(node)) return null;
+        if (redundantPredicates.contains(node.nodeId())) {
+            return NodeProjection.removed(BusinessGraphProjection.Reason.REDUNDANT_RULE);
+        }
+        if (hiddenLoopNodes.contains(node.nodeId()) && !businessEffectInsideLoop(node)) {
+            return NodeProjection.removed(BusinessGraphProjection.Reason.LOOP_MECHANICS);
+        }
         if (loop != null) {
-            return new BusinessLogicGraph.Node(opaqueId("rule", businessGraphId, "node:" + nodeIndex),
-                    BusinessLogicGraph.NodeKind.RULE, loop.label());
+            return NodeProjection.kept(new BusinessLogicGraph.Node(
+                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.RULE, loop.label()),
+                    BusinessGraphProjection.Reason.LOOP_RULE);
         }
         String label = cleanLabel(node.businessLabel());
         return switch (node.kind()) {
-            case ENTRY, OUTCOME -> null;
-            case PREDICATE -> technicalPredicate(label) ? null : new BusinessLogicGraph.Node(
-                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
-                    BusinessLogicGraph.NodeKind.RULE, label);
-            case CHOICE -> technicalChoice(label) ? null : new BusinessLogicGraph.Node(
-                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
-                    BusinessLogicGraph.NodeKind.RULE, label);
-            case DISPATCH -> technicalDispatch(label) ? null : new BusinessLogicGraph.Node(
-                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
-                    BusinessLogicGraph.NodeKind.RULE, label);
-            case COMPUTATION -> technicalCalculation(label) ? null : new BusinessLogicGraph.Node(
-                    opaqueId("action", businessGraphId, "node:" + nodeIndex),
-                    BusinessLogicGraph.NodeKind.ACTION, label);
-            case COVERAGE_GAP -> new BusinessLogicGraph.Node(
+            case ENTRY -> NodeProjection.removed(BusinessGraphProjection.Reason.STRUCTURAL_ENTRY);
+            case OUTCOME -> NodeProjection.removed(BusinessGraphProjection.Reason.STRUCTURAL_OUTCOME);
+            case PREDICATE -> technicalPredicate(label)
+                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_PREDICATE)
+                    : NodeProjection.kept(new BusinessLogicGraph.Node(
+                            opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                            BusinessLogicGraph.NodeKind.RULE, label),
+                            BusinessGraphProjection.Reason.BUSINESS_RULE);
+            case CHOICE -> technicalChoice(label)
+                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_CHOICE)
+                    : NodeProjection.kept(new BusinessLogicGraph.Node(
+                            opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                            BusinessLogicGraph.NodeKind.RULE, label),
+                            BusinessGraphProjection.Reason.BUSINESS_RULE);
+            case DISPATCH -> technicalDispatch(label)
+                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_DISPATCH)
+                    : NodeProjection.kept(new BusinessLogicGraph.Node(
+                            opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                            BusinessLogicGraph.NodeKind.RULE, label),
+                            BusinessGraphProjection.Reason.BUSINESS_RULE);
+            case COMPUTATION -> technicalCalculation(label)
+                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_CALCULATION)
+                    : NodeProjection.kept(new BusinessLogicGraph.Node(
+                            opaqueId("action", businessGraphId, "node:" + nodeIndex),
+                            BusinessLogicGraph.NodeKind.ACTION, label),
+                            BusinessGraphProjection.Reason.BUSINESS_ACTION);
+            case COVERAGE_GAP -> NodeProjection.kept(new BusinessLogicGraph.Node(
                     opaqueId("gap", businessGraphId, "node:" + nodeIndex),
-                    BusinessLogicGraph.NodeKind.GAP, GAP_LABEL);
+                    BusinessLogicGraph.NodeKind.GAP, GAP_LABEL),
+                    BusinessGraphProjection.Reason.COVERAGE_GAP);
         };
     }
 
@@ -407,6 +470,16 @@ public final class BusinessGraphProjector {
         return cleanLabel(value);
     }
 
+    private static String terminalLabel(
+            BusinessDecisionGraph.DecisionEdge terminal,
+            Map<String, BusinessDecisionGraph.DecisionNode> nodes) {
+        BusinessDecisionGraph.DecisionNode source = nodes.get(terminal.fromNodeId());
+        BusinessDecisionGraph.DecisionNode target = nodes.get(terminal.toNodeId());
+        String sourceLabel = source == null ? terminal.fromNodeId() : source.businessLabel();
+        String targetLabel = target == null ? terminal.toNodeId() : target.businessLabel();
+        return sourceLabel + " -> " + targetLabel + " / " + terminal.outcome();
+    }
+
     private static boolean technicalResponse(String value) {
         return value.startsWith("redirect:") || value.startsWith("forward:")
                 || value.startsWith("views ") || value.startsWith("view ") || value.contains("/");
@@ -567,6 +640,29 @@ public final class BusinessGraphProjector {
     }
 
     private record LoopProjection(String label, Set<String> hiddenNodeIds) { }
+
+    private record NodeProjection(
+            BusinessLogicGraph.Node node,
+            BusinessGraphProjection.Reason reason) {
+        private NodeProjection {
+            Objects.requireNonNull(reason, "reason");
+        }
+
+        private static NodeProjection kept(
+                BusinessLogicGraph.Node node,
+                BusinessGraphProjection.Reason reason) {
+            return new NodeProjection(Objects.requireNonNull(node, "node"), reason);
+        }
+
+        private static NodeProjection removed(BusinessGraphProjection.Reason reason) {
+            return new NodeProjection(null, reason);
+        }
+    }
+
+    private record TerminalProjection(
+            BusinessDecisionGraph.DecisionEdge edge,
+            String businessNodeId,
+            String label) { }
 
     private record Target(
             String businessNodeId,

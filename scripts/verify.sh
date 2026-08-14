@@ -29,6 +29,7 @@ JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.model.ApiModelTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.analysis.StaticDecisionAnalyzerTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.business.BusinessGraphProjectionTest
+"$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.developer.DecisionAuditMermaidRendererTest
 SPRING_DEPENDENCIES=$(cat target/verification-classpaths/spring.txt)
 SPRING_CP="$CP:fachtracing-spring/target/classes:fachtracing-spring/target/test-classes:$SPRING_DEPENDENCIES"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$SPRING_CP" at.gepardec.fachtracing.spring.SpringMethodContractProviderTest
@@ -54,6 +55,8 @@ mvn -q -f "$FIXTURE/pom-command.xml" clean compile \
   at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze
 test -f "$FIXTURE/target/fachtracing/approve-application-structure.mmd"
 test -f "$FIXTURE/target/fachtracing/approve-application-structure.puml"
+test -f "$FIXTURE/target/fachtracing/approve-application-analysis-audit.mmd"
+test -f "$FIXTURE/target/fachtracing/approve-application-projection-audit.mmd"
 test -f "$FIXTURE/target/fachtracing/index.md"
 mvn -q -f "$FIXTURE/pom.xml" clean process-classes
 test -f "$FIXTURE/target/fachtracing/approve-application-structure.mmd"

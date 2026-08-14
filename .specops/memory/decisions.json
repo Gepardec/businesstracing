@@ -1120,6 +1120,36 @@
       "task": "Task 1",
       "date": "2026-08-14",
       "completedAt": "2026-08-14T08:47:57Z"
+    },
+    {
+      "specId": "deterministic-self-analysis-audits",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Record final projection facts after reachability cleanup",
+      "rationale": "The audit must explain the graph that users receive.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T09:27:16Z"
+    },
+    {
+      "specId": "deterministic-self-analysis-audits",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Keep classification outside the Mermaid formatter",
+      "rationale": "The analyzer and projector know the decision reason; the formatter must not infer or use AI.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T09:27:16Z"
+    },
+    {
+      "specId": "deterministic-self-analysis-audits",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Generate audit files for every analyzed decision",
+      "rationale": "Each build must explain current output without an opt-in or a stored diagram.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T09:27:16Z"
     }
   ]
 }
