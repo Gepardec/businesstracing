@@ -17,13 +17,18 @@ This command needs no plugin block. It writes these files for each decision:
 - `<decision>-business.json`
 - `<decision>-structure.mmd`
 - `<decision>-structure.puml`
+- `<decision>-analysis-audit.mmd`
+- `<decision>-projection-audit.mmd`
 - `fachtracing-business-graph-v1.schema.json`
 - `index.md`
 
 The business files contain only rules, actions, results, and explicit analysis gaps. They remove
 entry markers, loop mechanics, temporary calculations, raw Boolean branches, and route strings.
-The `*-structure.*` files are exact technical developer artifacts. Runtime correlation continues to
-use that exact graph.
+The `*-structure.*` files are exact technical developer artifacts. The analysis audit groups the
+recorded source-inclusion decisions. The projection audit groups the recorded keep, remove, and
+replace decisions that create the final business graph. Counts and examples come from the current
+analysis. The tool uses no AI and no application-specific diagram. Runtime correlation continues
+to use the exact graph.
 
 ## Select a method without an annotation
 

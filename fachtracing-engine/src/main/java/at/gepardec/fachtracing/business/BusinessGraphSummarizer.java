@@ -15,19 +15,29 @@ public final class BusinessGraphSummarizer {
 
     /** Collapses connected gap regions and behaviorally equivalent states. */
     public BusinessLogicGraph summarize(BusinessLogicGraph graph) {
-        Objects.requireNonNull(graph, "graph");
-        new BusinessLogicArtifactGuard().requireClean(graph);
-        BusinessLogicGraph collapsed = collapseGapRegions(graph);
-        BusinessLogicGraph summarized = mergeEquivalentStates(collapsed);
-        new BusinessLogicArtifactGuard().requireClean(summarized);
-        return summarized;
+        return summarizeTraceable(graph).graph();
     }
 
-    private static BusinessLogicGraph collapseGapRegions(BusinessLogicGraph graph) {
+    /** Summarizes a graph and maps each input node to its final representative. */
+    public Summary summarizeTraceable(BusinessLogicGraph graph) {
+        Objects.requireNonNull(graph, "graph");
+        new BusinessLogicArtifactGuard().requireClean(graph);
+        Rewrite collapsed = collapseGapRegions(graph);
+        Rewrite summarized = mergeEquivalentStates(collapsed.graph());
+        var finalNodeIds = new LinkedHashMap<String, String>();
+        graph.nodes().forEach(node -> {
+            String collapsedId = collapsed.representativeNodeIds().get(node.nodeId());
+            finalNodeIds.put(node.nodeId(), summarized.representativeNodeIds().get(collapsedId));
+        });
+        new BusinessLogicArtifactGuard().requireClean(summarized.graph());
+        return new Summary(summarized.graph(), finalNodeIds);
+    }
+
+    private static Rewrite collapseGapRegions(BusinessLogicGraph graph) {
         var gapIds = new LinkedHashSet<String>();
         graph.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
                 .map(BusinessLogicGraph.Node::nodeId).forEach(gapIds::add);
-        if (gapIds.size() < 2) return graph;
+        if (gapIds.size() < 2) return rewrite(graph, identityMapping(graph));
 
         var parents = new LinkedHashMap<String, String>();
         gapIds.forEach(id -> parents.put(id, id));
@@ -48,7 +58,7 @@ public final class BusinessGraphSummarizer {
         return rewrite(graph, mapping);
     }
 
-    private static BusinessLogicGraph mergeEquivalentStates(BusinessLogicGraph graph) {
+    private static Rewrite mergeEquivalentStates(BusinessLogicGraph graph) {
         Map<String, Integer> partitions = initialPartitions(graph);
         while (true) {
             var signatures = new LinkedHashMap<String, Integer>();
@@ -95,11 +105,11 @@ public final class BusinessGraphSummarizer {
         return node.kind() + "\u0000" + node.label() + "\u0000" + String.join("\u0001", outgoing);
     }
 
-    private static BusinessLogicGraph rewrite(
+    private static Rewrite rewrite(
             BusinessLogicGraph graph, Map<String, String> representativeByNodeId) {
         boolean unchanged = representativeByNodeId.entrySet().stream()
                 .allMatch(entry -> entry.getKey().equals(entry.getValue()));
-        if (unchanged) return graph;
+        if (unchanged) return new Rewrite(graph, Map.copyOf(representativeByNodeId));
 
         var retainedNodeIds = new LinkedHashSet<>(representativeByNodeId.values());
         List<BusinessLogicGraph.Node> nodes = graph.nodes().stream()
@@ -118,9 +128,10 @@ public final class BusinessGraphSummarizer {
                 edges.add(new BusinessLogicGraph.Edge(edge.edgeId(), from, to, edge.outcome()));
             }
         }
-        return new BusinessLogicGraph(
+        BusinessLogicGraph rewritten = new BusinessLogicGraph(
                 graph.graphId(), graph.version(), graph.decisionLabel(), List.copyOf(entries),
                 nodes, List.copyOf(edges), graph.completeness());
+        return new Rewrite(rewritten, Map.copyOf(representativeByNodeId));
     }
 
     private static LinkedHashMap<String, String> identityMapping(BusinessLogicGraph graph) {
@@ -146,4 +157,25 @@ public final class BusinessGraphSummarizer {
         String secondRoot = find(parents, second);
         if (!firstRoot.equals(secondRoot)) parents.put(secondRoot, firstRoot);
     }
+
+    /** One summarized graph plus original-to-final node identity. */
+    public record Summary(
+            BusinessLogicGraph graph,
+            Map<String, String> finalNodeIdsByInputNodeId) {
+        /** Creates one immutable summary result. */
+        public Summary {
+            graph = Objects.requireNonNull(graph, "graph");
+            finalNodeIdsByInputNodeId = Map.copyOf(Objects.requireNonNull(
+                    finalNodeIdsByInputNodeId, "finalNodeIdsByInputNodeId"));
+            var finalNodeIds = new HashSet<String>();
+            graph.nodes().forEach(node -> finalNodeIds.add(node.nodeId()));
+            if (!finalNodeIds.containsAll(finalNodeIdsByInputNodeId.values())) {
+                throw new IllegalArgumentException("summary mapping must reference final graph nodes");
+            }
+        }
+    }
+
+    private record Rewrite(
+            BusinessLogicGraph graph,
+            Map<String, String> representativeNodeIds) { }
 }

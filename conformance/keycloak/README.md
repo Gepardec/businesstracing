@@ -3,10 +3,10 @@
 This example traces the pinned Keycloak user-search endpoint without changing Keycloak source. It
 generates a non-technical Mermaid graph and a runtime activation file for `search users`.
 
-The harness creates the Mermaid graph from the generic business projection of the endpoint
-analysis. It checks required rule anchors in both the exact and projected graphs. These anchors are
-assertions only; they do not supply nodes or edges to the diagram. The runtime activation keeps the
-exact graph, so each called endpoint still records its actual path.
+The harness creates all Mermaid files from the endpoint analysis and generic projection. It checks
+required rule anchors in both the exact and projected graphs. These anchors are assertions only;
+they do not supply nodes or edges to a diagram. The runtime activation keeps the exact graph, so
+each called endpoint still records its actual path.
 
 ## Generate the graph and activation
 
@@ -31,7 +31,13 @@ The command writes these disposable files under `conformance/keycloak/target/gen
 
 - `search-users-business.mmd`: the generated summarized non-technical overview.
 - `search-users-evaluated-example.mmd`: one concise successful path selected from the analyzed graph.
+- `search-users-analysis-audit.mmd`: grouped source-inclusion decisions and exact node kinds.
+- `search-users-projection-audit.mmd`: grouped keep, remove, and replace decisions that create the
+  final business graph.
 - `activation.json`: exact probes and class fingerprints for the pinned build.
+
+The two audit diagrams include current counts and bounded examples. The renderer reads recorded
+decisions. It contains no Keycloak labels or fixed Keycloak topology and uses no AI.
 
 The evaluated example is not a fixed reviewed diagram and is not a recorded HTTP call. The harness
 finds a successful exact path in the generated graph, creates exact edge evidence for that path, and

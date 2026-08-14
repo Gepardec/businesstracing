@@ -22,6 +22,7 @@ public final class BusinessGraphProjectionTest {
         removesJavaExpressionsFromBusinessProjection();
         removesTechnicalDataBuildingFromBusinessProjection();
         preservesTraceabilityAcrossHiddenExactNodes();
+        recordsFinalProjectionDecisions();
         collapsesConnectedGapRegionsAndEquivalentStates();
         selectsDifferentBusinessFlowsForDifferentExecutions();
         showsOnlyGapsOnTheSelectedPath();
@@ -310,6 +311,69 @@ public final class BusinessGraphProjectionTest {
                 .equals(List.of(List.of("e6"))) : projection;
     }
 
+    private static void recordsFinalProjectionDecisions() {
+        BusinessDecisionGraph exact = graph("application review", BusinessDecisionGraph.Completeness.INCOMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        node("derive", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "derive temporary review value"),
+                        node("rule", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "application needs manual review"),
+                        node("gap-a", BusinessDecisionGraph.NodeKind.COVERAGE_GAP,
+                                "analysis incomplete: first external review rule"),
+                        node("gap-b", BusinessDecisionGraph.NodeKind.COVERAGE_GAP,
+                                "analysis incomplete: second external review rule"),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "derive", "next"),
+                        edge("e2", "derive", "rule", "next"),
+                        edge("e3", "rule", "gap-a", "true"),
+                        edge("e4", "gap-a", "gap-b", "unresolved"),
+                        edge("e5", "gap-b", "stop", "returns pending review"),
+                        edge("e6", "rule", "stop", "false; returns accepted")),
+                List.of(
+                        new BusinessDecisionGraph.CoverageGap("gap-a", "first external review rule"),
+                        new BusinessDecisionGraph.CoverageGap("gap-b", "second external review rule")));
+        var projector = new BusinessGraphProjector();
+
+        BusinessGraphProjection raw = projector.projectTraceable(exact);
+        BusinessGraphAudit audit = projector.projectWithAudit(analysis(exact));
+
+        assert raw.decisions().stream().filter(decision ->
+                decision.subjectKind() == BusinessGraphProjection.SubjectKind.NODE).count()
+                == exact.nodes().size() : raw.decisions();
+        assert raw.decisions().stream().anyMatch(decision ->
+                decision.sourceLabel().equals("Start")
+                        && decision.action() == BusinessGraphProjection.Action.REMOVED
+                        && decision.reason() == BusinessGraphProjection.Reason.STRUCTURAL_ENTRY)
+                : raw.decisions();
+        assert raw.decisions().stream().anyMatch(decision ->
+                decision.sourceLabel().equals("derive temporary review value")
+                        && decision.reason() == BusinessGraphProjection.Reason.TECHNICAL_CALCULATION)
+                : raw.decisions();
+        assert raw.decisions().stream().anyMatch(decision ->
+                decision.sourceLabel().equals("application needs manual review")
+                        && decision.action() == BusinessGraphProjection.Action.KEPT
+                        && decision.reason() == BusinessGraphProjection.Reason.BUSINESS_RULE)
+                : raw.decisions();
+        assert raw.decisions().stream().filter(decision ->
+                decision.subjectKind() == BusinessGraphProjection.SubjectKind.TERMINAL_EDGE
+                        && decision.action() == BusinessGraphProjection.Action.REPLACED
+                        && decision.reason() == BusinessGraphProjection.Reason.TERMINAL_RESULT)
+                .count() == 2 : raw.decisions();
+        List<BusinessGraphProjection.Decision> gapDecisions = audit.decisions().stream()
+                .filter(decision -> decision.reason() == BusinessGraphProjection.Reason.COVERAGE_GAP)
+                .toList();
+        assert gapDecisions.size() == 2 : gapDecisions;
+        assert gapDecisions.getFirst().businessNodeIds()
+                .equals(gapDecisions.getLast().businessNodeIds()) : gapDecisions;
+        assert audit.graph().nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
+                .count() == 1 : audit;
+        var finalNodeIds = audit.graph().nodes().stream().map(BusinessLogicGraph.Node::nodeId).toList();
+        assert audit.decisions().stream().flatMap(decision -> decision.businessNodeIds().stream())
+                .allMatch(finalNodeIds::contains) : audit;
+    }
+
     private static void collapsesConnectedGapRegionsAndEquivalentStates() {
         var graph = new BusinessLogicGraph("summary", 1, "fulfil order", List.of("rule-a", "rule-b"),
                 List.of(
@@ -331,7 +395,8 @@ public final class BusinessGraphProjectionTest {
                         businessEdge("e6", "gap-c", "result", "")),
                 BusinessLogicGraph.Completeness.INCOMPLETE);
 
-        BusinessLogicGraph summary = new BusinessGraphSummarizer().summarize(graph);
+        BusinessGraphSummarizer.Summary traced = new BusinessGraphSummarizer().summarizeTraceable(graph);
+        BusinessLogicGraph summary = traced.graph();
 
         assert summary.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
                 .count() == 1 : summary;
@@ -346,6 +411,12 @@ public final class BusinessGraphProjectionTest {
                 && edge.toNodeId().equals(gap) && edge.outcome().equals("yes")) : summary.edges();
         assert summary.edges().stream().anyMatch(edge -> edge.fromNodeId().equals(gap)
                 && edge.toNodeId().equals("result")) : summary.edges();
+        assert traced.finalNodeIdsByInputNodeId().get("rule-a")
+                .equals(traced.finalNodeIdsByInputNodeId().get("rule-b")) : traced;
+        assert traced.finalNodeIdsByInputNodeId().get("gap-a")
+                .equals(traced.finalNodeIdsByInputNodeId().get("gap-b")) : traced;
+        assert traced.finalNodeIdsByInputNodeId().get("gap-a")
+                .equals(traced.finalNodeIdsByInputNodeId().get("gap-c")) : traced;
     }
 
     private static void selectsDifferentBusinessFlowsForDifferentExecutions() {

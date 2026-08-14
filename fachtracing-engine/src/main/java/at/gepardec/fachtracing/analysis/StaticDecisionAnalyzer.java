@@ -1214,7 +1214,7 @@ public final class StaticDecisionAnalyzer {
                     builder.addAnalysisDecision(
                             AnalysisManifest.AnalysisAction.EXCLUDED,
                             AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT,
-                            mapping(location, tree), List.of(), ""));
+                            mapping(location, tree), List.of(), AnalysisDecisionAuditor.subject(tree)));
             var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
                     unknownResultEffects, predecessor);
             flow.scan(new TreePath(location.path(), location.method().getBody()), null);

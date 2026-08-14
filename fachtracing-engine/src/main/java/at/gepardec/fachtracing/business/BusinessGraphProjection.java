@@ -14,7 +14,18 @@ public record BusinessGraphProjection(
         BusinessLogicGraph graph,
         Map<String, String> businessNodeIdsByExactNodeId,
         Map<String, String> businessResultNodeIdsByExactEdgeId,
-        Map<String, List<List<String>>> exactEdgePathsByBusinessEdgeId) {
+        Map<String, List<List<String>>> exactEdgePathsByBusinessEdgeId,
+        List<Decision> decisions) {
+
+    /** Compatibility constructor for projections created before decision audit was available. */
+    public BusinessGraphProjection(
+            BusinessLogicGraph graph,
+            Map<String, String> businessNodeIdsByExactNodeId,
+            Map<String, String> businessResultNodeIdsByExactEdgeId,
+            Map<String, List<List<String>>> exactEdgePathsByBusinessEdgeId) {
+        this(graph, businessNodeIdsByExactNodeId, businessResultNodeIdsByExactEdgeId,
+                exactEdgePathsByBusinessEdgeId, List.of());
+    }
 
     /** Creates one immutable and internally consistent projection. */
     public BusinessGraphProjection {
@@ -24,6 +35,7 @@ public record BusinessGraphProjection(
         businessResultNodeIdsByExactEdgeId = immutableTextMap(
                 businessResultNodeIdsByExactEdgeId, "exact edge ID", "business result node ID");
         exactEdgePathsByBusinessEdgeId = immutablePaths(exactEdgePathsByBusinessEdgeId);
+        decisions = List.copyOf(Objects.requireNonNull(decisions, "decisions"));
 
         var nodeIds = new HashSet<String>();
         graph.nodes().forEach(node -> nodeIds.add(node.nodeId()));
@@ -40,6 +52,64 @@ public record BusinessGraphProjection(
         graph.edges().forEach(edge -> edgeIds.add(edge.edgeId()));
         if (!edgeIds.equals(exactEdgePathsByBusinessEdgeId.keySet())) {
             throw new IllegalArgumentException("each business edge must have exact path traceability");
+        }
+        for (Decision decision : decisions) {
+            if (!nodeIds.containsAll(decision.businessNodeIds())) {
+                throw new IllegalArgumentException("projection decision must reference graph nodes");
+            }
+        }
+    }
+
+    /** Identifies the exact input type for one projection decision. */
+    public enum SubjectKind { NODE, TERMINAL_EDGE, GRAPH }
+
+    /** States how the projection treated one exact input. */
+    public enum Action { KEPT, REMOVED, REPLACED }
+
+    /** Gives the stable rule that caused one projection action. */
+    public enum Reason {
+        STRUCTURAL_ENTRY,
+        STRUCTURAL_OUTCOME,
+        REDUNDANT_RULE,
+        LOOP_MECHANICS,
+        LOOP_RULE,
+        TECHNICAL_PREDICATE,
+        TECHNICAL_CHOICE,
+        TECHNICAL_DISPATCH,
+        TECHNICAL_CALCULATION,
+        BUSINESS_RULE,
+        BUSINESS_ACTION,
+        COVERAGE_GAP,
+        TERMINAL_RESULT,
+        COMPLETED_FALLBACK,
+        UNREACHABLE
+    }
+
+    /** Explains one exact-to-business projection decision. */
+    public record Decision(
+            String subjectId,
+            SubjectKind subjectKind,
+            String sourceKind,
+            String sourceLabel,
+            Action action,
+            Reason reason,
+            List<String> businessNodeIds) {
+        /** Creates one immutable developer-only decision. */
+        public Decision {
+            subjectId = requireText(subjectId, "subjectId");
+            Objects.requireNonNull(subjectKind, "subjectKind");
+            sourceKind = requireText(sourceKind, "sourceKind");
+            sourceLabel = requireText(sourceLabel, "sourceLabel");
+            Objects.requireNonNull(action, "action");
+            Objects.requireNonNull(reason, "reason");
+            businessNodeIds = List.copyOf(Objects.requireNonNull(
+                    businessNodeIds, "businessNodeIds"));
+            if (action == Action.REMOVED && !businessNodeIds.isEmpty()) {
+                throw new IllegalArgumentException("removed decisions cannot reference business nodes");
+            }
+            if (action != Action.REMOVED && businessNodeIds.isEmpty()) {
+                throw new IllegalArgumentException("kept and replaced decisions must reference business nodes");
+            }
         }
     }
 

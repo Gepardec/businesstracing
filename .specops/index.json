@@ -1,5 +1,13 @@
 [
   {
+    "id": "explainable-generated-mermaid-audits",
+    "type": "feature",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-14T11:00:24Z"
+  },
+  {
     "id": "generic-call-specific-business-flow",
     "type": "feature",
     "status": "implementing",

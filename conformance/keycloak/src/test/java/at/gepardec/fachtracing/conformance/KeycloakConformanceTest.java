@@ -9,6 +9,7 @@ import at.gepardec.fachtracing.business.BusinessGraphProjector;
 import at.gepardec.fachtracing.business.BusinessExecutionGraphProjector;
 import at.gepardec.fachtracing.business.BusinessLogicArtifactGuard;
 import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
+import at.gepardec.fachtracing.developer.DecisionAuditMermaidRenderer;
 import at.gepardec.fachtracing.model.BusinessLogicGraph;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
@@ -63,7 +64,9 @@ public final class KeycloakConformanceTest {
         assert new BusinessArtifactGuard().violations(analysis.graph()).isEmpty()
                 : new BusinessArtifactGuard().violations(analysis.graph());
 
-        var fullBusinessGraph = new BusinessGraphProjector().project(analysis);
+        var businessProjector = new BusinessGraphProjector();
+        var projectionAudit = businessProjector.projectWithAudit(analysis);
+        var fullBusinessGraph = projectionAudit.graph();
         new BusinessLogicArtifactGuard().requireClean(fullBusinessGraph);
         List<String> exactLabels = analysis.graph().nodes().stream()
                 .map(node -> node.businessLabel().toLowerCase(java.util.Locale.ROOT)).toList();
@@ -97,6 +100,25 @@ public final class KeycloakConformanceTest {
         assert !businessDiagram.contains("org.keycloak") : businessDiagram;
         assert !businessDiagram.contains("UsersResource") : businessDiagram;
         assert !businessDiagram.contains(".java") : businessDiagram;
+        var auditRenderer = new DecisionAuditMermaidRenderer();
+        String analysisAudit = auditRenderer.analysis(analysis);
+        String projectionAuditDiagram = auditRenderer.projection(projectionAudit);
+        assert analysisAudit.equals(auditRenderer.analysis(analysis)) : analysisAudit;
+        assert projectionAuditDiagram.equals(auditRenderer.projection(projectionAudit))
+                : projectionAuditDiagram;
+        assert analysisAudit.contains("UsersResource.java") : analysisAudit;
+        assert analysisAudit.contains("INCLUDED /") : analysisAudit;
+        assert analysisAudit.contains("Exact result-relevant graph") : analysisAudit;
+        assert analysisAudit.contains("PREDICATE") : analysisAudit;
+        for (String required : List.of(
+                "REMOVED / STRUCTURAL_ENTRY",
+                "REMOVED / TECHNICAL_CALCULATION",
+                "KEPT / BUSINESS_RULE",
+                "KEPT / COVERAGE_GAP",
+                "REPLACED / TERMINAL_RESULT")) {
+            assert projectionAuditDiagram.contains(required)
+                    : "projection audit category is absent: " + required + "\n" + projectionAuditDiagram;
+        }
 
         DecisionExecution evaluatedExecution = successfulExecution(analysis.graph());
         BusinessLogicGraph evaluatedFlow = new BusinessExecutionGraphProjector()
@@ -115,6 +137,8 @@ public final class KeycloakConformanceTest {
         Files.createDirectories(output);
         Files.writeString(output.resolve("search-users-business.mmd"), businessDiagram);
         Files.writeString(output.resolve("search-users-evaluated-example.mmd"), evaluatedDiagram);
+        Files.writeString(output.resolve("search-users-analysis-audit.mmd"), analysisAudit);
+        Files.writeString(output.resolve("search-users-projection-audit.mmd"), projectionAuditDiagram);
         var bundle = new RuntimeActivationBundle(
                 "keycloak-eba869ee597b933efc8fa2c84713db9e6c0983cf",
                 "-javaagent:fachtracing-agent-0.1.0-rc.1.jar",

@@ -1,0 +1,52 @@
+{
+  "id": "explainable-generated-mermaid-audits",
+  "type": "feature",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-14T11:00:24Z",
+  "updated": "2026-08-14T11:00:24Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "explainable-relevance-and-polymorphic-dispatch",
+      "reason": "The analysis manifest supplies recorded source decisions.",
+      "required": true
+    },
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "The projector supplies the business classification boundary.",
+      "required": true
+    },
+    {
+      "specId": "generic-call-specific-business-flow",
+      "reason": "The active Keycloak branch supplies runtime traceability and summarized business output.",
+      "required": false
+    }
+  ],
+  "relatedSpecs": [
+    "maven-developer-graph-export",
+    "configured-endpoint-business-tracing",
+    "generic-call-specific-business-flow"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-14T11:00:24Z"
+    }
+  }
+}
