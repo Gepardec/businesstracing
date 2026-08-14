@@ -173,17 +173,75 @@
 - [x] Mega external conformance gate.
 - [x] Full pull-request verification and hosted CI.
 
+---
+
+### Task 5: Replace duplicate call gaps with generic boundary rules
+
+**Status:** In Progress
+**Estimated Effort:** L
+**Dependencies:** Task 4
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:** Add target-neutral rules for source-visible call boundaries, nested binary owners, lazy callback actions, and explicit caught outcomes. Keep one gap when no rule proves the missing behavior.
+
+**Implementation Steps:**
+
+1. Add failing synthetic contracts for each new rule and for the direct-decision counterexample.
+2. Add one source-unavailable call boundary classifier and use JVM binary names for bytecode lookup.
+3. Apply the classifier to calls, callbacks, and caught paths without changing exact runtime evidence contracts.
+4. Regenerate the Keycloak graph and require no more than three justified visible gap regions.
+5. Run two live Keycloak calls and verify connected, non-contradictory selected diagrams.
+6. Run repository integrity, focused tests, all external conformance gates, the full pull-request gate, and hosted CI.
+
+**Acceptance Criteria:**
+
+- [x] Synthetic unknown-project fixtures prove all boundary rules before Keycloak runs.
+- [x] A direct source-unavailable decision still creates a coverage gap.
+- [x] Nested binary types resolve from the configured classpath.
+- [x] Lazy callbacks state what is configured without claiming runtime evaluation.
+- [x] The Keycloak overview has at most three visible, justified gap regions.
+- [x] Two live Keycloak diagrams are connected and contain no contradictory rule outcomes.
+- [x] Production code contains no Keycloak, Mega, reviewed label, method, or topology rule.
+- [ ] Pull-request CI passes.
+
+**Files to Modify:**
+
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/SourceUnavailableCallClassifier.java` (new)
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/ObservedBusinessSegmentConnector.java` (new)
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessExecutionGraphProjector.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/business/BusinessGraphProjectionTest.java`
+- `fachtracing-engine/src/test/resources/fixtures/analysis/SourceBoundaryPolicy.java` (new)
+- `fachtracing-engine/src/test/resources/fixtures/analysis/SourceBoundaryBinaryRules.java` (new)
+- `fachtracing-spring/src/test/java/at/gepardec/fachtracing/spring/SpringMethodContractProviderTest.java`
+- `conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java`
+- `conformance/keycloak/selection.md`
+- `docs/supported-java-constructs.md`
+- `scripts/verify-repository-integrity.sh`
+
+**Tests Required:**
+
+- [x] Focused static analyzer contract.
+- [x] Repository integrity gate.
+- [x] Keycloak static and live conformance proof.
+- [x] Mega and PetClinic external gates.
+- [ ] Full pull-request verification and hosted CI.
+
 ## Implementation Order
 
 1. Task 1 creates the traceability contract.
 2. Task 2 uses that contract for summary and selection.
 3. Task 3 moves automatic output to the selected model.
 4. Task 4 supplies black-box proof and final review evidence.
+5. Task 5 removes duplicate call gaps and completes the live definition-of-done proof.
 
 ## Progress Tracking
 
-- Total Tasks: 4
+- Total Tasks: 5
 - Completed: 4
-- In Progress: 0
+- In Progress: 1
 - Blocked: 0
 - Pending: 0

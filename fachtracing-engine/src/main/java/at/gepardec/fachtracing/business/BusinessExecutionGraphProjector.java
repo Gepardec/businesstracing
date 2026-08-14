@@ -18,6 +18,8 @@ public final class BusinessExecutionGraphProjector {
     private static final String UNKNOWN_RESULT = "result could not be determined";
     private final BusinessGraphProjector projector = new BusinessGraphProjector();
     private final BusinessGraphSummarizer summarizer = new BusinessGraphSummarizer();
+    private final ObservedBusinessSegmentConnector segmentConnector =
+            new ObservedBusinessSegmentConnector();
 
     /** Projects one call without changing its exact graph or execution. */
     public BusinessLogicGraph project(BusinessDecisionGraph exact, DecisionExecution execution) {
@@ -59,6 +61,11 @@ public final class BusinessExecutionGraphProjector {
                 .filter(edge -> selectedNodeIds.contains(edge.fromNodeId())
                         && selectedNodeIds.contains(edge.toNodeId()))
                 .toList());
+
+        ObservedBusinessSegmentConnector.Selection connected = segmentConnector.connect(
+                business, projection, execution, nodes, edges);
+        nodes = new ArrayList<>(connected.nodes());
+        edges = new ArrayList<>(connected.edges());
 
         boolean unknownObservation = execution.observations().stream().anyMatch(observation ->
                 exact.nodes().stream().noneMatch(node -> node.nodeId().equals(observation.nodeId())));

@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-14T08:58:18Z"
-_sourceHash: "65dc22dbf747f38784447a0beebae7f31daa420db5d208b2cd919059eca03650"
+_generatedAt: "2026-08-14T11:05:34Z"
+_sourceHash: "3d4d5f3ebcb6673dbc3d72796aee5b3572046c7e86e5fae573362036a4c13ea1"
 ---
 
 ## Project Structure Map
@@ -65,7 +65,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (95 files)
+#### fachtracing-engine/ (103 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -116,12 +116,26 @@ fachtracing/
   - `public final class StaticDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`
   - use-site local reaching definitions
+- `src/main/java/at/gepardec/fachtracing/analysis/SourceUnavailableCallClassifier.java`
+  - source-visible representation of unavailable call boundaries
+- `src/main/java/at/gepardec/fachtracing/business/BusinessExecutionGraphProjector.java`
+  - call-specific business graph selection
+- `src/main/java/at/gepardec/fachtracing/business/BusinessExecutionTextRenderer.java`
+  - non-technical call-specific text output
+- `src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjection.java`
+  - immutable exact-to-business traceability
 - `src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java`
   - exact-to-business graph projection
+- `src/main/java/at/gepardec/fachtracing/business/BusinessGraphSummarizer.java`
+  - graph-semantic gap and equivalent-state summary
 - `src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java`
   - rejects technical vocabulary in business artifacts
 - `src/main/java/at/gepardec/fachtracing/business/BusinessGraphJsonExporter.java`
   - deterministic business graph V1 export
+- `src/main/java/at/gepardec/fachtracing/business/BusinessMermaidRenderer.java`
+  - call-specific business Mermaid output
+- `src/main/java/at/gepardec/fachtracing/business/ObservedBusinessSegmentConnector.java`
+  - safe connection of ordered observed business segments
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessStatementRenderer.java`
   - `public final class BusinessStatementRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessExecutionMermaidRenderer.java`

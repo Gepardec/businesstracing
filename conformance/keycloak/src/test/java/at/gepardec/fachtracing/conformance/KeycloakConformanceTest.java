@@ -82,6 +82,23 @@ public final class KeycloakConformanceTest {
         assert fullBusinessGraph.nodes().stream()
                 .anyMatch(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
                 : "projected business graph must identify incomplete coverage";
+        long visibleGaps = fullBusinessGraph.nodes().stream()
+                .filter(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP).count();
+        assert visibleGaps == 3 : "expected three genuine external boundary gaps: " + fullBusinessGraph;
+        List<String> exactGapLabels = analysis.graph().nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.COVERAGE_GAP)
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
+        assert exactGapLabels.stream().allMatch(label ->
+                label.contains("implementations are unavailable")
+                        || label.contains("possible side effect")) : exactGapLabels;
+        var sourceMappings = analysis.manifest().sourceMappings();
+        var gapLines = analysis.graph().nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.COVERAGE_GAP)
+                .map(node -> sourceMappings.get(node.nodeId()).line())
+                .collect(java.util.stream.Collectors.toSet());
+        assert gapLines.equals(java.util.Set.of(295L, 297L, 563L, 567L, 574L)) : gapLines;
+        assert businessLabels.contains("map prefix split terms search using lookup") : businessLabels;
+        assert businessLabels.contains("filter user models by can view") : businessLabels;
         assert fullBusinessGraph.nodes().size() < analysis.graph().nodes().size()
                 : "the generated overview did not reduce the exact graph";
         for (String required : List.of("search query is absent", "search exists", "prefix exists")) {
@@ -106,6 +123,16 @@ public final class KeycloakConformanceTest {
         assert evaluatedFlow.nodes().size() <= 15 : "evaluated example is not concise: " + evaluatedFlow;
         assert evaluatedFlow.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RESULT)
                 .count() == 1 : evaluatedFlow;
+        assert evaluatedFlow.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
+                .count() == 1 : evaluatedFlow;
+        assertConnected(evaluatedFlow);
+        assert evaluatedFlow.nodes().stream()
+                .filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
+                .allMatch(node -> evaluatedFlow.edges().stream()
+                        .filter(edge -> edge.fromNodeId().equals(node.nodeId()))
+                        .filter(edge -> edge.outcome().equals("yes") || edge.outcome().equals("no"))
+                        .count() == 1)
+                : "an evaluated rule has contradictory outcomes: " + evaluatedFlow;
         String evaluatedDiagram = new BusinessMermaidRenderer().render(evaluatedFlow);
         assert evaluatedDiagram.contains("search users") : evaluatedDiagram;
         assert !evaluatedDiagram.contains("org.keycloak") : evaluatedDiagram;
@@ -145,6 +172,21 @@ public final class KeycloakConformanceTest {
                 new DecisionExecution.DecisionValue("status", "COMPLETED", "Completed"),
                 graph.completeness(),
                 graph.coverageGaps().stream().map(BusinessDecisionGraph.CoverageGap::description).toList());
+    }
+
+    private static void assertConnected(BusinessLogicGraph graph) {
+        var reached = new java.util.HashSet<String>();
+        var pending = new ArrayDeque<String>(graph.entryNodeIds());
+        while (!pending.isEmpty()) {
+            String current = pending.removeFirst();
+            if (!reached.add(current)) continue;
+            graph.edges().stream()
+                    .filter(edge -> edge.fromNodeId().equals(current))
+                    .map(BusinessLogicGraph.Edge::toNodeId)
+                    .forEach(pending::addLast);
+        }
+        assert reached.size() == graph.nodes().size()
+                : "evaluated business graph is disconnected: reached " + reached + " in " + graph;
     }
 
     private static List<BusinessDecisionGraph.DecisionEdge> shortestSuccessfulPath(

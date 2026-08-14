@@ -12,7 +12,7 @@ checks that every entry names an executable contract and appears in this documen
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `method-reference-callback-mutation`, `wrapped-method-reference-callback-mutation`, `local-method-reference-callback-mutation`, `mutating-predicate-method-reference-gap`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
-- `source-unavailable-call`, `jakarta-platform-operation`, `explicit-opaque-library-boundary`
+- `source-unavailable-call`, `source-visible-call-boundary`, `lazy-unavailable-callback-action`, `nested-binary-owner`, `repeated-unavailable-effect-gap`, `jakarta-platform-operation`, `explicit-opaque-library-boundary`
 - `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
 - `reflection-service-loader-proxy`, `unresolved-dynamic-candidate-gap`, `async-boundary`
 - `exact-async-callback-position`, `skipped-stage-callback-lifecycle`, `async-submission-lifecycle`, `nested-async-reservation-identity`, `transparent-future-cancellation`, `external-cancellation-call-site`
@@ -74,8 +74,12 @@ This audit data does not enter the business graph or runtime activation JSON.
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
 | Exact external method contract | An explicitly enabled provider describes one exact binary owner, method name, and JVM descriptor. The analyzer uses source first, then one matching contract, then an explicit opaque-library boundary, and finally a coverage gap. A contract can prove a predicate, action, receiver or argument mutation, result behavior, and possible exception types. Two matches create a source-located conflict gap; the analyzer does not use provider priority |
 | Explicit opaque library boundary | By default, source-unavailable dependency operations remain incomplete. A caller can select exact technical library JARs. A reference-returning operation from a selected JAR stays outside the graph. An instance operation keeps its receiver in the result slice, so source-visible predicates that configure fluent query or options objects remain visible. A Boolean call from a selected JAR is transparent only inside an explicit source control condition, where the call site is already the graph predicate. Direct Boolean decisions, other primitive results, unselected JARs, and application class directories stay fail-closed |
+| Source-visible unavailable call boundary | Uses an explicit caller predicate or a proven caller mutation as the rule or action when that source construct already observes the unavailable result. A direct external decision stays incomplete. Reassignment before the predicate prevents this rule |
+| Source-unavailable lazy callback | Shows one configured stream filter or mapping action. It does not add a callback predicate probe and does not claim that a lazy callback ran before the enclosing method returned |
+| Repeated unavailable state effect | Keeps one gap for one unavailable owner, method, and descriptor in a method flow. A repeated call is still shown as an action, but it does not repeat the same implementation gap. Nested argument work on that repeated boundary stays covered by the first gap |
+| Nested binary owner | Uses the compiler JVM binary name, including `$` for a nested type, to locate the exact class file before applying the safe bytecode fallback |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
-| Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location. This includes Boolean dependency decisions that the controlled fallback cannot prove |
+| Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location unless an explicit caller predicate, caller action, lazy callback action, caught outcome, prior identical gap, trusted contract, or safe bytecode fragment already represents the boundary. A direct Boolean dependency decision that the controlled fallback cannot prove stays incomplete |
 
 The context-aware operation-label contract compiles independent scheduling, pricing, access-control,
 and inventory sources. It uses attributed declaration symbols and types for `var`, generic types,
@@ -119,8 +123,9 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 - Incomplete exact branch metadata creates a located coverage gap and does not claim an exact edge.
 - Mixed, nested, and negated Boolean forms use occurrence-aware atomic bindings. Each evaluated
   atom records one exact edge and typed Boolean evidence. Short-circuited atoms record nothing.
-- A result-relevant source-proven catch path records its exact opaque path edge. Unavailable
-  exception-triggering logic and finally-overridden returns remain located coverage gaps.
+- A result-relevant source-proven catch path records its exact opaque path edge. Its normal and
+  caught source outcomes do not add a duplicate unknown-trigger gap. An unresolved call inside the
+  path and finally-overridden returns remain located coverage gaps.
 - An exception that leaves an instrumented entry creates one generic failed execution. The agent
   then rethrows the same exception object.
 - A failed business record contains no Java exception class, raw message, or stack trace.

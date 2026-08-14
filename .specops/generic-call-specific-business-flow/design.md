@@ -36,6 +36,24 @@ Fachtracing has an exact runtime graph and a separate business projection, but i
 
 **Rationale:** A plausible but unproved business result is worse than an explicit gap.
 
+### Decision 6: Treat the source-visible caller as a semantic boundary
+
+**Decision:** Suppress a source-unavailable call gap only when an explicit caller predicate, configured callback action, caught outcome, trusted contract, or safe bytecode fragment already represents the call's result-relevant behavior.
+
+**Rationale:** The caller can state the rule or action even when the callee implementation is absent. This removes duplicate gaps without claiming unseen internal decisions. A direct returned decision or unexplained state effect remains a gap.
+
+### Decision 7: Resolve binary owners with compiler binary names
+
+**Decision:** Use the compiler's JVM binary name for bytecode lookup, including nested types, and keep source names only for business labels and developer provenance.
+
+**Rationale:** A nested Java type uses `$` in its class-file path. Replacing dots in a qualified source name creates a path that cannot exist.
+
+### Decision 8: Connect proved runtime segments through an explicit gap
+
+**Decision:** When exact edge selection leaves two observed business segments disconnected, connect them only when the full generated business graph proves their order. Treat nodes with the same kind and label as equivalent path targets. Put one safe gap between the segments.
+
+**Rationale:** Reused source methods can produce equivalent projected nodes for different call sites. Runtime probes can select one equivalent node while the full static route contains another. The connector must keep one path without inventing the hidden rule.
+
 ## Component Design
 
 ### Component 1: `BusinessGraphProjection`
@@ -86,6 +104,22 @@ Fachtracing has an exact runtime graph and a separate business projection, but i
 
 **Failure mode:** Projection or file failure uses the existing diagnostic channel and cannot change endpoint control flow.
 
+### Component 7: Source-unavailable call boundary classifier
+
+**Responsibility:** Decide whether a missing callee is already represented by source-visible caller semantics or still needs a coverage gap.
+
+**Interface:** Classify one attributed call or callback from its use site, return type, enclosing control flow, and available binary proof.
+
+**Failure mode:** Any ambiguous direct decision, returned state effect, or callback execution state returns `UNRESOLVED`, which keeps one coverage gap.
+
+### Component 8: Observed business segment connector
+
+**Responsibility:** Connect selected runtime business segments when hidden exact edges or equivalent projected call-site nodes leave a break.
+
+**Interface:** Accept the complete generated business graph, its exact mappings, one execution, and the selected nodes and edges. Return one selected node and edge set.
+
+**Failure mode:** If the complete generated graph does not prove an order, leave the components separate. Never add a direct rule outcome without an explicit gap.
+
 ## Sequence Diagrams
 
 ### Build-time overview
@@ -126,7 +160,9 @@ Graph summarizer -> Text and Mermaid renderers: one shared model
 - Prove a changed synthetic branch changes the overview.
 - Prove connected gap collapse preserves external paths.
 - Prove graph-version mismatch fails closed.
+- Prove direct binary decisions remain gaps while caller-observed predicates, lazy callback actions, broad caught paths, and nested binary owners use their generic rules.
 - Prove agent text and Mermaid contain the same selected labels and omit unselected labels and private values.
+- Run two live Keycloak calls and reject disconnected flows or contradictory outcomes for one rule.
 - Run repository integrity, Mega, Keycloak, and the full pull-request gate.
 
 ## Risks & Mitigations
@@ -135,6 +171,8 @@ Graph summarizer -> Text and Mermaid renderers: one shared model
 - **Risk:** Equivalent-state merge joins different business contexts. **Mitigation:** Require equal node kind, equal normalized label, and equal complete outgoing behavior before merge.
 - **Risk:** Sparse observations make the path ambiguous. **Mitigation:** Use only validated selected edges and the existing deterministic connector resolver; otherwise show an incomplete gap.
 - **Risk:** Summary hides incomplete analysis. **Mitigation:** Collapse gaps but never remove the last gap in a selected or static incomplete flow.
+- **Risk:** A caller boundary hides an internal business decision. **Mitigation:** Apply the rule only when the caller exposes the result as a predicate, action, caught outcome, or trusted value observation; keep direct decisions and unknown state effects incomplete.
+- **Risk:** Equivalent call-site nodes connect unrelated runtime segments. **Mitigation:** Require a directed path from the selected source to a node with the target kind and label in the complete generated graph, and put an explicit gap on the selected path.
 
 ## Dependencies & Blockers
 

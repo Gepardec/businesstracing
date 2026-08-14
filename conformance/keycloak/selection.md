@@ -12,9 +12,13 @@ type list. The selection is in the conformance harness only. Production engine, 
 plugin classes contain no Keycloak name.
 
 The selected method returns a lazy stream. The runtime trace ends when the method returns, before
-the REST layer consumes that stream. Thus, the trace explains query selection, filters, permission
-checks, and other work performed inside `getUsers`. It does not claim to explain later stream
-consumption or response serialization. The exact developer record uses `Result not recorded` and
-incomplete coverage for that result type. The automatic business files keep the generated named
-result for the selected terminal path and insert one safe gap before it. They do not consume the
-stream and do not expose developer diagnostics.
+the REST layer consumes that stream. Thus, a source-unavailable lazy callback appears as a
+configured filter or mapping action. The trace does not claim that this callback ran before the
+endpoint returned. It also does not claim to explain later response serialization.
+
+The static overview has three gap regions. They cover unavailable permission state, session state,
+and user-search data. The source-visible query rules, prefix rule, date actions, permission feature
+rule, and lazy callback actions do not create duplicate gaps. The evaluated example has one gap on
+its selected path. Live calls can select two separate permission-boundary gaps. The exact developer
+record keeps the source locations and causes. The business files do not expose those technical
+diagnostics.

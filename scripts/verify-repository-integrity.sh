@@ -53,6 +53,10 @@ require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtraci
 require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java
 require_tracked conformance/spring-petclinic/src/test/resources/oracles/README.md
 require_tracked docs/self-tracing.md
+require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/SourceUnavailableCallClassifier.java
+require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/ObservedBusinessSegmentConnector.java
+require_tracked fachtracing-engine/src/test/resources/fixtures/analysis/SourceBoundaryBinaryRules.java
+require_tracked fachtracing-engine/src/test/resources/fixtures/analysis/SourceBoundaryPolicy.java
 
 test -z "$(git ls-files conformance/mega-backend/generated)" \
   || fail "generated Mega artifacts must not be tracked: use conformance/mega-backend/target/generated"

@@ -18,6 +18,22 @@
 
 **Remediation:** None required before implementation. Keep failed-call compatibility and record the manual review result in Task 4.
 
+### Iteration 2
+
+**Evaluated at:** 2026-08-14T10:23:34Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | ---: | ---: | --- |
+| Criteria Testability | Story 5 defines observable rules for caller predicates, lazy callbacks, caught paths, nested binary types, and unresolved counterexamples. The success metrics set a Keycloak gap limit and require two live call diagrams. | The non-contradiction and connection checks need explicit graph assertions in addition to manual inspection. Task 5 includes this work. | 9 | 7 | Pass |
+| Criteria Completeness | Story 5 covers each current generic gap class and states that application facts cannot affect classification. It also keeps unresolved external behavior visible. | The first implementation can leave up to three justified boundaries, so the conformance report must name why each remaining boundary is not provable. | 8 | 7 | Pass |
+| Design Coherence | Decisions 6 and 7 separate source-boundary classification from nested binary lookup. Component 7 has one responsibility and a fail-closed result. | Runtime path correction can require a separate projector fix after the static rules pass. The design keeps that proof in the existing runtime component. | 9 | 7 | Pass |
+| Task Coverage | Task 5 starts with target-neutral fixtures, includes negative counterexamples, regenerates Keycloak, runs two live calls, and finishes with all repository and hosted gates. | The task is large because live external proof is expensive, but the ordered gates prevent target-specific rules from entering production. | 8 | 7 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed.
+
+**Remediation:** None required before implementation. Record each remaining Keycloak gap and its generic unresolved cause.
+
 ---
 
 ## Implementation Evaluation
@@ -30,3 +46,17 @@
 - Hosted CI passes `pr-gate`, `mega`, `petclinic`, and `postgres` for commit `759af55`.
 
 **Final verdict:** PENDING — a person who does not know Java must complete the documented live Keycloak review before the specification can close.
+
+### Iteration 2 — Generic boundary rules
+
+**Evaluated at:** 2026-08-14T11:13:13Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | ---: | ---: | --- |
+| Functionality Depth | Synthetic boundary fixtures cover caller predicates, caller actions, lazy callbacks, nested binary types, repeated effects, direct external decisions, and unavailable stream suppliers. Two real Keycloak calls return data and produce connected selected graphs. | Each live Keycloak graph still has two explicit gaps because the pinned source and classpath do not prove the permission-boundary state. This is correct but leaves the business explanation incomplete. | 9 | 7 | Pass |
+| Design Fidelity | `SourceUnavailableCallClassifier` separates structural boundary evidence. `ObservedBusinessSegmentConnector` uses the complete generated graph and an explicit gap for equivalent call-site routes. The implementation journal records the Spring and runtime connector deviations. | Caught-path behavior stays in the try/catch scanner instead of calling the classifier directly. The result matches Decision 6, but the implementation is less centralized than Component 7 suggests. | 8 | 7 | Pass |
+| Code Quality | Compiler symbols prevent shadow-name matches. New classifier and connector classes have one responsibility. Production code contains no Keycloak, Mega, reviewed label, or fixed topology. | The connector performs repeated graph scans and label-equivalence searches. This is acceptable on the daemon sink thread, but a precomputed graph index can reduce cost if business graphs become much larger. | 8 | 7 | Pass |
+| Test Verification | Focused engine and Spring suites, repository integrity, Java capabilities, Keycloak, Mega, PetClinic, and `./scripts/verify-pr.sh` pass. Live checks prove one entry, full reachability, one selected outcome per rule, and one terminal result for both calls. | The live Keycloak check is local and not part of pull-request CI. PostgreSQL was skipped because no external connection was configured. Hosted CI for the new commit is still pending. | 9 | 7 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed. The spec stays open for hosted CI and the manual non-Java review.

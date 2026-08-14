@@ -74,8 +74,8 @@ Each call creates one `.txt` explanation and one `.mmd` evaluated path in
 `/tmp/keycloak-business-traces`. Both files use one generated call-specific business graph. They
 contain only the rules, outcomes, named result, and gaps selected for that call. They do not contain
 Java owners, methods, source paths, request values, result values, tokens, or exception details. The
-lazy result keeps the generated `search users completed` business result and one business-safe gap.
-It does not expose developer diagnostics.
+lazy result keeps the generated `search users completed` business result. Each unresolved selected
+boundary stays visible as one business-safe gap. The files do not expose developer diagnostics.
 
 ## Non-Java review check
 

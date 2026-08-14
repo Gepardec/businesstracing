@@ -25,6 +25,7 @@ public final class BusinessGraphProjectionTest {
         collapsesConnectedGapRegionsAndEquivalentStates();
         selectsDifferentBusinessFlowsForDifferentExecutions();
         showsOnlyGapsOnTheSelectedPath();
+        connectsObservedSegmentsThroughASafeGap();
         keepsResultTerminalWhenRuntimeGapHasNoRules();
         changesGeneratedOutputWhenBusinessBehaviorChanges();
         rejectsExecutionFromAnotherGraphVersion();
@@ -409,6 +410,67 @@ public final class BusinessGraphProjectionTest {
         assert normal.completeness() == BusinessLogicGraph.Completeness.COMPLETE : normal;
         assert normal.nodes().stream().noneMatch(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP) : normal;
         assert normal.nodes().stream().anyMatch(node -> node.label().equals("normal route")) : normal;
+    }
+
+    private static void connectsObservedSegmentsThroughASafeGap() {
+        BusinessLogicGraph complete = new BusinessLogicGraph(
+                "partially-observed-route", 1, "partially observed route", List.of("first-rule"),
+                List.of(
+                        businessNode("first-rule", BusinessLogicGraph.NodeKind.RULE, "request has a filter"),
+                        businessNode("unobserved-rule", BusinessLogicGraph.NodeKind.RULE,
+                                "temporary filter is present"),
+                        businessNode("second-rule", BusinessLogicGraph.NodeKind.RULE, "permission is granted"),
+                        businessNode("second-rule-copy", BusinessLogicGraph.NodeKind.RULE,
+                                "permission is granted"),
+                        businessNode("result", BusinessLogicGraph.NodeKind.RESULT, "allowed")),
+                List.of(
+                        businessEdge("first-to-unobserved", "first-rule", "unobserved-rule", "no"),
+                        businessEdge("unobserved-to-second", "unobserved-rule", "second-rule", "no"),
+                        businessEdge("second-to-result", "second-rule", "result", "yes"),
+                        businessEdge("second-copy-to-result", "second-rule-copy", "result", "yes")),
+                BusinessLogicGraph.Completeness.COMPLETE);
+        var projection = new BusinessGraphProjection(
+                complete,
+                Map.of("exact-first", "first-rule", "exact-second", "second-rule-copy"),
+                Map.of(),
+                Map.of(
+                        "first-to-unobserved", List.of(List.of("entered-hidden-path")),
+                        "unobserved-to-second", List.of(List.of("hidden-path")),
+                        "second-to-result", List.of(List.of("other-result-path")),
+                        "second-copy-to-result", List.of(List.of("result-path"))));
+        DecisionExecution partial = new DecisionExecution(
+                "partial", "exact-graph", 1, Instant.EPOCH, Instant.EPOCH.plusSeconds(1),
+                List.of(
+                        new DecisionExecution.NodeObservation(
+                                0, "exact-first", "false", Map.of(), null),
+                        new DecisionExecution.NodeObservation(
+                                1, "exact-second", "true", Map.of(), null)),
+                DecisionExecution.DecisionValue.of(true),
+                BusinessDecisionGraph.Completeness.INCOMPLETE,
+                List.of("hidden path has no exact edge evidence"));
+
+        ObservedBusinessSegmentConnector.Selection connected = new ObservedBusinessSegmentConnector().connect(
+                complete, projection, partial,
+                List.of(complete.node("first-rule"), complete.node("unobserved-rule"),
+                        complete.node("second-rule-copy"), complete.node("result")),
+                List.of(complete.edges().get(0), complete.edges().get(3)));
+        BusinessLogicGraph selected = new BusinessLogicGraph(
+                complete.graphId(), complete.version(), complete.decisionLabel(), List.of("first-rule"),
+                connected.nodes(), connected.edges(), BusinessLogicGraph.Completeness.INCOMPLETE);
+        String first = selected.nodes().stream().filter(node -> node.label().equals("request has a filter"))
+                .findFirst().orElseThrow().nodeId();
+        String second = selected.nodes().stream().filter(node -> node.label().equals("permission is granted"))
+                .findFirst().orElseThrow().nodeId();
+        String gap = selected.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
+                .findFirst().orElseThrow().nodeId();
+
+        assert selected.entryNodeIds().equals(List.of(first)) : selected;
+        assert selected.edges().stream().anyMatch(edge -> edge.fromNodeId().equals(first)
+                && edge.toNodeId().equals(gap) && edge.outcome().equals("no")) : selected;
+        assert selected.edges().stream().anyMatch(edge -> edge.fromNodeId().equals(gap)
+                && edge.toNodeId().equals(second)) : selected;
+        assert selected.nodes().stream().noneMatch(node -> node.nodeId().equals("unobserved-rule")) : selected;
+        assert selected.completeness() == BusinessLogicGraph.Completeness.INCOMPLETE : selected;
     }
 
     private static void changesGeneratedOutputWhenBusinessBehaviorChanges() {

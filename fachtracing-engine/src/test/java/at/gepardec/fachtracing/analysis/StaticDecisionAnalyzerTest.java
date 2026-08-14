@@ -66,6 +66,7 @@ public final class StaticDecisionAnalyzerTest {
         rejectsGraphRootsOutsideTheSourceUniverse();
         exposesRelevantCoverageGaps();
         sourceUnavailableDecisionLogicIsNeverReportedComplete();
+        usesSourceVisibleBoundariesWithoutGuessing();
         usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
         appliesExactExternalMethodContractsWithoutGuessing();
         supportsExplicitOpaqueLibraryBoundaries();
@@ -1296,6 +1297,84 @@ public final class StaticDecisionAnalyzerTest {
                 .anyMatch(gap -> gap.description().contains("implementations are unavailable"));
     }
 
+    private static void usesSourceVisibleBoundariesWithoutGuessing() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-source-boundary-");
+            Path binaryClasses = root.resolve("binary-classes");
+            Files.createDirectories(binaryClasses);
+            Path binarySource = FIXTURES.resolve("analysis/SourceBoundaryBinaryRules.java");
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", binaryClasses.toString(), binarySource.toString());
+            assert compilation == 0 : "could not compile source-boundary binary rules";
+
+            Path applicationSource = FIXTURES.resolve("analysis/SourceBoundaryPolicy.java");
+            var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                    List.of(applicationSource), List.of(CLASSPATH.getFirst(), binaryClasses)));
+
+            for (String label : List.of(
+                    "caller predicate boundary",
+                    "lazy callback boundary",
+                    "lazy lambda boundary",
+                    "caller action boundary",
+                    "caught source boundary",
+                    "nested binary boundary",
+                    "guarded external boundary")) {
+                var result = results.stream().filter(item -> item.graph().decisionLabel().equals(label))
+                        .findFirst().orElseThrow();
+                assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                        : label + ": " + result.graph().coverageGaps();
+            }
+
+            var caller = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("caller predicate boundary")).findFirst().orElseThrow();
+            assert caller.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("match exists")) : caller.graph().nodes();
+
+            var callback = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("lazy callback boundary")).findFirst().orElseThrow();
+            assert callback.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                            && node.businessLabel().contains("filter values by approve"))
+                    : callback.graph().nodes();
+
+            var nested = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("nested binary boundary")).findFirst().orElseThrow();
+            assert nested.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("input 1 is at least 18"))
+                    : nested.graph().nodes();
+
+            var direct = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("direct external boundary")).findFirst().orElseThrow();
+            assert direct.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : direct;
+            assert direct.graph().coverageGaps().stream().anyMatch(gap ->
+                    gap.description().contains("implementations are unavailable"))
+                    : direct.graph().coverageGaps();
+
+            var lazyReceiver = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("lazy receiver boundary")).findFirst().orElseThrow();
+            assert lazyReceiver.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+                    : lazyReceiver;
+            assert lazyReceiver.graph().coverageGaps().stream().anyMatch(gap ->
+                    gap.description().contains("implementations are unavailable"))
+                    : lazyReceiver.graph().coverageGaps();
+
+            var repeated = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("repeated external effect boundary")).findFirst().orElseThrow();
+            assert repeated.graph().coverageGaps().size() == 1
+                    : repeated.graph().coverageGaps() + " " + repeated.manifest().sourceMappings();
+            assert repeated.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                            && node.businessLabel().contains("update")) : repeated.graph().nodes();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
     private static void usesControlledBytecodeFallbackAndRejectsUnsafeBinary() {
         Path root = null;
         try {
@@ -1955,6 +2034,9 @@ public final class StaticDecisionAnalyzerTest {
             assert unsupported.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
                     : unsupported;
             assert unsupported.graph().coverageGaps().stream().anyMatch(gap ->
+                    gap.description().contains("unsupported call"))
+                    : unsupported.graph().coverageGaps();
+            assert unsupported.graph().coverageGaps().stream().noneMatch(gap ->
                     gap.description().contains("exception-triggering decision logic is unavailable"))
                     : unsupported.graph().coverageGaps();
         } catch (IOException exception) {
