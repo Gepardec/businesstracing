@@ -62,8 +62,17 @@ public final class KeycloakConformanceTest {
         for (String required : List.of(
                 "search query is absent", "search exists", "prefix exists", "last exists",
                 "first exists", "email exists", "username exists", "created after exists",
-                "created before exists")) {
+                "created before exists", "admin permissions disabled for realm")) {
             assert exactLabels.contains(required) : "reviewed flow anchor is absent: " + required;
+        }
+        assert exactLabels.stream().noneMatch(label -> label.contains("schema")) : exactLabels;
+        for (String required : List.of("search query is absent", "search exists", "prefix exists")) {
+            String nodeId = analysis.graph().nodes().stream()
+                    .filter(node -> node.businessLabel().equalsIgnoreCase(required))
+                    .map(node -> node.nodeId())
+                    .findFirst().orElseThrow();
+            assert analysis.manifest().branchTargets().stream().anyMatch(target -> target.nodeId().equals(nodeId))
+                    : "runtime branch binding is absent for " + required;
         }
         String businessDiagram = new BusinessMermaidRenderer().render(reviewedOverview());
         assert businessDiagram.startsWith("flowchart LR\n") : businessDiagram;

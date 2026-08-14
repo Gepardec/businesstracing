@@ -481,3 +481,13 @@ Mega now selects its five reviewed roots without a source overlay. A pinned Keyc
 selects `UsersResource.getUsers`, writes its exact activation graph, and supplies a concise reviewed
 user-search flow. The full repository gate, five Mega graphs, three Spring PetClinic graphs, and the
 Keycloak conformance command passed. No dependency was added.
+
+### keycloak-live-business-output-correctness (bugfix) — 2026-08-14
+
+Completed all three tasks. Boolean predicate outcomes remain bindable across explicit gaps, and a
+dedicated automatic-business boundary reports safe completion and coverage text without developer
+diagnostics or result access.
+
+The real pinned Keycloak token and user-search calls returned HTTP 200 and generated one redacted
+text/Mermaid pair. The full repository gate, five Mega decisions, three Spring PetClinic decisions,
+and pinned Keycloak conformance passed with no dependency change.

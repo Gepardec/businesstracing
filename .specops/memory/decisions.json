@@ -1130,6 +1130,36 @@
       "task": "Task 3",
       "date": "2026-08-12",
       "completedAt": "2026-08-12T16:19:29Z"
+    },
+    {
+      "specId": "keycloak-live-business-output-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Keep the Boolean outcome when a path enters a gap",
+      "rationale": "The predicate executed, but unavailable called logic must stay explicit.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:24:56Z"
+    },
+    {
+      "specId": "keycloak-live-business-output-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Sanitize only the automatic business presentation",
+      "rationale": "Developer diagnostics remain useful and are not suitable for business readers.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:24:56Z"
+    },
+    {
+      "specId": "keycloak-live-business-output-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Do not consume or wrap an unsupported stream result",
+      "rationale": "Tracing must not change endpoint behavior or expose returned user data.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:24:56Z"
     }
   ]
 }

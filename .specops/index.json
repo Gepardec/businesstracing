@@ -1,5 +1,14 @@
 [
   {
+    "id": "keycloak-live-business-output-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-14T08:24:56Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
     "id": "generic-tracing-walking-skeleton",
     "type": "feature",
     "status": "completed",

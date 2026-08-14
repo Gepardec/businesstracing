@@ -203,7 +203,10 @@ public final class FachtracingTransformerTest {
         TraceRuntime.begin("graph", 1);
         TraceRuntime.observe("predicate", "false", "private second value");
         TraceRuntime.complete("outcome", false);
-        awaitArtifacts(output, 4);
+        TraceRuntime.begin("graph", 1);
+        TraceRuntime.observe("predicate", "true", "private third value");
+        TraceRuntime.complete("outcome", new Object());
+        awaitArtifacts(output, 6);
         List<Path> textFiles;
         List<Path> diagrams;
         try (var files = Files.list(output)) {
@@ -212,18 +215,32 @@ public final class FachtracingTransformerTest {
         try (var files = Files.list(output)) {
             diagrams = files.filter(path -> path.toString().endsWith(".mmd")).toList();
         }
-        assert textFiles.size() == 2 : textFiles;
-        assert diagrams.size() == 2 : diagrams;
+        assert textFiles.size() == 3 : textFiles;
+        assert diagrams.size() == 3 : diagrams;
         for (Path file : java.util.stream.Stream.concat(textFiles.stream(), diagrams.stream()).toList()) {
             String content = Files.readString(file);
             assert content.contains("eligibility") : content;
             assert content.contains("REDACTED") : content;
             assert !content.contains("private first value") : content;
             assert !content.contains("private second value") : content;
+            assert !content.contains("private third value") : content;
             assert !content.contains("agentfixture") : content;
             assert !content.contains(".java") : content;
             assert !content.contains("graph-1") : content;
+            for (String prohibited : List.of(
+                    "unknown", "binary", "source line", "adapter", "implementation", "bytecode")) {
+                assert !content.toLowerCase().contains(prohibited) : prohibited + " in " + content;
+            }
         }
+        String combinedText = textFiles.stream().map(path -> {
+            try {
+                return Files.readString(path);
+            } catch (java.io.IOException exception) {
+                throw new java.io.UncheckedIOException(exception);
+            }
+        }).collect(java.util.stream.Collectors.joining("\n"));
+        assert combinedText.contains("Result: Completed") : combinedText;
+        assert combinedText.contains("Gap: some business rules could not be observed") : combinedText;
         deleteTree(output);
         Files.deleteIfExists(activation);
     }

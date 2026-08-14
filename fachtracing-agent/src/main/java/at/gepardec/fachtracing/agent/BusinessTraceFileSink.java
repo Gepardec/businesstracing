@@ -1,7 +1,8 @@
 package at.gepardec.fachtracing.agent;
 
 import at.gepardec.fachtracing.explain.BusinessExecutionMermaidRenderer;
-import at.gepardec.fachtracing.explain.DecisionExplanationProjector;
+import at.gepardec.fachtracing.explain.BusinessExplanationProjector;
+import at.gepardec.fachtracing.explain.BusinessExplanationTextRenderer;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
 import at.gepardec.fachtracing.runtime.RuntimeCollector;
@@ -26,7 +27,8 @@ final class BusinessTraceFileSink implements AutoCloseable {
     private final Map<GraphKey, BusinessDecisionGraph> graphs;
     private final Path outputDirectory;
     private final Consumer<String> diagnosticReporter;
-    private final DecisionExplanationProjector projector = new DecisionExplanationProjector();
+    private final BusinessExplanationProjector projector = new BusinessExplanationProjector();
+    private final BusinessExplanationTextRenderer text = new BusinessExplanationTextRenderer();
     private final BusinessExecutionMermaidRenderer mermaid = new BusinessExecutionMermaidRenderer();
     private final AtomicBoolean running = new AtomicBoolean();
     private Thread worker;
@@ -75,7 +77,7 @@ final class BusinessTraceFileSink implements AutoCloseable {
         }
         var explanation = projector.project(graph, execution);
         String base = slug(explanation.decisionLabel()) + "-" + safeId(execution.executionId());
-        writeAtomically(outputDirectory.resolve(base + ".txt"), projector.text(explanation));
+        writeAtomically(outputDirectory.resolve(base + ".txt"), text.render(explanation));
         writeAtomically(outputDirectory.resolve(base + ".mmd"), mermaid.render(explanation));
     }
 

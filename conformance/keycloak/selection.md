@@ -14,5 +14,7 @@ plugin classes contain no Keycloak name.
 The selected method returns a lazy stream. The runtime trace ends when the method returns, before
 the REST layer consumes that stream. Thus, the trace explains query selection, filters, permission
 checks, and other work performed inside `getUsers`. It does not claim to explain later stream
-consumption or response serialization. The safe final result is `Result not recorded`, and runtime
-coverage is incomplete for that result type.
+consumption or response serialization. The exact developer record uses `Result not recorded` and
+incomplete coverage for that result type. The automatic business files report the successful call
+as `Completed`. They do not consume the stream and show one safe coverage statement instead of
+developer diagnostics.

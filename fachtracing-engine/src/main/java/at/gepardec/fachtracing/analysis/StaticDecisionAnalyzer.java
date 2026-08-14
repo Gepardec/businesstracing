@@ -2689,7 +2689,9 @@ public final class StaticDecisionAnalyzer {
             private void addCoverageGap(Tree tree, String description) {
                 String id = add(BusinessDecisionGraph.NodeKind.COVERAGE_GAP,
                         "analysis incomplete: " + description, tree, null);
-                List<Tail> unresolved = frontier.stream().map(tail -> new Tail(tail.nodeId(), "unresolved")).toList();
+                List<Tail> unresolved = frontier.stream()
+                        .map(tail -> new Tail(tail.nodeId(), outcomeEnteringCoverageGap(tail.outcome())))
+                        .toList();
                 frontier = unresolved;
                 advance(id);
                 builder.addGap(id, description + " affects the decision");
@@ -3368,6 +3370,14 @@ public final class StaticDecisionAnalyzer {
                 .orElse("");
     }
 
+    static String outcomeEnteringCoverageGap(String outcome) {
+        if (outcome.equals("true") || outcome.equals("false")
+                || outcome.startsWith("true;") || outcome.startsWith("false;")) {
+            return outcome + "; unresolved";
+        }
+        return "unresolved";
+    }
+
     private static Map<String, String> fingerprints(AnalysisRequest request) throws IOException {
         Map<String, String> result = new LinkedHashMap<>();
         for (Path source : request.sourceFiles()) {
@@ -3435,6 +3445,7 @@ public final class StaticDecisionAnalyzer {
             return rendered.substring(0, equals) + " does not equal "
                     + rendered.substring(equals + " equals ".length());
         }
+        if (rendered.contains(" enabled")) return rendered.replaceFirst("\\benabled\\b", "disabled");
         return "not " + rendered;
     }
 
@@ -3561,6 +3572,13 @@ public final class StaticDecisionAnalyzer {
                 default -> throw new IllegalStateException();
             };
             return quantifier + " " + receiver + " match " + arguments.getFirst();
+        }
+        if (method.startsWith("is") && method.endsWith("Enabled")) {
+            String feature = words(method.substring(2, method.length() - "Enabled".length()));
+            if (feature.isBlank()) feature = receiver;
+            return arguments.isEmpty()
+                    ? feature + " enabled"
+                    : feature + " enabled for " + String.join(" and ", arguments);
         }
         String operation = switch (method) {
             case "contains" -> "contains";

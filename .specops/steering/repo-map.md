@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-12T16:19:29Z"
-_sourceHash: "2f4120c0075db6da5741caef67e0303bf6ea37c8d2128c61911bb6ba54d9b3f3"
+_generatedAt: "2026-08-14T08:27:00Z"
+_sourceHash: "65dc22dbf747f38784447a0beebae7f31daa420db5d208b2cd919059eca03650"
 ---
 
 ## Project Structure Map
@@ -65,7 +65,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (93 files)
+#### fachtracing-engine/ (95 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -126,6 +126,10 @@ fachtracing/
   - `public final class BusinessStatementRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessExecutionMermaidRenderer.java`
   - `public final class BusinessExecutionMermaidRenderer`
+- `src/main/java/at/gepardec/fachtracing/explain/BusinessExplanationProjector.java`
+  - `public final class BusinessExplanationProjector`
+- `src/main/java/at/gepardec/fachtracing/explain/BusinessExplanationTextRenderer.java`
+  - `public final class BusinessExplanationTextRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/DecisionExplanationProjector.java`
   - `public final class DecisionExplanationProjector`
 - `src/main/java/at/gepardec/fachtracing/model/BusinessDecisionGraph.java`

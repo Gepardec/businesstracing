@@ -28,9 +28,10 @@ java \
 The agent reads all graph definitions, enables redacted capture, and writes one `.txt` file and one
 `.mmd` file for each completed selected call. The files contain the business decision, evaluated
 steps, result, and coverage state. Adapted values are always stored as `REDACTED`. A `null` result is
-stored as `No result`. A result type without a safe adapter is stored as `Result not recorded`, and
-the trace is incomplete. Endpoint threads do not write files. One daemon consumer writes the files
-with an atomic move.
+stored as `No result`. For a successful result type without a safe adapter, automatic business files
+show `Completed` and do not read the result. The trace stays incomplete and uses one business-safe
+coverage statement. Exact developer records keep the result-adapter and analysis diagnostics.
+Endpoint threads do not write files. One daemon consumer writes the files with an atomic move.
 
 Both agent options are required in automatic mode. Unknown, duplicate, partial, or malformed options
 stop agent startup. Paths must not contain a comma. Use an application-owned output directory with

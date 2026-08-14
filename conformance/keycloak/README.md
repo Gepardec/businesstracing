@@ -93,10 +93,12 @@ curl --fail --silent \
 
 Each call creates one `.txt` explanation and one `.mmd` evaluated path in
 `/tmp/keycloak-business-traces`. The files use business statements and `REDACTED` values. They do
-not contain Java owners, methods, source paths, request values, tokens, or exception details.
+not contain Java owners, methods, source paths, request values, tokens, or exception details. A
+successful call reports `Completed`. The incomplete coverage line uses one business-safe statement
+and does not expose the developer diagnostics.
 
 The static graph and live call are separate checks. The conformance command verifies the pinned
 source selection, non-technical projection, activation, and class fingerprints. A live Keycloak
 call is local because it needs a running distribution, an administrator account, a free port, and
 startup time outside the repository CI budget. See [the exact selection](selection.md) for the lazy
-stream boundary and its explicit incomplete-result behavior.
+stream boundary and its explicit incomplete-coverage behavior.

@@ -24,6 +24,7 @@ public final class StaticDecisionAnalyzerTest {
     public static void main(String[] args) {
         removesJavaConstructionVocabularyGenerically();
         usesContextForLocalAndGenericSetterLabels();
+        rendersFeatureEnablementWithoutTechnicalReceivers();
         usesTypeForAbbreviatedLocalLabels();
         addsContextToCollectionMutationLabels();
         addsContextToOtherPlatformMutationLabels();
@@ -33,6 +34,7 @@ public final class StaticDecisionAnalyzerTest {
         scansMethodReceiversForEvidence();
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
+        preservesBooleanBranchBindingsAcrossGaps();
         excludesResultIndependentWork();
         explainsIncludedExcludedAndGapDecisions();
         excludesIgnoredReadsAndReportsUnknownEffects();
@@ -116,6 +118,35 @@ public final class StaticDecisionAnalyzerTest {
         assert result.graph().nodes().stream().noneMatch(node -> node.businessLabel().equals("c")) : labels;
         assert new BusinessArtifactGuard().violations(result.graph()).isEmpty()
                 : new BusinessArtifactGuard().violations(result.graph());
+    }
+
+    private static void rendersFeatureEnablementWithoutTechnicalReceivers() {
+        Path directory = null;
+        try {
+            directory = Files.createTempDirectory("fachtracing-enabled-label-");
+            Path source = directory.resolve("FeaturePolicy.java");
+            Files.writeString(source, """
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class FeaturePolicy {
+                        @FachTracing("feature policy")
+                        boolean decide(PermissionSchema schema, String realm) {
+                            return !schema.isAdminPermissionsEnabled(realm);
+                        }
+                    }
+                    interface PermissionSchema { boolean isAdminPermissionsEnabled(String realm); }
+                    """);
+            var result = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            List<String> labels = result.graph().nodes().stream()
+                    .map(BusinessDecisionGraph.DecisionNode::businessLabel)
+                    .toList();
+            assert labels.contains("admin permissions disabled for realm") : labels;
+            assert labels.stream().noneMatch(label -> label.contains("schema")) : labels;
+        } catch (IOException exception) {
+            throw new java.io.UncheckedIOException(exception);
+        } finally {
+            if (directory != null) deleteTree(directory);
+        }
     }
 
     private static void usesTypeForAbbreviatedLocalLabels() {
@@ -393,6 +424,14 @@ public final class StaticDecisionAnalyzerTest {
             assert trueEdge.outcome().equals("true") || trueEdge.outcome().startsWith("true;") : trueEdge;
             assert falseEdge.outcome().equals("false") || falseEdge.outcome().startsWith("false;") : falseEdge;
         }
+    }
+
+    private static void preservesBooleanBranchBindingsAcrossGaps() {
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("true").equals("true; unresolved");
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("false").equals("false; unresolved");
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("true; selected rule")
+                .equals("true; selected rule; unresolved");
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("next").equals("unresolved");
     }
 
     private static void excludesResultIndependentWork() {
