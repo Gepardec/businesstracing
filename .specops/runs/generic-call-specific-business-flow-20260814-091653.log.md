@@ -151,3 +151,9 @@ phases: [1, 2]
 - Action: Run the exact pull-request gate and rerun the pinned Keycloak gate on the final product code.
 - Result: `FAST_PR_GATE_OK`. Repository, unit, integration, agent, performance, release, Mega, and PetClinic checks pass. Keycloak again reports 169 exact nodes, 41 overview nodes, and 13 selected nodes.
 - Result: Hosted CI and the manual non-Java Keycloak review remain before final specification completion.
+
+### [09:55:31] Task end: Prove generic and brownfield conformance
+
+- Action: Push commit `759af55`, update draft PR #27, and monitor hosted CI.
+- Result: `pr-gate`, `mega`, `petclinic`, and `postgres` pass. All Task 4 criteria are checked.
+- Result: All implementation tasks are complete. The specification remains in implementation until the manual non-Java Keycloak review satisfies the definition of done.

@@ -22,4 +22,11 @@
 
 ## Implementation Evaluation
 
-Pending implementation completion.
+**Automated verdict:** PASS
+
+- The focused synthetic contracts prove generic traceability, summary, branch selection, safe gaps, semantic mutation, deterministic output, and identity rejection.
+- The exact local PR gate passes.
+- Keycloak, Mega, and PetClinic conformance pass without external-project rules in production.
+- Hosted CI passes `pr-gate`, `mega`, `petclinic`, and `postgres` for commit `759af55`.
+
+**Final verdict:** PENDING — a person who does not know Java must complete the documented live Keycloak review before the specification can close.

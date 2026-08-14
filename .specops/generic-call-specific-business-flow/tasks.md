@@ -133,7 +133,7 @@
 
 ### Task 4: Prove generic and brownfield conformance
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Tasks 1, 2, 3
 **Priority:** High
@@ -156,7 +156,7 @@
 - [x] Production contains no Keycloak or Mega rule.
 - [x] Keycloak and Mega use only generated production behavior.
 - [x] The manual review rubric tests the stated definition of done.
-- [ ] Pull-request CI passes.
+- [x] Pull-request CI passes.
 
 **Files to Modify:**
 
@@ -171,7 +171,7 @@
 - [x] Repository integrity gate.
 - [x] Keycloak external conformance gate.
 - [x] Mega external conformance gate.
-- [ ] Full pull-request verification and hosted CI.
+- [x] Full pull-request verification and hosted CI.
 
 ## Implementation Order
 
@@ -183,7 +183,7 @@
 ## Progress Tracking
 
 - Total Tasks: 4
-- Completed: 3
-- In Progress: 1
+- Completed: 4
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

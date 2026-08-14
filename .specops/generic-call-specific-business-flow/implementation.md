@@ -2,7 +2,7 @@
 
 ## Summary
 
-Implementation is in progress.
+Implementation and automated verification are complete. The manual definition-of-done review is pending.
 
 ## Phase 1 Context Summary
 
@@ -85,3 +85,5 @@ Task 4 scope: Strengthen repository isolation, derive a Keycloak selected-path p
 Keycloak conformance passes with 169 exact nodes, 41 overview nodes, and 13 nodes in the generated evaluated example. Mega conformance now projects all five static decisions and its real runtime execution through the generic business-flow components. Repository integrity and the full local repository gate pass.
 
 The PetClinic gate found one expected summary change. Two `correction required` terminal nodes had the same kind, label, and outgoing behavior. The summarizer merged them and preserved both incoming paths. The reviewed oracle and report now record 15 nodes and 20 edges. PetClinic conformance passes after that review.
+
+Task 4 completed after hosted CI passed all four jobs. The implementation stays open for the manual non-Java review in the specification definition of done.
