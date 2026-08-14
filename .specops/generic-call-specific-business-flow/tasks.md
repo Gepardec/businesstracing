@@ -193,7 +193,8 @@
 3. Apply the classifier to calls, callbacks, and caught paths without changing exact runtime evidence contracts.
 4. Regenerate the Keycloak graph and require no more than three justified visible gap regions.
 5. Run two live Keycloak calls and verify connected, non-contradictory selected diagrams.
-6. Run repository integrity, focused tests, all external conformance gates, the full pull-request gate, and hosted CI.
+6. Correct multiline short-circuit runtime alignment with a target-neutral failing fixture.
+7. Run repository integrity, focused tests, all external conformance gates, the full pull-request gate, and hosted CI.
 
 **Acceptance Criteria:**
 
@@ -203,6 +204,7 @@
 - [x] Lazy callbacks state what is configured without claiming runtime evaluation.
 - [x] The Keycloak overview has at most three visible, justified gap regions.
 - [x] Two live Keycloak diagrams are connected and contain no contradictory rule outcomes.
+- [x] A multiline disjunction records each evaluated source predicate and does not change Mega runtime capture.
 - [x] Production code contains no Keycloak, Mega, reviewed label, method, or topology rule.
 - [x] Pull-request CI passes.
 
@@ -210,6 +212,9 @@
 
 - `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/SourceUnavailableCallClassifier.java` (new)
 - `fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
+- `fachtracing-agent/src/main/java/at/gepardec/fachtracing/agent/FachtracingTransformer.java`
+- `fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java`
+- `fachtracing-agent/src/test/java/at/gepardec/fachtracing/agent/FachtracingTransformerTest.java`
 - `fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/ObservedBusinessSegmentConnector.java` (new)
 - `fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessExecutionGraphProjector.java`
 - `fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java`
@@ -227,6 +232,7 @@
 - [x] Focused static analyzer contract.
 - [x] Repository integrity gate.
 - [x] Keycloak static and live conformance proof.
+- [x] Executable agent multiline-disjunction regression contract.
 - [x] Mega and PetClinic external gates.
 - [x] Full pull-request verification and hosted CI.
 

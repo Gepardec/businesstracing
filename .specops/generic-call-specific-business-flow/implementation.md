@@ -2,7 +2,7 @@
 
 ## Summary
 
-All five implementation tasks pass local, live, and hosted verification. The manual non-Java
+All five implementation tasks pass local and live verification. The manual non-Java
 definition-of-done review is pending.
 
 ## Phase 1 Context Summary
@@ -40,6 +40,7 @@ definition-of-done review is pending.
 | 3 | Insert a runtime-only gap before an isolated result without using the result as a predecessor. | A result must remain terminal even when the selected flow has no visible rule or action. | Task 2 | 2026-08-14T09:49:20Z |
 | 4 | Use compiler symbols and source use-sites to classify unavailable call boundaries. | Text names can be shadowed, and a direct external result must stay incomplete unless a visible predicate or action represents it. | Task 5 | 2026-08-14T11:13:13Z |
 | 5 | Connect selected runtime segments only through a full-graph route and one explicit gap. | Reused source methods can produce equivalent projected nodes at different call sites. A safe gap preserves the unknown rule without leaving a broken diagram. | Task 5 | 2026-08-14T11:13:13Z |
+| 6 | Allow a one-line runtime source correlation only after a non-final disjunction operand. | `javac` can keep later `||` jumps on the preceding source line. The preceding reversed branch proves that the next jump is part of the same short-circuit sequence and prevents an unrelated loop branch from matching. | Task 5 | 2026-08-14T11:44:19Z |
 
 ## Deviations from Design
 
@@ -113,7 +114,7 @@ Local verification passes the focused engine and Spring suites, repository integ
 ## Phase 3 Completion Summary
 
 - Completed Task 5 with two new single-purpose production components and target-neutral synthetic fixtures.
-- Updated the static analyzer, runtime execution projector, Spring contract test, Keycloak assertions, documentation, and integrity checks.
+- Updated the static analyzer, runtime transformer, runtime execution projector, Spring contract test, Keycloak assertions, documentation, and integrity checks.
 - Documented two deviations: a source-visible Spring rule replaces an old unsupported-call gap, and equivalent call-site nodes need an explicit-gap segment connector.
 - All focused, full, external, and hosted gates pass.
 
@@ -121,9 +122,19 @@ Local verification passes the focused engine and Spring suites, repository integ
 
 Published commit `e4118c6` to draft PR 27. Hosted `pr-gate`, `mega`, `petclinic`, and `postgres` jobs all pass. Task 5 is complete. The feature specification remains in implementation status only because the definition of done requires the user to validate one live graph without Java knowledge.
 
+### Session 8 — Task 5 correction started (2026-08-14)
+
+The structural live check missed one semantic error: the unfiltered call showed `enabled exists — yes` although the request had no `enabled` filter and runtime evidence did not prove an outcome for that rule. Task 5 is open again. The correction must remove an unproved rule from the selected graph and bridge the proved surrounding segments through an explicit gap. It must not infer `yes` or `no` from graph position.
+
+The first connector guard was necessary but did not solve the live error because the runtime had attached a later Boolean jump to the `enabled` rule. The cause was a multiline `||` expression: `javac` reported continuation jumps on the preceding source line, while the transformer required an exact source-line match. A broad one-line tolerance fixed Keycloak but failed Mega because it matched a loop branch before an unrelated rule. The final rule permits the one-line continuation only after a non-final disjunction operand.
+
+The target-neutral multiline-disjunction fixture failed with five observations before the transformer fix and passes with all nine ordered `no` outcomes after it. Mega runtime conformance passes unchanged. The final Keycloak searched call has 15 reachable nodes, 10 proved rules, two explicit gaps, and one terminal result. The final unfiltered call has 22 reachable nodes, 17 proved rules, two explicit gaps, and one terminal result. It now shows `enabled exists — no` and `exact exists — no`. Both endpoint responses contain 286 bytes. `./scripts/verify-pr.sh` passes with 0.225 percent p95 overhead, 5,000 completed calls, and no errors, mismatches, drops, or contamination.
+
+Task 5 is complete again. The final runtime files are in `/tmp/keycloak-business-traces-final-verified.RfAvVS`. The specification stays open only for the manual non-Java review.
+
 ## Phase 4 Verification Summary
 
 - Implementation evaluation passes with scores 9, 8, 8, and 9.
-- All Story 5 criteria and Task 5 checks pass.
+- All Story 5 criteria and Task 5 checks pass, including the multiline runtime correlation correction.
 - The repository map and documentation are current.
 - The spec remains open for the manual non-Java graph review. No code or automated gate remains pending.

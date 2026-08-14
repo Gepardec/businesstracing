@@ -23,9 +23,9 @@ final class ObservedBusinessSegmentConnector {
             List<BusinessLogicGraph.Edge> selectedEdges) {
         var nodes = new ArrayList<>(selectedNodes);
         var edges = new ArrayList<>(selectedEdges);
-        Set<String> observedNodeIds = observedNodeIds(
+        Map<String, String> observedOutcomes = observedOutcomes(
                 projection.businessNodeIdsByExactNodeId(), execution);
-        removeDanglingUnobservedRules(nodes, edges, observedNodeIds);
+        removeDanglingUnprovedRules(nodes, edges, observedOutcomes.keySet());
         Set<String> selectedNodeIds = new HashSet<>();
         nodes.forEach(node -> selectedNodeIds.add(node.nodeId()));
         List<Anchor> anchors = observedAnchors(
@@ -55,8 +55,7 @@ final class ObservedBusinessSegmentConnector {
                     uniqueEdgeId(edges, "observed-bridge-out-" + completeGraph.graphId() + '-' + bridge),
                     gapId, to.nodeId(), ""));
         }
-        connectRemainingComponents(completeGraph, nodes, edges, observedOutcomes(
-                projection.businessNodeIdsByExactNodeId(), execution), bridge);
+        connectRemainingComponents(completeGraph, nodes, edges, observedOutcomes, bridge);
         return new Selection(List.copyOf(nodes), List.copyOf(edges));
     }
 
@@ -110,6 +109,8 @@ final class ObservedBusinessSegmentConnector {
         BridgeCandidate best = null;
         for (String from : leaves) {
             for (String to : entries) {
+                if (node(nodes, from).kind() == BusinessLogicGraph.NodeKind.RULE
+                        && !observedOutcomes.containsKey(from)) continue;
                 int distance = semanticPathDistance(
                         from, to, completeGraph.nodes(), completeGraph.edges());
                 if (distance < 1) continue;
@@ -161,29 +162,17 @@ final class ObservedBusinessSegmentConnector {
                 .filter(nodeId -> !outgoing.contains(nodeId)).toList();
     }
 
-    private static Set<String> observedNodeIds(
-            Map<String, String> businessNodeByExactNode,
-            DecisionExecution execution) {
-        var observed = new HashSet<String>();
-        execution.observations().stream()
-                .map(DecisionExecution.NodeObservation::nodeId)
-                .map(businessNodeByExactNode::get)
-                .filter(java.util.Objects::nonNull)
-                .forEach(observed::add);
-        return Set.copyOf(observed);
-    }
-
-    private static void removeDanglingUnobservedRules(
+    private static void removeDanglingUnprovedRules(
             List<BusinessLogicGraph.Node> nodes,
             List<BusinessLogicGraph.Edge> edges,
-            Set<String> observedNodeIds) {
+            Set<String> provedOutcomeNodeIds) {
         while (true) {
             Set<String> outgoing = new HashSet<>();
             edges.forEach(edge -> outgoing.add(edge.fromNodeId()));
             Set<String> removed = nodes.stream()
                     .filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
                     .map(BusinessLogicGraph.Node::nodeId)
-                    .filter(nodeId -> !observedNodeIds.contains(nodeId))
+                    .filter(nodeId -> !provedOutcomeNodeIds.contains(nodeId))
                     .filter(nodeId -> !outgoing.contains(nodeId))
                     .collect(java.util.stream.Collectors.toSet());
             if (removed.isEmpty()) return;

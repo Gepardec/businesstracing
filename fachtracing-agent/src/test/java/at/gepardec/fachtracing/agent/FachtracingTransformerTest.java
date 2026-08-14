@@ -34,6 +34,7 @@ public final class FachtracingTransformerTest {
         capturesOnlyResultRelevantPredicateOperands();
         capturesCurrentEvidenceOrReportsAnExactGap();
         analyzerBindingsCaptureOneCompoundPredicateEdge();
+        multilineCompoundKeepsSourceAndBytecodePredicatesAligned();
         partialCompoundBindingCreatesRuntimeGap();
         mixedCompoundRecordsExactAtomicPaths();
         negatedCompoundRecordsExactAtomicPaths();
@@ -594,6 +595,46 @@ public final class FachtracingTransformerTest {
                     : selectedEdges;
         }
         assert collector.pollCompleted().isEmpty();
+    }
+
+    private static void multilineCompoundKeepsSourceAndBytecodePredicatesAligned() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        var result = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> item.graph().decisionLabel().equals("multiline disjunction"))
+                .findFirst().orElseThrow();
+        assert result.manifest().branchTargets().size() == 9 : result.manifest().branchTargets();
+
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                result.manifest(), Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        RuntimeCollector collector = new RuntimeCollector();
+        collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+        var method = fixture.getMethod("decideMultilineOr",
+                String.class,
+                String.class, String.class, String.class, String.class,
+                String.class, String.class, String.class, String.class);
+
+        assert method.invoke(instance, new Object[] {
+                null, null, null, null, null, null, null, null, null
+        }).equals(false);
+        DecisionExecution execution = collector.pollCompleted().orElseThrow();
+        List<DecisionExecution.NodeObservation> selected = execution.observations().stream()
+                .filter(observation -> observation.selectedEdgeId() != null).toList();
+        assert selected.size() == 9 : selected;
+        assert selected.stream().allMatch(observation -> observation.outcome().startsWith("false"))
+                : selected;
+        assert selected.stream().map(DecisionExecution.NodeObservation::nodeId).toList().equals(
+                result.graph().nodes().stream()
+                        .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
+                        .map(BusinessDecisionGraph.DecisionNode::nodeId).toList()) : selected;
     }
 
     private static void mixedCompoundRecordsExactAtomicPaths() throws Exception {

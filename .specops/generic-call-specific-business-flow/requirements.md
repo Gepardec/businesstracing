@@ -100,6 +100,7 @@ The generated endpoint graph is too large to explain one real call, so a busines
 - WHEN a source-unavailable callback configures a lazy transformation THE SYSTEM SHALL represent the configured transformation as one business action and SHALL NOT claim that the callback ran during the endpoint call.
 - WHEN a caught failure path is explicit in source THE SYSTEM SHALL preserve the normal and caught outcomes without adding a separate unknown-trigger gap for the same call site.
 - WHEN a nested binary type exists on the configured classpath THE SYSTEM SHALL resolve it by its JVM binary name.
+- WHEN `javac` reports a continued short-circuit disjunction on the preceding source line THE SYSTEM SHALL keep each runtime branch aligned with its source predicate and SHALL NOT reuse this tolerance for an unrelated branch.
 - IF a result-relevant call has no source-visible rule, action, result observation, trusted contract, or safe binary proof THEN THE SYSTEM SHALL keep one coverage gap for that unresolved boundary.
 - THE SYSTEM SHALL derive all boundary rules from Java type, use-site, control-flow, callback, and bytecode semantics and SHALL NOT use application package, class, method, label, or topology facts.
 
@@ -109,6 +110,7 @@ The generated endpoint graph is too large to explain one real call, so a busines
 - [x] Lazy callbacks become configured actions, not claimed runtime decisions.
 - [x] Explicit caught paths do not get duplicate trigger gaps.
 - [x] Nested binary types use valid JVM names.
+- [x] Multiline disjunction operands keep exact runtime outcomes without matching an unrelated branch.
 - [x] Truly unresolved behavior stays visible once.
 - [x] Production boundary rules are application-neutral.
 

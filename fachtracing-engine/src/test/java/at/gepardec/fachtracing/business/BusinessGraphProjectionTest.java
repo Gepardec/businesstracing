@@ -431,7 +431,10 @@ public final class BusinessGraphProjectionTest {
                 BusinessLogicGraph.Completeness.COMPLETE);
         var projection = new BusinessGraphProjection(
                 complete,
-                Map.of("exact-first", "first-rule", "exact-second", "second-rule-copy"),
+                Map.of(
+                        "exact-first", "first-rule",
+                        "exact-unproved", "unobserved-rule",
+                        "exact-second", "second-rule-copy"),
                 Map.of(),
                 Map.of(
                         "first-to-unobserved", List.of(List.of("entered-hidden-path")),
@@ -444,7 +447,9 @@ public final class BusinessGraphProjectionTest {
                         new DecisionExecution.NodeObservation(
                                 0, "exact-first", "false", Map.of(), null),
                         new DecisionExecution.NodeObservation(
-                                1, "exact-second", "true", Map.of(), null)),
+                                1, "exact-unproved", "", Map.of(), null),
+                        new DecisionExecution.NodeObservation(
+                                2, "exact-second", "true", Map.of(), null)),
                 DecisionExecution.DecisionValue.of(true),
                 BusinessDecisionGraph.Completeness.INCOMPLETE,
                 List.of("hidden path has no exact edge evidence"));

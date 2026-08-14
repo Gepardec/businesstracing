@@ -60,3 +60,17 @@
 | Test Verification | Focused engine and Spring suites, repository integrity, Java capabilities, Keycloak, Mega, PetClinic, and `./scripts/verify-pr.sh` pass. Live checks prove one entry, full reachability, one selected outcome per rule, and one terminal result for both calls. Hosted `pr-gate`, `mega`, `petclinic`, and `postgres` jobs pass for commit `e4118c6`. | The live Keycloak check is local and not part of pull-request CI because it needs a running pinned distribution and administrator account. | 9 | 7 | Pass |
 
 **Verdict:** PASS — 4 of 4 dimensions passed. The spec stays open only for the manual non-Java review.
+
+### Iteration 3 — Runtime predicate correlation correction
+
+**Evaluated at:** 2026-08-14T11:44:19Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | ---: | ---: | --- |
+| Functionality Depth | A target-neutral multiline disjunction records all nine evaluated predicates in order. Two final Keycloak calls produce connected graphs, and the unfiltered call records `enabled exists` and `exact exists` as `no`. | The two external permission and returned-state boundaries remain explicit gaps because the available source and classpath do not prove them. | 9 | 7 | Pass |
+| Design Fidelity | The transformer accepts a preceding source line only after a non-final disjunction operand. The connector removes a dangling rule when runtime evidence proves no outcome. | Runtime correlation still depends on `javac` branch order inside the declared supported subset. Unsupported shapes fail closed. | 9 | 7 | Pass |
+| Code Quality | The source-correlation rule and the unproved-rule connector guard each have one responsibility. No application name, label, method, or topology enters production code. | The correlation rule is intentionally narrow. Other compiler line-table differences must first get an independent failing fixture. | 9 | 7 | Pass |
+| Test Verification | The failing synthetic regression, executable agent suite, pinned Keycloak static and live checks, Mega, PetClinic, repository integrity, and `./scripts/verify-pr.sh` pass. | Hosted CI runs after the correction is pushed. | 9 | 7 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed. The spec stays open only for the manual non-Java review.

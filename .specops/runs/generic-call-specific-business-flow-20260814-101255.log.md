@@ -61,3 +61,12 @@ Started at 2026-08-14T10:12:55Z.
 - Published: Commit `e4118c6` on `codex/endpoint-business-tracing`; draft PR 27 updated.
 - Hosted proof: `pr-gate`, `mega`, `petclinic`, and `postgres` pass.
 - Result: Task 5 is complete. The specification stays open for the manual non-Java graph review.
+
+### [11:44:19] Task 5: Runtime correction complete
+
+- Found: The unfiltered live call incorrectly showed `enabled exists — yes` because multiline disjunction bytecode jumps were matched to later source predicates.
+- Synthetic proof: A target-neutral nine-rule multiline disjunction failed with five observations before the fix and now records all nine ordered `no` outcomes.
+- Boundary proof: A broad line tolerance failed Mega. The final rule permits a preceding bytecode source line only after a non-final disjunction operand. Mega passes unchanged.
+- Keycloak live proof: The searched graph has 15 reachable nodes and 10 proved rules. The unfiltered graph has 22 reachable nodes and 17 proved rules, including `enabled exists — no` and `exact exists — no`. Each has two explicit gaps and one terminal result.
+- Full local proof: `./scripts/verify-pr.sh` passes with 0.225 percent p95 overhead and no errors, mismatches, drops, or contamination.
+- Result: Task 5 is complete again. Hosted CI and the manual non-Java review remain.

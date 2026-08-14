@@ -43,7 +43,7 @@ This audit data does not enter the business graph or runtime activation JSON.
 | `@FachTracing` method | Discovers every decision entry in deterministic source order and its optional business label |
 | `if / else` and comparison | Produces result-relevant predicate nodes; a complete Java 21 `javac` Boolean binding records the exact `true` or `false` edge |
 | `value == null`, `value != null` | Preserves result-relevant optionality as “is absent” or “exists”; Java `null` is never business output |
-| Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed result-relevant operand evidence when an exact binding is available |
+| Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed result-relevant operand evidence when an exact binding is available. A multiline disjunction can correlate a continuation jump on the preceding `javac` source line only after a non-final disjunction operand |
 | Predicate operand evidence | Reads a direct parameter from its current local slot at each predicate branch; reassignment and repeated evaluation cannot reuse the method-entry value. Property, local, or calculated operands outside the exact subset produce a source-located execution gap |
 | Method receiver evidence | Records a direct parameter receiver for result-relevant value calls, including direct Boolean return expressions. An unsupported explicit value receiver creates a source-located gap |
 | Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
@@ -123,6 +123,8 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 - Incomplete exact branch metadata creates a located coverage gap and does not claim an exact edge.
 - Mixed, nested, and negated Boolean forms use occurrence-aware atomic bindings. Each evaluated
   atom records one exact edge and typed Boolean evidence. Short-circuited atoms record nothing.
+  A preceding-line continuation match is valid only inside a proved disjunction sequence; an
+  unrelated loop or branch cannot consume the next predicate binding.
 - A result-relevant source-proven catch path records its exact opaque path edge. Its normal and
   caught source outcomes do not add a duplicate unknown-trigger gap. An unresolved call inside the
   path and finally-overridden returns remain located coverage gaps.
