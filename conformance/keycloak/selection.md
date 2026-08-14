@@ -15,6 +15,6 @@ The selected method returns a lazy stream. The runtime trace ends when the metho
 the REST layer consumes that stream. Thus, the trace explains query selection, filters, permission
 checks, and other work performed inside `getUsers`. It does not claim to explain later stream
 consumption or response serialization. The exact developer record uses `Result not recorded` and
-incomplete coverage for that result type. The automatic business files report the successful call
-as `Completed`. They do not consume the stream and show one safe coverage statement instead of
-developer diagnostics.
+incomplete coverage for that result type. The automatic business files keep the generated named
+result for the selected terminal path and insert one safe gap before it. They do not consume the
+stream and do not expose developer diagnostics.

@@ -7,6 +7,11 @@ import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.BusinessEntryPoint;
 import at.gepardec.fachtracing.agent.FachtracingTransformer;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
+import at.gepardec.fachtracing.business.BusinessExecutionGraphProjector;
+import at.gepardec.fachtracing.business.BusinessExecutionTextRenderer;
+import at.gepardec.fachtracing.business.BusinessGraphProjector;
+import at.gepardec.fachtracing.business.BusinessLogicArtifactGuard;
+import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
 import at.gepardec.fachtracing.explain.DecisionExplanationProjector;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
@@ -115,6 +120,8 @@ public final class MegaBackendConformanceTest {
         Files.createDirectories(oracles);
         var renderer = new PlantUmlRenderer();
         var mermaid = new MermaidRenderer();
+        var businessProjector = new BusinessGraphProjector();
+        var businessMermaid = new BusinessMermaidRenderer();
         var topologyMismatches = new ArrayList<String>();
         for (var entry : graphs.entrySet()) {
             String name = slug(entry.getKey());
@@ -128,6 +135,16 @@ public final class MegaBackendConformanceTest {
             Files.writeString(generated.resolve(name + "-structure.puml"), structure);
             Files.writeString(generated.resolve(name + "-structure.mmd"), mermaidStructure);
             Files.writeString(generated.resolve(name + "-semantic.txt"), semantic);
+            var businessGraph = businessProjector.project(analyses.get(entry.getKey()));
+            String businessDiagram = businessMermaid.render(businessGraph);
+            new BusinessLogicArtifactGuard().requireClean(businessGraph);
+            assert businessGraph.nodes().size() <= graph.nodes().size()
+                    : entry.getKey() + " business overview grew: " + businessGraph;
+            assert businessGraph.nodes().stream()
+                    .anyMatch(node -> node.kind() == at.gepardec.fachtracing.model.BusinessLogicGraph.NodeKind.RESULT)
+                    : entry.getKey() + " business overview has no result";
+            assertBusinessArtifact(entry.getKey() + " business overview", businessDiagram);
+            Files.writeString(generated.resolve(name + "-business.mmd"), businessDiagram);
             Path oracle = oracles.resolve(name + ".txt");
             assert Files.exists(oracle) : "missing reviewed oracle " + oracle;
             if (!Files.readString(oracle).equals(semantic)) topologyMismatches.add(entry.getKey());
@@ -214,12 +231,24 @@ public final class MegaBackendConformanceTest {
         String text = projector.text(explanation);
         String executionDiagram = new PlantUmlRenderer().execution(analysis.graph(), execution);
         String mermaidExecution = new MermaidRenderer().execution(analysis.graph(), execution);
+        var businessExecution = new BusinessExecutionGraphProjector().project(analysis.graph(), execution);
+        String businessText = new BusinessExecutionTextRenderer().render(businessExecution);
+        String businessDiagram = new BusinessMermaidRenderer().render(businessExecution);
+        new BusinessLogicArtifactGuard().requireClean(businessExecution);
+        assert businessExecution.nodes().stream()
+                .filter(node -> node.kind() == at.gepardec.fachtracing.model.BusinessLogicGraph.NodeKind.RESULT)
+                .count() == 1 : businessExecution;
+        assert businessExecution.nodes().size() < analysis.graph().nodes().size() : businessExecution;
         assertBusinessArtifact("determine journey warnings explanation", text);
         assertBusinessArtifact("determine journey warnings execution", executionDiagram);
         assertBusinessArtifact("determine journey warnings Mermaid execution", mermaidExecution);
+        assertBusinessArtifact("determine journey warnings business text", businessText);
+        assertBusinessArtifact("determine journey warnings business diagram", businessDiagram);
         Files.writeString(generated.resolve("determine-journey-warnings-execution.puml"), executionDiagram);
         Files.writeString(generated.resolve("determine-journey-warnings-explanation.txt"), text);
         Files.writeString(generated.resolve("determine-journey-warnings-execution.mmd"), mermaidExecution);
+        Files.writeString(generated.resolve("determine-journey-warnings-business-execution.txt"), businessText);
+        Files.writeString(generated.resolve("determine-journey-warnings-business-execution.mmd"), businessDiagram);
         System.out.println("captured journey-warning execution with typed empty collection and three selected strategies");
     }
 

@@ -1,8 +1,8 @@
 package at.gepardec.fachtracing.agent;
 
-import at.gepardec.fachtracing.explain.BusinessExecutionMermaidRenderer;
-import at.gepardec.fachtracing.explain.BusinessExplanationProjector;
-import at.gepardec.fachtracing.explain.BusinessExplanationTextRenderer;
+import at.gepardec.fachtracing.business.BusinessExecutionGraphProjector;
+import at.gepardec.fachtracing.business.BusinessExecutionTextRenderer;
+import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
 import at.gepardec.fachtracing.runtime.RuntimeCollector;
@@ -27,9 +27,9 @@ final class BusinessTraceFileSink implements AutoCloseable {
     private final Map<GraphKey, BusinessDecisionGraph> graphs;
     private final Path outputDirectory;
     private final Consumer<String> diagnosticReporter;
-    private final BusinessExplanationProjector projector = new BusinessExplanationProjector();
-    private final BusinessExplanationTextRenderer text = new BusinessExplanationTextRenderer();
-    private final BusinessExecutionMermaidRenderer mermaid = new BusinessExecutionMermaidRenderer();
+    private final BusinessExecutionGraphProjector projector = new BusinessExecutionGraphProjector();
+    private final BusinessExecutionTextRenderer text = new BusinessExecutionTextRenderer();
+    private final BusinessMermaidRenderer mermaid = new BusinessMermaidRenderer();
     private final AtomicBoolean running = new AtomicBoolean();
     private Thread worker;
 
@@ -75,10 +75,10 @@ final class BusinessTraceFileSink implements AutoCloseable {
         if (graph == null) {
             throw new IllegalStateException("completed execution has no activated graph");
         }
-        var explanation = projector.project(graph, execution);
-        String base = slug(explanation.decisionLabel()) + "-" + safeId(execution.executionId());
-        writeAtomically(outputDirectory.resolve(base + ".txt"), text.render(explanation));
-        writeAtomically(outputDirectory.resolve(base + ".mmd"), mermaid.render(explanation));
+        var businessFlow = projector.project(graph, execution);
+        String base = slug(businessFlow.decisionLabel()) + "-" + safeId(execution.executionId());
+        writeAtomically(outputDirectory.resolve(base + ".txt"), text.render(businessFlow));
+        writeAtomically(outputDirectory.resolve(base + ".mmd"), mermaid.render(businessFlow));
     }
 
     private static void writeAtomically(Path target, String content) throws IOException {

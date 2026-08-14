@@ -71,6 +71,16 @@ then
   fail "the Keycloak guide must not embed a fixed Mermaid flowchart"
 fi
 
+PRODUCTION_ROOTS="fachtracing-api/src/main fachtracing-engine/src/main fachtracing-agent/src/main fachtracing-maven-plugin/src/main fachtracing-spring/src/main fachtracing-storage-jdbc/src/main"
+if grep -E -i -r -q 'keycloak|usersresource|org\.keycloak|com\.gepardec\.mega|mega[-_. ]backend' $PRODUCTION_ROOTS
+then
+  fail "production code must not contain reference-application identity"
+fi
+if grep -E -i -r -q 'search query is absent|admin permissions (enabled|disabled) for realm|determine journey warnings|warningcalculatorsmanager' $PRODUCTION_ROOTS
+then
+  fail "production code must not contain reviewed reference-application labels or methods"
+fi
+
 for oracle in \
   authorize-clarification-resolution \
   detect-overlapping-time-entries \
@@ -109,7 +119,7 @@ done
 
 check_hash 85ef2d1f851f0c9df88bfe0f980752efcccd81359a00b14ec3955b86796df9a7 \
   conformance/spring-petclinic/src/test/resources/oracles/owner-search-business.json
-check_hash d1657f14ea2c1c0606a5bfc1fc6bcd391c0a4a69468f4618ff0f6365ba6ff1e7 \
+check_hash 330c722131c8aebeeaa538483a5af5f799e133370fea5799b780cba001462d7b \
   conformance/spring-petclinic/src/test/resources/oracles/pet-registration-business.json
 check_hash e0148a8cf3ec8f42210b0df765310c3e58d88cbf7bf6e428a5343822c2c587b3 \
   conformance/spring-petclinic/src/test/resources/oracles/visit-booking-business.json

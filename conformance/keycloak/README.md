@@ -29,8 +29,14 @@ conformance command and is not part of pull-request CI.
 
 The command writes these disposable files under `conformance/keycloak/target/generated`:
 
-- `search-users-business.mmd`: the generated non-technical business projection.
+- `search-users-business.mmd`: the generated summarized non-technical overview.
+- `search-users-evaluated-example.mmd`: one concise successful path selected from the analyzed graph.
 - `activation.json`: exact probes and class fingerprints for the pinned build.
+
+The evaluated example is not a fixed reviewed diagram and is not a recorded HTTP call. The harness
+finds a successful exact path in the generated graph, creates exact edge evidence for that path, and
+passes it through the same generic runtime projector as the agent sink. This proves the mapping in a
+repeatable gate. A live call supplies its own observed edges and can select a different path.
 
 ## Call the endpoint and get the evaluated flow
 
@@ -65,13 +71,30 @@ curl --fail --silent \
 ```
 
 Each call creates one `.txt` explanation and one `.mmd` evaluated path in
-`/tmp/keycloak-business-traces`. The files use business statements and `REDACTED` values. They do
-not contain Java owners, methods, source paths, request values, tokens, or exception details. A
-successful call reports `Completed`. The incomplete coverage line uses one business-safe statement
-and does not expose the developer diagnostics.
+`/tmp/keycloak-business-traces`. Both files use one generated call-specific business graph. They
+contain only the rules, outcomes, named result, and gaps selected for that call. They do not contain
+Java owners, methods, source paths, request values, result values, tokens, or exception details. The
+lazy result keeps the generated `search users completed` business result and one business-safe gap.
+It does not expose developer diagnostics.
 
-The static graph and live call are separate checks. The conformance command verifies the pinned
-source selection, non-technical projection, activation, and class fingerprints. A live Keycloak
-call is local because it needs a running distribution, an administrator account, a free port, and
-startup time outside the repository CI budget. See [the exact selection](selection.md) for the lazy
-stream boundary and its explicit incomplete-coverage behavior.
+## Non-Java review check
+
+Give only one live `.mmd` file to a reviewer who does not know Java. Do not give the source, exact
+graph, or developer record. The review passes when the reviewer can answer all four questions from
+the diagram alone:
+
+1. What decision did the endpoint make?
+2. Which shown rules were met or not met?
+3. What named result did this call reach?
+4. Is the shown path complete, or does it contain an explicit unknown rule?
+
+Record the answers with the endpoint request. The feature definition of done passes only when all
+four answers agree with the selected nodes, edge outcomes, result node, and coverage state in the
+generated call graph.
+
+The overview, generated evaluated example, and live call are separate checks. The conformance
+command verifies the pinned source selection, generated summary, exact-to-business runtime mapping,
+activation, and class fingerprints. A live Keycloak call is local because it needs a running
+distribution, an administrator account, a free port, and startup time outside the repository CI
+budget. See [the exact selection](selection.md) for the lazy stream boundary and its explicit
+incomplete-coverage behavior.

@@ -1,0 +1,51 @@
+{
+  "id": "generic-call-specific-business-flow",
+  "type": "feature",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-14T09:19:44Z",
+  "updated": "2026-08-14T09:52:44Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "It defines the business-only graph and artifact guard.",
+      "required": true
+    },
+    {
+      "specId": "runtime-decision-path-capture",
+      "reason": "It defines validated exact runtime path evidence.",
+      "required": true
+    },
+    {
+      "specId": "configured-endpoint-business-tracing",
+      "reason": "It defines selected endpoint activation and automatic output.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "keycloak-live-business-output-correctness",
+    "generated-keycloak-diagram-correctness"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-14T09:22:46Z"
+    }
+  }
+}

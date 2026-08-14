@@ -198,13 +198,16 @@ public final class FachtracingTransformerTest {
                 "activation=" + activation + ",output=" + output, instrumentation);
         assert installed.get() instanceof FachtracingTransformer;
         TraceRuntime.begin("graph", 1);
-        TraceRuntime.observe("predicate", "true", "private first value");
+        TraceRuntime.observeEvidenceFor("graph", 1, "predicate", "age", "private first value");
+        TraceRuntime.predicateFor("graph", 1, "predicate", "edge-true", true);
         TraceRuntime.complete("outcome", true);
         TraceRuntime.begin("graph", 1);
-        TraceRuntime.observe("predicate", "false", "private second value");
+        TraceRuntime.observeEvidenceFor("graph", 1, "predicate", "age", "private second value");
+        TraceRuntime.predicateFor("graph", 1, "predicate", "edge-false", false);
         TraceRuntime.complete("outcome", false);
         TraceRuntime.begin("graph", 1);
-        TraceRuntime.observe("predicate", "true", "private third value");
+        TraceRuntime.observeEvidenceFor("graph", 1, "predicate", "age", "private third value");
+        TraceRuntime.predicateFor("graph", 1, "predicate", "edge-true", true);
         TraceRuntime.complete("outcome", new Object());
         awaitArtifacts(output, 6);
         List<Path> textFiles;
@@ -220,7 +223,6 @@ public final class FachtracingTransformerTest {
         for (Path file : java.util.stream.Stream.concat(textFiles.stream(), diagrams.stream()).toList()) {
             String content = Files.readString(file);
             assert content.contains("eligibility") : content;
-            assert content.contains("REDACTED") : content;
             assert !content.contains("private first value") : content;
             assert !content.contains("private second value") : content;
             assert !content.contains("private third value") : content;
@@ -232,15 +234,32 @@ public final class FachtracingTransformerTest {
                 assert !content.toLowerCase().contains(prohibited) : prohibited + " in " + content;
             }
         }
-        String combinedText = textFiles.stream().map(path -> {
-            try {
-                return Files.readString(path);
-            } catch (java.io.IOException exception) {
-                throw new java.io.UncheckedIOException(exception);
+        int eligibleCalls = 0;
+        int ineligibleCalls = 0;
+        int incompleteCalls = 0;
+        for (Path textFile : textFiles) {
+            String text = Files.readString(textFile);
+            Path diagramFile = Path.of(textFile.toString().replaceFirst("\\.txt$", ".mmd"));
+            String diagram = Files.readString(diagramFile);
+            assert text.contains("age is below 24") : text;
+            assert diagram.contains("age is below 24") : diagram;
+            if (text.contains("Result: eligible\n")) {
+                eligibleCalls++;
+                assert diagram.contains("eligible") && !diagram.contains("not eligible") : diagram;
+            } else if (text.contains("Result: not eligible\n")) {
+                ineligibleCalls++;
+                assert diagram.contains("not eligible") : diagram;
+            } else {
+                throw new AssertionError("named business result is absent: " + text);
             }
-        }).collect(java.util.stream.Collectors.joining("\n"));
-        assert combinedText.contains("Result: Completed") : combinedText;
-        assert combinedText.contains("Gap: some business rules could not be observed") : combinedText;
+            if (text.contains("Coverage: incomplete")) {
+                incompleteCalls++;
+                assert diagram.contains("analysis could not determine a required rule") : diagram;
+            }
+        }
+        assert eligibleCalls == 2 : eligibleCalls;
+        assert ineligibleCalls == 1 : ineligibleCalls;
+        assert incompleteCalls == 1 : incompleteCalls;
         deleteTree(output);
         Files.deleteIfExists(activation);
     }
@@ -1434,8 +1453,10 @@ public final class FachtracingTransformerTest {
                 new BusinessDecisionGraph.DecisionNode("outcome", BusinessDecisionGraph.NodeKind.OUTCOME,
                         "final decision", Map.of()));
         var edges = List.of(
-                new BusinessDecisionGraph.DecisionEdge("edge-true", "predicate", "outcome", "true"),
-                new BusinessDecisionGraph.DecisionEdge("edge-false", "predicate", "outcome", "false"));
+                new BusinessDecisionGraph.DecisionEdge(
+                        "edge-true", "predicate", "outcome", "true; returns eligible"),
+                new BusinessDecisionGraph.DecisionEdge(
+                        "edge-false", "predicate", "outcome", "false; returns not eligible"));
         return new BusinessDecisionGraph("graph", 1, "eligibility", "entry", nodes, edges,
                 BusinessDecisionGraph.Completeness.COMPLETE, List.of());
     }

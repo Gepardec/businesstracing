@@ -27,7 +27,12 @@ public final class BusinessGraphProjector {
     /** Projects one exact analysis result without changing that result. */
     public BusinessLogicGraph project(AnalysisManifest.AnalysisResult analysis) {
         Objects.requireNonNull(analysis, "analysis");
-        BusinessDecisionGraph exact = analysis.graph();
+        return new BusinessGraphSummarizer().summarize(projectTraceable(analysis.graph()).graph());
+    }
+
+    /** Projects one exact graph and keeps in-memory traceability for runtime selection. */
+    public BusinessGraphProjection projectTraceable(BusinessDecisionGraph exact) {
+        Objects.requireNonNull(exact, "exact");
         String businessGraphId = businessGraphId(exact);
 
         Map<String, BusinessDecisionGraph.DecisionNode> exactNodes = indexNodes(exact);
@@ -49,6 +54,7 @@ public final class BusinessGraphProjector {
         }
 
         var nodes = new ArrayList<>(projectedByExactId.values());
+        var resultByExactEdgeId = new LinkedHashMap<String, String>();
         Set<String> projectedLoopNodeIds = loops.keySet().stream()
                 .map(projectedByExactId::get)
                 .filter(Objects::nonNull)
@@ -64,24 +70,28 @@ public final class BusinessGraphProjector {
             String id = opaqueId("result", businessGraphId, "terminal:" + index);
             nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT,
                     resultLabel(exact, edge, exactNodes, incoming)));
-            targets.add(Target.result(id, edge.fromNodeId(), edge.outcome()));
+            targets.add(Target.result(id, edge.fromNodeId(), edge.edgeId()));
+            resultByExactEdgeId.put(edge.edgeId(), id);
         }
 
         if (nodes.isEmpty()) {
             String id = opaqueId("result", businessGraphId, "empty");
             nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT, "completed"));
-            targets.add(Target.result(id, exact.entryNodeId(), "returns completed"));
+            targets.add(Target.result(id, exact.entryNodeId(), null));
         }
 
         var entries = new LinkedHashSet<String>();
         var edges = new ArrayList<BusinessLogicGraph.Edge>();
         var edgeKeys = new HashSet<String>();
+        var exactPathsByBusinessEdgeId = new LinkedHashMap<String, List<List<String>>>();
         for (Target target : targets) {
             if (target.result()) {
                 walkBackward(exact, businessGraphId, target.exactNodeId(), target,
-                        List.of(target.initialOutcome()),
+                        target.exactEdgeId() == null
+                                ? List.of()
+                                : List.of(requireExactEdge(exact, target.exactEdgeId())),
                         projectedByExactId, projectedLoopNodeIds, incoming,
-                        entries, edges, edgeKeys, new HashSet<>());
+                        entries, edges, edgeKeys, exactPathsByBusinessEdgeId, new HashSet<>());
             } else {
                 List<BusinessDecisionGraph.DecisionEdge> predecessors = incoming
                         .getOrDefault(target.exactNodeId(), List.of());
@@ -90,15 +100,23 @@ public final class BusinessGraphProjector {
                 }
                 for (BusinessDecisionGraph.DecisionEdge predecessor : predecessors) {
                     walkBackward(exact, businessGraphId, predecessor.fromNodeId(), target,
-                            List.of(predecessor.outcome()),
+                            List.of(predecessor),
                             projectedByExactId, projectedLoopNodeIds, incoming,
-                            entries, edges, edgeKeys, new HashSet<>());
+                            entries, edges, edgeKeys, exactPathsByBusinessEdgeId, new HashSet<>());
                 }
             }
         }
 
         removeUnreachableNodes(nodes, edges, entries);
         if (entries.isEmpty() && !nodes.isEmpty()) entries.add(nodes.getFirst().nodeId());
+
+        Set<String> retainedNodeIds = nodes.stream().map(BusinessLogicGraph.Node::nodeId)
+                .collect(java.util.stream.Collectors.toSet());
+        Set<String> retainedEdgeIds = edges.stream().map(BusinessLogicGraph.Edge::edgeId)
+                .collect(java.util.stream.Collectors.toSet());
+        projectedByExactId.entrySet().removeIf(entry -> !retainedNodeIds.contains(entry.getValue().nodeId()));
+        resultByExactEdgeId.entrySet().removeIf(entry -> !retainedNodeIds.contains(entry.getValue()));
+        exactPathsByBusinessEdgeId.entrySet().removeIf(entry -> !retainedEdgeIds.contains(entry.getKey()));
 
         BusinessLogicGraph graph = new BusinessLogicGraph(
                 businessGraphId, exact.version(), cleanLabel(exact.decisionLabel()), List.copyOf(entries),
@@ -107,7 +125,14 @@ public final class BusinessGraphProjector {
                         ? BusinessLogicGraph.Completeness.COMPLETE
                         : BusinessLogicGraph.Completeness.INCOMPLETE);
         new BusinessLogicArtifactGuard().requireClean(graph);
-        return graph;
+        var businessNodeIdsByExactNodeId = new LinkedHashMap<String, String>();
+        projectedByExactId.forEach((exactId, node) ->
+                businessNodeIdsByExactNodeId.put(exactId, node.nodeId()));
+        return new BusinessGraphProjection(
+                graph,
+                businessNodeIdsByExactNodeId,
+                resultByExactEdgeId,
+                exactPathsByBusinessEdgeId);
     }
 
     private static void walkBackward(
@@ -115,19 +140,20 @@ public final class BusinessGraphProjector {
             String businessGraphId,
             String cursor,
             Target target,
-            List<String> outcomes,
+            List<BusinessDecisionGraph.DecisionEdge> exactPath,
             Map<String, BusinessLogicGraph.Node> projectedByExactId,
             Set<String> projectedLoopNodeIds,
             Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming,
             Set<String> entries,
             List<BusinessLogicGraph.Edge> edges,
             Set<String> edgeKeys,
+            Map<String, List<List<String>>> exactPathsByBusinessEdgeId,
             Set<String> visited) {
         BusinessLogicGraph.Node source = projectedByExactId.get(cursor);
         if (source != null) {
             if (!source.nodeId().equals(target.businessNodeId())) {
                 addEdge(businessGraphId, source, projectedLoopNodeIds.contains(source.nodeId()),
-                        target, outcomes, edges, edgeKeys);
+                        target, exactPath, edges, edgeKeys, exactPathsByBusinessEdgeId);
             }
             return;
         }
@@ -142,12 +168,12 @@ public final class BusinessGraphProjector {
             return;
         }
         for (BusinessDecisionGraph.DecisionEdge predecessor : predecessors) {
-            var path = new ArrayList<String>(outcomes.size() + 1);
-            path.add(predecessor.outcome());
-            path.addAll(outcomes);
+            var path = new ArrayList<BusinessDecisionGraph.DecisionEdge>(exactPath.size() + 1);
+            path.add(predecessor);
+            path.addAll(exactPath);
             walkBackward(exact, businessGraphId, predecessor.fromNodeId(), target, List.copyOf(path),
                     projectedByExactId, projectedLoopNodeIds, incoming,
-                    entries, edges, edgeKeys, new HashSet<>(visited));
+                    entries, edges, edgeKeys, exactPathsByBusinessEdgeId, new HashSet<>(visited));
         }
     }
 
@@ -156,15 +182,22 @@ public final class BusinessGraphProjector {
             BusinessLogicGraph.Node source,
             boolean loopRule,
             Target target,
-            List<String> outcomes,
+            List<BusinessDecisionGraph.DecisionEdge> exactPath,
             List<BusinessLogicGraph.Edge> edges,
-            Set<String> edgeKeys) {
-        String outcome = businessOutcome(source.kind(), loopRule, outcomes);
+            Set<String> edgeKeys,
+            Map<String, List<List<String>>> exactPathsByBusinessEdgeId) {
+        String outcome = businessOutcome(source.kind(), loopRule, exactPath.stream()
+                .map(BusinessDecisionGraph.DecisionEdge::outcome).toList());
         String key = source.nodeId() + '\u0000' + target.businessNodeId() + '\u0000' + outcome;
-        if (!edgeKeys.add(key)) return;
         String edgeId = opaqueId("edge", graphId, key);
-        edges.add(new BusinessLogicGraph.Edge(
-                edgeId, source.nodeId(), target.businessNodeId(), outcome));
+        if (edgeKeys.add(key)) {
+            edges.add(new BusinessLogicGraph.Edge(
+                    edgeId, source.nodeId(), target.businessNodeId(), outcome));
+        }
+        List<String> exactEdgeIds = exactPath.stream()
+                .map(BusinessDecisionGraph.DecisionEdge::edgeId).toList();
+        var alternatives = exactPathsByBusinessEdgeId.computeIfAbsent(edgeId, ignored -> new ArrayList<>());
+        if (!alternatives.contains(exactEdgeIds)) alternatives.add(exactEdgeIds);
     }
 
     private static BusinessLogicGraph.Node projectNode(
@@ -530,6 +563,12 @@ public final class BusinessGraphProjector {
         return Map.copyOf(nodes);
     }
 
+    private static BusinessDecisionGraph.DecisionEdge requireExactEdge(
+            BusinessDecisionGraph graph, String edgeId) {
+        return graph.edges().stream().filter(edge -> edge.edgeId().equals(edgeId)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("unknown exact edge ID"));
+    }
+
     private static Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming(BusinessDecisionGraph graph) {
         var result = new HashMap<String, List<BusinessDecisionGraph.DecisionEdge>>();
         for (BusinessDecisionGraph.DecisionEdge edge : graph.edges()) {
@@ -587,12 +626,12 @@ public final class BusinessGraphProjector {
             String businessNodeId,
             String exactNodeId,
             boolean result,
-            String initialOutcome) {
+            String exactEdgeId) {
         private static Target exact(String businessId, String exactId) {
-            return new Target(businessId, exactId, false, "");
+            return new Target(businessId, exactId, false, null);
         }
-        private static Target result(String businessId, String exactId, String outcome) {
-            return new Target(businessId, exactId, true, outcome);
+        private static Target result(String businessId, String exactId, String exactEdgeId) {
+            return new Target(businessId, exactId, true, exactEdgeId);
         }
     }
 

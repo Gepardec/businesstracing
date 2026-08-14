@@ -6,16 +6,23 @@ import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.BusinessEntryPoint;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.business.BusinessGraphProjector;
+import at.gepardec.fachtracing.business.BusinessExecutionGraphProjector;
 import at.gepardec.fachtracing.business.BusinessLogicArtifactGuard;
 import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
 import at.gepardec.fachtracing.model.BusinessLogicGraph;
+import at.gepardec.fachtracing.model.BusinessDecisionGraph;
+import at.gepardec.fachtracing.model.DecisionExecution;
 import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +82,8 @@ public final class KeycloakConformanceTest {
         assert fullBusinessGraph.nodes().stream()
                 .anyMatch(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
                 : "projected business graph must identify incomplete coverage";
+        assert fullBusinessGraph.nodes().size() < analysis.graph().nodes().size()
+                : "the generated overview did not reduce the exact graph";
         for (String required : List.of("search query is absent", "search exists", "prefix exists")) {
             String nodeId = analysis.graph().nodes().stream()
                     .filter(node -> node.businessLabel().equalsIgnoreCase(required))
@@ -89,8 +98,23 @@ public final class KeycloakConformanceTest {
         assert !businessDiagram.contains("UsersResource") : businessDiagram;
         assert !businessDiagram.contains(".java") : businessDiagram;
 
+        DecisionExecution evaluatedExecution = successfulExecution(analysis.graph());
+        BusinessLogicGraph evaluatedFlow = new BusinessExecutionGraphProjector()
+                .project(analysis.graph(), evaluatedExecution);
+        new BusinessLogicArtifactGuard().requireClean(evaluatedFlow);
+        assert evaluatedFlow.nodes().size() < fullBusinessGraph.nodes().size() : evaluatedFlow;
+        assert evaluatedFlow.nodes().size() <= 15 : "evaluated example is not concise: " + evaluatedFlow;
+        assert evaluatedFlow.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RESULT)
+                .count() == 1 : evaluatedFlow;
+        String evaluatedDiagram = new BusinessMermaidRenderer().render(evaluatedFlow);
+        assert evaluatedDiagram.contains("search users") : evaluatedDiagram;
+        assert !evaluatedDiagram.contains("org.keycloak") : evaluatedDiagram;
+        assert !evaluatedDiagram.contains("UsersResource") : evaluatedDiagram;
+        assert !evaluatedDiagram.contains(".java") : evaluatedDiagram;
+
         Files.createDirectories(output);
         Files.writeString(output.resolve("search-users-business.mmd"), businessDiagram);
+        Files.writeString(output.resolve("search-users-evaluated-example.mmd"), evaluatedDiagram);
         var bundle = new RuntimeActivationBundle(
                 "keycloak-eba869ee597b933efc8fa2c84713db9e6c0983cf",
                 "-javaagent:fachtracing-agent-0.1.0-rc.1.jar",
@@ -100,7 +124,67 @@ public final class KeycloakConformanceTest {
         Files.write(output.resolve("activation.json"), bundle.toJson());
         System.out.println("KEYCLOAK_BUSINESS_TRACE_READY " + output);
         System.out.println("search users: " + analysis.graph().nodes().size() + " exact nodes, "
+                + fullBusinessGraph.nodes().size() + " overview nodes, "
+                + evaluatedFlow.nodes().size() + " evaluated nodes, "
                 + analysis.graph().completeness());
+    }
+
+    private static DecisionExecution successfulExecution(BusinessDecisionGraph graph) {
+        List<BusinessDecisionGraph.DecisionEdge> path = shortestSuccessfulPath(graph);
+        var observations = new ArrayList<DecisionExecution.NodeObservation>();
+        long sequence = 0;
+        for (BusinessDecisionGraph.DecisionEdge edge : path) {
+            observations.add(new DecisionExecution.NodeObservation(
+                    sequence++, edge.fromNodeId(), edge.outcome(), Map.of(), edge.edgeId()));
+        }
+        observations.add(new DecisionExecution.NodeObservation(
+                sequence, path.getLast().toNodeId(), "completed", Map.of(), null));
+        return new DecisionExecution(
+                "generated-keycloak-example", graph.graphId(), graph.version(),
+                Instant.EPOCH, Instant.EPOCH.plusSeconds(1), observations,
+                new DecisionExecution.DecisionValue("status", "COMPLETED", "Completed"),
+                graph.completeness(),
+                graph.coverageGaps().stream().map(BusinessDecisionGraph.CoverageGap::description).toList());
+    }
+
+    private static List<BusinessDecisionGraph.DecisionEdge> shortestSuccessfulPath(
+            BusinessDecisionGraph graph) {
+        var nodes = new HashMap<String, BusinessDecisionGraph.DecisionNode>();
+        graph.nodes().forEach(node -> nodes.put(node.nodeId(), node));
+        var queue = new ArrayDeque<String>();
+        var seen = new java.util.HashSet<String>();
+        var predecessor = new HashMap<String, BusinessDecisionGraph.DecisionEdge>();
+        queue.add(graph.entryNodeId());
+        seen.add(graph.entryNodeId());
+        String terminal = null;
+        while (!queue.isEmpty() && terminal == null) {
+            String current = queue.removeFirst();
+            for (BusinessDecisionGraph.DecisionEdge edge : graph.edges().stream()
+                    .filter(candidate -> candidate.fromNodeId().equals(current)).toList()) {
+                BusinessDecisionGraph.DecisionNode target = nodes.get(edge.toNodeId());
+                if (target != null && target.kind() == BusinessDecisionGraph.NodeKind.OUTCOME
+                        && !edge.outcome().toLowerCase(java.util.Locale.ROOT).contains("fails")) {
+                    predecessor.put(edge.toNodeId(), edge);
+                    terminal = edge.toNodeId();
+                    break;
+                }
+                if (target != null && target.kind() == BusinessDecisionGraph.NodeKind.OUTCOME) continue;
+                if (seen.add(edge.toNodeId())) {
+                    predecessor.put(edge.toNodeId(), edge);
+                    queue.addLast(edge.toNodeId());
+                }
+            }
+        }
+        if (terminal == null) throw new AssertionError("generated graph has no successful terminal path");
+        var reversed = new ArrayList<BusinessDecisionGraph.DecisionEdge>();
+        for (String nodeId = terminal; !nodeId.equals(graph.entryNodeId()); ) {
+            BusinessDecisionGraph.DecisionEdge edge = predecessor.get(nodeId);
+            if (edge == null) throw new AssertionError("generated terminal path is disconnected");
+            reversed.add(edge);
+            nodeId = edge.fromNodeId();
+        }
+        Collections.reverse(reversed);
+        return List.copyOf(reversed);
     }
 
     private static Map<String, String> classFingerprints(
