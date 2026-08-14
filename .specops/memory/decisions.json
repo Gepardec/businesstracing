@@ -1150,6 +1150,36 @@
       "task": "Task 2",
       "date": "2026-08-14",
       "completedAt": "2026-08-14T09:27:16Z"
+    },
+    {
+      "specId": "self-traced-core-algorithms",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Trace the final reason classifier called by projectNode",
+      "rationale": "The generated graph must describe the production keep or remove authority without pulling label-cleaning mechanics into business output.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T09:54:30Z"
+    },
+    {
+      "specId": "self-traced-core-algorithms",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Extract one traced source selector",
+      "rationale": "Source roles and project closure must have one production owner that the analyzer calls.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T09:54:30Z"
+    },
+    {
+      "specId": "self-traced-core-algorithms",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Prove current algorithms from generated files",
+      "rationale": "File, content, call-site, and repeated-checksum assertions prevent a manual diagram or unused example from passing.",
+      "task": "Task 3",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T09:54:30Z"
     }
   ]
 }

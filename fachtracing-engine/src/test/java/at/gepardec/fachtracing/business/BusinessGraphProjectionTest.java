@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.business;
 
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.api.FachTracing;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.BusinessLogicGraph;
 
@@ -12,6 +13,7 @@ public final class BusinessGraphProjectionTest {
     private BusinessGraphProjectionTest() { }
 
     public static void main(String[] args) {
+        tracesAuthoritativeNodeProjection();
         foldsLoopMechanicsIntoOneRule();
         usesTheFoldedLoopResultForTheFollowingBusinessBranch();
         preservesRulesActionsReturnsAndFailures();
@@ -21,6 +23,57 @@ public final class BusinessGraphProjectionTest {
         recordsFinalProjectionDecisions();
         producesStableBusinessIdsForEquivalentExactGraphs();
         exportsAllFormatsWithOneTopology();
+    }
+
+    private static void tracesAuthoritativeNodeProjection() {
+        var classifiers = java.util.Arrays.stream(BusinessGraphProjector.class.getDeclaredMethods())
+                .filter(method -> method.getName().equals("classifyNode"))
+                .toList();
+        assert classifiers.size() == 1 : classifiers;
+        FachTracing tracing = classifiers.getFirst().getAnnotation(FachTracing.class);
+        assert tracing != null : "production node classifier is not traced";
+        assert tracing.value().equals("include exact node in business graph") : tracing.value();
+        assert BusinessGraphProjector.classifyNode(
+                BusinessDecisionGraph.NodeKind.PREDICATE, true, false, false, false)
+                == BusinessGraphProjection.Reason.REDUNDANT_RULE;
+        assert BusinessGraphProjector.classifyNode(
+                BusinessDecisionGraph.NodeKind.COMPUTATION, false, true, false, false)
+                == BusinessGraphProjection.Reason.LOOP_MECHANICS;
+        assert BusinessGraphProjector.classifyNode(
+                BusinessDecisionGraph.NodeKind.PREDICATE, false, false, true, false)
+                == BusinessGraphProjection.Reason.LOOP_RULE;
+        assertNodeReason(BusinessDecisionGraph.NodeKind.ENTRY, false,
+                BusinessGraphProjection.Reason.STRUCTURAL_ENTRY);
+        assertNodeReason(BusinessDecisionGraph.NodeKind.OUTCOME, false,
+                BusinessGraphProjection.Reason.STRUCTURAL_OUTCOME);
+        assertNodeReason(BusinessDecisionGraph.NodeKind.PREDICATE, true,
+                BusinessGraphProjection.Reason.TECHNICAL_PREDICATE);
+        assertNodeReason(BusinessDecisionGraph.NodeKind.PREDICATE, false,
+                BusinessGraphProjection.Reason.BUSINESS_RULE);
+        assertNodeReason(BusinessDecisionGraph.NodeKind.CHOICE, true,
+                BusinessGraphProjection.Reason.TECHNICAL_CHOICE);
+        assertNodeReason(BusinessDecisionGraph.NodeKind.CHOICE, false,
+                BusinessGraphProjection.Reason.BUSINESS_RULE);
+        assertNodeReason(BusinessDecisionGraph.NodeKind.DISPATCH, true,
+                BusinessGraphProjection.Reason.TECHNICAL_DISPATCH);
+        assertNodeReason(BusinessDecisionGraph.NodeKind.DISPATCH, false,
+                BusinessGraphProjection.Reason.BUSINESS_RULE);
+        assert BusinessGraphProjector.classifyNode(
+                BusinessDecisionGraph.NodeKind.COMPUTATION, false, false, false, true)
+                == BusinessGraphProjection.Reason.TECHNICAL_CALCULATION;
+        assert BusinessGraphProjector.classifyNode(
+                BusinessDecisionGraph.NodeKind.COMPUTATION, false, false, false, false)
+                == BusinessGraphProjection.Reason.BUSINESS_ACTION;
+        assertNodeReason(BusinessDecisionGraph.NodeKind.COVERAGE_GAP, false,
+                BusinessGraphProjection.Reason.COVERAGE_GAP);
+    }
+
+    private static void assertNodeReason(
+            BusinessDecisionGraph.NodeKind nodeKind,
+            boolean technical,
+            BusinessGraphProjection.Reason expected) {
+        assert BusinessGraphProjector.classifyNode(nodeKind, false, false, false, technical)
+                == expected : nodeKind + " / " + technical;
     }
 
     private static void foldsLoopMechanicsIntoOneRule() {

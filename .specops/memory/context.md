@@ -482,3 +482,15 @@ Maven writes an analysis audit Mermaid and a projection audit Mermaid for every 
 One generic formatter uses recorded data and contains no method-specific graph. The self gate proves
 current production classifications, checks that the formatter has no self-specific content, and
 compares two equal outputs. Focused contracts and the full repository gate passed.
+
+### self-traced-core-algorithms (feature) — 2026-08-14
+
+Completed all three tasks. Fachtracing now traces the production final-reason classifier used by
+exact-to-business node projection and one production selector for graph-analysis source inputs.
+The selector owns empty-entry omission, connected project closure, flat and modular source roles,
+external resolution sources, entry roots, compiler character sets, and connected classpaths.
+
+The self gate requires both generated graph sets, checks current algorithm labels and production
+call sites, rejects method-specific renderer content, and compares six files across repeated
+analysis. Focused contracts, Maven fixtures, performance, external release verification, and the
+full repository gate passed.

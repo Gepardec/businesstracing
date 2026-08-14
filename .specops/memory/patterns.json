@@ -13,7 +13,7 @@
     },
     {
       "category": "multi-format-projection",
-      "count": 4,
+      "count": 5,
       "pattern": "Resolve graph semantics and classification once, then keep text formats as deterministic dependency-free projections that do not infer content."
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "category": "build-tool-adapter",
-      "count": 7,
+      "count": 8,
       "pattern": "Let the build tool provide source roots, resolved classpaths, explicit module ownership, and repository settings, while the engine owns graph and provenance contracts."
     },
     {
@@ -100,8 +100,8 @@
     },
     {
       "file": "docs/self-tracing.md",
-      "specs": ["self-dogfood-business-tracing", "omit-next-diagram-labels"],
-      "count": 2
+      "specs": ["self-dogfood-business-tracing", "omit-next-diagram-labels", "deterministic-self-analysis-audits", "self-traced-core-algorithms"],
+      "count": 4
     },
     {
       "file": "README.md",
@@ -113,9 +113,11 @@
         "reactor-wide-implementation-resolution",
         "generic-java-extractor-completion",
         "self-dogfood-business-tracing",
-        "developer-graph-json-schema"
+        "developer-graph-json-schema",
+        "deterministic-self-analysis-audits",
+        "self-traced-core-algorithms"
       ],
-      "count": 8
+      "count": 10
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
@@ -140,9 +142,10 @@
         "implicit-field-local-callback-correctness",
         "path-sensitive-definition-integration",
         "external-method-semantic-contracts",
-        "hogajama-strict-aggregate-regression"
+        "hogajama-strict-aggregate-regression",
+        "self-traced-core-algorithms"
       ],
-      "count": 21
+      "count": 22
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -171,8 +174,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "deterministic-self-analysis-audits"],
-      "count": 21
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "deterministic-self-analysis-audits", "self-traced-core-algorithms"],
+      "count": 22
     },
     {
       "file": "docs/supported-java-constructs.md",
@@ -186,8 +189,18 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java",
-      "specs": ["generic-business-graph-projection", "deterministic-self-analysis-audits"],
-      "count": 2
+      "specs": ["generic-business-graph-projection", "deterministic-self-analysis-audits", "self-traced-core-algorithms"],
+      "count": 3
+    },
+    {
+      "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/business/BusinessGraphProjectionTest.java",
+      "specs": ["generic-business-graph-projection", "deterministic-self-analysis-audits", "self-traced-core-algorithms"],
+      "count": 3
+    },
+    {
+      "file": "scripts/verify-self-tracing.sh",
+      "specs": ["self-runtime-tracing", "deterministic-self-analysis-audits", "self-traced-core-algorithms"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BackwardDecisionSlicer.java",

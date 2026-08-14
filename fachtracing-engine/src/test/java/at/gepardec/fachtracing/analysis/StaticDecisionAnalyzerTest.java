@@ -1,5 +1,6 @@
 package at.gepardec.fachtracing.analysis;
 
+import at.gepardec.fachtracing.api.FachTracing;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 
@@ -51,6 +52,7 @@ public final class StaticDecisionAnalyzerTest {
         representsDynamicDispatchWithoutGuessing();
         explainsReceiverCompatibleDispatchCandidates();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
+        selectsProductionAnalysisSources();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
         isolatesDuplicateTypesAndCompilerModelsByProject();
         supportsGeneratedJdkTypesWithSourceTargetMode();
@@ -780,6 +782,66 @@ public final class StaticDecisionAnalyzerTest {
         assert boundary.resolutionSourceFiles().size() == 3 : boundary.resolutionSourceFiles();
         assert boundary.fingerprint().length() == 64 : boundary.fingerprint();
         assert boundary.fingerprint().equals(boundary.fingerprint());
+    }
+
+    private static void selectsProductionAnalysisSources() {
+        Path rootSource = ROOT.resolve("source-selection/root/Entry.java");
+        Path dependencySource = ROOT.resolve("source-selection/dependency/Rule.java");
+        Path flatSource = ROOT.resolve("source-selection/flat/Policy.java");
+        Path emptySource = ROOT.resolve("source-selection/empty/Helper.java");
+        Path externalSource = ROOT.resolve("source-selection/external/Contract.java");
+        Path rootClasspath = ROOT.resolve("source-selection/root/target/classes");
+        Path dependencyClasspath = ROOT.resolve("source-selection/dependency/target/classes");
+        Path flatClasspath = ROOT.resolve("source-selection/flat/target/classes");
+        var compiler = ApplicationSourceBoundary.CompilerModel.java21();
+        var root = new ApplicationSourceBoundary.ProjectSources(
+                "root", List.of(rootSource), List.of(rootSource), List.of(rootClasspath), compiler,
+                List.of("dependency"), java.util.Optional.of(
+                        ROOT.resolve("source-selection/root/module-info.java")));
+        var dependency = new ApplicationSourceBoundary.ProjectSources(
+                "dependency", List.of(), List.of(dependencySource), List.of(dependencyClasspath),
+                compiler, List.of(), java.util.Optional.of(
+                        ROOT.resolve("source-selection/dependency/module-info.java")));
+        var flat = new ApplicationSourceBoundary.ProjectSources(
+                "flat", List.of(flatSource), List.of(flatSource), List.of(flatClasspath), compiler,
+                List.of("root"));
+        var empty = new ApplicationSourceBoundary.ProjectSources(
+                "empty", List.of(), List.of(emptySource), List.of(), compiler, List.of());
+        var external = new ApplicationSourceBoundary.ResolutionSource(
+                externalSource, new ApplicationSourceBoundary.SourceOrigin(
+                        ApplicationSourceBoundary.OriginKind.LOCAL, "source-selection", ""));
+        var boundary = new ApplicationSourceBoundary(
+                List.of(root, dependency, flat, empty), List.of(external));
+
+        AnalysisSourceSelector.Selection modular =
+                AnalysisSourceSelector.select(boundary, root).orElseThrow();
+        assert modular.modular() : modular;
+        assert modular.sourceProjects().equals(List.of(root, dependency)) : modular.sourceProjects();
+        assert modular.request().rootSourceFiles().equals(List.of(rootSource)) : modular.request();
+        assert modular.request().sourceFiles().containsAll(
+                List.of(rootSource, dependencySource, externalSource)) : modular.request();
+        assert !modular.request().sourceFiles().contains(flatSource) : modular.request();
+        assert modular.request().compilationClasspath().containsAll(
+                List.of(rootClasspath, dependencyClasspath, flatClasspath)) : modular.request();
+
+        AnalysisSourceSelector.Selection nonModular =
+                AnalysisSourceSelector.select(boundary, flat).orElseThrow();
+        assert !nonModular.modular() : nonModular;
+        assert nonModular.request().rootSourceFiles().equals(List.of(flatSource)) : nonModular.request();
+        assert nonModular.request().sourceFiles().containsAll(
+                List.of(rootSource, dependencySource, flatSource, externalSource)) : nonModular.request();
+        assert AnalysisSourceSelector.select(boundary, empty).isEmpty();
+
+        try {
+            var method = AnalysisSourceSelector.class.getDeclaredMethod(
+                    "select", ApplicationSourceBoundary.class,
+                    ApplicationSourceBoundary.ProjectSources.class);
+            FachTracing tracing = method.getAnnotation(FachTracing.class);
+            assert tracing != null : "production source selector is not traced";
+            assert tracing.value().equals("select source inputs for graph analysis") : tracing.value();
+        } catch (NoSuchMethodException error) {
+            throw new AssertionError(error);
+        }
     }
 
     private static void reportsTheSearchedBoundaryWhenImplementationsAreMissing() {

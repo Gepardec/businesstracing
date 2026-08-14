@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-14T09:29:00Z"
-_sourceHash: "966f81f30078cbad78be3a966174a016eac47b7ccbde5263a29365c45c40e6cf"
+_generatedAt: "2026-08-14T09:53:48Z"
+_sourceHash: "f031dd458f7ab94cb8b5e1fc171356086bc3bd6f56ff77f64894d2b0b01681b8"
 ---
 
 ## Project Structure Map
@@ -62,7 +62,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (94 files)
+#### fachtracing-engine/ (95 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -72,6 +72,8 @@ fachtracing/
   - excluded graph-eligible source construct audit
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java`
   - `public record AnalysisRequest`
+- `src/main/java/at/gepardec/fachtracing/analysis/AnalysisSourceSelector.java`
+  - project-aware entry, resolution, external, classpath, and modular input selection
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodReference.java`
   - exact binary method identity
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContract.java`

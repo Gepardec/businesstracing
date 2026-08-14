@@ -128,25 +128,15 @@ public final class StaticDecisionAnalyzer {
                 .sorted().toList() + ", boundary " + boundary.fingerprint();
         var results = new ArrayList<AnalysisManifest.AnalysisResult>();
         for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
-            if (project.entrySourceFiles().isEmpty()) continue;
-            List<ApplicationSourceBoundary.ProjectSources> closure = projectClosure(boundary, project);
-            boolean modular = project.moduleDescriptor().isPresent();
-            List<ApplicationSourceBoundary.ProjectSources> analysisClosure = modular
-                    ? closure.stream().filter(item -> item.moduleDescriptor().isPresent()).toList()
-                    : closure;
-            List<Path> sources = java.util.stream.Stream.concat(
-                            analysisClosure.stream().flatMap(item -> item.resolutionSourceFiles().stream()),
-                            boundary.externalResolutionSources().stream()
-                                    .map(ApplicationSourceBoundary.ResolutionSource::path))
-                    .distinct().sorted(Comparator.comparing(Path::toString)).toList();
-            List<Path> classpath = closure.stream()
-                    .flatMap(item -> item.compilationClasspath().stream()).distinct()
-                    .sorted(Comparator.comparing(Path::toString)).toList();
-            var request = new AnalysisRequest(
-                    sources, classpath, project.compilerModel().charset(), project.entrySourceFiles())
+            Optional<AnalysisSourceSelector.Selection> selection =
+                    AnalysisSourceSelector.select(boundary, project);
+            if (selection.isEmpty()) continue;
+            AnalysisSourceSelector.Selection selected = selection.orElseThrow();
+            AnalysisRequest request = selected.request()
                     .withExternalMethodContractProviders(externalMethodContractProviders);
-            if (modular) {
-                results.addAll(analyzeModular(request, analysisClosure, boundary, opaqueLibraries));
+            if (selected.modular()) {
+                results.addAll(analyzeModular(
+                        request, selected.sourceProjects(), boundary, opaqueLibraries));
             } else {
                 results.addAll(analyzeAll(request, project.compilerModel(), opaqueLibraries));
             }
@@ -154,27 +144,6 @@ public final class StaticDecisionAnalyzer {
         return results.stream()
                 .map(result -> withSearchedBoundary(result, searchedBoundary))
                 .toList();
-    }
-
-    private static List<ApplicationSourceBoundary.ProjectSources> projectClosure(
-            ApplicationSourceBoundary boundary,
-            ApplicationSourceBoundary.ProjectSources root) {
-        Map<String, ApplicationSourceBoundary.ProjectSources> projects = boundary.projects().stream()
-                .collect(Collectors.toMap(ApplicationSourceBoundary.ProjectSources::projectId,
-                        project -> project, (left, right) -> left, LinkedHashMap::new));
-        var pending = new java.util.ArrayDeque<String>();
-        var selected = new LinkedHashSet<String>();
-        pending.add(root.projectId());
-        while (!pending.isEmpty()) {
-            String id = pending.removeFirst();
-            if (!selected.add(id)) continue;
-            pending.addAll(projects.get(id).projectDependencies());
-            projects.values().stream()
-                    .filter(candidate -> candidate.projectDependencies().contains(id))
-                    .map(ApplicationSourceBoundary.ProjectSources::projectId)
-                    .forEach(pending::addLast);
-        }
-        return selected.stream().map(projects::get).toList();
     }
 
     private static AnalysisManifest.AnalysisResult withSearchedBoundary(

@@ -1,0 +1,71 @@
+{
+  "id": "self-traced-core-algorithms",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-14T09:41:42Z",
+  "updated": "2026-08-14T09:54:58Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "deterministic-self-analysis-audits",
+      "reason": "The completed audit output and self-proof gate generate the new graphs.",
+      "required": true
+    },
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "The completed projector supplies the authoritative exact-node classifier.",
+      "required": true
+    },
+    {
+      "specId": "reactor-wide-implementation-resolution",
+      "reason": "The completed project-aware source roles supply the source-selection contract.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "self-runtime-tracing",
+    "maven-project-analysis"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-14T09:41:42Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalityDepth": 9,
+        "designFidelity": 9,
+        "codeQuality": 9,
+        "testVerification": 9
+      },
+      "evaluatedAt": "2026-08-14T09:52:57Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 6696,
+    "filesChanged": 21,
+    "linesAdded": 1276,
+    "linesRemoved": 102,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 26,
+    "specDurationMinutes": 16
+  }
+}

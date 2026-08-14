@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.business;
 
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
+import at.gepardec.fachtracing.api.FachTracing;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.BusinessLogicGraph;
 
@@ -216,50 +217,77 @@ public final class BusinessGraphProjector {
             Set<String> redundantPredicates,
             String businessGraphId,
             int nodeIndex) {
-        if (redundantPredicates.contains(node.nodeId())) {
-            return NodeProjection.removed(BusinessGraphProjection.Reason.REDUNDANT_RULE);
+        boolean redundantRule = redundantPredicates.contains(node.nodeId());
+        boolean loopMechanics = hiddenLoopNodes.contains(node.nodeId())
+                && !businessEffectInsideLoop(node);
+        boolean loopRule = loop != null;
+        String label = "";
+        boolean technical = false;
+        if (!redundantRule && !loopMechanics && !loopRule) {
+            label = cleanLabel(node.businessLabel());
+            technical = technical(node.kind(), label);
         }
-        if (hiddenLoopNodes.contains(node.nodeId()) && !businessEffectInsideLoop(node)) {
-            return NodeProjection.removed(BusinessGraphProjection.Reason.LOOP_MECHANICS);
-        }
-        if (loop != null) {
-            return NodeProjection.kept(new BusinessLogicGraph.Node(
+        BusinessGraphProjection.Reason reason = classifyNode(
+                node.kind(), redundantRule, loopMechanics, loopRule, technical);
+        return switch (reason) {
+            case LOOP_RULE -> NodeProjection.kept(new BusinessLogicGraph.Node(
                     opaqueId("rule", businessGraphId, "node:" + nodeIndex),
                     BusinessLogicGraph.NodeKind.RULE, loop.label()),
-                    BusinessGraphProjection.Reason.LOOP_RULE);
-        }
-        String label = cleanLabel(node.businessLabel());
-        return switch (node.kind()) {
-            case ENTRY -> NodeProjection.removed(BusinessGraphProjection.Reason.STRUCTURAL_ENTRY);
-            case OUTCOME -> NodeProjection.removed(BusinessGraphProjection.Reason.STRUCTURAL_OUTCOME);
-            case PREDICATE -> technicalPredicate(label)
-                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_PREDICATE)
-                    : NodeProjection.kept(new BusinessLogicGraph.Node(
-                            opaqueId("rule", businessGraphId, "node:" + nodeIndex),
-                            BusinessLogicGraph.NodeKind.RULE, label),
-                            BusinessGraphProjection.Reason.BUSINESS_RULE);
-            case CHOICE -> technicalChoice(label)
-                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_CHOICE)
-                    : NodeProjection.kept(new BusinessLogicGraph.Node(
-                            opaqueId("rule", businessGraphId, "node:" + nodeIndex),
-                            BusinessLogicGraph.NodeKind.RULE, label),
-                            BusinessGraphProjection.Reason.BUSINESS_RULE);
-            case DISPATCH -> technicalDispatch(label)
-                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_DISPATCH)
-                    : NodeProjection.kept(new BusinessLogicGraph.Node(
-                            opaqueId("rule", businessGraphId, "node:" + nodeIndex),
-                            BusinessLogicGraph.NodeKind.RULE, label),
-                            BusinessGraphProjection.Reason.BUSINESS_RULE);
-            case COMPUTATION -> technicalCalculation(label)
-                    ? NodeProjection.removed(BusinessGraphProjection.Reason.TECHNICAL_CALCULATION)
-                    : NodeProjection.kept(new BusinessLogicGraph.Node(
-                            opaqueId("action", businessGraphId, "node:" + nodeIndex),
-                            BusinessLogicGraph.NodeKind.ACTION, label),
-                            BusinessGraphProjection.Reason.BUSINESS_ACTION);
+                    reason);
+            case BUSINESS_RULE -> NodeProjection.kept(new BusinessLogicGraph.Node(
+                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.RULE, label), reason);
+            case BUSINESS_ACTION -> NodeProjection.kept(new BusinessLogicGraph.Node(
+                    opaqueId("action", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.ACTION, label), reason);
             case COVERAGE_GAP -> NodeProjection.kept(new BusinessLogicGraph.Node(
                     opaqueId("gap", businessGraphId, "node:" + nodeIndex),
-                    BusinessLogicGraph.NodeKind.GAP, GAP_LABEL),
-                    BusinessGraphProjection.Reason.COVERAGE_GAP);
+                    BusinessLogicGraph.NodeKind.GAP, GAP_LABEL), reason);
+            case STRUCTURAL_ENTRY, STRUCTURAL_OUTCOME, REDUNDANT_RULE, LOOP_MECHANICS,
+                    TECHNICAL_PREDICATE, TECHNICAL_CHOICE, TECHNICAL_DISPATCH,
+                    TECHNICAL_CALCULATION -> NodeProjection.removed(reason);
+            case TERMINAL_RESULT, COMPLETED_FALLBACK, UNREACHABLE ->
+                    throw new IllegalStateException("node classifier returned " + reason);
+        };
+    }
+
+    /** Returns the final keep or remove reason for one exact node. */
+    @FachTracing("include exact node in business graph")
+    static BusinessGraphProjection.Reason classifyNode(
+            BusinessDecisionGraph.NodeKind nodeKind,
+            boolean redundantRule,
+            boolean loopMechanics,
+            boolean loopRule,
+            boolean technical) {
+        if (redundantRule) return BusinessGraphProjection.Reason.REDUNDANT_RULE;
+        if (loopMechanics) return BusinessGraphProjection.Reason.LOOP_MECHANICS;
+        if (loopRule) return BusinessGraphProjection.Reason.LOOP_RULE;
+        return switch (nodeKind) {
+            case ENTRY -> BusinessGraphProjection.Reason.STRUCTURAL_ENTRY;
+            case OUTCOME -> BusinessGraphProjection.Reason.STRUCTURAL_OUTCOME;
+            case PREDICATE -> technical
+                    ? BusinessGraphProjection.Reason.TECHNICAL_PREDICATE
+                    : BusinessGraphProjection.Reason.BUSINESS_RULE;
+            case CHOICE -> technical
+                    ? BusinessGraphProjection.Reason.TECHNICAL_CHOICE
+                    : BusinessGraphProjection.Reason.BUSINESS_RULE;
+            case DISPATCH -> technical
+                    ? BusinessGraphProjection.Reason.TECHNICAL_DISPATCH
+                    : BusinessGraphProjection.Reason.BUSINESS_RULE;
+            case COMPUTATION -> technical
+                    ? BusinessGraphProjection.Reason.TECHNICAL_CALCULATION
+                    : BusinessGraphProjection.Reason.BUSINESS_ACTION;
+            case COVERAGE_GAP -> BusinessGraphProjection.Reason.COVERAGE_GAP;
+        };
+    }
+
+    private static boolean technical(BusinessDecisionGraph.NodeKind nodeKind, String label) {
+        return switch (nodeKind) {
+            case PREDICATE -> technicalPredicate(label);
+            case CHOICE -> technicalChoice(label);
+            case DISPATCH -> technicalDispatch(label);
+            case COMPUTATION -> technicalCalculation(label);
+            default -> false;
         };
     }
 

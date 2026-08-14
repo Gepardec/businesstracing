@@ -37,8 +37,8 @@ Spring applications can add the optional `fachtracing-spring` artifact as a Mave
 dependency. It supplies exact, application-neutral contracts for supported validation, page,
 persistence, and response APIs. The generic engine does not depend on Spring.
 
-See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
-generates from its own Maven plugin policy.
+See the [self-tracing dogfood examples](docs/self-tracing.md) for graphs that Fachtracing generates
+from its own Maven export policy, exact-node projection classifier, and analysis source selector.
 
 See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
 delivery, JDBC, upgrade, and rollback flow.
