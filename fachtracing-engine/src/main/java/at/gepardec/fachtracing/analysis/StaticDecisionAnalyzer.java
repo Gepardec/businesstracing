@@ -126,10 +126,23 @@ public final class StaticDecisionAnalyzer {
             OpaqueLibraryBoundary opaqueLibraries,
             List<ExternalMethodContractProvider> externalMethodContractProviders,
             List<BusinessEntryPoint> businessEntryPoints) {
+        return analyzeAll(boundary, opaqueLibraries, externalMethodContractProviders,
+                List.of(), businessEntryPoints);
+    }
+
+    /** Analyzes project sources with framework dispatch target selection. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries,
+            List<ExternalMethodContractProvider> externalMethodContractProviders,
+            List<DynamicDispatchTargetSelector> dispatchTargetSelectors,
+            List<BusinessEntryPoint> businessEntryPoints) {
         Objects.requireNonNull(boundary, "boundary");
         Objects.requireNonNull(opaqueLibraries, "opaqueLibraries");
         externalMethodContractProviders = List.copyOf(Objects.requireNonNull(
                 externalMethodContractProviders, "externalMethodContractProviders"));
+        dispatchTargetSelectors = List.copyOf(Objects.requireNonNull(
+                dispatchTargetSelectors, "dispatchTargetSelectors"));
         businessEntryPoints = List.copyOf(Objects.requireNonNull(
                 businessEntryPoints, "businessEntryPoints"));
         Map<String, List<BusinessEntryPoint>> entryPointsByProject =
@@ -142,7 +155,7 @@ public final class StaticDecisionAnalyzer {
         var results = new ArrayList<AnalysisManifest.AnalysisResult>();
         for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
             Optional<AnalysisSourceSelector.Selection> selected = AnalysisSourceSelector.select(
-                    boundary, project, externalMethodContractProviders,
+                    boundary, project, externalMethodContractProviders, dispatchTargetSelectors,
                     entryPointsByProject.getOrDefault(project.projectId(), List.of()));
             if (selected.isEmpty()) continue;
             AnalysisSourceSelector.Selection selection = selected.orElseThrow();
@@ -418,7 +431,8 @@ public final class StaticDecisionAnalyzer {
                 var diagnostics = new ArrayList<AnalysisManifest.AnalysisDiagnostic>();
                 var extractor = new Extractor(
                         trees, task.getTypes(), task.getElements(), index, builder, diagnostics,
-                        request.compilationClasspath(), opaqueLibraries, externalMethodContracts);
+                        request.compilationClasspath(), opaqueLibraries, externalMethodContracts,
+                        request.dynamicDispatchTargetSelectors());
                 String entry = extractor.addEntry(root);
                 extractor.extract(root, entry, true, new HashSet<>());
                 var built = builder.build(entry, sourceFingerprints, diagnostics);
@@ -493,6 +507,7 @@ public final class StaticDecisionAnalyzer {
         private final BinaryTypeOriginResolver binaryTypeOrigins;
         private final OpaqueLibraryBoundary opaqueLibraries;
         private final ExternalMethodContractRegistry externalMethodContracts;
+        private final List<DynamicDispatchTargetSelector> dynamicDispatchTargetSelectors;
         private final SourceUnavailableCallClassifier sourceUnavailableCalls =
                 new SourceUnavailableCallClassifier();
         private final List<String> pendingFailureNodes = new ArrayList<>();
@@ -509,7 +524,8 @@ public final class StaticDecisionAnalyzer {
                 List<AnalysisManifest.AnalysisDiagnostic> diagnostics,
                 List<Path> binaryClasspath,
                 OpaqueLibraryBoundary opaqueLibraries,
-                ExternalMethodContractRegistry externalMethodContracts) {
+                ExternalMethodContractRegistry externalMethodContracts,
+                List<DynamicDispatchTargetSelector> dynamicDispatchTargetSelectors) {
             this.trees = trees;
             this.types = types;
             this.elements = elements;
@@ -520,6 +536,7 @@ public final class StaticDecisionAnalyzer {
             this.binaryTypeOrigins = new BinaryTypeOriginResolver(binaryClasspath);
             this.opaqueLibraries = opaqueLibraries;
             this.externalMethodContracts = externalMethodContracts;
+            this.dynamicDispatchTargetSelectors = List.copyOf(dynamicDispatchTargetSelectors);
         }
 
         private String addEntry(MethodLocation method) {
@@ -2255,6 +2272,17 @@ public final class StaticDecisionAnalyzer {
                                 AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION, List.of());
                         continue;
                     }
+                    DispatchSelection selection = selectDispatchCandidate(node, owner, implementation);
+                    if (selection == DispatchSelection.EXCLUDE) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.FRAMEWORK_EXCLUDED_IMPLEMENTATION, List.of());
+                        continue;
+                    }
+                    if (selection == DispatchSelection.CONFLICT) {
+                        addCoverageGap(node, "framework dispatch selection is conflicting");
+                        continue;
+                    }
                     String alternative = builder.addNode(
                             BusinessDecisionGraph.NodeKind.COMPUTATION,
                             businessRuleLabel(implementation),
@@ -2280,6 +2308,30 @@ public final class StaticDecisionAnalyzer {
                 else frontier = List.copyOf(resultTails);
             }
 
+            private DispatchSelection selectDispatchCandidate(
+                    MethodInvocationTree invocation, TypeElement contract, TypeElement candidate) {
+                if (dynamicDispatchTargetSelectors.isEmpty()) return DispatchSelection.INCLUDE;
+                Element receiver = dispatchReceiver(invocation);
+                if (receiver == null) return DispatchSelection.INCLUDE;
+                boolean included = false;
+                boolean excluded = false;
+                var target = new DynamicDispatchTargetSelector.DispatchTarget(receiver, contract, candidate);
+                for (DynamicDispatchTargetSelector selector : dynamicDispatchTargetSelectors) {
+                    DynamicDispatchTargetSelector.Selection choice = Objects.requireNonNull(
+                            selector.select(target), "dispatch selector result");
+                    included |= choice == DynamicDispatchTargetSelector.Selection.INCLUDE;
+                    excluded |= choice == DynamicDispatchTargetSelector.Selection.EXCLUDE;
+                }
+                if (included && excluded) return DispatchSelection.CONFLICT;
+                return excluded ? DispatchSelection.EXCLUDE : DispatchSelection.INCLUDE;
+            }
+
+            private Element dispatchReceiver(MethodInvocationTree invocation) {
+                if (!(invocation.getMethodSelect() instanceof MemberSelectTree member)) return null;
+                TreePath path = TreePath.getPath(location.unit(), member.getExpression());
+                return path == null ? null : trees.getElement(path);
+            }
+
             private void auditDispatchCandidate(
                     MethodInvocationTree invocation,
                     TypeElement implementation,
@@ -2289,6 +2341,8 @@ public final class StaticDecisionAnalyzer {
                 builder.addAnalysisDecision(action, reason, mapping(location, invocation), nodeIds,
                         implementation.getQualifiedName().toString());
             }
+
+            private enum DispatchSelection { INCLUDE, EXCLUDE, CONFLICT }
 
             private ExecutableElement reflectedContract(
                     MethodInvocationTree invocation, ExecutableElement called) {

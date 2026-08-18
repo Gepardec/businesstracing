@@ -7,6 +7,8 @@ import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
 import at.gepardec.fachtracing.analysis.BusinessEntryPoint;
 import at.gepardec.fachtracing.analysis.ExternalMethodContractProvider;
 import at.gepardec.fachtracing.analysis.ExternalMethodContractProviders;
+import at.gepardec.fachtracing.analysis.DynamicDispatchTargetSelector;
+import at.gepardec.fachtracing.analysis.DynamicDispatchTargetSelectors;
 import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.api.FachTracing;
@@ -44,6 +46,7 @@ final class ProjectGraphGenerator {
 
     private final StaticDecisionAnalyzer analyzer = new StaticDecisionAnalyzer();
     private final List<ExternalMethodContractProvider> externalMethodContractProviders;
+    private final List<DynamicDispatchTargetSelector> dispatchTargetSelectors;
     private final DeveloperGraphExporter developerJson = new DeveloperGraphExporter();
     private final DeveloperGraphJsonSchema developerSchema = new DeveloperGraphJsonSchema();
     private final DecisionAuditMermaidRenderer decisionAuditMermaid = new DecisionAuditMermaidRenderer();
@@ -56,12 +59,21 @@ final class ProjectGraphGenerator {
     private final BusinessGraphJsonSchema businessSchema = new BusinessGraphJsonSchema();
 
     ProjectGraphGenerator() {
-        this(ExternalMethodContractProviders.load(ProjectGraphGenerator.class.getClassLoader()));
+        this(ExternalMethodContractProviders.load(ProjectGraphGenerator.class.getClassLoader()),
+                DynamicDispatchTargetSelectors.load(ProjectGraphGenerator.class.getClassLoader()));
     }
 
     ProjectGraphGenerator(List<ExternalMethodContractProvider> externalMethodContractProviders) {
+        this(externalMethodContractProviders, List.of());
+    }
+
+    ProjectGraphGenerator(
+            List<ExternalMethodContractProvider> externalMethodContractProviders,
+            List<DynamicDispatchTargetSelector> dispatchTargetSelectors) {
         this.externalMethodContractProviders = List.copyOf(Objects.requireNonNull(
                 externalMethodContractProviders, "externalMethodContractProviders"));
+        this.dispatchTargetSelectors = List.copyOf(Objects.requireNonNull(
+                dispatchTargetSelectors, "dispatchTargetSelectors"));
     }
 
     GenerationResult generate(
@@ -127,6 +139,7 @@ final class ProjectGraphGenerator {
         var analyses = analyzer.analyzeAll(
                 new AnalysisRequest(sourceFiles, classpath, charset, rootSourceFiles)
                         .withExternalMethodContractProviders(externalMethodContractProviders)
+                        .withDynamicDispatchTargetSelectors(dispatchTargetSelectors)
                         .withBusinessEntryPoints(businessEntryPoints));
         return write(analyses, charset, outputDirectory, failOnIncomplete, developerOutput);
     }
@@ -179,7 +192,8 @@ final class ProjectGraphGenerator {
             return new GenerationResult(0, 0, true, List.of());
         }
         return write(analyzer.analyzeAll(
-                        boundary, opaqueLibraries, externalMethodContractProviders, businessEntryPoints),
+                        boundary, opaqueLibraries, externalMethodContractProviders,
+                        dispatchTargetSelectors, businessEntryPoints),
                 outputCharset, outputDirectory,
                 failOnIncomplete, developerOutput);
     }

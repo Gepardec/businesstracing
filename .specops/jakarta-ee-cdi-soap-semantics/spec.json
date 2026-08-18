@@ -1,0 +1,30 @@
+{
+  "id": "jakarta-ee-cdi-soap-semantics",
+  "type": "feature",
+  "status": "draft",
+  "version": 1,
+  "created": "2026-08-18T09:25:40Z",
+  "updated": "2026-08-18T09:25:40Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {"name": "lucostus"},
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [],
+  "relatedSpecs": ["spring-business-semantics-adapter", "fix-jakarta-platform-call-completeness"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 8,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-18T09:25:40Z"
+    }
+  }
+}

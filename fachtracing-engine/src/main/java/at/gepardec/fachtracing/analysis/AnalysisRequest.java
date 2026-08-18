@@ -13,7 +13,8 @@ public record AnalysisRequest(
         Charset charset,
         List<Path> rootSourceFiles,
         List<ExternalMethodContractProvider> externalMethodContractProviders,
-        List<BusinessEntryPoint> businessEntryPoints) {
+        List<BusinessEntryPoint> businessEntryPoints,
+        List<DynamicDispatchTargetSelector> dynamicDispatchTargetSelectors) {
     /** Keeps the provider-aware contract without configured business entry points. */
     public AnalysisRequest(
             List<Path> sourceFiles,
@@ -22,7 +23,19 @@ public record AnalysisRequest(
             List<Path> rootSourceFiles,
             List<ExternalMethodContractProvider> externalMethodContractProviders) {
         this(sourceFiles, compilationClasspath, charset, rootSourceFiles,
-                externalMethodContractProviders, List.of());
+                externalMethodContractProviders, List.of(), List.of());
+    }
+
+    /** Keeps the business-entry-point contract without framework dispatch selectors. */
+    public AnalysisRequest(
+            List<Path> sourceFiles,
+            List<Path> compilationClasspath,
+            Charset charset,
+            List<Path> rootSourceFiles,
+            List<ExternalMethodContractProvider> externalMethodContractProviders,
+            List<BusinessEntryPoint> businessEntryPoints) {
+        this(sourceFiles, compilationClasspath, charset, rootSourceFiles,
+                externalMethodContractProviders, businessEntryPoints, List.of());
     }
 
     /** Keeps the project-aware contract without external method providers. */
@@ -31,12 +44,12 @@ public record AnalysisRequest(
             List<Path> compilationClasspath,
             Charset charset,
             List<Path> rootSourceFiles) {
-        this(sourceFiles, compilationClasspath, charset, rootSourceFiles, List.of(), List.of());
+        this(sourceFiles, compilationClasspath, charset, rootSourceFiles, List.of(), List.of(), List.of());
     }
 
     /** Keeps the original contract: all supplied sources can contain graph roots. */
     public AnalysisRequest(List<Path> sourceFiles, List<Path> compilationClasspath, Charset charset) {
-        this(sourceFiles, compilationClasspath, charset, sourceFiles, List.of(), List.of());
+        this(sourceFiles, compilationClasspath, charset, sourceFiles, List.of(), List.of(), List.of());
     }
 
     /** Creates a defensive request. Root sources must be part of the complete Java source set. */
@@ -47,6 +60,7 @@ public record AnalysisRequest(
         rootSourceFiles = List.copyOf(rootSourceFiles);
         externalMethodContractProviders = List.copyOf(externalMethodContractProviders);
         businessEntryPoints = List.copyOf(businessEntryPoints);
+        dynamicDispatchTargetSelectors = List.copyOf(dynamicDispatchTargetSelectors);
         if (sourceFiles.isEmpty()) throw new IllegalArgumentException("at least one source file is required");
         if (rootSourceFiles.isEmpty()) throw new IllegalArgumentException("at least one root source file is required");
         if (sourceFiles.stream().anyMatch(path -> !isJava(path))
@@ -69,14 +83,22 @@ public record AnalysisRequest(
             List<? extends ExternalMethodContractProvider> providers) {
         Objects.requireNonNull(providers, "providers");
         return new AnalysisRequest(sourceFiles, compilationClasspath, charset, rootSourceFiles,
-                List.copyOf(providers), businessEntryPoints);
+                List.copyOf(providers), businessEntryPoints, dynamicDispatchTargetSelectors);
     }
 
     /** Returns the same source request with exact configured business graph roots. */
     public AnalysisRequest withBusinessEntryPoints(List<? extends BusinessEntryPoint> entryPoints) {
         Objects.requireNonNull(entryPoints, "entryPoints");
         return new AnalysisRequest(sourceFiles, compilationClasspath, charset, rootSourceFiles,
-                externalMethodContractProviders, List.copyOf(entryPoints));
+                externalMethodContractProviders, List.copyOf(entryPoints), dynamicDispatchTargetSelectors);
+    }
+
+    /** Returns the same request with optional framework dispatch target selectors. */
+    public AnalysisRequest withDynamicDispatchTargetSelectors(
+            List<? extends DynamicDispatchTargetSelector> selectors) {
+        Objects.requireNonNull(selectors, "selectors");
+        return new AnalysisRequest(sourceFiles, compilationClasspath, charset, rootSourceFiles,
+                externalMethodContractProviders, businessEntryPoints, List.copyOf(selectors));
     }
 
     private static boolean isJava(Path path) {

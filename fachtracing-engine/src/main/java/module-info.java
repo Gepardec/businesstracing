@@ -6,6 +6,7 @@ module at.gepardec.fachtracing.engine {
     requires org.objectweb.asm.tree;
 
     uses at.gepardec.fachtracing.analysis.ExternalMethodContractProvider;
+    uses at.gepardec.fachtracing.analysis.DynamicDispatchTargetSelector;
 
     exports at.gepardec.fachtracing;
     exports at.gepardec.fachtracing.model;

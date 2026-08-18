@@ -17,6 +17,8 @@ mvn -q -pl fachtracing-maven-plugin dependency:build-classpath -DincludeScope=te
   -Dmdep.outputFile="$PWD/target/verification-classpaths/maven-plugin.txt"
 mvn -q -pl fachtracing-spring dependency:build-classpath -DincludeScope=test \
   -Dmdep.outputFile="$PWD/target/verification-classpaths/spring.txt"
+mvn -q -pl fachtracing-jakartaee dependency:build-classpath -DincludeScope=test \
+  -Dmdep.outputFile="$PWD/target/verification-classpaths/jakartaee.txt"
 mvn -q -pl fachtracing-storage-jdbc dependency:build-classpath -DincludeScope=test \
   -Dmdep.outputFile="$PWD/target/verification-classpaths/storage-jdbc.txt"
 for dependency_classpath in target/verification-classpaths/*.txt
@@ -33,6 +35,9 @@ JAVA21="$(/usr/libexec/java_home -v 21)/bin/java"
 SPRING_DEPENDENCIES=$(cat target/verification-classpaths/spring.txt)
 SPRING_CP="$CP:fachtracing-spring/target/classes:fachtracing-spring/target/test-classes:$SPRING_DEPENDENCIES"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$SPRING_CP" at.gepardec.fachtracing.spring.SpringMethodContractProviderTest
+JAKARTAEE_DEPENDENCIES=$(cat target/verification-classpaths/jakartaee.txt)
+JAKARTAEE_CP="$CP:fachtracing-jakartaee/target/classes:fachtracing-jakartaee/target/test-classes:$JAKARTAEE_DEPENDENCIES"
+"$JAVA21" -ea --add-modules jdk.compiler -cp "$JAKARTAEE_CP" at.gepardec.fachtracing.jakartaee.JakartaEeMethodContractProviderTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.runtime.RuntimeCollectorTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.store.DecisionRecordProtocolTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.diagram.ExecutionPathResolverTest
