@@ -37,3 +37,7 @@
 
 - 2026-08-18T09:25:40Z: Selected and pinned the external `hantsy/jakartaee-rest-sample` corpus at `85da1d6861fea14579b1c6eb76253f0549a8e80f`.
 - Task 1 scope: Add one optional dispatch-candidate selector extension. It must preserve generic dispatch when no selector applies and report selector conflicts as explicit gaps.
+- Task 1 complete: The engine selector SPI preserves generic dispatch without a selector and records excluded or conflicting framework decisions.
+- Task 2 complete: The optional adapter selects scoped CDI field injection targets, excludes unscoped and alternative candidates, and verifies exact Jakarta EE, SOAP, and gRPC signatures without production framework dependencies.
+- Task 3 complete: The clean pinned `hantsy/jakartaee-rest-sample` corpus runs in the pull-request gate and proves that `TaskResources.allTasks` reaches `JpaTaskRepository` through CDI dispatch.
+- Verification: `./scripts/verify-pr.sh` passed on 2026-08-18.

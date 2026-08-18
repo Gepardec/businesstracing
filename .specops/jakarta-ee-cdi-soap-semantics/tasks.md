@@ -4,7 +4,7 @@
 
 ### Task 1: Add the generic dispatch-candidate selector SPI
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** None
 **Priority:** High
@@ -25,9 +25,9 @@ behavior when no selector is enabled.
 
 **Acceptance Criteria:**
 
-- [ ] Generic dynamic dispatch remains unchanged without a selector.
-- [ ] A selector can exclude one candidate without changing other candidates.
-- [ ] Conflicting selector decisions create a visible gap.
+- [x] Generic dynamic dispatch remains unchanged without a selector.
+- [x] A selector can exclude one candidate without changing other candidates.
+- [x] Conflicting selector decisions create a visible gap.
 
 **Files to Modify:**
 
@@ -38,13 +38,13 @@ behavior when no selector is enabled.
 
 **Tests Required:**
 
-- [ ] Focused engine selector tests
+- [x] Focused engine selector tests
 
 ---
 
 ### Task 2: Add the optional Jakarta EE adapter
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 1
 **Priority:** High
@@ -65,10 +65,10 @@ contract catalog.
 
 **Acceptance Criteria:**
 
-- [ ] Production adapter code imports no Jakarta EE or gRPC types.
-- [ ] A matching CDI bean is selected and a non-bean candidate is excluded.
-- [ ] Unsupported CDI and remote-call cases remain fail-closed.
-- [ ] Every catalog entry matches a real API signature.
+- [x] Production adapter code imports no Jakarta EE or gRPC types.
+- [x] A matching CDI bean is selected and a non-bean candidate is excluded.
+- [x] Unsupported CDI and remote-call cases remain fail-closed.
+- [x] Every catalog entry matches a real API signature.
 
 **Files to Modify:**
 
@@ -80,14 +80,14 @@ contract catalog.
 
 **Tests Required:**
 
-- [ ] Adapter unit and signature tests
-- [ ] Maven plugin provider discovery test
+- [x] Adapter unit and signature tests
+- [x] Maven plugin provider discovery test
 
 ---
 
 ### Task 3: Add Jakarta EE external conformance
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 2
 **Priority:** High
@@ -108,9 +108,9 @@ repository verification gate.
 
 **Acceptance Criteria:**
 
-- [ ] The harness rejects a dirty or unpinned corpus checkout.
-- [ ] The conformance graph includes the CDI-selected JPA repository implementation.
-- [ ] The conformance harness contains no production analysis hints.
+- [x] The harness rejects a dirty or unpinned corpus checkout.
+- [x] The conformance graph includes the CDI-selected JPA repository implementation.
+- [x] The conformance harness contains no production analysis hints.
 
 **Files to Modify:**
 
@@ -122,8 +122,8 @@ repository verification gate.
 
 **Tests Required:**
 
-- [ ] Pinned Jakarta EE conformance command
-- [ ] Full pull-request verification gate
+- [x] Pinned Jakarta EE conformance command
+- [x] Full pull-request verification gate
 
 ## Implementation Order
 
@@ -134,7 +134,7 @@ repository verification gate.
 ## Progress Tracking
 
 - Total Tasks: 3
-- Completed: 0
-- In Progress: 1
+- Completed: 3
+- In Progress: 0
 - Blocked: 0
-- Pending: 2
+- Pending: 0

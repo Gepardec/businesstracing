@@ -116,6 +116,9 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 ## Failure and privacy boundary
 
 - Unsupported application decision logic is never reported as complete. Source-unavailable dependency code stays fail-closed unless one exact enabled method contract proves its semantics or the caller selects its exact technical-library JAR. Source-visible application predicates around a selected boundary remain in the graph.
+
+- `cdi-injection-dispatch`: The optional Jakarta EE adapter selects a source-visible scoped CDI bean at an `@Inject` field. It excludes unscoped classes and disabled alternatives.
+- `jakarta-ee-soap-grpc-contracts`: The optional Jakarta EE adapter provides exact contracts for common Jakarta EE APIs, SOAP setup, and gRPC channel setup. Remote service methods remain explicit boundaries.
 - External method providers are trusted method-level facts. A provider cannot replace a source-visible
   implementation. Contract matching never uses package prefixes, provider priority, or a best match.
 - The binary fallback rejects exception tables, calls, monitors, switches, dynamic instructions,

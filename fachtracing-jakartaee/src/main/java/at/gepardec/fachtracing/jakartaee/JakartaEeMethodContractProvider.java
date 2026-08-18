@@ -21,10 +21,14 @@ public final class JakartaEeMethodContractProvider implements ExternalMethodCont
         read(values, "jakarta.persistence.EntityManager", "find", "(Ljava/lang/Class;Ljava/lang/Object;)Ljava/lang/Object;", "find entity");
         read(values, "jakarta.persistence.Query", "getResultList", "()Ljava/util/List;", "query results");
         read(values, "jakarta.persistence.Query", "getSingleResult", "()Ljava/lang/Object;", "query result");
+        read(values, "jakarta.validation.Validation", "buildDefaultValidatorFactory", "()Ljakarta/validation/ValidatorFactory;", "create validator");
+        read(values, "jakarta.validation.ValidatorFactory", "getValidator", "()Ljakarta/validation/Validator;", "get validator");
+        read(values, "jakarta.validation.Validator", "validate", "(Ljava/lang/Object;[Ljava/lang/Class;)Ljava/util/Set;", "validation results");
         action(values, "jakarta.transaction.UserTransaction", "begin", "()V", "start transaction");
         action(values, "jakarta.transaction.UserTransaction", "commit", "()V", "commit transaction");
         action(values, "jakarta.transaction.UserTransaction", "rollback", "()V", "roll back transaction");
         read(values, "jakarta.ws.rs.core.Response", "ok", "(Ljava/lang/Object;)Ljakarta/ws/rs/core/Response$ResponseBuilder;", "create successful response");
+        read(values, "jakarta.ws.rs.core.Response", "status", "(I)Ljakarta/ws/rs/core/Response$ResponseBuilder;", "create response");
         read(values, "jakarta.ws.rs.core.Response$ResponseBuilder", "build", "()Ljakarta/ws/rs/core/Response;", "build response");
         read(values, "jakarta.xml.ws.Service", "create", "(Ljava/net/URL;Ljavax/xml/namespace/QName;)Ljakarta/xml/ws/Service;", "create SOAP service");
         read(values, "jakarta.xml.ws.Service", "getPort", "(Ljava/lang/Class;)Ljava/lang/Object;", "get SOAP port");
@@ -32,6 +36,8 @@ public final class JakartaEeMethodContractProvider implements ExternalMethodCont
         action(values, "io.grpc.ManagedChannel", "shutdownNow", "()Lio/grpc/ManagedChannel;", "shut down gRPC channel");
         read(values, "io.grpc.ManagedChannel", "awaitTermination", "(JLjava/util/concurrent/TimeUnit;)Z", "gRPC channel terminated");
         read(values, "io.grpc.ManagedChannelBuilder", "forAddress", "(Ljava/lang/String;I)Lio/grpc/ManagedChannelBuilder;", "create gRPC channel");
+        read(values, "io.grpc.ManagedChannelBuilder", "usePlaintext", "()Lio/grpc/ManagedChannelBuilder;", "configure gRPC channel");
+        read(values, "io.grpc.ManagedChannelBuilder", "build", "()Lio/grpc/ManagedChannel;", "build gRPC channel");
         return List.copyOf(values);
     }
     private static void action(List<ExternalMethodContract> values, String owner, String name, String descriptor, String label) { values.add(new ExternalMethodContract(new ExternalMethodReference(owner, name, descriptor), ExternalMethodContract.OperationKind.ACTION, label, descriptor.endsWith("V") ? ExternalMethodContract.ResultBehavior.NONE : ExternalMethodContract.ResultBehavior.VALUE, ExternalMethodContract.StateEffect.MUTATE, java.util.Map.of(), java.util.Set.of())); }

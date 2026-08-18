@@ -300,6 +300,22 @@ The plugin loads visible providers through `ExternalMethodContractProvider`. The
 only its exact catalog. An unsupported Spring call stays incomplete. The adapter production code
 has no Spring dependency and contains no application rule.
 
+To enable the Jakarta EE catalog and CDI injection selection, add this optional adapter in the
+same plugin dependency section:
+
+```xml
+<dependency>
+  <groupId>at.gepardec.fachtracing</groupId>
+  <artifactId>fachtracing-jakartaee</artifactId>
+  <version>0.1.0-rc.1</version>
+</dependency>
+```
+
+The adapter supports source-visible scoped CDI beans at `@Inject` fields, common Jakarta EE
+service operations, JAX-WS SOAP service setup, and gRPC channel setup. Unsupported CDI features
+and remote SOAP or gRPC method calls remain explicit coverage gaps. Its production code has no
+Jakarta EE or gRPC binary dependency.
+
 ## Business-only artifacts
 
 Business JSON is always available. It uses the `fachtracing-business-graph/v1` identifier and JSON

@@ -1,5 +1,13 @@
 [
   {
+    "id": "jakarta-ee-cdi-soap-semantics",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-18T10:35:00Z"
+  },
+  {
     "id": "self-explainable-runtime-dogfood",
     "type": "feature",
     "status": "completed",
