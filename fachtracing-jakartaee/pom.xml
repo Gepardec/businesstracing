@@ -4,11 +4,12 @@
   <parent><groupId>at.gepardec.fachtracing</groupId><artifactId>fachtracing-parent</artifactId><version>0.1.0-rc.1</version></parent>
   <artifactId>fachtracing-jakartaee</artifactId>
   <description>Optional Jakarta EE method semantics for Fachtracing analysis.</description>
-  <properties><jakartaee.version>11.0.0</jakartaee.version><grpc.version>1.82.2</grpc.version></properties>
+  <properties><jakartaee.version>11.0.0</jakartaee.version><grpc.version>1.82.2</grpc.version><weld.version>6.0.4.Final</weld.version></properties>
   <dependencies>
     <dependency><groupId>at.gepardec.fachtracing</groupId><artifactId>fachtracing-engine</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId><version>${jakartaee.version}</version><scope>test</scope></dependency>
     <dependency><groupId>jakarta.xml.ws</groupId><artifactId>jakarta.xml.ws-api</artifactId><version>4.0.2</version><scope>test</scope></dependency>
     <dependency><groupId>io.grpc</groupId><artifactId>grpc-api</artifactId><version>${grpc.version}</version><scope>test</scope></dependency>
+    <dependency><groupId>org.jboss.weld.se</groupId><artifactId>weld-se-core</artifactId><version>${weld.version}</version><scope>test</scope></dependency>
   </dependencies>
 </project>

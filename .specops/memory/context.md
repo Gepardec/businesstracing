@@ -521,3 +521,15 @@ stays passive: the container injects the bean or proxy and implementation entry 
 Custom scopes, stereotypes, priority and XML alternatives, dynamic lookup, interceptor bindings,
 transactions, security, validation, events, lifecycle callbacks, timers, JAX-RS, and JPA boundaries
 have executable regression coverage. The local pull-request gate and GitHub Actions run 116 passed.
+
+### dynamic-cdi-runtime-resolution (feature) — 2026-08-18
+
+Completed all three tasks. Dynamic CDI `Instance<T>` and `Provider<T>` dispatch now retains a
+source-compatible runtime candidate set while the static graph stays explicitly incomplete. A
+separate runtime-observable selector state keeps XML alternatives and other unproved deployment
+mechanisms fail-closed. CDI stays authoritative; implementation entry confirms only the invoked
+edge and the agent does not perform a second container lookup.
+
+Weld SE 6.0.4.Final selected EU and US normal-scope beans through runtime qualifier values. The
+agent produced two isolated, complete paths with no unresolved target. The full pull-request gate,
+pinned Keycloak conformance, and GitHub Actions run 32135897003 passed.

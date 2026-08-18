@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-18T11:03:07Z"
-_sourceHash: "9e5cabc5d3c70841599d59988f849ed43b0317994f85334be26f9c6fb99c16f0"
+_generatedAt: "2026-08-18T12:11:14Z"
+_sourceHash: "9c1a223f720ce57f5c90e30cb39720d18f046103795d51c61fef942dbca0cc92"
 ---
 
 ## Project Structure Map
@@ -232,7 +232,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-jakartaee/ (11 files)
+#### fachtracing-jakartaee/ (12 files)
 
 - `src/main/java/at/gepardec/fachtracing/jakartaee/CdiDispatchTargetSelector.java`
   - source-visible CDI candidate selection and unresolved proof states
@@ -241,6 +241,8 @@ fachtracing/
 - `src/main/java/at/gepardec/fachtracing/jakartaee/JakartaEeSourceSemanticProvider.java`
   - container-driven annotation and meta-annotation gaps
 - `src/test/java/at/gepardec/fachtracing/jakartaee/JakartaEeMethodContractProviderTest.java`
+- `src/test/java/at/gepardec/fachtracing/jakartaee/conformance/DynamicCdiRuntimeConformance.java`
+  - real Weld SE dynamic CDI runtime conformance
 - `src/main/java/module-info.java`
 - `pom.xml`
 

@@ -38,6 +38,7 @@ SPRING_CP="$CP:fachtracing-spring/target/classes:fachtracing-spring/target/test-
 JAKARTAEE_DEPENDENCIES=$(cat target/verification-classpaths/jakartaee.txt)
 JAKARTAEE_CP="$CP:fachtracing-jakartaee/target/classes:fachtracing-jakartaee/target/test-classes:$JAKARTAEE_DEPENDENCIES"
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$JAKARTAEE_CP" at.gepardec.fachtracing.jakartaee.JakartaEeMethodContractProviderTest
+FACHTRACING_SKIP_PROJECT_BUILD=true ./scripts/verify-dynamic-cdi.sh
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.runtime.RuntimeCollectorTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.store.DecisionRecordProtocolTest
 "$JAVA21" -ea --add-modules jdk.compiler -cp "$CP" at.gepardec.fachtracing.diagram.ExecutionPathResolverTest

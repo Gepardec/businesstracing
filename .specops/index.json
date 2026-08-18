@@ -421,5 +421,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-14T08:58:18Z"
+  },
+  {
+    "id": "dynamic-cdi-runtime-resolution",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-18T12:18:27Z"
   }
 ]

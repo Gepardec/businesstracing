@@ -2315,6 +2315,12 @@ public final class StaticDecisionAnalyzer {
                         }
                         continue;
                     }
+                    if (selection == DispatchSelection.RUNTIME_OBSERVABLE) {
+                        if (!unresolvedFrameworkSelection) {
+                            addCoverageGap(node, "framework dispatch selection cannot be proved");
+                            unresolvedFrameworkSelection = true;
+                        }
+                    }
                     String alternative = builder.addNode(
                             BusinessDecisionGraph.NodeKind.COMPUTATION,
                             businessRuleLabel(implementation),
@@ -2353,6 +2359,7 @@ public final class StaticDecisionAnalyzer {
                 boolean included = false;
                 boolean excluded = false;
                 boolean unresolved = false;
+                boolean runtimeObservable = false;
                 var target = new DynamicDispatchTargetSelector.DispatchTarget(
                         receiverOrigins, contract, candidate);
                 for (DynamicDispatchTargetSelector selector : dynamicDispatchTargetSelectors) {
@@ -2361,9 +2368,14 @@ public final class StaticDecisionAnalyzer {
                     included |= choice == DynamicDispatchTargetSelector.Selection.INCLUDE;
                     excluded |= choice == DynamicDispatchTargetSelector.Selection.EXCLUDE;
                     unresolved |= choice == DynamicDispatchTargetSelector.Selection.UNRESOLVED;
+                    runtimeObservable |= choice
+                            == DynamicDispatchTargetSelector.Selection.RUNTIME_OBSERVABLE;
                 }
                 if (unresolved) return DispatchSelection.UNRESOLVED;
-                if (included && excluded) return DispatchSelection.CONFLICT;
+                if ((included && excluded) || (runtimeObservable && (included || excluded))) {
+                    return DispatchSelection.CONFLICT;
+                }
+                if (runtimeObservable) return DispatchSelection.RUNTIME_OBSERVABLE;
                 return excluded ? DispatchSelection.EXCLUDE : DispatchSelection.INCLUDE;
             }
 
@@ -2388,7 +2400,7 @@ public final class StaticDecisionAnalyzer {
                         implementation.getQualifiedName().toString());
             }
 
-            private enum DispatchSelection { INCLUDE, EXCLUDE, CONFLICT, UNRESOLVED }
+            private enum DispatchSelection { INCLUDE, EXCLUDE, CONFLICT, UNRESOLVED, RUNTIME_OBSERVABLE }
 
             private ExecutableElement reflectedContract(
                     MethodInvocationTree invocation, ExecutableElement called) {

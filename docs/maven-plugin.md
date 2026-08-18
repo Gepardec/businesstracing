@@ -315,7 +315,9 @@ The adapter supports source-visible CDI beans at `@Inject` fields and constructo
 identifies built-in scopes, source-visible custom scopes, stereotypes, qualifier binding values,
 and `@Priority` alternatives. XML-selected alternatives, dynamic `Instance<T>` or `Provider<T>`
 lookup, producers, portable extensions, and other unproved injection mechanisms make the graph
-incomplete.
+incomplete. For dynamic lookup, the activation keeps each source-compatible concrete candidate.
+The runtime can therefore confirm the exact candidate that CDI invokes. This observation does not
+make the static graph complete because a future deployment can supply another bean.
 
 The adapter also reports source-visible container behavior for interceptor bindings, transactions,
 security, validation, CDI events, lifecycle callbacks, decorators, asynchronous EJB methods,
@@ -325,7 +327,7 @@ but add a gap when callbacks, infrastructure, or a remote peer are not reconstru
 
 At runtime, the CDI container still creates and injects each bean or proxy. Fachtracing does not
 call `CDI.current()` or `BeanManager.getReference()`. The agent confirms one static dispatch edge
-when execution enters a proven implementation method. If no proven candidate is entered, the
+when execution enters a retained implementation method. If no retained candidate is entered, the
 execution has an unresolved-dispatch runtime gap. The adapter production code has no Jakarta EE
 or gRPC binary dependency.
 
