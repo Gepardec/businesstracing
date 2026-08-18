@@ -97,22 +97,49 @@ The generated endpoint graph is too large to explain one real call, so a busines
 **Acceptance Criteria (EARS):**
 
 - WHEN a source-unavailable call result controls an explicit source predicate THE SYSTEM SHALL use that caller predicate as the business rule and SHALL NOT add a duplicate call gap.
+- WHEN a source-unavailable Boolean call is returned as the caller decision THE SYSTEM SHALL represent that call as one atomic business rule with both outcomes.
+- WHEN a source-unavailable statement call can affect the caller result THE SYSTEM SHALL represent that call as one atomic business action.
+- WHEN a source-unavailable value only selects a collaborator for later caller-visible rules or actions THE SYSTEM SHALL omit the collaborator lookup and preserve those later rules or actions.
 - WHEN a source-unavailable callback configures a lazy transformation THE SYSTEM SHALL represent the configured transformation as one business action and SHALL NOT claim that the callback ran during the endpoint call.
 - WHEN a caught failure path is explicit in source THE SYSTEM SHALL preserve the normal and caught outcomes without adding a separate unknown-trigger gap for the same call site.
 - WHEN a nested binary type exists on the configured classpath THE SYSTEM SHALL resolve it by its JVM binary name.
 - WHEN `javac` reports a continued short-circuit disjunction on the preceding source line THE SYSTEM SHALL keep each runtime branch aligned with its source predicate and SHALL NOT reuse this tolerance for an unrelated branch.
-- IF a result-relevant call has no source-visible rule, action, result observation, trusted contract, or safe binary proof THEN THE SYSTEM SHALL keep one coverage gap for that unresolved boundary.
+- IF a result-relevant call returns an opaque value and the caller gives it no rule, action, or result meaning THEN THE SYSTEM SHALL keep one coverage gap for that unresolved boundary.
 - THE SYSTEM SHALL derive all boundary rules from Java type, use-site, control-flow, callback, and bytecode semantics and SHALL NOT use application package, class, method, label, or topology facts.
 
 **Progress Checklist:**
 
 - [x] Caller predicates remove duplicate call gaps.
+- [x] Direct caller decisions become atomic business rules.
+- [x] Caller-visible statement calls become atomic business actions.
+- [x] Collaborator lookups do not create business nodes.
 - [x] Lazy callbacks become configured actions, not claimed runtime decisions.
 - [x] Explicit caught paths do not get duplicate trigger gaps.
 - [x] Nested binary types use valid JVM names.
 - [x] Multiline disjunction operands keep exact runtime outcomes without matching an unrelated branch.
 - [x] Truly unresolved behavior stays visible once.
 - [x] Production boundary rules are application-neutral.
+
+### Story 6: Generate a clear static method overview
+
+**As a** business analyst
+**I want** the static endpoint graph to include every caller-visible business path
+**So that** I can review the endpoint without a runtime call or an agent-selected path.
+
+**Acceptance Criteria (EARS):**
+
+- WHEN static analysis completes THE SYSTEM SHALL preserve every caller-visible rule, action, failure, and result path in the method and SHALL NOT select one runtime path.
+- WHEN a callee source is unavailable THE SYSTEM SHALL keep the call as an atomic rule or action only when the caller use-site gives that meaning.
+- WHEN the business graph contains collection mechanics, implementation types, or negated empty checks THE SYSTEM SHALL rewrite them as plain business language before rendering.
+- IF the caller gives an unavailable value no business meaning THEN THE SYSTEM SHALL keep one explicit coverage gap and SHALL NOT invent meaning.
+- THE SYSTEM SHALL derive all boundary and language rules from attributed Java use-sites and general phrase structure and SHALL NOT use a Keycloak package, class, method, label, or topology rule.
+
+**Progress Checklist:**
+
+- [x] Generic synthetic tests prove atomic rules, actions, collaborators, and one opaque-value counterexample.
+- [x] Generic projection tests convert collection mechanics to plain business language.
+- [x] The generated static graph contains all caller-visible method paths and no runtime selection.
+- [x] The generated Keycloak static graph has no coverage gap and no prohibited technical term.
 
 ## Non-Functional Requirements
 
@@ -151,14 +178,15 @@ The generated endpoint graph is too large to explain one real call, so a busines
 - A synthetic repeated-gap graph contains one gap per connected gap region after summary and preserves every external incoming and outgoing path.
 - A semantic mutation of a synthetic branch changes the generated Mermaid output.
 - The generated Keycloak call flow contains only runtime-selected business states and no Java term; the full static graph remains available as developer evidence.
-- The generated Keycloak overview reduces the current seven visible unknown-rule regions to no more than three, and every remaining region maps to a genuinely unresolved lazy or external boundary.
+- The generated Keycloak static overview contains zero visible unknown-rule regions.
+- The generated Keycloak static overview contains every caller-visible method path and does not use runtime observations.
 - Two live Keycloak calls produce connected diagrams in which one rule cannot show both outcomes in the same call.
 - A reviewer who does not know Java can identify the selected result, every shown rule outcome, and whether coverage is complete by reading only the generated call diagram.
 - Focused tests, repository verification, Mega conformance, Keycloak conformance, and pull-request CI pass.
 
 ## Definition of Done
 
-A person who does not know Java can call the Keycloak user-search endpoint, open the resulting diagram, and accurately explain the important decisions taken during that request.
+A person who does not know Java can open the static Keycloak user-search diagram and identify the start, every shown rule, each business action, the failure result, and the completion result without source-code help or a runtime call.
 
 ## Out of Scope
 

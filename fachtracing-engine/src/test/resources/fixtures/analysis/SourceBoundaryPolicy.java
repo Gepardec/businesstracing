@@ -30,6 +30,18 @@ public final class SourceBoundaryPolicy {
         return source.values().map(String::trim).toList();
     }
 
+    @FachTracing("derived collaborator boundary")
+    public boolean derivedCollaborator(SourceBoundaryBinaryRules.StateProvider provider) {
+        SourceBoundaryBinaryRules.State state = provider.state();
+        state.update();
+        return state.approved();
+    }
+
+    @FachTracing("direct collaborator boundary")
+    public Object directCollaborator(SourceBoundaryBinaryRules.StateProvider provider) {
+        return provider.state();
+    }
+
     @FachTracing("caller action boundary")
     public Map<String, Object> callerAction(Map<String, Object> target, String value) {
         target.put("match", SourceBoundaryBinaryRules.Nested.find(value));
@@ -54,6 +66,12 @@ public final class SourceBoundaryPolicy {
     @FachTracing("direct external boundary")
     public boolean directExternal(SourceBoundaryBinaryRules.Rule rule, String value) {
         return rule.approve(value);
+    }
+
+    @FachTracing("local external boundary")
+    public boolean localExternal(SourceBoundaryBinaryRules.Rule rule, String value) {
+        boolean approved = rule.approve(value);
+        return approved;
     }
 
     @FachTracing("guarded external boundary")

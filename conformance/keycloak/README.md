@@ -3,10 +3,11 @@
 This example traces the pinned Keycloak user-search endpoint without changing Keycloak source. It
 generates a non-technical Mermaid graph and a runtime activation file for `search users`.
 
-The harness creates the Mermaid graph from the generic business projection of the endpoint
-analysis. It checks required rule anchors in both the exact and projected graphs. These anchors are
-assertions only; they do not supply nodes or edges to the diagram. The runtime activation keeps the
-exact graph, so each called endpoint still records its actual path.
+The harness creates the Mermaid graph from the generic static business projection of the endpoint
+analysis. It checks required rule and action anchors in both the exact and projected graphs. These
+anchors are assertions only; they do not supply nodes or edges to the diagram. The static graph has
+all method paths and does not use a runtime call. The runtime activation keeps the exact graph for
+optional later path recording.
 
 ## Generate the graph and activation
 
@@ -29,11 +30,12 @@ conformance command and is not part of pull-request CI.
 
 The command writes these disposable files under `conformance/keycloak/target/generated`:
 
-- `search-users-business.mmd`: the generated summarized non-technical overview.
+- `search-users-business.mmd`: the generated all-path, non-technical method overview.
 - `search-users-evaluated-example.mmd`: one concise successful path selected from the analyzed graph.
 - `activation.json`: exact probes and class fingerprints for the pinned build.
 
-The evaluated example is not a fixed reviewed diagram and is not a recorded HTTP call. The harness
+The static overview is the primary proof for method usability. It has zero coverage gaps. The
+evaluated example is not a fixed reviewed diagram and is not a recorded HTTP call. The harness
 finds a successful exact path in the generated graph, creates exact edge evidence for that path, and
 passes it through the same generic runtime projector as the agent sink. This proves the mapping in a
 repeatable gate. A live call supplies its own observed edges and can select a different path.
@@ -74,27 +76,26 @@ Each call creates one `.txt` explanation and one `.mmd` evaluated path in
 `/tmp/keycloak-business-traces`. Both files use one generated call-specific business graph. They
 contain only the rules, outcomes, named result, and gaps selected for that call. They do not contain
 Java owners, methods, source paths, request values, result values, tokens, or exception details. The
-lazy result keeps the generated `search users completed` business result. Each unresolved selected
-boundary stays visible as one business-safe gap. The files do not expose developer diagnostics.
+lazy result keeps the generated `search users completed` business result. If runtime evidence is
+not sufficient to select an exact path, that runtime-only limit stays visible as a business-safe
+gap. The files do not expose developer diagnostics.
 
 ## Non-Java review check
 
-Give only one live `.mmd` file to a reviewer who does not know Java. Do not give the source, exact
-graph, or developer record. The review passes when the reviewer can answer all four questions from
-the diagram alone:
+Give only `search-users-business.mmd` to a reviewer who does not know Java. Do not give the source,
+exact graph, developer record, or runtime call. The review passes when the reviewer can answer all
+four questions from the diagram alone:
 
-1. What decision did the endpoint make?
-2. Which shown rules were met or not met?
-3. What named result did this call reach?
-4. Is the shown path complete, or does it contain an explicit unknown rule?
+1. Where does the method flow start?
+2. Which rules can change the flow?
+3. Which business actions can occur?
+4. Which failure and completion results can occur, and is any rule unknown?
 
-Record the answers with the endpoint request. The feature definition of done passes only when all
-four answers agree with the selected nodes, edge outcomes, result node, and coverage state in the
-generated call graph.
+The feature definition of done passes only when all four answers agree with the nodes, edges,
+results, and complete coverage state in the generated static graph.
 
 The overview, generated evaluated example, and live call are separate checks. The conformance
-command verifies the pinned source selection, generated summary, exact-to-business runtime mapping,
-activation, and class fingerprints. A live Keycloak call is local because it needs a running
+command verifies the pinned source selection, static summary, exact-to-business runtime mapping,
+activation, and class fingerprints. A live Keycloak call is optional for this review because it needs a running
 distribution, an administrator account, a free port, and startup time outside the repository CI
-budget. See [the exact selection](selection.md) for the lazy stream boundary and its explicit
-incomplete-coverage behavior.
+budget. See [the exact selection](selection.md) for the static method boundary.

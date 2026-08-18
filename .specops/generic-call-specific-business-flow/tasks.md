@@ -188,7 +188,7 @@
 
 **Implementation Steps:**
 
-1. Add failing synthetic contracts for each new rule and for the direct-decision counterexample.
+1. Add failing synthetic contracts for each new rule and for the opaque-value counterexample.
 2. Add one source-unavailable call boundary classifier and use JVM binary names for bytecode lookup.
 3. Apply the classifier to calls, callbacks, and caught paths without changing exact runtime evidence contracts.
 4. Regenerate the Keycloak graph and require no more than three justified visible gap regions.
@@ -199,7 +199,7 @@
 **Acceptance Criteria:**
 
 - [x] Synthetic unknown-project fixtures prove all boundary rules before Keycloak runs.
-- [x] A direct source-unavailable decision still creates a coverage gap.
+- [x] An opaque returned value without caller-visible meaning still creates a coverage gap.
 - [x] Nested binary types resolve from the configured classpath.
 - [x] Lazy callbacks state what is configured without claiming runtime evaluation.
 - [x] The Keycloak overview has at most three visible, justified gap regions.
@@ -236,6 +236,56 @@
 - [x] Mega and PetClinic external gates.
 - [x] Full pull-request verification and hosted CI.
 
+---
+
+### Task 6: Prove a clear static method overview
+
+**Status:** In Progress
+**Estimated Effort:** M
+**Dependencies:** Task 5
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:** Keep the graph at the caller method boundary. Represent caller-visible external rules and actions without dependency internals. Convert structural labels to plain business language. Keep static output separate from runtime path selection.
+
+**Implementation Steps:**
+
+1. Record each remaining exact gap and its caller use-site.
+2. Add unknown-project contracts for direct Boolean rules, statement actions, derived collaborators, and opaque values.
+3. Classify unavailable calls from attributed use-sites without application-specific facts.
+4. Add general business-language rules for collection mechanics and empty checks.
+5. Regenerate the static business Mermaid and assert all caller-visible paths, zero gaps, and no technical term.
+6. Run repository integrity, focused tests, external conformance, the full pull-request gate, and hosted CI.
+
+**Acceptance Criteria:**
+
+- [ ] Static Keycloak output is generated without a runtime call or runtime execution projector.
+- [ ] Synthetic projects prove atomic caller rules, actions, collaborators, and an opaque-value gap.
+- [ ] Synthetic graphs prove plain business language without reference-project labels.
+- [ ] The Keycloak static graph has zero coverage gaps and no prohibited technical term.
+- [ ] Production code contains no Keycloak or Mega fact.
+- [ ] Pull-request CI passes.
+
+**Files to Modify:**
+
+- `conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java`
+- `scripts/verify-keycloak.sh`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessLanguageNormalizer.java` (new)
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java`
+- `fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java`
+- `fachtracing-engine/src/test/java/at/gepardec/fachtracing/business/BusinessGraphProjectionTest.java`
+- `conformance/keycloak/selection.md`
+- `conformance/keycloak/README.md`
+
+**Tests Required:**
+
+- [ ] Focused caller-boundary analyzer and language contracts.
+- [ ] Pinned Keycloak static conformance gate.
+- [ ] Mega and PetClinic external gates.
+- [ ] Full pull-request verification and hosted CI.
+
 ## Implementation Order
 
 1. Task 1 creates the traceability contract.
@@ -243,11 +293,12 @@
 3. Task 3 moves automatic output to the selected model.
 4. Task 4 supplies black-box proof and final review evidence.
 5. Task 5 removes duplicate call gaps and completes the live definition-of-done proof.
+6. Task 6 makes the reviewed all-path artifact a concise static method overview.
 
 ## Progress Tracking
 
-- Total Tasks: 5
+- Total Tasks: 6
 - Completed: 5
-- In Progress: 0
+- In Progress: 1
 - Blocked: 0
 - Pending: 0

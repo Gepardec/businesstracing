@@ -34,9 +34,10 @@ mkdir -p "$TEST_CLASSES"
   "$ROOT/conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java"
 
 CP="$ROOT/fachtracing-api/target/classes:$ROOT/fachtracing-engine/target/classes:$TEST_CLASSES:$MAVEN_REPOSITORY/org/ow2/asm/asm/9.10.1/asm-9.10.1.jar:$MAVEN_REPOSITORY/org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+USERS_SOURCE="$WORKTREE/services/src/main/java/org/keycloak/services/resources/admin/UsersResource.java"
 "$JAVA_HOME_21/bin/java" -ea --add-modules jdk.compiler -Xmx3g -cp "$CP" \
   at.gepardec.fachtracing.conformance.KeycloakConformanceTest \
-  "$WORKTREE/services/src/main/java/org/keycloak/services/resources/admin/UsersResource.java" \
+  "$USERS_SOURCE" \
   "$WORKTREE/services/target/classes" \
   "$WORKTREE/services/target/conformance-classpath.txt" \
   "$ROOT/conformance/keycloak/target/generated"

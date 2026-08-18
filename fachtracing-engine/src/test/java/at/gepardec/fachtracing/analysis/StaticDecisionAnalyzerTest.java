@@ -61,13 +61,13 @@ public final class StaticDecisionAnalyzerTest {
         supportsOwnedExternalAutomaticModuleSources();
         rejectsInvalidJpmsContextBeforeGraphExtraction();
         rejectsIncompatibleOrUnownedJpmsSourcesBeforeExtraction();
-        reportsTheSearchedBoundaryWhenImplementationsAreMissing();
+        representsMissingImplementationsAsCallerRules();
         rejectsInvalidApplicationBoundaries();
         rejectsGraphRootsOutsideTheSourceUniverse();
         exposesRelevantCoverageGaps();
-        sourceUnavailableDecisionLogicIsNeverReportedComplete();
+        representsCallerVisibleSourceBoundaries();
         usesSourceVisibleBoundariesWithoutGuessing();
-        usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
+        usesControlledBytecodeFallbackAndRepresentsOpaqueBinaryRules();
         appliesExactExternalMethodContractsWithoutGuessing();
         supportsExplicitOpaqueLibraryBoundaries();
         supportsAggregateCompositionAcrossCaughtPlatformCallsAndGeneratedDispatch();
@@ -475,27 +475,11 @@ public final class StaticDecisionAnalyzerTest {
                 node.businessLabel().contains("age is at least 24")) : ignored.graph().nodes();
 
         var unknown = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown customer effect");
-        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unknown;
-        assert unknown.graph().coverageGaps().stream().anyMatch(gap ->
-                gap.description().contains("side effect")
-                        && gap.description().contains("returned decision"))
-                : unknown.graph().coverageGaps();
-        assert unknown.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0)
-                : unknown.diagnostics();
-        assert unknown.graph().nodes().stream().noneMatch(node ->
-                node.businessLabel().contains("evaluate update")) : unknown.graph().nodes();
-        var gapMappings = unknown.graph().coverageGaps().stream()
-                .map(gap -> unknown.manifest().sourceMappings().get(gap.nodeId()))
-                .filter(java.util.Objects::nonNull).toList();
-        assert !gapMappings.isEmpty() : unknown.manifest().sourceMappings();
-        for (AnalysisManifest.SourceMapping gap : gapMappings) {
-            assert unknown.manifest().analysisDecisions().stream().noneMatch(decision ->
-                    decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
-                            && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
-                            && decision.source().equals(gap.source())
-                            && decision.line() == gap.line())
-                    : gap + " / " + unknown.manifest().analysisDecisions();
-        }
+        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : unknown;
+        assert unknown.graph().coverageGaps().isEmpty() : unknown.graph().coverageGaps();
+        assert unknown.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                        && node.businessLabel().contains("update")) : unknown.graph().nodes();
     }
 
     private static void excludesReadOnlyEnumQueriesWithoutCoverageGaps() {
@@ -661,13 +645,12 @@ public final class StaticDecisionAnalyzerTest {
 
     private static void reportsUnknownPlatformEffects() {
         var unknown = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
-        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                 : unknown;
-        assert unknown.graph().coverageGaps().stream().anyMatch(gap ->
-                gap.description().contains("side effect"))
-                : unknown.graph().coverageGaps();
-        assert unknown.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0)
-                : unknown.diagnostics();
+        assert unknown.graph().coverageGaps().isEmpty() : unknown.graph().coverageGaps();
+        assert unknown.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                        && node.businessLabel().contains("set date time")) : unknown.graph().nodes();
     }
 
     private static void usesProvenValidationRolesWithoutGlobalReceiverRemoval() {
@@ -769,15 +752,9 @@ public final class StaticDecisionAnalyzerTest {
                         && decision.line() > 0
                         && decision.nodeIds().isEmpty()) : decisions;
 
-        var incomplete = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
-        var gapNodeIds = incomplete.graph().coverageGaps().stream()
-                .map(BusinessDecisionGraph.CoverageGap::nodeId).collect(java.util.stream.Collectors.toSet());
-        var auditedGapNodeIds = incomplete.manifest().analysisDecisions().stream()
-                .filter(decision -> decision.action() == AnalysisManifest.AnalysisAction.GAP)
-                .filter(decision -> decision.reason() == AnalysisManifest.AnalysisReason.UNRESOLVED_RELEVANCE)
-                .flatMap(decision -> decision.nodeIds().stream()).collect(java.util.stream.Collectors.toSet());
-        assert auditedGapNodeIds.containsAll(gapNodeIds)
-                : gapNodeIds + " / " + incomplete.manifest().analysisDecisions();
+        var representedBoundary = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
+        assert representedBoundary.graph().coverageGaps().isEmpty()
+                : representedBoundary.graph().coverageGaps();
     }
 
     private static void resolvesImplementationsFromSourcesOutsideTheGraphRootScope() {
@@ -798,6 +775,7 @@ public final class StaticDecisionAnalyzerTest {
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE).count() == 2
                 : graph.nodes();
     }
+
 
     private static void resolvesImplementationsAcrossProjectAwareSourceRoles() {
         Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
@@ -823,17 +801,18 @@ public final class StaticDecisionAnalyzerTest {
         assert boundary.fingerprint().equals(boundary.fingerprint());
     }
 
-    private static void reportsTheSearchedBoundaryWhenImplementationsAreMissing() {
+    private static void representsMissingImplementationsAsCallerRules() {
         Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
         var boundary = new ApplicationSourceBoundary(List.of(
                 new ApplicationSourceBoundary.ProjectSources(
                         "entry", List.of(entry), List.of(entry), CLASSPATH,
                         ApplicationSourceBoundary.CompilerModel.java21(), List.of())), List.of());
         var result = new StaticDecisionAnalyzer().analyze(boundary);
-        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result.graph();
-        assert result.diagnostics().stream().anyMatch(diagnostic ->
-                diagnostic.message().contains("searched projects [entry]")
-                        && diagnostic.message().contains(boundary.fingerprint())) : result.diagnostics();
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.graph();
+        assert result.graph().coverageGaps().isEmpty() : result.graph().coverageGaps();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().equals("rule accepts amount")) : result.graph().nodes();
     }
 
     private static void isolatesDuplicateTypesAndCompilerModelsByProject() {
@@ -1283,18 +1262,28 @@ public final class StaticDecisionAnalyzerTest {
                 : loopResult.diagnostics();
         assert hasKind(loopResult.graph(), BusinessDecisionGraph.NodeKind.CHOICE) : loopResult.graph().nodes();
 
-        var result = analyze("gaps/UnsupportedPolicy.java");
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "conditional alias mutation");
         assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
         assert hasKind(result.graph(), BusinessDecisionGraph.NodeKind.COVERAGE_GAP);
         assert !result.diagnostics().isEmpty();
         assert result.diagnostics().getFirst().line() > 0;
     }
 
-    private static void sourceUnavailableDecisionLogicIsNeverReportedComplete() {
+    private static void representsCallerVisibleSourceBoundaries() {
         var result = analyze("gaps/ExternalDecisionPolicy.java");
-        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
-        assert result.graph().coverageGaps().stream()
-                .anyMatch(gap -> gap.description().contains("implementations are unavailable"));
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result;
+        assert result.graph().coverageGaps().isEmpty() : result.graph().coverageGaps();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().equals("scores approves customer")) : result.graph().nodes();
+
+        var caught = analyze("gaps/UnsupportedPolicy.java");
+        assert caught.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : caught;
+        assert caught.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.CHOICE) : caught.graph().nodes();
+        assert caught.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().equals("decisions approves value")) : caught.graph().nodes();
     }
 
     private static void usesSourceVisibleBoundariesWithoutGuessing() {
@@ -1316,10 +1305,13 @@ public final class StaticDecisionAnalyzerTest {
                     "caller predicate boundary",
                     "lazy callback boundary",
                     "lazy lambda boundary",
+                    "lazy receiver boundary",
+                    "derived collaborator boundary",
                     "caller action boundary",
                     "caught source boundary",
                     "nested binary boundary",
-                    "guarded external boundary")) {
+                    "guarded external boundary",
+                    "local external boundary")) {
                 var result = results.stream().filter(item -> item.graph().decisionLabel().equals(label))
                         .findFirst().orElseThrow();
                 assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
@@ -1348,22 +1340,40 @@ public final class StaticDecisionAnalyzerTest {
 
             var direct = results.stream().filter(item -> item.graph().decisionLabel()
                     .equals("direct external boundary")).findFirst().orElseThrow();
-            assert direct.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : direct;
-            assert direct.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("implementations are unavailable"))
-                    : direct.graph().coverageGaps();
+            assert direct.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : direct;
+            assert direct.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("rule approve value")) : direct.graph().nodes();
+
+            var local = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("local external boundary")).findFirst().orElseThrow();
+            assert local.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("approved")) : local.graph().nodes();
+
+            var directCollaborator = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("direct collaborator boundary")).findFirst().orElseThrow();
+            assert directCollaborator.graph().completeness()
+                    == BusinessDecisionGraph.Completeness.INCOMPLETE : directCollaborator;
 
             var lazyReceiver = results.stream().filter(item -> item.graph().decisionLabel()
                     .equals("lazy receiver boundary")).findFirst().orElseThrow();
-            assert lazyReceiver.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+            assert lazyReceiver.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : lazyReceiver;
-            assert lazyReceiver.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("implementations are unavailable"))
-                    : lazyReceiver.graph().coverageGaps();
+
+            var derived = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("derived collaborator boundary")).findFirst().orElseThrow();
+            assert derived.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : derived;
+            assert derived.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                            && node.businessLabel().contains("update")) : derived.graph().nodes();
+            assert derived.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("state approved")) : derived.graph().nodes();
 
             var repeated = results.stream().filter(item -> item.graph().decisionLabel()
                     .equals("repeated external effect boundary")).findFirst().orElseThrow();
-            assert repeated.graph().coverageGaps().size() == 1
+            assert repeated.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : repeated.graph().coverageGaps() + " " + repeated.manifest().sourceMappings();
             assert repeated.graph().nodes().stream().anyMatch(node ->
                     node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
@@ -1375,7 +1385,7 @@ public final class StaticDecisionAnalyzerTest {
         }
     }
 
-    private static void usesControlledBytecodeFallbackAndRejectsUnsafeBinary() {
+    private static void usesControlledBytecodeFallbackAndRepresentsOpaqueBinaryRules() {
         Path root = null;
         try {
             root = Files.createTempDirectory("fachtracing-bytecode-fallback-");
@@ -1453,9 +1463,12 @@ public final class StaticDecisionAnalyzerTest {
 
             var unsafe = results.stream().filter(item -> item.graph().decisionLabel()
                     .equals("unsafe binary decision")).findFirst().orElseThrow();
-            assert unsafe.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unsafe;
-            assert unsafe.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("unsupported call")) : unsafe.graph().coverageGaps();
+            assert unsafe.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : unsafe;
+            assert unsafe.graph().coverageGaps().isEmpty() : unsafe.graph().coverageGaps();
+            assert unsafe.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("unsafe binary rule accepts age"))
+                    : unsafe.graph().nodes();
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {
@@ -1627,11 +1640,12 @@ public final class StaticDecisionAnalyzerTest {
 
             var binaryDecision = results.stream().filter(result -> result.graph().decisionLabel()
                     .equals("external Boolean decision")).findFirst().orElseThrow();
-            assert binaryDecision.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+            assert binaryDecision.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : binaryDecision;
-            assert binaryDecision.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("implementations are unavailable"))
-                    : binaryDecision.graph().coverageGaps();
+            assert binaryDecision.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("rule approve value"))
+                    : binaryDecision.graph().nodes();
 
             var directoryResults = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
                     List.of(application), List.of(CLASSPATH.getFirst(), binaryClasses, archive)),
@@ -1788,8 +1802,10 @@ public final class StaticDecisionAnalyzerTest {
             var withoutContracts = new StaticDecisionAnalyzer().analyzeAll(request).stream()
                     .filter(result -> result.graph().decisionLabel().equals("external contract decision"))
                     .findFirst().orElseThrow();
-            assert withoutContracts.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+            assert withoutContracts.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : withoutContracts;
+            assert withoutContracts.graph().coverageGaps().isEmpty()
+                    : withoutContracts.graph().coverageGaps();
 
             var results = new StaticDecisionAnalyzer().analyzeAll(
                     request.withExternalMethodContractProviders(List.of(provider)));
@@ -2031,14 +2047,14 @@ public final class StaticDecisionAnalyzerTest {
             assert watering.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : watering;
             var unsupported = results.stream().filter(result -> result.graph().decisionLabel()
                     .equals("unsupported caught decision")).findFirst().orElseThrow();
-            assert unsupported.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+            assert unsupported.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : unsupported;
-            assert unsupported.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("unsupported call"))
+            assert unsupported.graph().coverageGaps().isEmpty()
                     : unsupported.graph().coverageGaps();
-            assert unsupported.graph().coverageGaps().stream().noneMatch(gap ->
-                    gap.description().contains("exception-triggering decision logic is unavailable"))
-                    : unsupported.graph().coverageGaps();
+            assert unsupported.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("untrusted decision approves value"))
+                    : unsupported.graph().nodes();
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {

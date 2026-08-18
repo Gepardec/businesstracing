@@ -16,9 +16,14 @@ the REST layer consumes that stream. Thus, a source-unavailable lazy callback ap
 configured filter or mapping action. The trace does not claim that this callback ran before the
 endpoint returned. It also does not claim to explain later response serialization.
 
-The static overview has three gap regions. They cover unavailable permission state, session state,
-and user-search data. The source-visible query rules, prefix rule, date actions, permission feature
-rule, and lazy callback actions do not create duplicate gaps. The evaluated example has one gap on
-its selected path. Live calls can select two separate permission-boundary gaps. The exact developer
-record keeps the source locations and causes. The business files do not expose those technical
-diagnostics.
+The static overview uses the selected method as its semantic boundary. It keeps every
+caller-visible rule, action, failure, and result path. A source-unavailable Boolean decision is one
+atomic business rule. A source-unavailable statement call is one atomic business action. A
+collaborator lookup is not a business step. These rules come from attributed Java use-sites and do
+not contain a Keycloak selector or method list.
+
+The generated static overview has zero coverage gaps. It contains no runtime observation and does
+not select one endpoint call. It also does not expand the internal control flow of dependency
+methods. The business projection converts collection mechanics and implementation type names to
+plain actions before it renders Mermaid. The exact developer record retains source mappings and
+technical evidence outside the business file.

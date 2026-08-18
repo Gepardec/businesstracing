@@ -38,9 +38,9 @@ Fachtracing has an exact runtime graph and a separate business projection, but i
 
 ### Decision 6: Treat the source-visible caller as a semantic boundary
 
-**Decision:** Suppress a source-unavailable call gap only when an explicit caller predicate, configured callback action, caught outcome, trusted contract, or safe bytecode fragment already represents the call's result-relevant behavior.
+**Decision:** Represent a source-unavailable call as one atomic rule or action when its attributed caller use-site states that role. Omit a collaborator lookup when only later caller-visible operations give it meaning.
 
-**Rationale:** The caller can state the rule or action even when the callee implementation is absent. This removes duplicate gaps without claiming unseen internal decisions. A direct returned decision or unexplained state effect remains a gap.
+**Rationale:** A method overview explains what the caller does. It does not need the internal paths of each dependency. A returned opaque value with no caller-visible meaning remains a gap.
 
 ### Decision 7: Resolve binary owners with compiler binary names
 
@@ -53,6 +53,12 @@ Fachtracing has an exact runtime graph and a separate business projection, but i
 **Decision:** When exact edge selection leaves two observed business segments disconnected, connect them only when the full generated business graph proves their order. Treat nodes with the same kind and label as equivalent path targets. Put one safe gap between the segments.
 
 **Rationale:** Reused source methods can produce equivalent projected nodes for different call sites. Runtime probes can select one equivalent node while the full static route contains another. The connector must keep one path without inventing the hidden rule.
+
+### Decision 9: Keep the overview at the method boundary
+
+**Decision:** Expand source that is already in the analysis request, but keep source-unavailable dependencies as atomic caller rules and actions when the caller proves their role.
+
+**Rationale:** Recursive project expansion makes a method graph large and mixes dependency internals with the method under review. The caller boundary keeps the graph concise and target-neutral.
 
 ## Component Design
 
@@ -110,7 +116,7 @@ Fachtracing has an exact runtime graph and a separate business projection, but i
 
 **Interface:** Classify one attributed call or callback from its use site, return type, enclosing control flow, and available binary proof.
 
-**Failure mode:** Any ambiguous direct decision, returned state effect, or callback execution state returns `UNRESOLVED`, which keeps one coverage gap.
+**Failure mode:** An opaque returned value with no caller-visible meaning returns `UNRESOLVED`, which keeps one coverage gap.
 
 ### Component 8: Observed business segment connector
 
@@ -119,6 +125,14 @@ Fachtracing has an exact runtime graph and a separate business projection, but i
 **Interface:** Accept the complete generated business graph, its exact mappings, one execution, and the selected nodes and edges. Return one selected node and edge set.
 
 **Failure mode:** If the complete generated graph does not prove an order, leave the components separate. Never add a direct rule outcome without an explicit gap.
+
+### Component 9: `BusinessLanguageNormalizer`
+
+**Responsibility:** Convert general implementation phrases to plain business language.
+
+**Interface:** Normalize one generated business label before artifact validation and rendering.
+
+**Failure mode:** The business artifact guard rejects any technical phrase that remains.
 
 ## Sequence Diagrams
 
@@ -160,8 +174,11 @@ Graph summarizer -> Text and Mermaid renderers: one shared model
 - Prove a changed synthetic branch changes the overview.
 - Prove connected gap collapse preserves external paths.
 - Prove graph-version mismatch fails closed.
-- Prove direct binary decisions remain gaps while caller-observed predicates, lazy callback actions, broad caught paths, and nested binary owners use their generic rules.
+- Prove direct Boolean decisions, caller-observed predicates, statement actions, collaborators, lazy callback actions, broad caught paths, and nested binary owners use their generic rules.
 - Prove agent text and Mermaid contain the same selected labels and omit unselected labels and private values.
+- Prove that an opaque returned value with no caller-visible meaning remains a gap.
+- Prove general collection and empty-check phrases become plain business language.
+- Generate the static Keycloak method overview from the endpoint source and assert zero gaps and zero prohibited technical terms.
 - Run two live Keycloak calls and reject disconnected flows or contradictory outcomes for one rule.
 - Run repository integrity, Mega, Keycloak, and the full pull-request gate.
 
@@ -171,8 +188,9 @@ Graph summarizer -> Text and Mermaid renderers: one shared model
 - **Risk:** Equivalent-state merge joins different business contexts. **Mitigation:** Require equal node kind, equal normalized label, and equal complete outgoing behavior before merge.
 - **Risk:** Sparse observations make the path ambiguous. **Mitigation:** Use only validated selected edges and the existing deterministic connector resolver; otherwise show an incomplete gap.
 - **Risk:** Summary hides incomplete analysis. **Mitigation:** Collapse gaps but never remove the last gap in a selected or static incomplete flow.
-- **Risk:** A caller boundary hides an internal business decision. **Mitigation:** Apply the rule only when the caller exposes the result as a predicate, action, caught outcome, or trusted value observation; keep direct decisions and unknown state effects incomplete.
+- **Risk:** A caller boundary hides dependency internals. **Mitigation:** State the dependency as one atomic rule or action only when the caller proves that role. Keep an opaque value unresolved when the caller gives it no meaning.
 - **Risk:** Equivalent call-site nodes connect unrelated runtime segments. **Mitigation:** Require a directed path from the selected source to a node with the target kind and label in the complete generated graph, and put an explicit gap on the selected path.
+- **Risk:** Generic language rewriting changes a valid domain phrase. **Mitigation:** Rewrite only recognized structural phrase forms and reject remaining technical vocabulary.
 
 ## Dependencies & Blockers
 

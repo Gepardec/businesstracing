@@ -1573,6 +1573,9 @@ public final class StaticDecisionAnalyzer {
             private final Map<String, String> validationHelperRoles = new LinkedHashMap<>();
             private final Map<Element, String> localSubjects = new LinkedHashMap<>();
             private final Set<String> reportedUnknownEffectBoundaries = new HashSet<>();
+            private final Set<MethodInvocationTree> callerBoundaryPredicates =
+                    Collections.newSetFromMap(new IdentityHashMap<>());
+            private final Set<Element> callerBoundaryPredicateValues = new HashSet<>();
             private int coveredUnknownActionDepth;
 
             private FlowScanner(
@@ -1845,8 +1848,10 @@ public final class StaticDecisionAnalyzer {
                     boolean alreadyReported = !reportedUnknownEffectBoundaries.add(boundary);
                     SourceUnavailableCallClassifier.Representation representation =
                             sourceUnavailableCalls.classify(new SourceUnavailableCallClassifier.Evidence(
-                                    false, false, false, false, alreadyReported));
-                    if (representation == SourceUnavailableCallClassifier.Representation.ALREADY_REPORTED) {
+                                    false, false, sourceUnavailableStatementAction(node, executable), false,
+                                    false, alreadyReported));
+                    if (representation == SourceUnavailableCallClassifier.Representation.CALLER_ACTION
+                            || representation == SourceUnavailableCallClassifier.Representation.ALREADY_REPORTED) {
                         coveredUnknownActionDepth++;
                         try {
                             scan(node.getMethodSelect(), unused);
@@ -1855,7 +1860,7 @@ public final class StaticDecisionAnalyzer {
                             coveredUnknownActionDepth--;
                         }
                         String action = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
-                                invocationLabel(node, executable), node, null);
+                                callerActionLabel(node, executable), node, null);
                         advance(action);
                         return null;
                     }
@@ -1907,9 +1912,14 @@ public final class StaticDecisionAnalyzer {
                         || hasDecisionBearingOverrides(executable, owner);
                 if (dynamic) {
                     if (isDecisionFreeValueAccess(executable, owner)) return null;
-                    if (!hasSourceImplementation(executable)
-                            && sourceUnavailableRepresentation(node)
-                            != SourceUnavailableCallClassifier.Representation.UNRESOLVED) return null;
+                    if (!hasSourceImplementation(executable)) {
+                        SourceUnavailableCallClassifier.Representation representation =
+                                sourceUnavailableRepresentation(node);
+                        if (representation != SourceUnavailableCallClassifier.Representation.UNRESOLVED) {
+                            representSourceUnavailableCall(node, executable, representation);
+                            return null;
+                        }
+                    }
                     scanDynamicInvocation(node, executable, owner, receiverType);
                 } else {
                     MethodLocation callee = index.methods().get(executable);
@@ -1941,9 +1951,12 @@ public final class StaticDecisionAnalyzer {
                                     List.of(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES));
                             frontier = List.of(new Tail(predicate, "true"), new Tail(predicate, "false"));
                         } else {
-                            if (sourceUnavailableRepresentation(node)
-                                    == SourceUnavailableCallClassifier.Representation.UNRESOLVED) {
+                            SourceUnavailableCallClassifier.Representation representation =
+                                    sourceUnavailableRepresentation(node);
+                            if (representation == SourceUnavailableCallClassifier.Representation.UNRESOLVED) {
                                 addCoverageGap(node, ((BytecodeDecisionAnalyzer.Gap) fallback).reason());
+                            } else {
+                                representSourceUnavailableCall(node, executable, representation);
                             }
                         }
                     }
@@ -1975,14 +1988,70 @@ public final class StaticDecisionAnalyzer {
                         resultObservedBySourcePredicate(invocation),
                         partOfLazyTransformation(invocation),
                         resultConsumedBySourceAction(invocation),
+                        resultUsedAsCallerCollaborator(invocation),
                         false,
                         false));
             }
 
+            private void representSourceUnavailableCall(
+                    MethodInvocationTree invocation,
+                    ExecutableElement executable,
+                    SourceUnavailableCallClassifier.Representation representation) {
+                if (representation == SourceUnavailableCallClassifier.Representation.CALLER_PREDICATE) {
+                    callerBoundaryPredicates.add(invocation);
+                    Element local = definedLocal(invocation);
+                    if (local != null) callerBoundaryPredicateValues.add(local);
+                    return;
+                }
+                if (representation != SourceUnavailableCallClassifier.Representation.CALLER_ACTION) return;
+                String action = add(BusinessDecisionGraph.NodeKind.COMPUTATION,
+                        callerActionLabel(invocation, executable), invocation, null);
+                advance(action);
+            }
+
             private boolean resultObservedBySourcePredicate(MethodInvocationTree invocation) {
-                if (isSourceControlPredicate(invocation)) return true;
+                if (isSourceControlPredicate(invocation) || isReturnedSourcePredicate(invocation)) return true;
                 Element definedLocal = definedLocal(invocation);
                 return definedLocal != null && sourcePredicateUsesAfter(definedLocal, invocation);
+            }
+
+            private boolean isReturnedSourcePredicate(MethodInvocationTree invocation) {
+                if (!isBooleanValue(invocation)) return false;
+                Tree current = invocation;
+                Tree parent;
+                while ((parent = dependencies.parents().get(current)) != null) {
+                    if (parent instanceof ReturnTree returned && returned.getExpression() != null) {
+                        Tree expression = unwrapParentheses(returned.getExpression());
+                        return expression == invocation
+                                || isPredicateExpression(expression) && containsTree(expression, invocation);
+                    }
+                    if (parent instanceof ExpressionStatementTree
+                            || parent instanceof VariableTree
+                            || parent instanceof AssignmentTree) return false;
+                    current = parent;
+                }
+                return false;
+            }
+
+            private boolean isBooleanValue(Tree expression) {
+                TreePath path = TreePath.getPath(location.unit(), expression);
+                TypeMirror type = path == null ? null : trees.getTypeMirror(path);
+                if (type == null) return false;
+                if (type.getKind() == TypeKind.BOOLEAN) return true;
+                try {
+                    return types.unboxedType(type).getKind() == TypeKind.BOOLEAN;
+                } catch (IllegalArgumentException notBoxed) {
+                    return false;
+                }
+            }
+
+            private boolean sourceUnavailableStatementAction(
+                    MethodInvocationTree invocation,
+                    ExecutableElement executable) {
+                MethodLocation declared = index.methods().get(executable);
+                boolean unavailable = declared == null || declared.method().getBody() == null;
+                return unavailable
+                        && dependencies.parents().get(invocation) instanceof ExpressionStatementTree;
             }
 
             private Element definedLocal(MethodInvocationTree invocation) {
@@ -2015,44 +2084,45 @@ public final class StaticDecisionAnalyzer {
                         .getStartPosition(location.unit(), definition);
                 long[] predicatePosition = { Long.MAX_VALUE };
                 new TreeScanner<Void, Void>() {
-                    private void inspect(Tree condition) {
+                    private void inspect(Tree condition, boolean returnedBoolean) {
                         long position = trees.getSourcePositions().getStartPosition(location.unit(), condition);
                         Tree predicate = unwrapParentheses(condition);
                         if (position > definitionPosition && position < predicatePosition[0]
-                                && isPredicateExpression(predicate)
+                                && (isPredicateExpression(predicate)
+                                || returnedBoolean && isBooleanValue(predicate))
                                 && referencesElement(predicate, local)) {
                             predicatePosition[0] = position;
                         }
                     }
 
                     @Override public Void visitIf(IfTree node, Void unused) {
-                        inspect(node.getCondition());
+                        inspect(node.getCondition(), false);
                         return super.visitIf(node, unused);
                     }
 
                     @Override public Void visitWhileLoop(WhileLoopTree node, Void unused) {
-                        inspect(node.getCondition());
+                        inspect(node.getCondition(), false);
                         return super.visitWhileLoop(node, unused);
                     }
 
                     @Override public Void visitDoWhileLoop(DoWhileLoopTree node, Void unused) {
-                        inspect(node.getCondition());
+                        inspect(node.getCondition(), false);
                         return super.visitDoWhileLoop(node, unused);
                     }
 
                     @Override public Void visitForLoop(ForLoopTree node, Void unused) {
-                        if (node.getCondition() != null) inspect(node.getCondition());
+                        if (node.getCondition() != null) inspect(node.getCondition(), false);
                         return super.visitForLoop(node, unused);
                     }
 
                     @Override public Void visitConditionalExpression(
                             ConditionalExpressionTree node, Void unused) {
-                        inspect(node.getCondition());
+                        inspect(node.getCondition(), false);
                         return super.visitConditionalExpression(node, unused);
                     }
 
                     @Override public Void visitReturn(ReturnTree node, Void unused) {
-                        if (node.getExpression() != null) inspect(node.getExpression());
+                        if (node.getExpression() != null) inspect(node.getExpression(), true);
                         return super.visitReturn(node, unused);
                     }
                 }.scan(location.method().getBody(), null);
@@ -2129,7 +2199,9 @@ public final class StaticDecisionAnalyzer {
                         TreePath path = TreePath.getPath(location.unit(), action);
                         Element called = path == null ? null : trees.getElement(path);
                         if (called instanceof ExecutableElement executable
-                                && !platformMutationRoots(location, action, executable).isEmpty()) return true;
+                                && (!platformMutationRoots(location, action, executable).isEmpty()
+                                || hasSourceImplementation(executable)
+                                || isLazyTransformation(action))) return true;
                     }
                     if (parent instanceof ExpressionStatementTree
                             || parent instanceof ReturnTree
@@ -2138,6 +2210,43 @@ public final class StaticDecisionAnalyzer {
                     current = parent;
                 }
                 return false;
+            }
+
+            private boolean resultUsedAsCallerCollaborator(MethodInvocationTree invocation) {
+                if (usedAsInvocationReceiver(invocation)) return true;
+                Element local = definedLocal(invocation);
+                if (local == null) return false;
+                long definitionPosition = trees.getSourcePositions()
+                        .getStartPosition(location.unit(), invocation);
+                boolean[] used = { false };
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
+                        long position = trees.getSourcePositions()
+                                .getStartPosition(location.unit(), identifier);
+                        if (position > definitionPosition
+                                && local.equals(trees.getElement(TreePath.getPath(location.unit(), identifier)))
+                                && usedAsInvocationReceiver(identifier)) used[0] = true;
+                        return used[0] ? null : super.visitIdentifier(identifier, unused);
+                    }
+                }.scan(location.method().getBody(), null);
+                return used[0];
+            }
+
+            private boolean usedAsInvocationReceiver(Tree value) {
+                Tree current = value;
+                Tree parent = dependencies.parents().get(current);
+                while (parent instanceof ParenthesizedTree || parent instanceof TypeCastTree) {
+                    current = parent;
+                    parent = dependencies.parents().get(current);
+                }
+                if (parent instanceof MemberSelectTree select
+                        && containsTree(select.getExpression(), current)) {
+                    Tree call = dependencies.parents().get(select);
+                    return call instanceof MethodInvocationTree invocation
+                            && invocation.getMethodSelect() == select;
+                }
+                return parent instanceof MemberReferenceTree reference
+                        && containsTree(reference.getQualifierExpression(), current);
             }
 
             private boolean containsTree(Tree root, Tree target) {
@@ -2308,7 +2417,14 @@ public final class StaticDecisionAnalyzer {
                     return null;
                 }
                 if (callee.method().getBody() == null) {
-                    addCoverageGap(node, "method-reference decision logic has no source body");
+                    MethodInvocationTree callback = enclosingCallbackInvocations(node).stream()
+                            .filter(this::isLazyTransformation).findFirst().orElse(null);
+                    if (callback != null && hasSourceImplementation(executable)) {
+                        addConfiguredCallbackAction(
+                                callback, words(executable.getSimpleName().toString()), node);
+                    } else {
+                        addCoverageGap(node, "method-reference decision logic has no source body");
+                    }
                     return null;
                 }
                 if (activeMethods.contains(executable)) return null;
@@ -2425,7 +2541,8 @@ public final class StaticDecisionAnalyzer {
                 if (!slice.contains(node)) return super.visitReturn(node, unused);
                 if (node.getExpression() != null) {
                     scan(node.getExpression(), unused);
-                    if (isPredicateExpression(node.getExpression())) {
+                    if (isPredicateExpression(node.getExpression())
+                            || isCallerBoundaryPredicate(node.getExpression())) {
                         PredicatePlan predicate = addPredicatePlan(node.getExpression());
                         enter(predicate);
                         var outcomes = new ArrayList<Tail>(predicate.trueTails());
@@ -3089,8 +3206,20 @@ public final class StaticDecisionAnalyzer {
                 }
                 return "returns " + (node.getExpression() == null
                         ? "no value"
-                        : (isPredicateExpression(node.getExpression()) ? "whether " : "")
+                        : (isPredicateExpression(node.getExpression())
+                                || isCallerBoundaryPredicate(node.getExpression()) ? "whether " : "")
                                 + expression(node.getExpression()));
+            }
+
+            private boolean isCallerBoundaryPredicate(Tree expression) {
+                Tree unwrapped = unwrapParentheses(expression);
+                if (unwrapped instanceof MethodInvocationTree invocation) {
+                    return callerBoundaryPredicates.contains(invocation);
+                }
+                if (!(unwrapped instanceof IdentifierTree)) return false;
+                TreePath path = TreePath.getPath(location.unit(), unwrapped);
+                Element local = path == null ? null : trees.getElement(path);
+                return local != null && callerBoundaryPredicateValues.contains(local);
             }
 
             private boolean resourcesAreDecisionSafe(TryTree tree) {
@@ -3160,11 +3289,36 @@ public final class StaticDecisionAnalyzer {
                     String mutation = directMutationLabel(call, method, member);
                     if (mutation != null) return mutation;
                     if (method.startsWith("set") && method.length() > 3) {
+                        if (call.getArguments().size() == 2) {
+                            return "set " + mutationArgument(call.getArguments().get(0)) + " to "
+                                    + mutationArgument(call.getArguments().get(1));
+                        }
                         String receiver = receiverSubject(member.getExpression()).replaceFirst("^new\\s+", "");
                         return "set " + receiver + " " + words(method.substring(3));
                     }
                 }
                 return "evaluate " + words(method);
+            }
+
+            private String callerActionLabel(MethodInvocationTree call, ExecutableElement executable) {
+                String label = invocationLabel(call, executable);
+                if (!label.startsWith("evaluate ")) return label;
+                String action = label.substring("evaluate ".length());
+                if (!(call.getMethodSelect() instanceof MemberSelectTree member)) return action;
+                String receiver = receiverSubject(member.getExpression());
+                if (action.startsWith("require ") && receiver.contains("permission")) {
+                    String owner = receiver.replaceFirst("(?i)\\s+evaluator$", "")
+                            .replaceFirst("(?i)\\s+permission$", "").strip();
+                    String requirement = action.substring("require ".length())
+                            .replaceFirst("(?i)^query$", "search");
+                    return "confirm " + (owner.isBlank() ? "" : owner + " ")
+                            + requirement + " permission";
+                }
+                if (action.startsWith("to ")) return "convert " + action;
+                if (action.contains(" ")) {
+                    return action;
+                }
+                return action + " " + receiver;
             }
 
             private String platformMutationLabel(

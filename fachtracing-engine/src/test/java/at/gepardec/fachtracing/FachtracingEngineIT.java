@@ -84,7 +84,7 @@ public final class FachtracingEngineIT {
 
     private static void incompleteAnalysisAndCaptureFailureStayExplicit() {
         var engine = new FachtracingEngine(new InMemoryDecisionRecordRepository());
-        var gaps = engine.analyze(request("gaps/UnsupportedPolicy.java"));
+        var gaps = engine.analyze(request("gaps/OpaqueValuePolicy.java"));
         engine.activate(gaps, new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
         TraceRuntime.begin(gaps.graph().graphId(), gaps.graph().version());
         TraceRuntime.complete(outcome(gaps.graph()).nodeId(), true);

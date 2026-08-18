@@ -545,16 +545,7 @@ public final class BusinessGraphProjector {
     }
 
     private static String cleanLabel(String label) {
-        String value = Objects.requireNonNull(label, "label").strip()
-                .replaceAll("(?i)^analysis incomplete:\\s*", "")
-                .replaceAll("(?i)\\bcomp(?:arison)?\\s+", "")
-                .replaceAll("\\s+", " ");
-        value = value.replaceAll("(?i)^not (.+) is after local date now$", "$1 is today or earlier")
-                .replaceAll("(?i)^(.+) is after current date$", "$1 is in the future")
-                .replaceAll("(?i)^is not duplicate .+ violation ex$",
-                        "persistence failure is not a duplicate record");
-        if (value.isBlank()) return "business condition";
-        return value;
+        return BusinessLanguageNormalizer.normalize(label);
     }
 
     private static Map<String, BusinessDecisionGraph.DecisionNode> indexNodes(BusinessDecisionGraph graph) {

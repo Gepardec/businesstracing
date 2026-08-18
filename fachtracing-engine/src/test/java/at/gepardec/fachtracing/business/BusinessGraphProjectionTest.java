@@ -21,6 +21,7 @@ public final class BusinessGraphProjectionTest {
         acceptsBusinessVocabularyThatContainsStructuralWords();
         removesJavaExpressionsFromBusinessProjection();
         removesTechnicalDataBuildingFromBusinessProjection();
+        rewritesGenericCollectionOperationsForBusinessReaders();
         preservesTraceabilityAcrossHiddenExactNodes();
         collapsesConnectedGapRegionsAndEquivalentStates();
         selectsDifferentBusinessFlowsForDifferentExecutions();
@@ -163,7 +164,8 @@ public final class BusinessGraphProjectionTest {
     private static void rejectsTechnicalVocabulary() {
         for (String prohibited : List.of("Start", "for each item", "derive temporary value",
                 "redirect:/owners/12", "true", "Policy.java", "null", "identifier",
-                "failure ex", "message to lower case", "users evaluator::can view")) {
+                "failure ex", "message to lower case", "users evaluator::can view",
+                "map orders using lookup", "user models", "account stream", "user representation")) {
             var graph = new BusinessLogicGraph("guard", 1, "guard", List.of("node"),
                     List.of(new BusinessLogicGraph.Node(
                             "node", BusinessLogicGraph.NodeKind.RESULT, prohibited)),
@@ -262,6 +264,51 @@ public final class BusinessGraphProjectionTest {
         assert labels.containsAll(List.of("search exists", "put order on hold")) : labels;
         assert labels.stream().noneMatch(label -> label.equals("attributes")
                 || label.startsWith("put attributes with ") || label.contains("::")) : labels;
+        new BusinessLogicArtifactGuard().requireClean(projected);
+    }
+
+    private static void rewritesGenericCollectionOperationsForBusinessReaders() {
+        BusinessDecisionGraph exact = graph("prepare records", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        node("terms", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "map parser split terms request using lookup"),
+                        node("view", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "filter account models by can view"),
+                        node("access", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "map order models using set access"),
+                        node("groups", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "set groups to group"),
+                        node("search", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "search for account stream"),
+                        node("grant", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "grant if no permission"),
+                        node("attributes", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "not request attributes is empty"),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "terms", "next"),
+                        edge("e2", "terms", "view", "next"),
+                        edge("e3", "view", "access", "next"),
+                        edge("e4", "access", "groups", "next"),
+                        edge("e5", "groups", "search", "next"),
+                        edge("e6", "search", "grant", "next"),
+                        edge("e7", "grant", "attributes", "next"),
+                        edge("e8", "attributes", "stop", "true; returns prepared"),
+                        edge("e9", "attributes", "stop", "false; returns unchanged")),
+                List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+        List<String> labels = projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList();
+
+        assert labels.containsAll(List.of(
+                "look up request terms",
+                "keep accounts with view permission",
+                "set access for orders",
+                "set groups",
+                "search for accounts",
+                "grant access when no explicit permission applies",
+                "request attributes exist")) : labels;
         new BusinessLogicArtifactGuard().requireClean(projected);
     }
 

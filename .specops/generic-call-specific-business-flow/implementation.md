@@ -2,8 +2,8 @@
 
 ## Summary
 
-All five implementation tasks pass local and live verification. The manual non-Java
-definition-of-done review is pending.
+Five implementation tasks pass local and live verification. Task 6 creates a static method
+overview with caller-visible business rules, actions, and plain language.
 
 ## Phase 1 Context Summary
 
@@ -41,6 +41,8 @@ definition-of-done review is pending.
 | 4 | Use compiler symbols and source use-sites to classify unavailable call boundaries. | Text names can be shadowed, and a direct external result must stay incomplete unless a visible predicate or action represents it. | Task 5 | 2026-08-14T11:13:13Z |
 | 5 | Connect selected runtime segments only through a full-graph route and one explicit gap. | Reused source methods can produce equivalent projected nodes at different call sites. A safe gap preserves the unknown rule without leaving a broken diagram. | Task 5 | 2026-08-14T11:13:13Z |
 | 6 | Allow a one-line runtime source correlation only after a non-final disjunction operand. | `javac` can keep later `||` jumps on the preceding source line. The preceding reversed branch proves that the next jump is part of the same short-circuit sequence and prevents an unrelated loop branch from matching. | Task 5 | 2026-08-14T11:44:19Z |
+| 7 | Keep unavailable dependencies as atomic caller rules or actions when the caller proves that role. | The requested artifact explains one method. Expanding the full project makes it large and mixes dependency internals with caller behavior. | Task 6 | 2026-08-14T13:05:37Z |
+| 8 | Normalize structural collection phrases before business artifact validation. | Static analysis must keep exact semantics, but the business graph must not expose map, filter, model, stream, evaluator, or representation terms. | Task 6 | 2026-08-14T13:05:37Z |
 
 ## Deviations from Design
 
@@ -138,3 +140,18 @@ Task 5 is complete again. The final runtime files are in `/tmp/keycloak-business
 - All Story 5 criteria and Task 5 checks pass, including the multiline runtime correlation correction.
 - The repository map and documentation are current.
 - The spec remains open for the manual non-Java graph review. No code or automated gate remains pending.
+
+### Session 9 — Task 6 started (2026-08-14)
+
+The requested proof is the static all-path method graph. A full-project source experiment made the
+graph slow and expanded dependency internals that do not help a method review. Task 6 therefore
+uses the caller method as the semantic boundary. A Boolean return becomes an atomic rule, a
+statement call becomes an atomic action, and a collaborator lookup stays hidden. An opaque value
+without caller meaning remains a gap.
+
+The unknown-project analyzer contracts pass for direct rules, repeated actions, derived
+collaborators, lazy inputs, and the opaque-value counterexample. A separate unknown-project graph
+proves that map, filter, model, stream, and negated-empty phrases become plain business language.
+The pinned static Keycloak result has 128 exact nodes, 45 business nodes, zero exact gaps, and zero
+visible gaps. It uses no runtime observations. The non-Java self-review finds no Java term in the
+rendered graph. `realm` and `IdP` remain domain terms, not Java terms.

@@ -15,6 +15,10 @@ public final class SourceBoundaryBinaryRules {
         boolean approved();
     }
 
+    public interface StateProvider {
+        State state();
+    }
+
     public interface StreamSource {
         Stream<String> values();
     }

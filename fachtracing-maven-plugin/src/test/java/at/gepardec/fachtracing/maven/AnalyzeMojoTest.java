@@ -406,17 +406,13 @@ public final class AnalyzeMojoTest {
         Files.writeString(source, """
                 import at.gepardec.fachtracing.api.FachTracing;
                 public final class Policy {
-                    @FachTracing("guarded approval")
-                    public boolean decide(DecisionService decisions, String value) {
-                        try {
-                            return decisions.approves(value);
-                        } catch (RuntimeException ignored) {
-                            return false;
-                        }
+                    @FachTracing("opaque external value")
+                    public Object decide(ValueSource source) {
+                        return source.value();
                     }
                 }
-                interface DecisionService {
-                    boolean approves(String value);
+                interface ValueSource {
+                    Object value();
                 }
                 """, StandardCharsets.UTF_8);
         initializeGitRepository(repository);
@@ -430,7 +426,7 @@ public final class AnalyzeMojoTest {
                 List.of(source), CLASSPATH, StandardCharsets.UTF_8, output, false,
                 Optional.of(developerOutput));
 
-        Path jsonFile = output.resolve("guarded-approval-developer.json");
+        Path jsonFile = output.resolve("opaque-external-value-developer.json");
         Path schemaFile = output.resolve("fachtracing-developer-graph-v1.schema.json");
         byte[] jsonBytes = Files.readAllBytes(jsonFile);
         String json = StandardCharsets.UTF_8.newDecoder().decode(
@@ -462,7 +458,7 @@ public final class AnalyzeMojoTest {
         assertDataSchema(schema, DeveloperGraphExporter.SCHEMA);
         assertRequired(schema, "schema", "graph", "sourceOrigins", "sourceFiles");
         assert Files.readString(output.resolve("index.md"))
-                .contains("[Developer JSON](guarded-approval-developer.json)");
+                .contains("[Developer JSON](opaque-external-value-developer.json)");
         assert Files.readString(output.resolve("index.md")).contains(
                 "Developer JSON Schema: [V1](fachtracing-developer-graph-v1.schema.json)");
         assert result.graphCount() == 1 && result.incompleteCount() == 1 : result;
@@ -477,11 +473,11 @@ public final class AnalyzeMojoTest {
                 : "stale legacy developer JSON schema was not removed";
         assert Files.readString(output.resolve("keep.txt")).equals("application-owned");
 
-        Files.delete(output.resolve("guarded-approval-structure.mmd"));
-        Files.delete(output.resolve("guarded-approval-structure.puml"));
-        Files.delete(output.resolve("guarded-approval-business.mmd"));
-        Files.delete(output.resolve("guarded-approval-business.puml"));
-        Files.delete(output.resolve("guarded-approval-business.json"));
+        Files.delete(output.resolve("opaque-external-value-structure.mmd"));
+        Files.delete(output.resolve("opaque-external-value-structure.puml"));
+        Files.delete(output.resolve("opaque-external-value-business.mmd"));
+        Files.delete(output.resolve("opaque-external-value-business.puml"));
+        Files.delete(output.resolve("opaque-external-value-business.json"));
         Files.delete(output.resolve("fachtracing-business-graph-v1.schema.json"));
         Files.delete(output.resolve("index.md"));
         Files.delete(output.resolve("keep.txt"));
@@ -501,7 +497,7 @@ public final class AnalyzeMojoTest {
         assert Files.exists(multiOriginOutput.resolve("fachtracing-developer-graph-v1.schema.json"));
         assert !Files.exists(multiOriginOutput.resolve("fachtracing-developer-graph-v2.schema.json"));
         Map<String, Object> multiOriginDocument = object(new JsonParser(Files.readString(
-                multiOriginOutput.resolve("guarded-approval-developer.json"))).parse());
+                multiOriginOutput.resolve("opaque-external-value-developer.json"))).parse());
         assert multiOriginDocument.get("schema").equals(DeveloperGraphExporter.SCHEMA)
                 : multiOriginDocument;
         assert Files.readString(multiOriginOutput.resolve("index.md")).contains(
@@ -680,12 +676,12 @@ public final class AnalyzeMojoTest {
         Path output = Files.createTempDirectory("fachtracing-plugin-strict");
         try {
             new ProjectGraphGenerator().generate(
-                    List.of(FIXTURES.resolve("gaps/UnsupportedPolicy.java")), CLASSPATH,
+                    List.of(FIXTURES.resolve("gaps/OpaqueValuePolicy.java")), CLASSPATH,
                     StandardCharsets.UTF_8, output, true, Optional.empty());
             throw new AssertionError("strict mode accepted incomplete graph");
         } catch (ProjectGraphGenerator.IncompleteGraphException expected) {
-            assert expected.decisions().equals(List.of("guarded approval")) : expected.decisions();
-            assert Files.exists(output.resolve("guarded-approval-structure.mmd"));
+            assert expected.decisions().equals(List.of("opaque external value")) : expected.decisions();
+            assert Files.exists(output.resolve("opaque-external-value-structure.mmd"));
             assert Files.exists(output.resolve("index.md"));
         }
     }

@@ -79,26 +79,26 @@ public final class KeycloakConformanceTest {
         for (String required : List.of("search query is absent", "search exists", "prefix exists")) {
             assert businessLabels.contains(required) : "projected business anchor is absent: " + required;
         }
-        assert fullBusinessGraph.nodes().stream()
-                .anyMatch(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
-                : "projected business graph must identify incomplete coverage";
+        assert analysis.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : analysis.graph().coverageGaps();
+        assert analysis.graph().coverageGaps().isEmpty() : analysis.graph().coverageGaps();
+        assert fullBusinessGraph.completeness() == BusinessLogicGraph.Completeness.COMPLETE
+                : fullBusinessGraph;
         long visibleGaps = fullBusinessGraph.nodes().stream()
                 .filter(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP).count();
-        assert visibleGaps == 3 : "expected three genuine external boundary gaps: " + fullBusinessGraph;
-        List<String> exactGapLabels = analysis.graph().nodes().stream()
-                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.COVERAGE_GAP)
-                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList();
-        assert exactGapLabels.stream().allMatch(label ->
-                label.contains("implementations are unavailable")
-                        || label.contains("possible side effect")) : exactGapLabels;
-        var sourceMappings = analysis.manifest().sourceMappings();
-        var gapLines = analysis.graph().nodes().stream()
-                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.COVERAGE_GAP)
-                .map(node -> sourceMappings.get(node.nodeId()).line())
-                .collect(java.util.stream.Collectors.toSet());
-        assert gapLines.equals(java.util.Set.of(295L, 297L, 563L, 567L, 574L)) : gapLines;
-        assert businessLabels.contains("map prefix split terms search using lookup") : businessLabels;
-        assert businessLabels.contains("filter user models by can view") : businessLabels;
+        assert visibleGaps == 0 : "the static method overview has unresolved regions: " + fullBusinessGraph;
+        for (String required : List.of(
+                "confirm user search permission",
+                "look up search terms",
+                "keep users with view permission",
+                "convert to start of day",
+                "convert to end of day",
+                "set groups",
+                "search for users",
+                "grant access when no explicit permission applies",
+                "set access for users")) {
+            assert businessLabels.contains(required) : "business action is absent: " + required;
+        }
         assert fullBusinessGraph.nodes().size() < analysis.graph().nodes().size()
                 : "the generated overview did not reduce the exact graph";
         for (String required : List.of("search query is absent", "search exists", "prefix exists")) {
@@ -111,6 +111,7 @@ public final class KeycloakConformanceTest {
         }
         String businessDiagram = new BusinessMermaidRenderer().render(fullBusinessGraph);
         assert businessDiagram.startsWith("flowchart LR\n") : businessDiagram;
+        assert !businessDiagram.contains("analysis could not determine") : businessDiagram;
         assert !businessDiagram.contains("org.keycloak") : businessDiagram;
         assert !businessDiagram.contains("UsersResource") : businessDiagram;
         assert !businessDiagram.contains(".java") : businessDiagram;
@@ -124,7 +125,7 @@ public final class KeycloakConformanceTest {
         assert evaluatedFlow.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RESULT)
                 .count() == 1 : evaluatedFlow;
         assert evaluatedFlow.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.GAP)
-                .count() == 1 : evaluatedFlow;
+                .count() == 0 : evaluatedFlow;
         assertConnected(evaluatedFlow);
         assert evaluatedFlow.nodes().stream()
                 .filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
