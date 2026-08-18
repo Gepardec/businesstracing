@@ -470,3 +470,37 @@ analysis of the real Hogajama reactor reports `getAllDataMaxNumber` and
 `getAllWateringDataMaxNumber` as complete with exact Morphia, Commons Lang, and Commons Collections
 technical boundaries. The full pull-request gate passed with five complete Mega graphs, all Spring
 PetClinic expectations, and 5,000 load decisions with zero correctness failures.
+
+### configured-endpoint-business-tracing (feature) — 2026-08-12
+
+Completed all four tasks. The analyzer now accepts exact configured method roots, and both Maven
+goals use one configuration contract. The opt-in agent mode activates a bundle and writes one
+redacted business text file and Mermaid file for each completed call from a daemon sink.
+
+Mega now selects its five reviewed roots without a source overlay. A pinned Keycloak workflow
+selects `UsersResource.getUsers`, writes its exact activation graph, and supplies a concise reviewed
+user-search flow. The full repository gate, five Mega graphs, three Spring PetClinic graphs, and the
+Keycloak conformance command passed. No dependency was added.
+
+### keycloak-live-business-output-correctness (bugfix) — 2026-08-14
+
+Completed all three tasks. Boolean predicate outcomes remain bindable across explicit gaps, and a
+dedicated automatic-business boundary reports safe completion and coverage text without developer
+diagnostics or result access.
+
+The real pinned Keycloak token and user-search calls returned HTTP 200 and generated one redacted
+text/Mermaid pair. The full repository gate, five Mega decisions, three Spring PetClinic decisions,
+and pinned Keycloak conformance passed with no dependency change.
+
+### generated-keycloak-diagram-correctness (bugfix) — 2026-08-14
+
+Completed both tasks. The pinned Keycloak conformance diagram now comes directly from the generic
+business projection of the endpoint analysis. Reviewed Keycloak labels remain assertions only and
+do not provide nodes or edges. Repository integrity rejects manual Keycloak graph construction and
+a fixed Mermaid flowchart in the guide.
+
+Pinned artifact inspection also exposed Java method references and technical data-building actions
+in the generic projection. The projector now removes only those technical forms, while a regression
+keeps an ordinary `put order on hold` business action. The business guard rejects Java
+method-reference syntax. The full repository gate and final pinned Keycloak conformance passed; the
+activation still contains one exact 169-node decision with probe sites and class fingerprints.

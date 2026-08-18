@@ -1,0 +1,61 @@
+{
+  "id": "generated-keycloak-diagram-correctness",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-14T08:42:39Z",
+  "updated": "2026-08-14T08:58:18Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "configured-endpoint-business-tracing",
+      "reason": "It introduced the Keycloak conformance artifact corrected here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "keycloak-live-business-output-correctness",
+    "generic-business-graph-projection"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-14T08:42:39Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 9,
+        "codeQuality": 8,
+        "testCoverage": 9,
+        "specCompliance": 10
+      },
+      "evaluatedAt": "2026-08-14T08:58:18Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3590,
+    "filesChanged": 19,
+    "linesAdded": 808,
+    "linesRemoved": 102,
+    "tasksCompleted": 2,
+    "acceptanceCriteriaVerified": 18,
+    "specDurationMinutes": 16
+  }
+}

@@ -4,6 +4,7 @@ import at.gepardec.fachtracing.analysis.AnalysisRequest;
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
+import at.gepardec.fachtracing.analysis.BusinessEntryPoint;
 import at.gepardec.fachtracing.analysis.ExternalMethodContractProvider;
 import at.gepardec.fachtracing.analysis.ExternalMethodContractProviders;
 import at.gepardec.fachtracing.analysis.OpaqueLibraryBoundary;
@@ -100,7 +101,22 @@ final class ProjectGraphGenerator {
             Path outputDirectory,
             boolean failOnIncomplete,
             Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
+        return generate(rootSourceFiles, sourceFiles, classpath, charset, outputDirectory,
+                failOnIncomplete, developerOutput, List.of());
+    }
+
+    GenerationResult generate(
+            List<Path> rootSourceFiles,
+            List<Path> sourceFiles,
+            List<Path> classpath,
+            Charset charset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput,
+            List<BusinessEntryPoint> businessEntryPoints) throws IOException, IncompleteGraphException {
         Objects.requireNonNull(developerOutput, "developerOutput");
+        businessEntryPoints = List.copyOf(Objects.requireNonNull(
+                businessEntryPoints, "businessEntryPoints"));
         if (rootSourceFiles.isEmpty() || sourceFiles.isEmpty()) {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true, List.of());
@@ -108,7 +124,8 @@ final class ProjectGraphGenerator {
 
         var analyses = analyzer.analyzeAll(
                 new AnalysisRequest(sourceFiles, classpath, charset, rootSourceFiles)
-                        .withExternalMethodContractProviders(externalMethodContractProviders));
+                        .withExternalMethodContractProviders(externalMethodContractProviders)
+                        .withBusinessEntryPoints(businessEntryPoints));
         return write(analyses, charset, outputDirectory, failOnIncomplete, developerOutput);
     }
 
@@ -138,14 +155,29 @@ final class ProjectGraphGenerator {
             Path outputDirectory,
             boolean failOnIncomplete,
             Optional<DeveloperOutput> developerOutput) throws IOException, IncompleteGraphException {
+        return generate(boundary, opaqueLibraries, outputCharset, outputDirectory,
+                failOnIncomplete, developerOutput, List.of());
+    }
+
+    GenerationResult generate(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries,
+            Charset outputCharset,
+            Path outputDirectory,
+            boolean failOnIncomplete,
+            Optional<DeveloperOutput> developerOutput,
+            List<BusinessEntryPoint> businessEntryPoints) throws IOException, IncompleteGraphException {
         Objects.requireNonNull(boundary, "boundary");
         Objects.requireNonNull(opaqueLibraries, "opaqueLibraries");
         Objects.requireNonNull(developerOutput, "developerOutput");
+        businessEntryPoints = List.copyOf(Objects.requireNonNull(
+                businessEntryPoints, "businessEntryPoints"));
         if (boundary.entrySourceFiles().isEmpty()) {
             removePriorArtifacts(outputDirectory);
             return new GenerationResult(0, 0, true, List.of());
         }
-        return write(analyzer.analyzeAll(boundary, opaqueLibraries, externalMethodContractProviders),
+        return write(analyzer.analyzeAll(
+                        boundary, opaqueLibraries, externalMethodContractProviders, businessEntryPoints),
                 outputCharset, outputDirectory,
                 failOnIncomplete, developerOutput);
     }

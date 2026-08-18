@@ -20,6 +20,8 @@ public final class DecisionExplanationProjectorTest {
         rendersFailedExecutionWithoutTechnicalData();
         preservesRedactionAndRejectsMissingAdapters();
         unknownEvidenceMakesCoverageExplicit();
+        protectsAutomaticBusinessOutput();
+        rendersBusinessExecutionMermaid();
     }
 
     private static void explanationMatchesBusinessSnapshot() throws Exception {
@@ -80,6 +82,39 @@ public final class DecisionExplanationProjectorTest {
                 graph(), execution(DecisionExecution.DecisionValue.of(true), observations));
         assert explanation.completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
         assert !explanation.coverageGaps().isEmpty();
+    }
+
+    private static void protectsAutomaticBusinessOutput() {
+        var execution = new DecisionExecution("automatic-execution", "eligibility-graph", 1,
+                Instant.parse("2026-07-24T08:00:00Z"), Instant.parse("2026-07-24T08:00:01Z"),
+                List.of(), new DecisionExecution.DecisionValue(
+                        "unknown", "UNKNOWN", "Result not recorded"),
+                BusinessDecisionGraph.Completeness.INCOMPLETE,
+                List.of("binary fallback at source line 302", "final result has no safe value adapter"));
+        var developer = new DecisionExplanationProjector().project(graph(), execution);
+        assert developer.coverageGaps().contains("binary fallback at source line 302") : developer;
+        var business = new BusinessExplanationProjector().project(graph(), execution);
+        String text = new BusinessExplanationTextRenderer().render(business);
+        String diagram = new BusinessExecutionMermaidRenderer().render(business);
+        assert text.contains("Result: Completed") : text;
+        assert text.contains("Gap: some business rules could not be observed") : text;
+        assert !text.contains("[status]") : text;
+        for (String prohibited : List.of(
+                "unknown", "binary", "source line", "adapter", "implementation", "bytecode")) {
+            assert !text.toLowerCase().contains(prohibited) : prohibited + " in " + text;
+            assert !diagram.toLowerCase().contains(prohibited) : prohibited + " in " + diagram;
+        }
+    }
+
+    private static void rendersBusinessExecutionMermaid() {
+        var projector = new DecisionExplanationProjector();
+        String diagram = new BusinessExecutionMermaidRenderer().render(
+                projector.project(graph(), execution()));
+        assert diagram.startsWith("flowchart TD\n") : diagram;
+        assert diagram.contains("Decision: customer eligibility") : diagram;
+        assert diagram.contains("age is below 24 (age was 20)") : diagram;
+        assert diagram.contains("Result: true") : diagram;
+        assertNoTechnicalLanguage(diagram);
     }
 
     public static BusinessDecisionGraph graph() {

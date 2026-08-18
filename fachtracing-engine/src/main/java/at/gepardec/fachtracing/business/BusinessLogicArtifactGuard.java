@@ -17,6 +17,9 @@ public final class BusinessLogicArtifactGuard {
             Pattern.compile("\\bnext item\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bderive\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bevaluate\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bmap\\b|\\bfilter\\b|\\busing lookup\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\b[a-z]+ models\\b|\\bsession attribute\\b|\\bstream\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\bevaluator\\b|\\brepresentation\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\btemporary\\b|\\btemp(?:orary)? value\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bcomp(?:arison)? [a-z]", Pattern.CASE_INSENSITIVE),
             Pattern.compile("decision result path|alternative result|unresolved", Pattern.CASE_INSENSITIVE),
@@ -26,7 +29,7 @@ public final class BusinessLogicArtifactGuard {
             Pattern.compile("java\\.|org\\.springframework\\.|jakarta\\.", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bnull\\b|\\bidentifiers?\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bex\\b|to lower case", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("==|!=|&&|\\|\\||->|[{};]"));
+            Pattern.compile("==|!=|&&|\\|\\||->|::|[{};]"));
 
     /** Returns all prohibited labels and outcomes. */
     public List<String> violations(BusinessLogicGraph graph) {

@@ -25,6 +25,36 @@ entry markers, loop mechanics, temporary calculations, raw Boolean branches, and
 The `*-structure.*` files are exact technical developer artifacts. Runtime correlation continues to
 use that exact graph.
 
+## Select a method without an annotation
+
+Use `businessEntryPoints` when you cannot change the target source. Select the Java method that
+implements the endpoint and give it a business label:
+
+```xml
+<configuration>
+  <businessEntryPoints>
+    <businessEntryPoint>
+      <owner>org.example.UsersResource</owner>
+      <method>getUsers</method>
+      <parameterTypes>
+        <parameterType>java.lang.String</parameterType>
+        <parameterType>java.lang.Integer</parameterType>
+      </parameterTypes>
+      <label>search users</label>
+    </businessEntryPoint>
+  </businessEntryPoints>
+</configuration>
+```
+
+The `analyze` and `analyze-reactor` goals use the same configuration. The owner is the qualified
+Java type name. If the owner has only one method with that name, you can omit `parameterTypes`. If
+the method is overloaded, list all erased parameter types in declaration order. Use qualified type
+names and append `[]` for an array. The plugin stops with a precise error when a selection is absent
+or ambiguous.
+
+Configured roots and `@FachTracing` roots are additive. If both select the same method, the plugin
+creates one graph and uses the configured label.
+
 ## Lifecycle analysis
 
 Use this plugin block to generate the files during `process-classes`, `package`, and `verify`:

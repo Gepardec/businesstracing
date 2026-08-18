@@ -8,6 +8,7 @@ import at.gepardec.fachtracing.explain.DecisionExplanationProjector;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
 import at.gepardec.fachtracing.runtime.RuntimeCollector;
+import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 import at.gepardec.fachtracing.runtime.TraceRuntime;
 
 import java.nio.file.Files;
@@ -26,11 +27,14 @@ public final class FachtracingTransformerTest {
 
     public static void main(String[] args) throws Exception {
         premainAcceptsApplicationConfigurationAfterStartup();
+        parsesStrictAutomaticOutputOptions();
+        writesRedactedBusinessArtifactsForEachCall();
         rejectsFingerprintMismatch();
         transformedMethodPreservesResultsAndCapturesExecution();
         capturesOnlyResultRelevantPredicateOperands();
         capturesCurrentEvidenceOrReportsAnExactGap();
         analyzerBindingsCaptureOneCompoundPredicateEdge();
+        multilineCompoundKeepsSourceAndBytecodePredicatesAligned();
         partialCompoundBindingCreatesRuntimeGap();
         mixedCompoundRecordsExactAtomicPaths();
         negatedCompoundRecordsExactAtomicPaths();
@@ -146,6 +150,130 @@ public final class FachtracingTransformerTest {
         assert installed.get() == null;
         FachtracingAgent.configure(manifest(), Map.of());
         assert installed.get() instanceof FachtracingTransformer;
+    }
+
+    private static void parsesStrictAutomaticOutputOptions() {
+        assert AgentOptions.parse(null).isEmpty();
+        assert AgentOptions.parse(" ").isEmpty();
+        var options = AgentOptions.parse("activation=target/activation.json,output=target/business-traces")
+                .orElseThrow();
+        assert options.activation().endsWith("target/activation.json") : options;
+        assert options.output().endsWith("target/business-traces") : options;
+        for (String invalid : List.of(
+                "activation=target/activation.json",
+                "output=target/business-traces",
+                "unknown=value,output=target/business-traces",
+                "activation=one,activation=two,output=three")) {
+            try {
+                AgentOptions.parse(invalid);
+                throw new AssertionError("invalid agent options were accepted: " + invalid);
+            } catch (IllegalArgumentException expected) {
+                assert !expected.getMessage().isBlank() : expected;
+            }
+        }
+    }
+
+    private static void writesRedactedBusinessArtifactsForEachCall() throws Exception {
+        Path output = Files.createTempDirectory("fachtracing-business-output-");
+        Path activation = output.resolveSibling(output.getFileName() + "-activation.json");
+        var bundle = new RuntimeActivationBundle(
+                "test-boundary", "-javaagent:test", Map.of(),
+                List.of(new RuntimeActivationBundle.DecisionDefinition(graph(), manifest())));
+        Files.write(activation, bundle.toJson());
+        var installed = new java.util.concurrent.atomic.AtomicReference<java.lang.instrument.ClassFileTransformer>();
+        var instrumentation = (java.lang.instrument.Instrumentation) java.lang.reflect.Proxy.newProxyInstance(
+                FachtracingTransformerTest.class.getClassLoader(),
+                new Class<?>[] { java.lang.instrument.Instrumentation.class },
+                (proxy, method, arguments) -> switch (method.getName()) {
+                    case "addTransformer" -> {
+                        installed.set((java.lang.instrument.ClassFileTransformer) arguments[0]);
+                        yield null;
+                    }
+                    case "getAllLoadedClasses", "getInitiatedClasses" -> new Class<?>[0];
+                    case "isModifiableClass", "isRetransformClassesSupported", "isRedefineClassesSupported",
+                            "isNativeMethodPrefixSupported", "isModifiableModule", "removeTransformer" -> false;
+                    case "getObjectSize" -> 0L;
+                    default -> null;
+                });
+        FachtracingAgent.premain(
+                "activation=" + activation + ",output=" + output, instrumentation);
+        assert installed.get() instanceof FachtracingTransformer;
+        TraceRuntime.begin("graph", 1);
+        TraceRuntime.observeEvidenceFor("graph", 1, "predicate", "age", "private first value");
+        TraceRuntime.predicateFor("graph", 1, "predicate", "edge-true", true);
+        TraceRuntime.complete("outcome", true);
+        TraceRuntime.begin("graph", 1);
+        TraceRuntime.observeEvidenceFor("graph", 1, "predicate", "age", "private second value");
+        TraceRuntime.predicateFor("graph", 1, "predicate", "edge-false", false);
+        TraceRuntime.complete("outcome", false);
+        TraceRuntime.begin("graph", 1);
+        TraceRuntime.observeEvidenceFor("graph", 1, "predicate", "age", "private third value");
+        TraceRuntime.predicateFor("graph", 1, "predicate", "edge-true", true);
+        TraceRuntime.complete("outcome", new Object());
+        awaitArtifacts(output, 6);
+        List<Path> textFiles;
+        List<Path> diagrams;
+        try (var files = Files.list(output)) {
+            textFiles = files.filter(path -> path.toString().endsWith(".txt")).toList();
+        }
+        try (var files = Files.list(output)) {
+            diagrams = files.filter(path -> path.toString().endsWith(".mmd")).toList();
+        }
+        assert textFiles.size() == 3 : textFiles;
+        assert diagrams.size() == 3 : diagrams;
+        for (Path file : java.util.stream.Stream.concat(textFiles.stream(), diagrams.stream()).toList()) {
+            String content = Files.readString(file);
+            assert content.contains("eligibility") : content;
+            assert !content.contains("private first value") : content;
+            assert !content.contains("private second value") : content;
+            assert !content.contains("private third value") : content;
+            assert !content.contains("agentfixture") : content;
+            assert !content.contains(".java") : content;
+            assert !content.contains("graph-1") : content;
+            for (String prohibited : List.of(
+                    "unknown", "binary", "source line", "adapter", "implementation", "bytecode")) {
+                assert !content.toLowerCase().contains(prohibited) : prohibited + " in " + content;
+            }
+        }
+        int eligibleCalls = 0;
+        int ineligibleCalls = 0;
+        int incompleteCalls = 0;
+        for (Path textFile : textFiles) {
+            String text = Files.readString(textFile);
+            Path diagramFile = Path.of(textFile.toString().replaceFirst("\\.txt$", ".mmd"));
+            String diagram = Files.readString(diagramFile);
+            assert text.contains("age is below 24") : text;
+            assert diagram.contains("age is below 24") : diagram;
+            if (text.contains("Result: eligible\n")) {
+                eligibleCalls++;
+                assert diagram.contains("eligible") && !diagram.contains("not eligible") : diagram;
+            } else if (text.contains("Result: not eligible\n")) {
+                ineligibleCalls++;
+                assert diagram.contains("not eligible") : diagram;
+            } else {
+                throw new AssertionError("named business result is absent: " + text);
+            }
+            if (text.contains("Coverage: incomplete")) {
+                incompleteCalls++;
+                assert diagram.contains("analysis could not determine a required rule") : diagram;
+            }
+        }
+        assert eligibleCalls == 2 : eligibleCalls;
+        assert ineligibleCalls == 1 : ineligibleCalls;
+        assert incompleteCalls == 1 : incompleteCalls;
+        deleteTree(output);
+        Files.deleteIfExists(activation);
+    }
+
+    private static void awaitArtifacts(Path output, long expected) throws Exception {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            try (var files = Files.list(output)) {
+                if (files.filter(Files::isRegularFile).count() == expected) return;
+            }
+            Thread.sleep(10L);
+        }
+        throw new AssertionError("business artifacts were not written: " + output);
     }
 
     private static void transformedTargetsRecordTheActualPolymorphicEdge() throws Exception {
@@ -467,6 +595,46 @@ public final class FachtracingTransformerTest {
                     : selectedEdges;
         }
         assert collector.pollCompleted().isEmpty();
+    }
+
+    private static void multilineCompoundKeepsSourceAndBytecodePredicatesAligned() throws Exception {
+        Path source = Path.of("fachtracing-agent/src/test/java/agentfixture/InstrumentedFixture.java")
+                .toAbsolutePath().normalize();
+        Path apiClasses = Path.of("fachtracing-api/target/classes").toAbsolutePath().normalize();
+        var result = new StaticDecisionAnalyzer().analyzeAll(
+                        AnalysisRequest.of(List.of(source), List.of(apiClasses))).stream()
+                .filter(item -> item.graph().decisionLabel().equals("multiline disjunction"))
+                .findFirst().orElseThrow();
+        assert result.manifest().branchTargets().size() == 9 : result.manifest().branchTargets();
+
+        byte[] original = fixtureBytes();
+        byte[] transformed = new FachtracingTransformer(
+                result.manifest(), Map.of(CLASS_NAME, sha256(original)))
+                .transform(null, null, CLASS_NAME, null, null, original);
+        RuntimeCollector collector = new RuntimeCollector();
+        collector.register(result.graph(),
+                new DecisionExecution.DecisionValueCodec(DecisionValueRedactor.none()));
+        TraceRuntime.configure(collector);
+        Class<?> fixture = new IsolatedLoader(transformed).loadClass(CLASS_NAME.replace('/', '.'));
+        Object instance = fixture.getConstructor().newInstance();
+        var method = fixture.getMethod("decideMultilineOr",
+                String.class,
+                String.class, String.class, String.class, String.class,
+                String.class, String.class, String.class, String.class);
+
+        assert method.invoke(instance, new Object[] {
+                null, null, null, null, null, null, null, null, null
+        }).equals(false);
+        DecisionExecution execution = collector.pollCompleted().orElseThrow();
+        List<DecisionExecution.NodeObservation> selected = execution.observations().stream()
+                .filter(observation -> observation.selectedEdgeId() != null).toList();
+        assert selected.size() == 9 : selected;
+        assert selected.stream().allMatch(observation -> observation.outcome().startsWith("false"))
+                : selected;
+        assert selected.stream().map(DecisionExecution.NodeObservation::nodeId).toList().equals(
+                result.graph().nodes().stream()
+                        .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
+                        .map(BusinessDecisionGraph.DecisionNode::nodeId).toList()) : selected;
     }
 
     private static void mixedCompoundRecordsExactAtomicPaths() throws Exception {
@@ -1326,8 +1494,10 @@ public final class FachtracingTransformerTest {
                 new BusinessDecisionGraph.DecisionNode("outcome", BusinessDecisionGraph.NodeKind.OUTCOME,
                         "final decision", Map.of()));
         var edges = List.of(
-                new BusinessDecisionGraph.DecisionEdge("edge-true", "predicate", "outcome", "true"),
-                new BusinessDecisionGraph.DecisionEdge("edge-false", "predicate", "outcome", "false"));
+                new BusinessDecisionGraph.DecisionEdge(
+                        "edge-true", "predicate", "outcome", "true; returns eligible"),
+                new BusinessDecisionGraph.DecisionEdge(
+                        "edge-false", "predicate", "outcome", "false; returns not eligible"));
         return new BusinessDecisionGraph("graph", 1, "eligibility", "entry", nodes, edges,
                 BusinessDecisionGraph.Completeness.COMPLETE, List.of());
     }

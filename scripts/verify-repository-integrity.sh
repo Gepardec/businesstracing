@@ -31,16 +31,19 @@ require_tracked scripts/verify-pr.sh
 require_tracked scripts/verify-release.sh
 require_tracked scripts/verify-release-gates.sh
 require_tracked scripts/verify-mega-backend.sh
+require_tracked scripts/verify-keycloak.sh
 require_tracked scripts/verify-spring-petclinic.sh
 require_tracked scripts/verify-postgres.sh
 require_tracked .github/workflows/verify.yml
 require_tracked conformance/mega-backend/README.md
 require_tracked conformance/mega-backend/selection.md
-require_tracked conformance/mega-backend/annotation-overlay.patch
 require_tracked conformance/mega-backend/conformance-report.md
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java
 require_tracked conformance/mega-backend/src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java
 require_tracked conformance/mega-backend/src/test/resources/oracles/README.md
+require_tracked conformance/keycloak/README.md
+require_tracked conformance/keycloak/selection.md
+require_tracked conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java
 require_tracked conformance/spring-petclinic/README.md
 require_tracked conformance/spring-petclinic/selection.md
 require_tracked conformance/spring-petclinic/annotation-overlay.patch
@@ -50,11 +53,37 @@ require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtraci
 require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java
 require_tracked conformance/spring-petclinic/src/test/resources/oracles/README.md
 require_tracked docs/self-tracing.md
+require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/SourceUnavailableCallClassifier.java
+require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/ObservedBusinessSegmentConnector.java
+require_tracked fachtracing-engine/src/test/resources/fixtures/analysis/SourceBoundaryBinaryRules.java
+require_tracked fachtracing-engine/src/test/resources/fixtures/analysis/SourceBoundaryPolicy.java
 
 test -z "$(git ls-files conformance/mega-backend/generated)" \
   || fail "generated Mega artifacts must not be tracked: use conformance/mega-backend/target/generated"
+test -z "$(git ls-files conformance/keycloak/target)" \
+  || fail "generated Keycloak artifacts must not be tracked: use conformance/keycloak/target/generated"
 test -z "$(git ls-files conformance/spring-petclinic/generated)" \
   || fail "generated PetClinic artifacts must not be tracked: use conformance/spring-petclinic/target/generated"
+
+KEYCLOAK_HARNESS=conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java
+if grep -E -q 'reviewedOverview|overviewNode|overviewEdge|new BusinessLogicGraph' "$KEYCLOAK_HARNESS"
+then
+  fail "the Keycloak diagram must not use a manually constructed graph"
+fi
+if grep -E -q '^[[:space:]]*flowchart[[:space:]]' conformance/keycloak/README.md
+then
+  fail "the Keycloak guide must not embed a fixed Mermaid flowchart"
+fi
+
+PRODUCTION_ROOTS="fachtracing-api/src/main fachtracing-engine/src/main fachtracing-agent/src/main fachtracing-maven-plugin/src/main fachtracing-spring/src/main fachtracing-storage-jdbc/src/main"
+if grep -E -i -r -q 'keycloak|usersresource|org\.keycloak|com\.gepardec\.mega|mega[-_. ]backend' $PRODUCTION_ROOTS
+then
+  fail "production code must not contain reference-application identity"
+fi
+if grep -E -i -r -q 'search query is absent|admin permissions (enabled|disabled) for realm|determine journey warnings|warningcalculatorsmanager' $PRODUCTION_ROOTS
+then
+  fail "production code must not contain reviewed reference-application labels or methods"
+fi
 
 for oracle in \
   authorize-clarification-resolution \
@@ -94,7 +123,7 @@ done
 
 check_hash 85ef2d1f851f0c9df88bfe0f980752efcccd81359a00b14ec3955b86796df9a7 \
   conformance/spring-petclinic/src/test/resources/oracles/owner-search-business.json
-check_hash d1657f14ea2c1c0606a5bfc1fc6bcd391c0a4a69468f4618ff0f6365ba6ff1e7 \
+check_hash 330c722131c8aebeeaa538483a5af5f799e133370fea5799b780cba001462d7b \
   conformance/spring-petclinic/src/test/resources/oracles/pet-registration-business.json
 check_hash e0148a8cf3ec8f42210b0df765310c3e58d88cbf7bf6e428a5343822c2c587b3 \
   conformance/spring-petclinic/src/test/resources/oracles/visit-booking-business.json

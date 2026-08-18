@@ -1090,6 +1090,96 @@
       "task": "Task 1",
       "date": "2026-08-11",
       "completedAt": "2026-08-11T09:40:22Z"
+    },
+    {
+      "specId": "configured-endpoint-business-tracing",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Resolve configured roots after Java attribution",
+      "rationale": "Compiler attribution supplies exact owner and erased parameter identities.",
+      "task": "Task 1",
+      "date": "2026-08-12",
+      "completedAt": "2026-08-12T16:19:29Z"
+    },
+    {
+      "specId": "configured-endpoint-business-tracing",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Use one Maven configuration bean for both goals",
+      "rationale": "Module and aggregate analysis must select endpoints in the same way.",
+      "task": "Task 2",
+      "date": "2026-08-12",
+      "completedAt": "2026-08-12T16:19:29Z"
+    },
+    {
+      "specId": "configured-endpoint-business-tracing",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Write automatic output from a daemon sink",
+      "rationale": "Endpoint threads keep the non-blocking queue contract and do no file input or output.",
+      "task": "Task 3",
+      "date": "2026-08-12",
+      "completedAt": "2026-08-12T16:19:29Z"
+    },
+    {
+      "specId": "configured-endpoint-business-tracing",
+      "specType": "feature",
+      "number": 4,
+      "decision": "Use one fixed redacted value for automatically adapted data",
+      "rationale": "Endpoint inputs and results can contain personal data or credentials.",
+      "task": "Task 3",
+      "date": "2026-08-12",
+      "completedAt": "2026-08-12T16:19:29Z"
+    },
+    {
+      "specId": "keycloak-live-business-output-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Keep the Boolean outcome when a path enters a gap",
+      "rationale": "The predicate executed, but unavailable called logic must stay explicit.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:24:56Z"
+    },
+    {
+      "specId": "keycloak-live-business-output-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Sanitize only the automatic business presentation",
+      "rationale": "Developer diagnostics remain useful and are not suitable for business readers.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:24:56Z"
+    },
+    {
+      "specId": "keycloak-live-business-output-correctness",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Do not consume or wrap an unsupported stream result",
+      "rationale": "Tracing must not change endpoint behavior or expose returned user data.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:24:56Z"
+    },
+    {
+      "specId": "generated-keycloak-diagram-correctness",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Use reviewed Keycloak labels only as assertions",
+      "rationale": "Assertions detect semantic loss without supplying topology to the generated graph.",
+      "task": "Task 1",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:58:18Z"
+    },
+    {
+      "specId": "generated-keycloak-diagram-correctness",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Filter technical calculation forms generically",
+      "rationale": "Reference-application filtering would reproduce the same conformance shortcut in production.",
+      "task": "Task 2",
+      "date": "2026-08-14",
+      "completedAt": "2026-08-14T08:58:18Z"
     }
   ]
 }

@@ -514,8 +514,18 @@ public final class FachtracingTransformer implements ClassFileTransformer {
         private boolean matchesPredicateSite() {
             AnalysisManifest.ProbeSite site = predicates.get(predicateIndex);
             if (matchesSourceLine(site)) return true;
+            if (continuesMultilineDisjunction(site)) return true;
             return predicateIndex > 0
                     && site.nodeId().equals(predicates.get(predicateIndex - 1).nodeId());
+        }
+
+        private boolean continuesMultilineDisjunction(AnalysisManifest.ProbeSite site) {
+            if (predicateIndex < 1 || site.sourceLine() < 1 || sourceLine < 1
+                    || site.sourceLine() != sourceLine + 1) return false;
+            return branches.stream().anyMatch(branch ->
+                    branch.predicateIndex() == predicateIndex - 1
+                            && branch.completion()
+                            == AnalysisManifest.BranchCompletion.BOTH_OUTCOMES_REVERSED);
         }
 
         @Override

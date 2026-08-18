@@ -24,6 +24,7 @@ public final class StaticDecisionAnalyzerTest {
     public static void main(String[] args) {
         removesJavaConstructionVocabularyGenerically();
         usesContextForLocalAndGenericSetterLabels();
+        rendersFeatureEnablementWithoutTechnicalReceivers();
         usesTypeForAbbreviatedLocalLabels();
         addsContextToCollectionMutationLabels();
         addsContextToOtherPlatformMutationLabels();
@@ -33,6 +34,7 @@ public final class StaticDecisionAnalyzerTest {
         scansMethodReceiversForEvidence();
         supportedConstructsAcrossDomains();
         bindsCompleteBooleanPredicatesToExactEdges();
+        preservesBooleanBranchBindingsAcrossGaps();
         excludesResultIndependentWork();
         explainsIncludedExcludedAndGapDecisions();
         excludesIgnoredReadsAndReportsUnknownEffects();
@@ -59,16 +61,20 @@ public final class StaticDecisionAnalyzerTest {
         supportsOwnedExternalAutomaticModuleSources();
         rejectsInvalidJpmsContextBeforeGraphExtraction();
         rejectsIncompatibleOrUnownedJpmsSourcesBeforeExtraction();
-        reportsTheSearchedBoundaryWhenImplementationsAreMissing();
+        representsMissingImplementationsAsCallerRules();
         rejectsInvalidApplicationBoundaries();
         rejectsGraphRootsOutsideTheSourceUniverse();
         exposesRelevantCoverageGaps();
-        sourceUnavailableDecisionLogicIsNeverReportedComplete();
-        usesControlledBytecodeFallbackAndRejectsUnsafeBinary();
+        representsCallerVisibleSourceBoundaries();
+        usesSourceVisibleBoundariesWithoutGuessing();
+        usesControlledBytecodeFallbackAndRepresentsOpaqueBinaryRules();
         appliesExactExternalMethodContractsWithoutGuessing();
         supportsExplicitOpaqueLibraryBoundaries();
         supportsAggregateCompositionAcrossCaughtPlatformCallsAndGeneratedDispatch();
         analyzesEveryAnnotatedEntry();
+        selectsUnannotatedAndOverloadedBusinessEntryPoints();
+        combinesAndDeduplicatesAnnotatedAndConfiguredEntryPoints();
+        routesConfiguredEntryPointsToOneBoundaryProject();
         supportsJakartaPlatformOperations();
         treatsPlatformValueOperationsAsDecisionFacts();
         supportsCollectionFactsAndRecordEquality();
@@ -113,6 +119,35 @@ public final class StaticDecisionAnalyzerTest {
         assert result.graph().nodes().stream().noneMatch(node -> node.businessLabel().equals("c")) : labels;
         assert new BusinessArtifactGuard().violations(result.graph()).isEmpty()
                 : new BusinessArtifactGuard().violations(result.graph());
+    }
+
+    private static void rendersFeatureEnablementWithoutTechnicalReceivers() {
+        Path directory = null;
+        try {
+            directory = Files.createTempDirectory("fachtracing-enabled-label-");
+            Path source = directory.resolve("FeaturePolicy.java");
+            Files.writeString(source, """
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    final class FeaturePolicy {
+                        @FachTracing("feature policy")
+                        boolean decide(PermissionSchema schema, String realm) {
+                            return !schema.isAdminPermissionsEnabled(realm);
+                        }
+                    }
+                    interface PermissionSchema { boolean isAdminPermissionsEnabled(String realm); }
+                    """);
+            var result = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            List<String> labels = result.graph().nodes().stream()
+                    .map(BusinessDecisionGraph.DecisionNode::businessLabel)
+                    .toList();
+            assert labels.contains("admin permissions disabled for realm") : labels;
+            assert labels.stream().noneMatch(label -> label.contains("schema")) : labels;
+        } catch (IOException exception) {
+            throw new java.io.UncheckedIOException(exception);
+        } finally {
+            if (directory != null) deleteTree(directory);
+        }
     }
 
     private static void usesTypeForAbbreviatedLocalLabels() {
@@ -392,6 +427,14 @@ public final class StaticDecisionAnalyzerTest {
         }
     }
 
+    private static void preservesBooleanBranchBindingsAcrossGaps() {
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("true").equals("true; unresolved");
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("false").equals("false; unresolved");
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("true; selected rule")
+                .equals("true; selected rule; unresolved");
+        assert StaticDecisionAnalyzer.outcomeEnteringCoverageGap("next").equals("unresolved");
+    }
+
     private static void excludesResultIndependentWork() {
         var result = analyze("eligibility/EligibilityPolicy.java");
         assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE;
@@ -432,27 +475,11 @@ public final class StaticDecisionAnalyzerTest {
                 node.businessLabel().contains("age is at least 24")) : ignored.graph().nodes();
 
         var unknown = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown customer effect");
-        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unknown;
-        assert unknown.graph().coverageGaps().stream().anyMatch(gap ->
-                gap.description().contains("side effect")
-                        && gap.description().contains("returned decision"))
-                : unknown.graph().coverageGaps();
-        assert unknown.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0)
-                : unknown.diagnostics();
-        assert unknown.graph().nodes().stream().noneMatch(node ->
-                node.businessLabel().contains("evaluate update")) : unknown.graph().nodes();
-        var gapMappings = unknown.graph().coverageGaps().stream()
-                .map(gap -> unknown.manifest().sourceMappings().get(gap.nodeId()))
-                .filter(java.util.Objects::nonNull).toList();
-        assert !gapMappings.isEmpty() : unknown.manifest().sourceMappings();
-        for (AnalysisManifest.SourceMapping gap : gapMappings) {
-            assert unknown.manifest().analysisDecisions().stream().noneMatch(decision ->
-                    decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
-                            && decision.reason() == AnalysisManifest.AnalysisReason.NO_RESULT_EFFECT
-                            && decision.source().equals(gap.source())
-                            && decision.line() == gap.line())
-                    : gap + " / " + unknown.manifest().analysisDecisions();
-        }
+        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : unknown;
+        assert unknown.graph().coverageGaps().isEmpty() : unknown.graph().coverageGaps();
+        assert unknown.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                        && node.businessLabel().contains("update")) : unknown.graph().nodes();
     }
 
     private static void excludesReadOnlyEnumQueriesWithoutCoverageGaps() {
@@ -618,13 +645,12 @@ public final class StaticDecisionAnalyzerTest {
 
     private static void reportsUnknownPlatformEffects() {
         var unknown = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
-        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+        assert unknown.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                 : unknown;
-        assert unknown.graph().coverageGaps().stream().anyMatch(gap ->
-                gap.description().contains("side effect"))
-                : unknown.graph().coverageGaps();
-        assert unknown.diagnostics().stream().anyMatch(diagnostic -> diagnostic.line() > 0)
-                : unknown.diagnostics();
+        assert unknown.graph().coverageGaps().isEmpty() : unknown.graph().coverageGaps();
+        assert unknown.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                        && node.businessLabel().contains("set date time")) : unknown.graph().nodes();
     }
 
     private static void usesProvenValidationRolesWithoutGlobalReceiverRemoval() {
@@ -726,15 +752,9 @@ public final class StaticDecisionAnalyzerTest {
                         && decision.line() > 0
                         && decision.nodeIds().isEmpty()) : decisions;
 
-        var incomplete = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
-        var gapNodeIds = incomplete.graph().coverageGaps().stream()
-                .map(BusinessDecisionGraph.CoverageGap::nodeId).collect(java.util.stream.Collectors.toSet());
-        var auditedGapNodeIds = incomplete.manifest().analysisDecisions().stream()
-                .filter(decision -> decision.action() == AnalysisManifest.AnalysisAction.GAP)
-                .filter(decision -> decision.reason() == AnalysisManifest.AnalysisReason.UNRESOLVED_RELEVANCE)
-                .flatMap(decision -> decision.nodeIds().stream()).collect(java.util.stream.Collectors.toSet());
-        assert auditedGapNodeIds.containsAll(gapNodeIds)
-                : gapNodeIds + " / " + incomplete.manifest().analysisDecisions();
+        var representedBoundary = analyzeLabel("slicing/ResultSlicePolicy.java", "unknown platform effect");
+        assert representedBoundary.graph().coverageGaps().isEmpty()
+                : representedBoundary.graph().coverageGaps();
     }
 
     private static void resolvesImplementationsFromSourcesOutsideTheGraphRootScope() {
@@ -755,6 +775,7 @@ public final class StaticDecisionAnalyzerTest {
                 .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE).count() == 2
                 : graph.nodes();
     }
+
 
     private static void resolvesImplementationsAcrossProjectAwareSourceRoles() {
         Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
@@ -780,17 +801,18 @@ public final class StaticDecisionAnalyzerTest {
         assert boundary.fingerprint().equals(boundary.fingerprint());
     }
 
-    private static void reportsTheSearchedBoundaryWhenImplementationsAreMissing() {
+    private static void representsMissingImplementationsAsCallerRules() {
         Path entry = FIXTURES.resolve("reactor/DecisionEntry.java");
         var boundary = new ApplicationSourceBoundary(List.of(
                 new ApplicationSourceBoundary.ProjectSources(
                         "entry", List.of(entry), List.of(entry), CLASSPATH,
                         ApplicationSourceBoundary.CompilerModel.java21(), List.of())), List.of());
         var result = new StaticDecisionAnalyzer().analyze(boundary);
-        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result.graph();
-        assert result.diagnostics().stream().anyMatch(diagnostic ->
-                diagnostic.message().contains("searched projects [entry]")
-                        && diagnostic.message().contains(boundary.fingerprint())) : result.diagnostics();
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result.graph();
+        assert result.graph().coverageGaps().isEmpty() : result.graph().coverageGaps();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().equals("rule accepts amount")) : result.graph().nodes();
     }
 
     private static void isolatesDuplicateTypesAndCompilerModelsByProject() {
@@ -1240,21 +1262,130 @@ public final class StaticDecisionAnalyzerTest {
                 : loopResult.diagnostics();
         assert hasKind(loopResult.graph(), BusinessDecisionGraph.NodeKind.CHOICE) : loopResult.graph().nodes();
 
-        var result = analyze("gaps/UnsupportedPolicy.java");
+        var result = analyzeLabel("slicing/ResultSlicePolicy.java", "conditional alias mutation");
         assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
         assert hasKind(result.graph(), BusinessDecisionGraph.NodeKind.COVERAGE_GAP);
         assert !result.diagnostics().isEmpty();
         assert result.diagnostics().getFirst().line() > 0;
     }
 
-    private static void sourceUnavailableDecisionLogicIsNeverReportedComplete() {
+    private static void representsCallerVisibleSourceBoundaries() {
         var result = analyze("gaps/ExternalDecisionPolicy.java");
-        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE;
-        assert result.graph().coverageGaps().stream()
-                .anyMatch(gap -> gap.description().contains("implementations are unavailable"));
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : result;
+        assert result.graph().coverageGaps().isEmpty() : result.graph().coverageGaps();
+        assert result.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().equals("scores approves customer")) : result.graph().nodes();
+
+        var caught = analyze("gaps/UnsupportedPolicy.java");
+        assert caught.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : caught;
+        assert caught.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.CHOICE) : caught.graph().nodes();
+        assert caught.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().equals("decisions approves value")) : caught.graph().nodes();
     }
 
-    private static void usesControlledBytecodeFallbackAndRejectsUnsafeBinary() {
+    private static void usesSourceVisibleBoundariesWithoutGuessing() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-source-boundary-");
+            Path binaryClasses = root.resolve("binary-classes");
+            Files.createDirectories(binaryClasses);
+            Path binarySource = FIXTURES.resolve("analysis/SourceBoundaryBinaryRules.java");
+            int compilation = ToolProvider.getSystemJavaCompiler().run(null, null, null,
+                    "--release", "21", "-d", binaryClasses.toString(), binarySource.toString());
+            assert compilation == 0 : "could not compile source-boundary binary rules";
+
+            Path applicationSource = FIXTURES.resolve("analysis/SourceBoundaryPolicy.java");
+            var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                    List.of(applicationSource), List.of(CLASSPATH.getFirst(), binaryClasses)));
+
+            for (String label : List.of(
+                    "caller predicate boundary",
+                    "lazy callback boundary",
+                    "lazy lambda boundary",
+                    "lazy receiver boundary",
+                    "derived collaborator boundary",
+                    "caller action boundary",
+                    "caught source boundary",
+                    "nested binary boundary",
+                    "guarded external boundary",
+                    "local external boundary")) {
+                var result = results.stream().filter(item -> item.graph().decisionLabel().equals(label))
+                        .findFirst().orElseThrow();
+                assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                        : label + ": " + result.graph().coverageGaps();
+            }
+
+            var caller = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("caller predicate boundary")).findFirst().orElseThrow();
+            assert caller.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("match exists")) : caller.graph().nodes();
+
+            var callback = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("lazy callback boundary")).findFirst().orElseThrow();
+            assert callback.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                            && node.businessLabel().contains("filter values by approve"))
+                    : callback.graph().nodes();
+
+            var nested = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("nested binary boundary")).findFirst().orElseThrow();
+            assert nested.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("input 1 is at least 18"))
+                    : nested.graph().nodes();
+
+            var direct = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("direct external boundary")).findFirst().orElseThrow();
+            assert direct.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : direct;
+            assert direct.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("rule approve value")) : direct.graph().nodes();
+
+            var local = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("local external boundary")).findFirst().orElseThrow();
+            assert local.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("approved")) : local.graph().nodes();
+
+            var directCollaborator = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("direct collaborator boundary")).findFirst().orElseThrow();
+            assert directCollaborator.graph().completeness()
+                    == BusinessDecisionGraph.Completeness.INCOMPLETE : directCollaborator;
+
+            var lazyReceiver = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("lazy receiver boundary")).findFirst().orElseThrow();
+            assert lazyReceiver.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                    : lazyReceiver;
+
+            var derived = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("derived collaborator boundary")).findFirst().orElseThrow();
+            assert derived.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : derived;
+            assert derived.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                            && node.businessLabel().contains("update")) : derived.graph().nodes();
+            assert derived.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("state approved")) : derived.graph().nodes();
+
+            var repeated = results.stream().filter(item -> item.graph().decisionLabel()
+                    .equals("repeated external effect boundary")).findFirst().orElseThrow();
+            assert repeated.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                    : repeated.graph().coverageGaps() + " " + repeated.manifest().sourceMappings();
+            assert repeated.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION
+                            && node.businessLabel().contains("update")) : repeated.graph().nodes();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void usesControlledBytecodeFallbackAndRepresentsOpaqueBinaryRules() {
         Path root = null;
         try {
             root = Files.createTempDirectory("fachtracing-bytecode-fallback-");
@@ -1332,9 +1463,12 @@ public final class StaticDecisionAnalyzerTest {
 
             var unsafe = results.stream().filter(item -> item.graph().decisionLabel()
                     .equals("unsafe binary decision")).findFirst().orElseThrow();
-            assert unsafe.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : unsafe;
-            assert unsafe.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("unsupported call")) : unsafe.graph().coverageGaps();
+            assert unsafe.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : unsafe;
+            assert unsafe.graph().coverageGaps().isEmpty() : unsafe.graph().coverageGaps();
+            assert unsafe.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("unsafe binary rule accepts age"))
+                    : unsafe.graph().nodes();
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {
@@ -1506,11 +1640,12 @@ public final class StaticDecisionAnalyzerTest {
 
             var binaryDecision = results.stream().filter(result -> result.graph().decisionLabel()
                     .equals("external Boolean decision")).findFirst().orElseThrow();
-            assert binaryDecision.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+            assert binaryDecision.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : binaryDecision;
-            assert binaryDecision.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("implementations are unavailable"))
-                    : binaryDecision.graph().coverageGaps();
+            assert binaryDecision.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("rule approve value"))
+                    : binaryDecision.graph().nodes();
 
             var directoryResults = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
                     List.of(application), List.of(CLASSPATH.getFirst(), binaryClasses, archive)),
@@ -1667,8 +1802,10 @@ public final class StaticDecisionAnalyzerTest {
             var withoutContracts = new StaticDecisionAnalyzer().analyzeAll(request).stream()
                     .filter(result -> result.graph().decisionLabel().equals("external contract decision"))
                     .findFirst().orElseThrow();
-            assert withoutContracts.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+            assert withoutContracts.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : withoutContracts;
+            assert withoutContracts.graph().coverageGaps().isEmpty()
+                    : withoutContracts.graph().coverageGaps();
 
             var results = new StaticDecisionAnalyzer().analyzeAll(
                     request.withExternalMethodContractProviders(List.of(provider)));
@@ -1910,11 +2047,14 @@ public final class StaticDecisionAnalyzerTest {
             assert watering.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : watering;
             var unsupported = results.stream().filter(result -> result.graph().decisionLabel()
                     .equals("unsupported caught decision")).findFirst().orElseThrow();
-            assert unsupported.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE
+            assert unsupported.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
                     : unsupported;
-            assert unsupported.graph().coverageGaps().stream().anyMatch(gap ->
-                    gap.description().contains("exception-triggering decision logic is unavailable"))
+            assert unsupported.graph().coverageGaps().isEmpty()
                     : unsupported.graph().coverageGaps();
+            assert unsupported.graph().nodes().stream().anyMatch(node ->
+                    node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                            && node.businessLabel().equals("untrusted decision approves value"))
+                    : unsupported.graph().nodes();
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {
@@ -1932,6 +2072,135 @@ public final class StaticDecisionAnalyzerTest {
         assert results.stream().map(result -> result.graph().decisionLabel()).distinct().count() == 2 : results;
         assert results.stream().allMatch(result ->
                 result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE) : results;
+    }
+
+    private static void selectsUnannotatedAndOverloadedBusinessEntryPoints() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-configured-entry-");
+            Path source = root.resolve("selected/UserEndpoint.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package selected;
+                    public final class UserEndpoint {
+                        public boolean search(String query) {
+                            return !query.isBlank();
+                        }
+                        public boolean search(int identifier) {
+                            return identifier > 0;
+                        }
+                    }
+                    """);
+            var analyzer = new StaticDecisionAnalyzer();
+            var selected = analyzer.analyze(AnalysisRequest.of(List.of(source), List.of())
+                    .withBusinessEntryPoints(List.of(new BusinessEntryPoint(
+                            "selected.UserEndpoint", "search", List.of("java.lang.String"), "search users"))));
+            assert selected.graph().decisionLabel().equals("search users") : selected.graph();
+
+            try {
+                analyzer.analyze(AnalysisRequest.of(List.of(source), List.of())
+                        .withBusinessEntryPoints(List.of(BusinessEntryPoint.of(
+                                "selected.UserEndpoint", "search", "search users"))));
+                throw new AssertionError("ambiguous selection was accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("ambiguous") : expected.getMessage();
+                assert expected.getMessage().contains("add parameter types") : expected.getMessage();
+            }
+
+            try {
+                analyzer.analyze(AnalysisRequest.of(List.of(source), List.of())
+                        .withBusinessEntryPoints(List.of(BusinessEntryPoint.of(
+                                "selected.UserEndpoint", "remove", "remove user"))));
+                throw new AssertionError("missing selection was accepted");
+            } catch (IllegalArgumentException expected) {
+                assert expected.getMessage().contains("not found") : expected.getMessage();
+                assert expected.getMessage().contains("selected.UserEndpoint#remove()")
+                        : expected.getMessage();
+            }
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void combinesAndDeduplicatesAnnotatedAndConfiguredEntryPoints() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-combined-entry-");
+            Path source = root.resolve("selected/CombinedEndpoint.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package selected;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    public final class CombinedEndpoint {
+                        @FachTracing("technical search label")
+                        public boolean search(String query) {
+                            return !query.isBlank();
+                        }
+                        @FachTracing("count active users")
+                        public boolean count(boolean active) {
+                            return active;
+                        }
+                    }
+                    """);
+            var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(
+                            List.of(source), CLASSPATH)
+                    .withBusinessEntryPoints(List.of(new BusinessEntryPoint(
+                            "selected.CombinedEndpoint", "search", List.of("java.lang.String"),
+                            "search users"))));
+            assert results.size() == 2 : results;
+            assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
+                    .equals(List.of("count active users", "search users")) : results;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void routesConfiguredEntryPointsToOneBoundaryProject() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-configured-boundary-");
+            Path annotated = root.resolve("first/AnnotatedPolicy.java");
+            Path configured = root.resolve("second/UserEndpoint.java");
+            Files.createDirectories(annotated.getParent());
+            Files.createDirectories(configured.getParent());
+            Files.writeString(annotated, """
+                    package first;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    public final class AnnotatedPolicy {
+                        @FachTracing("approve request")
+                        public boolean approve(boolean allowed) { return allowed; }
+                    }
+                    """);
+            Files.writeString(configured, """
+                    package second;
+                    public final class UserEndpoint {
+                        public boolean search(String query) { return !query.isBlank(); }
+                    }
+                    """);
+            var compiler = ApplicationSourceBoundary.CompilerModel.java21();
+            var boundary = new ApplicationSourceBoundary(List.of(
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "first", List.of(annotated), List.of(annotated), CLASSPATH,
+                            compiler, List.of()),
+                    new ApplicationSourceBoundary.ProjectSources(
+                            "second", List.of(configured), List.of(configured), List.of(),
+                            compiler, List.of())), List.of());
+            var results = new StaticDecisionAnalyzer().analyzeAll(
+                    boundary, OpaqueLibraryBoundary.empty(), List.of(),
+                    List.of(new BusinessEntryPoint(
+                            "second.UserEndpoint", "search", List.of("java.lang.String"),
+                            "search users")));
+            assert results.stream().map(result -> result.graph().decisionLabel()).sorted().toList()
+                    .equals(List.of("approve request", "search users")) : results;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
     }
 
     private static void supportsJakartaPlatformOperations() {

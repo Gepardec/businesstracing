@@ -1,5 +1,22 @@
 [
   {
+    "id": "generic-call-specific-business-flow",
+    "type": "feature",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-18T06:57:49Z"
+  },
+  {
+    "id": "keycloak-live-business-output-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-14T08:24:56Z",
+    "partOf": "generic-java-fachtracing"
+  },
+  {
     "id": "generic-tracing-walking-skeleton",
     "type": "feature",
     "status": "completed",
@@ -364,5 +381,21 @@
     "version": 2,
     "author": "lucostus",
     "updated": "2026-08-12T07:09:21Z"
+  },
+  {
+    "id": "configured-endpoint-business-tracing",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-12T16:19:29Z"
+  },
+  {
+    "id": "generated-keycloak-diagram-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-14T08:58:18Z"
   }
 ]

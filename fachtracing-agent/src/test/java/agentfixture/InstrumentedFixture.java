@@ -52,6 +52,19 @@ public final class InstrumentedFixture {
         return false;
     }
 
+    @FachTracing("multiline disjunction")
+    public boolean decideMultilineOr(
+            String search, String first, String second, String third, String fourth,
+            String fifth, String sixth, String seventh, String eighth) {
+        if (search != null) {
+            return true;
+        } else if (first != null || second != null || third != null || fourth != null
+                || fifth != null || sixth != null || seventh != null || eighth != null) {
+            return true;
+        }
+        return false;
+    }
+
     @FachTracing("mixed compound")
     public boolean decideMixed(boolean first, boolean second, boolean third) {
         if ((first && second) || third) {

@@ -75,8 +75,7 @@ flowchart LR
     n12["add response message"]
     n13(["correction required"])
     n14(["operation failed"])
-    n15(["correction required"])
-    n16(["pet registration completed"])
+    n15(["pet registration completed"])
     n1 -->|"yes"| n2
     n2 -->|"yes"| n3
     n3 -->|"yes"| n4
@@ -95,11 +94,11 @@ flowchart LR
     n9 --> n12
     n8 -->|"yes"| n13
     n10 -->|"yes"| n14
-    n11 --> n15
-    n12 --> n16
+    n11 --> n13
+    n12 --> n15
 ```
 
-Result: **complete**, 16 business nodes and 20 business edges.
+Result: **complete**, 15 business nodes and 20 business edges. The two equivalent correction results use one result node.
 
 ## Reproduce the result
 

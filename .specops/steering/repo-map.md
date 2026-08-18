@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-11T12:21:03Z"
-_sourceHash: "dad66adff01a31913236bb84b73d0d877faf776980ecb86e57ff49e93b55e491"
+_generatedAt: "2026-08-14T11:05:34Z"
+_sourceHash: "3d4d5f3ebcb6673dbc3d72796aee5b3572046c7e86e5fae573362036a4c13ea1"
 ---
 
 ## Project Structure Map
@@ -36,10 +36,13 @@ fachtracing/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
   conformance/mega-backend/
-    annotation-overlay.patch
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
     conformance-report.md
+  conformance/keycloak/
+    src/test/java/at/gepardec/fachtracing/conformance/
+    README.md
+    selection.md
   conformance/spring-petclinic/
     annotation-overlay.patch
     src/test/java/at/gepardec/fachtracing/conformance/
@@ -62,7 +65,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (91 files)
+#### fachtracing-engine/ (103 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -72,6 +75,8 @@ fachtracing/
   - excluded graph-eligible source construct audit
 - `src/main/java/at/gepardec/fachtracing/analysis/AnalysisRequest.java`
   - `public record AnalysisRequest`
+- `src/main/java/at/gepardec/fachtracing/analysis/BusinessEntryPoint.java`
+  - `public record BusinessEntryPoint`
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodReference.java`
   - exact binary method identity
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContract.java`
@@ -111,14 +116,34 @@ fachtracing/
   - `public final class StaticDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`
   - use-site local reaching definitions
+- `src/main/java/at/gepardec/fachtracing/analysis/SourceUnavailableCallClassifier.java`
+  - source-visible representation of unavailable call boundaries
+- `src/main/java/at/gepardec/fachtracing/business/BusinessExecutionGraphProjector.java`
+  - call-specific business graph selection
+- `src/main/java/at/gepardec/fachtracing/business/BusinessExecutionTextRenderer.java`
+  - non-technical call-specific text output
+- `src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjection.java`
+  - immutable exact-to-business traceability
 - `src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java`
   - exact-to-business graph projection
+- `src/main/java/at/gepardec/fachtracing/business/BusinessGraphSummarizer.java`
+  - graph-semantic gap and equivalent-state summary
 - `src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java`
   - rejects technical vocabulary in business artifacts
 - `src/main/java/at/gepardec/fachtracing/business/BusinessGraphJsonExporter.java`
   - deterministic business graph V1 export
+- `src/main/java/at/gepardec/fachtracing/business/BusinessMermaidRenderer.java`
+  - call-specific business Mermaid output
+- `src/main/java/at/gepardec/fachtracing/business/ObservedBusinessSegmentConnector.java`
+  - safe connection of ordered observed business segments
 - `src/main/java/at/gepardec/fachtracing/explain/BusinessStatementRenderer.java`
   - `public final class BusinessStatementRenderer`
+- `src/main/java/at/gepardec/fachtracing/explain/BusinessExecutionMermaidRenderer.java`
+  - `public final class BusinessExecutionMermaidRenderer`
+- `src/main/java/at/gepardec/fachtracing/explain/BusinessExplanationProjector.java`
+  - `public final class BusinessExplanationProjector`
+- `src/main/java/at/gepardec/fachtracing/explain/BusinessExplanationTextRenderer.java`
+  - `public final class BusinessExplanationTextRenderer`
 - `src/main/java/at/gepardec/fachtracing/explain/DecisionExplanationProjector.java`
   - `public final class DecisionExplanationProjector`
 - `src/main/java/at/gepardec/fachtracing/model/BusinessDecisionGraph.java`
@@ -155,7 +180,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-agent/ (13 files)
+#### fachtracing-agent/ (15 files)
 
 - `src/main/java/at/gepardec/fachtracing/agent/FachtracingAgent.java`
   - `public final class FachtracingAgent`
@@ -163,15 +188,21 @@ fachtracing/
   - `public final class FachtracingTransformer`
 - `src/main/java/at/gepardec/fachtracing/agent/AsyncInvocationCatalog.java`
   - exact standard asynchronous callback bindings
+- `src/main/java/at/gepardec/fachtracing/agent/AgentOptions.java`
+  - strict automatic-mode agent argument parsing
+- `src/main/java/at/gepardec/fachtracing/agent/BusinessTraceFileSink.java`
+  - daemon business text and Mermaid output
 - `src/test/java/` — transformation and polymorphic fixture contracts
 - `pom.xml`
 
-#### fachtracing-maven-plugin/ (36 files)
+#### fachtracing-maven-plugin/ (37 files)
 
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeMojo.java`
   - `public final class AnalyzeMojo`
 - `src/main/java/at/gepardec/fachtracing/maven/AnalyzeReactorMojo.java`
   - aggregate reactor analysis and activation-bundle generation
+- `src/main/java/at/gepardec/fachtracing/maven/BusinessEntryPointConfiguration.java`
+  - configured exact method root mapping
 - `src/main/java/at/gepardec/fachtracing/maven/MavenCompilerModelResolver.java`
   - effective Maven compiler and JPMS model
 - `src/main/java/at/gepardec/fachtracing/maven/OpaqueLibraryArtifactResolver.java`
@@ -215,12 +246,17 @@ fachtracing/
 
 #### conformance/mega-backend/
 
-- `annotation-overlay.patch` — test-only entry annotations for the pinned reference source
 - `src/test/java/at/gepardec/fachtracing/conformance/MegaBackendConformanceTest.java`
 - `src/test/java/at/gepardec/fachtracing/conformance/ForbiddenReferenceTest.java`
 - `src/test/resources/oracles/` — five immutable reviewed semantic graph oracles
 - `target/generated/` — five structural/semantic artifacts and one runtime explanation/execution pair
 - `selection.md`, `README.md`, and `conformance-report.md`
+
+#### conformance/keycloak/ (3 files)
+
+- `src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java`
+- `selection.md` — pinned exact `UsersResource.getUsers` selection and reviewed flow
+- `README.md` — build, analysis, runtime call, and output guide
 
 #### conformance/spring-petclinic/ (10 files)
 
@@ -236,6 +272,6 @@ fachtracing/
 - `AGENTS.md`
 - `README.md`
 - `pom.xml`
-- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-mega-backend.sh`, `verify-spring-petclinic.sh`, and `verify-release.sh`
+- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-keycloak.sh`, `verify-mega-backend.sh`, `verify-spring-petclinic.sh`, and `verify-release.sh`
 - `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
 - `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`

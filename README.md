@@ -1,7 +1,7 @@
 # Fachtracing
 
 Fachtracing is an embeddable Java 21 library that learns a business-decision graph from an
-unknown method marked with `@FachTracing`, correlates one runtime path with opaque graph IDs,
+annotated or exactly configured Java method, correlates one runtime path with opaque graph IDs,
 and stores a typed explanation of what was decided, why, and how.
 
 The exact analysis graph keeps all paths that runtime tracing needs. A separate build-time business
@@ -33,6 +33,10 @@ launcher, plugin block, or path assembly is required. See the copyable
 many modules. When repository and source-link settings are present, the same goal also writes
 revision-pinned developer JSON that another tool can visualize.
 
+For source that you cannot change, configure `businessEntryPoints` with an exact owner, method,
+optional erased parameter types, and a business label. See the
+[Maven method-selection setup](docs/maven-plugin.md#select-a-method-without-an-annotation).
+
 Spring applications can add the optional `fachtracing-spring` artifact as a Maven plugin
 dependency. It supplies exact, application-neutral contracts for supported validation, page,
 persistence, and response APIs. The generic engine does not depend on Spring.
@@ -43,14 +47,20 @@ generates from its own Maven plugin policy.
 See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
 delivery, JDBC, upgrade, and rollback flow.
 
+See the [Keycloak endpoint example](conformance/keycloak/README.md) for a pinned
+`GET /admin/realms/{realm}/users` selection. It shows how to call the endpoint and receive one
+redacted non-technical text explanation and Mermaid path for that invocation.
+
 ## Integration flow
 
-1. Add `fachtracing-api` and annotate a decision entry method with `@FachTracing`.
+1. Annotate a decision entry method with `@FachTracing`, or configure an exact method when you
+   cannot change its source.
 2. Generate static diagrams with the Maven plugin, or call `FachtracingEngine.analyze` directly for
    custom build-tool integration.
-3. Start the JVM with `fachtracing-agent` on `-javaagent`, then configure it early in application
-   startup with the returned developer-only manifest and matching compiled-class fingerprints.
-   Already loaded selected classes are retransformed when the JVM permits it.
+3. Start the JVM with `fachtracing-agent` on `-javaagent`. Use activation and output agent options
+   for automatic redacted files, or configure it early in application startup with the returned
+   developer-only manifest and matching compiled-class fingerprints. Already loaded selected
+   classes are retransformed when the JVM permits it.
 4. Register a `DecisionValueCodec` with an application-owned redaction policy through
    `FachtracingEngine.activate`.
 5. Drain completed captures asynchronously with `saveNext`; implement
@@ -131,6 +141,17 @@ Run the pinned realistic-brownfield conformance harness (optionally set `MEGA_BA
 
 Its approved immutable oracles, exact graph evidence, runtime path, and anti-overfitting checks are documented in
 [the Mega conformance report](conformance/mega-backend/conformance-report.md).
+
+Run the explicit pinned Keycloak endpoint conformance command after you prepare the checkout
+(optionally set `KEYCLOAK_DIR`):
+
+```sh
+./scripts/verify-keycloak.sh
+```
+
+This longer command is outside the pull-request time budget. It creates the user-search business
+graph and activation file without changing Keycloak source. See the
+[Keycloak endpoint guide](conformance/keycloak/README.md).
 
 Run the smaller Spring PetClinic teaching and conformance suite (optionally set `SPRING_PETCLINIC_DIR`):
 

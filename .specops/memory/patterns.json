@@ -3,12 +3,12 @@
   "decisionCategories": [
     {
       "category": "reference-application-isolation",
-      "count": 2,
-      "pattern": "Keep pinned brownfield knowledge in conformance artifacts; production gains only target-neutral construct support."
+      "count": 3,
+      "pattern": "Keep pinned brownfield knowledge in conformance assertions; never use it as generated topology, and add only target-neutral production support."
     },
     {
       "category": "runtime-correlation",
-      "count": 9,
+      "count": 10,
       "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
@@ -18,8 +18,8 @@
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 5,
-      "pattern": "Preserve result-relevant optionality as absent/exists, strip language- and persistence-specific vocabulary, and reject structural terms only in their structural context."
+      "count": 7,
+      "pattern": "Preserve result-relevant optionality as absent/exists, strip language- and persistence-specific vocabulary including method references, and reject structural terms only in their structural context."
     },
     {
       "category": "build-tool-adapter",
@@ -43,8 +43,8 @@
     },
     {
       "category": "build-artifact-boundary",
-      "count": 1,
-      "pattern": "Track immutable reviewed oracle inputs, write reproducible conformance projections under the build-output directory, and guard against accidental recommits."
+      "count": 2,
+      "pattern": "Track immutable reviewed oracle inputs, generate conformance projections under the build-output directory, and reject recommitted or hard-coded diagrams."
     },
     {
       "category": "source-context-labeling",
@@ -85,9 +85,54 @@
       "category": "executable-body-scope",
       "count": 1,
       "pattern": "Keep method-local dependency, effect, validation, and audit scans out of nested class bodies while retaining lambdas in the enclosing executable."
+    },
+    {
+      "category": "automatic-business-output-boundary",
+      "count": 2,
+      "pattern": "Keep automatic endpoint files redacted and business-safe while exact developer records retain detailed result and coverage diagnostics."
     }
   ],
   "fileOverlaps": [
+    {
+      "file": "fachtracing-agent/src/main/java/at/gepardec/fachtracing/agent/BusinessTraceFileSink.java",
+      "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness"],
+      "count": 2
+    },
+    {
+      "file": "docs/runtime-integration.md",
+      "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness"],
+      "count": 2
+    },
+    {
+      "file": "conformance/keycloak/README.md",
+      "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness", "generated-keycloak-diagram-correctness"],
+      "count": 3
+    },
+    {
+      "file": "conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java",
+      "specs": ["configured-endpoint-business-tracing", "generated-keycloak-diagram-correctness"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java",
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java",
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/business/BusinessGraphProjectionTest.java",
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
+      "count": 2
+    },
+    {
+      "file": "conformance/keycloak/selection.md",
+      "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness"],
+      "count": 2
+    },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/plantuml/PlantUmlRenderer.java",
       "specs": ["generic-tracing-walking-skeleton", "omit-next-diagram-labels"],
@@ -140,9 +185,10 @@
         "implicit-field-local-callback-correctness",
         "path-sensitive-definition-integration",
         "external-method-semantic-contracts",
-        "hogajama-strict-aggregate-regression"
+        "hogajama-strict-aggregate-regression",
+        "keycloak-live-business-output-correctness"
       ],
-      "count": 21
+      "count": 22
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -171,8 +217,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression"],
-      "count": 20
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "keycloak-live-business-output-correctness"],
+      "count": 21
     },
     {
       "file": "docs/supported-java-constructs.md",
@@ -257,8 +303,8 @@
     },
     {
       "file": "scripts/verify-repository-integrity.sh",
-      "specs": ["generic-application-readiness", "self-dogfood-business-tracing"],
-      "count": 2
+      "specs": ["generic-application-readiness", "self-dogfood-business-tracing", "generated-keycloak-diagram-correctness"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/BusinessArtifactGuard.java",

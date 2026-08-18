@@ -17,7 +17,7 @@ Each JSON file was parsed against `fachtracing-business-graph/v1`. Each Mermaid 
 | Oracle | SHA-256 | Outcome |
 | --- | --- | --- |
 | `owner-search-business.json` | `85ef2d1f851f0c9df88bfe0f980752efcccd81359a00b14ec3955b86796df9a7` | Approved complete business graph |
-| `pet-registration-business.json` | `d1657f14ea2c1c0606a5bfc1fc6bcd391c0a4a69468f4618ff0f6365ba6ff1e7` | Approved complete business graph |
+| `pet-registration-business.json` | `330c722131c8aebeeaa538483a5af5f799e133370fea5799b780cba001462d7b` | Approved complete graph with one equivalent correction result |
 | `visit-booking-business.json` | `e0148a8cf3ec8f42210b0df765310c3e58d88cbf7bf6e428a5343822c2c587b3` | Approved complete business graph |
 
 Exact JSON equality is the executable assertion. The hashes make review drift visible.

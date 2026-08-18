@@ -101,6 +101,10 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
     @Parameter(defaultValue = "false", property = "fachtracing.skip")
     private boolean skip;
 
+    /** Exact Java methods that become aggregate graph roots without source annotations. */
+    @Parameter
+    private List<BusinessEntryPointConfiguration> businessEntryPoints;
+
     @Override public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
             getLog().info("Fachtracing aggregate analysis skipped");
@@ -120,7 +124,7 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
             List<DeveloperGraphExporter.SourceOrigin> origins = sourceOrigins(projects, artifacts);
             var result = new ProjectGraphGenerator().generate(
                     boundary, opaqueLibraries, charset, outputDirectory.toPath(), failOnIncomplete,
-                    developerOutput(origins));
+                    developerOutput(origins), businessEntryPoints());
             writeActivationBundle(projects, boundary, result);
             getLog().info("Generated " + result.graphCount()
                     + " aggregate Fachtracing decision graph(s) from " + projects.size() + " project(s)");
@@ -134,6 +138,12 @@ public final class AnalyzeReactorMojo extends AbstractMojo {
         } catch (IOException error) {
             throw new MojoExecutionException("Could not write aggregate Fachtracing output", error);
         }
+    }
+
+    private List<at.gepardec.fachtracing.analysis.BusinessEntryPoint> businessEntryPoints() {
+        if (businessEntryPoints == null) return List.of();
+        return businessEntryPoints.stream().filter(Objects::nonNull)
+                .map(BusinessEntryPointConfiguration::selection).toList();
     }
 
     private static ApplicationSourceBoundary boundary(

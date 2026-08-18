@@ -35,7 +35,7 @@ public final class SpringMethodContractProviderTest {
         matchesOnlyRealExactSpringSignatures();
         matchesDerivedPageQueriesOnlyForRepositorySubtypes();
         completesGeneralSpringWorkflows();
-        keepsUnsupportedSpringCallsIncomplete();
+        usesCallerRulesButKeepsDirectUnsupportedCallsIncomplete();
         containsNoApplicationVocabulary();
         productionHasNoSpringLinkageOrApplicationRules();
     }
@@ -118,17 +118,25 @@ public final class SpringMethodContractProviderTest {
         assert !outcomes.contains("unexpected failure") : outcomes;
     }
 
-    private static void keepsUnsupportedSpringCallsIncomplete() {
+    private static void usesCallerRulesButKeepsDirectUnsupportedCallsIncomplete() {
         var request = AnalysisRequest.of(List.of(FIXTURE), CLASSPATH)
                 .withExternalMethodContractProviders(List.of(new SpringMethodContractProvider()));
         var results = new StaticDecisionAnalyzer().analyzeAll(request);
-        for (String label : List.of("unsupported Spring helper", "unsupported custom page query")) {
-            var result = results.stream()
-                    .filter(candidate -> candidate.graph().decisionLabel().equals(label))
-                    .findFirst().orElseThrow();
-            assert result.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : result;
-            assert !result.graph().coverageGaps().isEmpty() : result;
-        }
+        var direct = results.stream()
+                .filter(candidate -> candidate.graph().decisionLabel().equals("unsupported Spring helper"))
+                .findFirst().orElseThrow();
+        assert direct.graph().completeness() == BusinessDecisionGraph.Completeness.INCOMPLETE : direct;
+        assert !direct.graph().coverageGaps().isEmpty() : direct;
+
+        var callerRule = results.stream()
+                .filter(candidate -> candidate.graph().decisionLabel()
+                        .equals("unsupported custom page query"))
+                .findFirst().orElseThrow();
+        assert callerRule.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE : callerRule;
+        assert callerRule.graph().coverageGaps().isEmpty() : callerRule;
+        assert callerRule.graph().nodes().stream().anyMatch(node ->
+                node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        && node.businessLabel().equals("result page is empty")) : callerRule;
     }
 
     private static void containsNoApplicationVocabulary() {

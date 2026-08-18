@@ -1,0 +1,61 @@
+{
+  "id": "keycloak-live-business-output-correctness",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-14T08:10:57Z",
+  "updated": "2026-08-14T08:24:56Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "configured-endpoint-business-tracing",
+      "reason": "It introduced the configured Keycloak endpoint and automatic file output corrected here.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "generic-business-graph-projection",
+    "runtime-decision-path-capture"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-14T08:10:57Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 10,
+        "codeQuality": 9,
+        "testCoverage": 10,
+        "specCompliance": 10
+      },
+      "evaluatedAt": "2026-08-14T08:24:56Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 3775,
+    "filesChanged": 24,
+    "linesAdded": 656,
+    "linesRemoved": 24,
+    "tasksCompleted": 3,
+    "acceptanceCriteriaVerified": 18,
+    "specDurationMinutes": 14
+  }
+}

@@ -4,8 +4,14 @@ import at.gepardec.fachtracing.analysis.AnalysisRequest;
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.analysis.BusinessArtifactGuard;
+import at.gepardec.fachtracing.analysis.BusinessEntryPoint;
 import at.gepardec.fachtracing.agent.FachtracingTransformer;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
+import at.gepardec.fachtracing.business.BusinessExecutionGraphProjector;
+import at.gepardec.fachtracing.business.BusinessExecutionTextRenderer;
+import at.gepardec.fachtracing.business.BusinessGraphProjector;
+import at.gepardec.fachtracing.business.BusinessLogicArtifactGuard;
+import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
 import at.gepardec.fachtracing.explain.DecisionExplanationProjector;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
@@ -28,8 +34,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Executable conformance test against an externally supplied, annotation-overlaid source tree. */
+/** Executable conformance test against an externally supplied, unchanged source tree. */
 public final class MegaBackendConformanceTest {
+    private static final List<BusinessEntryPoint> ENTRY_POINTS = List.of(
+            new BusinessEntryPoint(
+                    "com.gepardec.mega.domain.calculation.journey.JourneyDirectionValidator",
+                    "validate",
+                    List.of(
+                            "com.gepardec.mega.domain.model.monthlyreport.JourneyDirection",
+                            "com.gepardec.mega.domain.model.monthlyreport.JourneyDirection"),
+                    "validate journey direction"),
+            new BusinessEntryPoint(
+                    "com.gepardec.mega.domain.calculation.time.TimeOverlapCalculator",
+                    "isOverlapping",
+                    List.of(
+                            "com.gepardec.mega.domain.model.monthlyreport.ProjectEntry",
+                            "com.gepardec.mega.domain.model.monthlyreport.ProjectEntry"),
+                    "detect overlapping time entries"),
+            new BusinessEntryPoint(
+                    "com.gepardec.mega.hexagon.monthend.domain.model.MonthEndClarification",
+                    "canBeResolvedBy",
+                    List.of("com.gepardec.mega.hexagon.shared.domain.model.UserId"),
+                    "authorize clarification resolution"),
+            new BusinessEntryPoint(
+                    "com.gepardec.mega.hexagon.project.domain.model.Project",
+                    "isActiveIn",
+                    List.of("java.time.YearMonth"),
+                    "determine project activity in month"),
+            new BusinessEntryPoint(
+                    "com.gepardec.mega.service.helper.WarningCalculatorsManager",
+                    "determineJourneyWarnings",
+                    List.of("java.util.List"),
+                    "determine journey warnings"));
     private static final Set<String> EXPECTED_DECISIONS = Set.of(
             "authorize clarification resolution",
             "detect overlapping time entries",
@@ -46,16 +82,15 @@ public final class MegaBackendConformanceTest {
     private MegaBackendConformanceTest() { }
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 6) {
+        if (args.length < 5) {
             throw new IllegalArgumentException(
-                    "usage: <repository-root> <patched-mega-root> <dependency-classpath-file> <generated-dir> <oracle-dir> <overlay-classes>");
+                    "usage: <repository-root> <mega-root> <dependency-classpath-file> <generated-dir> <oracle-dir>");
         }
         Path repository = Path.of(args[0]).toAbsolutePath().normalize();
         Path reference = Path.of(args[1]).toAbsolutePath().normalize();
         Path generated = Path.of(args[3]).toAbsolutePath().normalize();
         Path oracles = Path.of(args[4]).toAbsolutePath().normalize();
-        Path overlayClasses = Path.of(args[5]).toAbsolutePath().normalize();
-        if (args.length != 6) throw new IllegalArgumentException("reviewed oracles are immutable during verification");
+        if (args.length != 5) throw new IllegalArgumentException("reviewed oracles are immutable during verification");
 
         List<Path> sources;
         try (var paths = Files.walk(reference.resolve("src/main/java"))) {
@@ -71,7 +106,8 @@ public final class MegaBackendConformanceTest {
         }
 
         long started = System.nanoTime();
-        var results = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(sources, classpath));
+        var results = new StaticDecisionAnalyzer().analyzeAll(
+                AnalysisRequest.of(sources, classpath).withBusinessEntryPoints(ENTRY_POINTS));
         long elapsedMillis = (System.nanoTime() - started) / 1_000_000;
         Map<String, AnalysisManifest.AnalysisResult> analyses = new LinkedHashMap<>();
         results.stream().sorted(Comparator.comparing(result -> result.graph().decisionLabel()))
@@ -84,6 +120,8 @@ public final class MegaBackendConformanceTest {
         Files.createDirectories(oracles);
         var renderer = new PlantUmlRenderer();
         var mermaid = new MermaidRenderer();
+        var businessProjector = new BusinessGraphProjector();
+        var businessMermaid = new BusinessMermaidRenderer();
         var topologyMismatches = new ArrayList<String>();
         for (var entry : graphs.entrySet()) {
             String name = slug(entry.getKey());
@@ -97,6 +135,16 @@ public final class MegaBackendConformanceTest {
             Files.writeString(generated.resolve(name + "-structure.puml"), structure);
             Files.writeString(generated.resolve(name + "-structure.mmd"), mermaidStructure);
             Files.writeString(generated.resolve(name + "-semantic.txt"), semantic);
+            var businessGraph = businessProjector.project(analyses.get(entry.getKey()));
+            String businessDiagram = businessMermaid.render(businessGraph);
+            new BusinessLogicArtifactGuard().requireClean(businessGraph);
+            assert businessGraph.nodes().size() <= graph.nodes().size()
+                    : entry.getKey() + " business overview grew: " + businessGraph;
+            assert businessGraph.nodes().stream()
+                    .anyMatch(node -> node.kind() == at.gepardec.fachtracing.model.BusinessLogicGraph.NodeKind.RESULT)
+                    : entry.getKey() + " business overview has no result";
+            assertBusinessArtifact(entry.getKey() + " business overview", businessDiagram);
+            Files.writeString(generated.resolve(name + "-business.mmd"), businessDiagram);
             Path oracle = oracles.resolve(name + ".txt");
             assert Files.exists(oracle) : "missing reviewed oracle " + oracle;
             if (!Files.readString(oracle).equals(semantic)) topologyMismatches.add(entry.getKey());
@@ -121,7 +169,7 @@ public final class MegaBackendConformanceTest {
         assert strategyGraph.nodes().stream().anyMatch(node -> node.kind() == BusinessDecisionGraph.NodeKind.DISPATCH)
                 : "manager graph must expose warning strategy dispatch";
         executePolymorphicDecision(
-                analyses.get("determine journey warnings"), reference, overlayClasses, classpath, generated);
+                analyses.get("determine journey warnings"), reference, classpath, generated);
         System.out.println("analyzed " + sources.size() + " source files and " + graphs.size()
                 + " decisions in " + elapsedMillis + " ms");
     }
@@ -129,11 +177,9 @@ public final class MegaBackendConformanceTest {
     private static void executePolymorphicDecision(
             AnalysisManifest.AnalysisResult analysis,
             Path reference,
-            Path overlayClasses,
             List<Path> classpath,
             Path generated) throws Exception {
         var urls = new ArrayList<URL>();
-        urls.add(overlayClasses.toUri().toURL());
         urls.add(reference.resolve("target/classes").toUri().toURL());
         for (Path item : classpath) urls.add(item.toUri().toURL());
 
@@ -185,12 +231,24 @@ public final class MegaBackendConformanceTest {
         String text = projector.text(explanation);
         String executionDiagram = new PlantUmlRenderer().execution(analysis.graph(), execution);
         String mermaidExecution = new MermaidRenderer().execution(analysis.graph(), execution);
+        var businessExecution = new BusinessExecutionGraphProjector().project(analysis.graph(), execution);
+        String businessText = new BusinessExecutionTextRenderer().render(businessExecution);
+        String businessDiagram = new BusinessMermaidRenderer().render(businessExecution);
+        new BusinessLogicArtifactGuard().requireClean(businessExecution);
+        assert businessExecution.nodes().stream()
+                .filter(node -> node.kind() == at.gepardec.fachtracing.model.BusinessLogicGraph.NodeKind.RESULT)
+                .count() == 1 : businessExecution;
+        assert businessExecution.nodes().size() < analysis.graph().nodes().size() : businessExecution;
         assertBusinessArtifact("determine journey warnings explanation", text);
         assertBusinessArtifact("determine journey warnings execution", executionDiagram);
         assertBusinessArtifact("determine journey warnings Mermaid execution", mermaidExecution);
+        assertBusinessArtifact("determine journey warnings business text", businessText);
+        assertBusinessArtifact("determine journey warnings business diagram", businessDiagram);
         Files.writeString(generated.resolve("determine-journey-warnings-execution.puml"), executionDiagram);
         Files.writeString(generated.resolve("determine-journey-warnings-explanation.txt"), text);
         Files.writeString(generated.resolve("determine-journey-warnings-execution.mmd"), mermaidExecution);
+        Files.writeString(generated.resolve("determine-journey-warnings-business-execution.txt"), businessText);
+        Files.writeString(generated.resolve("determine-journey-warnings-business-execution.mmd"), businessDiagram);
         System.out.println("captured journey-warning execution with typed empty collection and three selected strategies");
     }
 

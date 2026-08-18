@@ -7,19 +7,19 @@ checks that every entry names an executable contract and appears in this documen
 
 - `annotated-entry`, `conditional-branch`, `null-optionality`, `short-circuit-boolean`
 - `complex-boolean-exact-path`, `predicate-operand-evidence`, `predicate-site-evidence`, `method-receiver-evidence`, `terminal-outcome-evidence`, `incomplete-exact-path-gap`
-- `assignment-data-flow`, `proven-write-result-slice`, `unknown-result-effect-gap`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `conditional-local-alias-effect-gap`, `conditional-local-alias-definition`, `unknown-jdk-effect-gap`
+- `assignment-data-flow`, `proven-write-result-slice`, `source-unavailable-statement-action`, `jdk-deque-mutation`, `direct-local-alias-mutation`, `local-alias-invalidation`, `conditional-local-alias-effect-gap`, `conditional-local-alias-definition`, `source-unavailable-platform-action`
 - `direct-source-call`, `generic-polymorphic-dispatch`, `typed-result`
 - `switch-forms`, `pattern-switch-exact-path`, `ternary-expression`, `loops-and-collection-mutation`, `indexed-loop-business-lowering`, `records-and-equality`
 - `lambdas-and-streams`, `method-reference-callback-mutation`, `wrapped-method-reference-callback-mutation`, `local-method-reference-callback-mutation`, `mutating-predicate-method-reference-gap`, `result-relevant-exception-flow`, `result-relevant-finally-flow`
 - `synchronized-business-logic`
-- `source-unavailable-call`, `jakarta-platform-operation`, `explicit-opaque-library-boundary`
-- `controlled-bytecode-fallback`, `controlled-bytecode-fallback-boundary`
+- `source-unavailable-opaque-value-gap`, `source-visible-call-boundary`, `lazy-unavailable-callback-action`, `nested-binary-owner`, `repeated-unavailable-action`, `jakarta-platform-operation`, `explicit-opaque-library-boundary`
+- `controlled-bytecode-fallback`, `controlled-bytecode-atomic-rule`
 - `reflection-service-loader-proxy`, `unresolved-dynamic-candidate-gap`, `async-boundary`
 - `exact-async-callback-position`, `skipped-stage-callback-lifecycle`, `async-submission-lifecycle`, `nested-async-reservation-identity`, `transparent-future-cancellation`, `external-cancellation-call-site`
 - `unsupported-async-boundary-gap`, `java17-java21-projects`
 - `owned-external-jpms-source`, `owned-automatic-module-source`
 - `try-with-resources`, `supported-platform-catch`, `resource-close-result-gap`, `pattern-matching`, `sealed-types`, `nested-classes`, `nested-class-effect-scope`, `method-references`
-- `business-java-vocabulary`, `call-role-label-lowering`, `receiver-preserving-call-label`, `context-aware-operation-label`
+- `business-java-vocabulary`, `call-role-label-lowering`, `receiver-preserving-call-label`, `context-aware-operation-label`, `business-structural-language`
 
 Static relevance is determined by backwards data/control dependence from returned values. The
 analyzer does not classify logging, metrics, packages, frameworks, or method names as
@@ -43,16 +43,17 @@ This audit data does not enter the business graph or runtime activation JSON.
 | `@FachTracing` method | Discovers every decision entry in deterministic source order and its optional business label |
 | `if / else` and comparison | Produces result-relevant predicate nodes; a complete Java 21 `javac` Boolean binding records the exact `true` or `false` edge |
 | `value == null`, `value != null` | Preserves result-relevant optionality as “is absent” or “exists”; Java `null` is never business output |
-| Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed result-relevant operand evidence when an exact binding is available |
+| Mixed and nested `&&`, `||`, `!` | Creates one node for each atomic business predicate and records each evaluated edge with typed result-relevant operand evidence when an exact binding is available. A multiline disjunction can correlate a continuation jump on the preceding `javac` source line only after a non-final disjunction operand |
 | Predicate operand evidence | Reads a direct parameter from its current local slot at each predicate branch; reassignment and repeated evaluation cannot reuse the method-entry value. Property, local, or calculated operands outside the exact subset produce a source-located execution gap |
 | Method receiver evidence | Records a direct parameter receiver for result-relevant value calls, including direct Boolean return expressions. An unsupported explicit value receiver creates a source-located gap |
 | Terminal outcome evidence | Merges evidence captured at a direct return receiver with the final typed result. The explanation shows each non-result fact as a business reason |
 | Local initialization and assignment | Retained only when it can influence a return |
 | Context-aware operation label | Uses declared-type context for short locals and generic collection names, and renders generic `set` and `add` operations with their receivers and operands |
+| Business structural language | Converts generic map, filter, model, stream, and negated-empty phrases to business actions and existence rules before artifact validation. The rules use phrase structure and do not use an application selector |
 | Result slice call effects | Includes only source-proven or attributed platform writes. A JDK namespace is not proof that a call is read-only. Final `java.lang.Enum` queries such as `name`, `equals`, and `compareTo` are proven read-only |
 | Returned mutable collection | Retains source-proven and attributed platform mutations through calls and lambda bodies, including queue and deque operations such as `offer` |
 | Direct local reference alias | Maps a helper mutation through `alias = parameter` back to the caller argument. An unconditional non-identity assignment removes that relation. A conditional assignment merges branch roots and active definitions; an unproved result-relevant write creates a located gap |
-| Unknown result-relevant reference effect | Adds a source-located coverage gap when unavailable logic can change a reference used by the returned decision. The analyzer does not guess a write |
+| Source-unavailable statement action | Keeps a result-relevant statement call as one atomic action when the caller proves that it can change state used by the result. Source-available helpers still need exact effect analysis |
 
 | Direct method call | Follows a source-available callee and includes its relevant slice |
 | Generic interface or abstract dispatch | Uses compiler subtype and receiver compatibility to include all proven source-visible concrete candidates, including implementations in sibling modules of the active Maven reactor. The manifest records included candidates and excluded abstract or receiver-incompatible subtypes. Runtime evidence selects the expected call site's opaque edge |
@@ -73,9 +74,13 @@ This audit data does not enter the business graph or runtime activation JSON.
 | Direct method reference | Resolves and expands a source-visible referenced decision method. Direct, parenthesized, cast, and local-variable bound mutating callbacks use the same receiver-effect contract as a normal call and show the source-to-target transfer. A platform mutator Boolean used as a predicate callback keeps the mutation but creates a located gap for its unsupported outcome topology |
 | Jakarta platform value operation | Treats source-unavailable `jakarta.*` value wrappers as transparent and keeps source-visible business predicates |
 | Exact external method contract | An explicitly enabled provider describes one exact binary owner, method name, and JVM descriptor. The analyzer uses source first, then one matching contract, then an explicit opaque-library boundary, and finally a coverage gap. A contract can prove a predicate, action, receiver or argument mutation, result behavior, and possible exception types. Two matches create a source-located conflict gap; the analyzer does not use provider priority |
-| Explicit opaque library boundary | By default, source-unavailable dependency operations remain incomplete. A caller can select exact technical library JARs. A reference-returning operation from a selected JAR stays outside the graph. An instance operation keeps its receiver in the result slice, so source-visible predicates that configure fluent query or options objects remain visible. A Boolean call from a selected JAR is transparent only inside an explicit source control condition, where the call site is already the graph predicate. Direct Boolean decisions, other primitive results, unselected JARs, and application class directories stay fail-closed |
+| Explicit opaque library boundary | A caller can select exact technical library JARs. A reference-returning operation from a selected JAR stays outside the graph. An instance operation keeps its receiver in the result slice, so source-visible predicates that configure fluent query or options objects remain visible. Direct source-unavailable Boolean decisions use the general atomic caller-rule contract. Other primitive results remain fail-closed |
+| Source-visible unavailable call boundary | Uses an explicit caller predicate, a direct returned Boolean decision, or a result-relevant statement call as one atomic rule or action. A derived collaborator lookup stays hidden when later caller operations provide the business meaning. An opaque returned value without caller meaning stays incomplete. Reassignment before a later predicate prevents that predicate rule |
+| Source-unavailable lazy callback | Shows one configured stream filter or mapping action. It does not add a callback predicate probe and does not claim that a lazy callback ran before the enclosing method returned |
+| Repeated unavailable state action | Shows each caller-visible statement action without a duplicate implementation gap. Nested collaborator lookups remain hidden |
+| Nested binary owner | Uses the compiler JVM binary name, including `$` for a nested type, to locate the exact class file before applying the safe bytecode fallback |
 | Source-unavailable simple Boolean method | Uses a fingerprinted, fail-closed bytecode fallback for one numeric comparison with parameters, configured fields, constants, simple integer calculations, conditional flow, and Boolean returns |
-| Other source-unavailable call or reflection | Remains incomplete with the rejected binary construct and call-site location. This includes Boolean dependency decisions that the controlled fallback cannot prove |
+| Other source-unavailable call or reflection | Remains incomplete with the rejected construct and call-site location unless a direct Boolean rule, caller action, collaborator use, lazy callback action, caught outcome, trusted contract, or safe bytecode fragment represents the boundary. An opaque returned value with no caller-visible meaning stays incomplete |
 
 The context-aware operation-label contract compiles independent scheduling, pricing, access-control,
 and inventory sources. It uses attributed declaration symbols and types for `var`, generic types,
@@ -119,8 +124,11 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 - Incomplete exact branch metadata creates a located coverage gap and does not claim an exact edge.
 - Mixed, nested, and negated Boolean forms use occurrence-aware atomic bindings. Each evaluated
   atom records one exact edge and typed Boolean evidence. Short-circuited atoms record nothing.
-- A result-relevant source-proven catch path records its exact opaque path edge. Unavailable
-  exception-triggering logic and finally-overridden returns remain located coverage gaps.
+  A preceding-line continuation match is valid only inside a proved disjunction sequence; an
+  unrelated loop or branch cannot consume the next predicate binding.
+- A result-relevant source-proven catch path records its exact opaque path edge. Its normal and
+  caught source outcomes do not add a duplicate unknown-trigger gap. An unresolved call inside the
+  path and finally-overridden returns remain located coverage gaps.
 - An exception that leaves an instrumented entry creates one generic failed execution. The agent
   then rethrows the same exception object.
 - A failed business record contains no Java exception class, raw message, or stack trace.
