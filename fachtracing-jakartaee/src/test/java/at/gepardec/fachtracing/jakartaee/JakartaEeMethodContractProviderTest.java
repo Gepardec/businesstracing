@@ -29,16 +29,12 @@ public final class JakartaEeMethodContractProviderTest {
         assert new JakartaEeMethodContractProvider().contracts().stream().anyMatch(contract ->
                 contract.method().ownerBinaryName().equals("io.grpc.ManagedChannel"));
         selectsOnlyScopedNonAlternativeCdiBeans();
+        appliesImplicitDefaultQualifier();
+        resolvesConstructorInjectionAndQualifierValues();
     }
 
     private static void selectsOnlyScopedNonAlternativeCdiBeans() {
-        Path fixture = Path.of("fachtracing-jakartaee/src/test/resources/fixtures/CdiWorkflow.java");
-        List<Path> classpath = Arrays.stream(System.getProperty("java.class.path")
-                        .split(java.io.File.pathSeparator)).map(Path::of).toList();
-        var result = new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(List.of(fixture), classpath)
-                        .withDynamicDispatchTargetSelectors(List.of(new CdiDispatchTargetSelector())))
-                .stream().filter(candidate -> candidate.graph().decisionLabel().equals("apply CDI rule"))
-                .findFirst().orElseThrow();
+        var result = analyzeCdi("apply CDI rule");
         assert result.manifest().dispatchTargets().stream().map(AnalysisManifest.DispatchTarget::ownerHint)
                 .toList().equals(List.of("fixtures.jakartaee.ScopedRule"))
                 : result.manifest().dispatchTargets();
@@ -51,6 +47,33 @@ public final class JakartaEeMethodContractProviderTest {
         assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
                 decision.reason() == AnalysisManifest.AnalysisReason.FRAMEWORK_EXCLUDED_IMPLEMENTATION
                         && decision.subject().equals("fixtures.jakartaee.OtherScopedRule"));
+    }
+
+    private static void appliesImplicitDefaultQualifier() {
+        var result = analyzeCdi("apply default CDI rule");
+        assert result.manifest().dispatchTargets().stream().map(AnalysisManifest.DispatchTarget::ownerHint)
+                .toList().equals(List.of("fixtures.jakartaee.OtherScopedRule"))
+                : result.manifest().dispatchTargets();
+    }
+
+    private static void resolvesConstructorInjectionAndQualifierValues() {
+        var result = analyzeCdi("apply constructor CDI rule");
+        assert result.manifest().dispatchTargets().stream().map(AnalysisManifest.DispatchTarget::ownerHint)
+                .toList().equals(List.of("fixtures.jakartaee.EuropeanRule"))
+                : result.manifest().dispatchTargets();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.reason() == AnalysisManifest.AnalysisReason.FRAMEWORK_EXCLUDED_IMPLEMENTATION
+                        && decision.subject().equals("fixtures.jakartaee.AmericanRule"));
+    }
+
+    private static AnalysisManifest.AnalysisResult analyzeCdi(String label) {
+        Path fixture = Path.of("fachtracing-jakartaee/src/test/resources/fixtures/CdiWorkflow.java");
+        List<Path> classpath = Arrays.stream(System.getProperty("java.class.path")
+                        .split(java.io.File.pathSeparator)).map(Path::of).toList();
+        return new StaticDecisionAnalyzer().analyzeAll(AnalysisRequest.of(List.of(fixture), classpath)
+                        .withDynamicDispatchTargetSelectors(List.of(new CdiDispatchTargetSelector())))
+                .stream().filter(candidate -> candidate.graph().decisionLabel().equals(label))
+                .findFirst().orElseThrow();
     }
 
     private static boolean methodExists(ExternalMethodReference reference) {

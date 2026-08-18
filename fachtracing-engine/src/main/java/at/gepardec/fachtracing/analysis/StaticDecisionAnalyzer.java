@@ -2311,11 +2311,12 @@ public final class StaticDecisionAnalyzer {
             private DispatchSelection selectDispatchCandidate(
                     MethodInvocationTree invocation, TypeElement contract, TypeElement candidate) {
                 if (dynamicDispatchTargetSelectors.isEmpty()) return DispatchSelection.INCLUDE;
-                Element receiver = dispatchReceiver(invocation);
-                if (receiver == null) return DispatchSelection.INCLUDE;
+                List<Element> receiverOrigins = dispatchReceiverOrigins(invocation);
+                if (receiverOrigins.isEmpty()) return DispatchSelection.INCLUDE;
                 boolean included = false;
                 boolean excluded = false;
-                var target = new DynamicDispatchTargetSelector.DispatchTarget(receiver, contract, candidate);
+                var target = new DynamicDispatchTargetSelector.DispatchTarget(
+                        receiverOrigins, contract, candidate);
                 for (DynamicDispatchTargetSelector selector : dynamicDispatchTargetSelectors) {
                     DynamicDispatchTargetSelector.Selection choice = Objects.requireNonNull(
                             selector.select(target), "dispatch selector result");
@@ -2326,10 +2327,15 @@ public final class StaticDecisionAnalyzer {
                 return excluded ? DispatchSelection.EXCLUDE : DispatchSelection.INCLUDE;
             }
 
-            private Element dispatchReceiver(MethodInvocationTree invocation) {
-                if (!(invocation.getMethodSelect() instanceof MemberSelectTree member)) return null;
+            private List<Element> dispatchReceiverOrigins(MethodInvocationTree invocation) {
+                if (!(invocation.getMethodSelect() instanceof MemberSelectTree member)) return List.of();
                 TreePath path = TreePath.getPath(location.unit(), member.getExpression());
-                return path == null ? null : trees.getElement(path);
+                Element receiver = path == null ? null : trees.getElement(path);
+                if (receiver == null) return List.of();
+                var origins = new ArrayList<Element>();
+                origins.add(receiver);
+                origins.addAll(index.constructorParametersByField().getOrDefault(receiver, List.of()));
+                return List.copyOf(origins);
             }
 
             private void auditDispatchCandidate(
@@ -3695,7 +3701,8 @@ public final class StaticDecisionAnalyzer {
     private record SourceIndex(
             Map<ExecutableElement, MethodLocation> rootMethods,
             Map<ExecutableElement, MethodLocation> methods,
-            List<TypeElement> types) {
+            List<TypeElement> types,
+            Map<Element, List<Element>> constructorParametersByField) {
         private static SourceIndex create(
                 List<CompilationUnitTree> units,
                 Trees trees,
@@ -3703,6 +3710,7 @@ public final class StaticDecisionAnalyzer {
             var rootMethods = new LinkedHashMap<ExecutableElement, MethodLocation>();
             var methods = new LinkedHashMap<ExecutableElement, MethodLocation>();
             var types = new ArrayList<TypeElement>();
+            var constructorParametersByField = new LinkedHashMap<Element, List<Element>>();
             Set<Path> rootSources = rootSourceFiles.stream()
                     .map(path -> path.toAbsolutePath().normalize())
                     .collect(Collectors.toUnmodifiableSet());
@@ -3727,9 +3735,26 @@ public final class StaticDecisionAnalyzer {
                         if (element instanceof TypeElement type) types.add(type);
                         return super.visitClass(node, unused);
                     }
+
+                    @Override public Void visitAssignment(AssignmentTree node, Void unused) {
+                        TreePath assignment = getCurrentPath();
+                        Element field = trees.getElement(new TreePath(assignment, node.getVariable()));
+                        Element parameter = trees.getElement(new TreePath(assignment, node.getExpression()));
+                        if (field != null && field.getKind() == ElementKind.FIELD
+                                && parameter != null && parameter.getKind() == ElementKind.PARAMETER
+                                && parameter.getEnclosingElement().getKind() == ElementKind.CONSTRUCTOR) {
+                            constructorParametersByField.computeIfAbsent(
+                                    field, ignored -> new ArrayList<>()).add(parameter);
+                        }
+                        return super.visitAssignment(node, unused);
+                    }
                 }.scan(unit, null);
             }
-            return new SourceIndex(Map.copyOf(rootMethods), Map.copyOf(methods), List.copyOf(types));
+            Map<Element, List<Element>> immutableOrigins = constructorParametersByField.entrySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(
+                            Map.Entry::getKey, entry -> List.copyOf(entry.getValue())));
+            return new SourceIndex(Map.copyOf(rootMethods), Map.copyOf(methods), List.copyOf(types),
+                    immutableOrigins);
         }
     }
 

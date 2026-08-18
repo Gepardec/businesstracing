@@ -1,5 +1,13 @@
 [
   {
+    "id": "cdi-dispatch-selection-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-18T10:33:36Z"
+  },
+  {
     "id": "jakarta-ee-cdi-soap-semantics",
     "type": "feature",
     "status": "completed",

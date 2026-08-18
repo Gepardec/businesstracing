@@ -504,3 +504,9 @@ in the generic projection. The projector now removes only those technical forms,
 keeps an ordinary `put order on hold` business action. The business guard rejects Java
 method-reference syntax. The full repository gate and final pinned Keycloak conformance passed; the
 activation still contains one exact 169-node decision with probe sites and class fingerprints.
+
+### cdi-dispatch-selection-correctness (bugfix) — 2026-08-18
+
+Completed three tasks. Dynamic dispatch selectors now receive direct constructor-parameter origins
+for fields. CDI selection applies implicit default qualification, binding member values, and
+nonbinding members exactly. The complete pull-request gate and Jakarta EE conformance passed.
