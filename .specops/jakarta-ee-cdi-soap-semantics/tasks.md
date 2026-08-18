@@ -174,7 +174,7 @@ Support source-visible custom scopes, stereotypes, and priority alternatives. De
 
 ### Task 6: Verify and document the completeness contract
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 5
 **Priority:** High
@@ -189,12 +189,12 @@ Publish the support matrix and run module, repository, external conformance, and
 
 - [x] Capability documentation distinguishes proven, runtime-confirmed, and incomplete behavior.
 - [x] `./scripts/verify-pr.sh` passes.
-- [ ] Pull request CI passes after push.
+- [x] Pull request CI passes after push.
 
 ## Progress Tracking
 
 - Total Tasks: 6
-- Completed: 5
-- In Progress: 1
+- Completed: 6
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

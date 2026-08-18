@@ -510,3 +510,14 @@ activation still contains one exact 169-node decision with probe sites and class
 Completed three tasks. Dynamic dispatch selectors now receive direct constructor-parameter origins
 for fields. CDI selection applies implicit default qualification, binding member values, and
 nonbinding members exactly. The complete pull-request gate and Jakarta EE conformance passed.
+
+### jakarta-ee-cdi-soap-semantics (feature version 2) — 2026-08-18
+
+Completed three version 2 tasks. Framework selectors distinguish abstention from unproved
+resolution, exact contracts retain known operations with incomplete-boundary facts, and a new
+source-semantic provider exposes container-driven Jakarta EE annotations. CDI runtime confirmation
+stays passive: the container injects the bean or proxy and implementation entry confirms the edge.
+
+Custom scopes, stereotypes, priority and XML alternatives, dynamic lookup, interceptor bindings,
+transactions, security, validation, events, lifecycle callbacks, timers, JAX-RS, and JPA boundaries
+have executable regression coverage. The local pull-request gate and GitHub Actions run 116 passed.

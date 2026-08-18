@@ -1200,6 +1200,46 @@
       "task": "Task 2",
       "date": "2026-08-18",
       "completedAt": "2026-08-18T10:33:36Z"
+    },
+    {
+      "specId": "jakarta-ee-cdi-soap-semantics",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Add an unresolved selector result",
+      "rationale": "CDI ownership with unknown deployment state must not fall back to generic inclusion.",
+      "task": "Task 4",
+      "date": "2026-08-18",
+      "completedAt": "2026-08-18T11:08:32Z"
+    },
+    {
+      "specId": "jakarta-ee-cdi-soap-semantics",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Add source-semantic providers",
+      "rationale": "Container annotations can invoke behavior without a source call.",
+      "task": "Task 4",
+      "date": "2026-08-18",
+      "completedAt": "2026-08-18T11:08:32Z"
+    },
+    {
+      "specId": "jakarta-ee-cdi-soap-semantics",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Keep exact operations and attach boundary gaps",
+      "rationale": "A known local action does not prove callbacks, infrastructure, or remote processing.",
+      "task": "Task 4",
+      "date": "2026-08-18",
+      "completedAt": "2026-08-18T11:08:32Z"
+    },
+    {
+      "specId": "jakarta-ee-cdi-soap-semantics",
+      "specType": "feature",
+      "number": 4,
+      "decision": "Keep CDI runtime confirmation passive",
+      "rationale": "Active CDI lookup can create contextual instances, invoke producers, and change application state.",
+      "task": "Task 5",
+      "date": "2026-08-18",
+      "completedAt": "2026-08-18T11:08:32Z"
     }
   ]
 }

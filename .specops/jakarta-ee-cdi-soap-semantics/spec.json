@@ -1,10 +1,10 @@
 {
   "id": "jakarta-ee-cdi-soap-semantics",
   "type": "feature",
-  "status": "implementing",
+  "status": "completed",
   "version": 2,
   "created": "2026-08-18T09:25:40Z",
-  "updated": "2026-08-18T10:48:20Z",
+  "updated": "2026-08-18T11:08:32Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {"name": "lucostus"},
@@ -25,6 +25,25 @@
         "taskCoverage": 9
       },
       "evaluatedAt": "2026-08-18T09:25:40Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "requirementsCorrectness": 10,
+        "designCorrectness": 9,
+        "implementationQuality": 9,
+        "testQuality": 10,
+        "regressionSafety": 10
+      },
+      "evaluatedAt": "2026-08-18T11:08:32Z"
     }
+  },
+  "metrics": {
+    "tasksCompleted": 6,
+    "acceptanceCriteriaVerified": 13,
+    "durationMinutes": 20,
+    "codeFilesModified": 18,
+    "testsRun": 3
   }
 }
