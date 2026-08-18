@@ -17,7 +17,11 @@ import java.util.Set;
 public final class CdiDispatchTargetSelector implements DynamicDispatchTargetSelector {
     private static final String INJECT = "jakarta.inject.Inject";
     private static final String ALTERNATIVE = "jakarta.enterprise.inject.Alternative";
+    private static final String PRIORITY = "jakarta.annotation.Priority";
     private static final String QUALIFIER = "jakarta.inject.Qualifier";
+    private static final String STEREOTYPE = "jakarta.enterprise.inject.Stereotype";
+    private static final String NORMAL_SCOPE = "jakarta.enterprise.context.NormalScope";
+    private static final String SCOPE = "jakarta.inject.Scope";
     private static final String DEFAULT = "jakarta.enterprise.inject.Default";
     private static final String ANY = "jakarta.enterprise.inject.Any";
     private static final String NAMED = "jakarta.inject.Named";
@@ -32,14 +36,34 @@ public final class CdiDispatchTargetSelector implements DynamicDispatchTargetSel
             "jakarta.ejb.Stateless",
             "jakarta.ejb.Stateful",
             "jakarta.ejb.Singleton");
+    private static final Set<String> FRAMEWORK_INJECTION = Set.of(
+            INJECT,
+            "jakarta.ejb.EJB",
+            "jakarta.annotation.Resource",
+            "jakarta.persistence.PersistenceContext",
+            "jakarta.persistence.PersistenceUnit",
+            "jakarta.xml.ws.WebServiceRef",
+            "org.eclipse.microprofile.rest.client.inject.RestClient");
+    private static final Set<String> DYNAMIC_LOOKUP_TYPES = Set.of(
+            "jakarta.enterprise.inject.Instance",
+            "jakarta.inject.Provider");
 
     @Override
     public Selection select(DispatchTarget target) {
+        if (target.receiverOrigins().stream().anyMatch(CdiDispatchTargetSelector::isDynamicLookup)) {
+            return Selection.UNRESOLVED;
+        }
+        boolean frameworkOwned = target.receiverOrigins().stream()
+                .anyMatch(CdiDispatchTargetSelector::isFrameworkInjectionPoint);
+        if (frameworkOwned && target.receiverOrigins().stream()
+                .noneMatch(CdiDispatchTargetSelector::isInjectionPoint)) {
+            return Selection.UNRESOLVED;
+        }
         List<Element> injectionPoints = target.receiverOrigins().stream()
                 .filter(CdiDispatchTargetSelector::isInjectionPoint).toList();
-        if (injectionPoints.size() != 1) return Selection.ABSTAIN;
+        if (injectionPoints.isEmpty()) return Selection.ABSTAIN;
+        if (injectionPoints.size() != 1) return Selection.UNRESOLVED;
         if (!hasBeanDefiningScope(target.candidate())) return Selection.EXCLUDE;
-        if (hasAnnotation(target.candidate(), ALTERNATIVE)) return Selection.EXCLUDE;
         List<AnnotationMirror> declared = qualifiers(injectionPoints.getFirst());
         List<AnnotationMirror> required = declared.stream()
                 .filter(qualifier -> !annotationType(qualifier).equals(ANY)).toList();
@@ -48,7 +72,12 @@ public final class CdiDispatchTargetSelector implements DynamicDispatchTargetSel
                         || hasDefaultQualifier(target.candidate())
                 : required.stream().allMatch(qualifier -> candidateHasQualifier(
                         target.candidate(), qualifier));
-        return matches ? Selection.INCLUDE : Selection.EXCLUDE;
+        if (!matches) return Selection.EXCLUDE;
+        if (hasAnnotationOrStereotype(target.candidate(), ALTERNATIVE)
+                && !hasAnnotationOrStereotype(target.candidate(), PRIORITY)) {
+            return Selection.UNRESOLVED;
+        }
+        return Selection.INCLUDE;
     }
 
     private static boolean isInjectionPoint(Element element) {
@@ -57,10 +86,51 @@ public final class CdiDispatchTargetSelector implements DynamicDispatchTargetSel
                 && hasAnnotation(element.getEnclosingElement(), INJECT);
     }
 
+    private static boolean isFrameworkInjectionPoint(Element element) {
+        if (element.getAnnotationMirrors().stream().map(CdiDispatchTargetSelector::annotationType)
+                .anyMatch(FRAMEWORK_INJECTION::contains)) return true;
+        return element.getKind() == ElementKind.PARAMETER
+                && element.getEnclosingElement().getAnnotationMirrors().stream()
+                .map(CdiDispatchTargetSelector::annotationType).anyMatch(FRAMEWORK_INJECTION::contains);
+    }
+
+    private static boolean isDynamicLookup(Element element) {
+        Element owner = element instanceof ExecutableElement executable
+                ? executable.getEnclosingElement() : element;
+        return owner instanceof TypeElement type
+                && DYNAMIC_LOOKUP_TYPES.contains(type.getQualifiedName().toString());
+    }
+
     private static boolean hasBeanDefiningScope(Element element) {
         return element.getAnnotationMirrors().stream()
-                .map(CdiDispatchTargetSelector::annotationType)
-                .anyMatch(BEAN_DEFINING_SCOPES::contains);
+                .anyMatch(annotation -> isBeanDefiningAnnotation(
+                        (TypeElement) annotation.getAnnotationType().asElement(), new java.util.HashSet<>()));
+    }
+
+    private static boolean isBeanDefiningAnnotation(TypeElement annotation, Set<String> visited) {
+        String type = annotation.getQualifiedName().toString();
+        if (!visited.add(type)) return false;
+        if (BEAN_DEFINING_SCOPES.contains(type)) return true;
+        return annotation.getAnnotationMirrors().stream().anyMatch(meta -> {
+            String metaType = annotationType(meta);
+            return metaType.equals(NORMAL_SCOPE) || metaType.equals(SCOPE) || metaType.equals(STEREOTYPE)
+                    || isBeanDefiningAnnotation(
+                    (TypeElement) meta.getAnnotationType().asElement(), visited);
+        });
+    }
+
+    private static boolean hasAnnotationOrStereotype(Element element, String type) {
+        return element.getAnnotationMirrors().stream().anyMatch(annotation ->
+                annotationType(annotation).equals(type)
+                        || hasMetaAnnotation((TypeElement) annotation.getAnnotationType().asElement(),
+                        type, new java.util.HashSet<>()));
+    }
+
+    private static boolean hasMetaAnnotation(TypeElement annotation, String type, Set<String> visited) {
+        if (!visited.add(annotation.getQualifiedName().toString())) return false;
+        return annotation.getAnnotationMirrors().stream().anyMatch(meta ->
+                annotationType(meta).equals(type)
+                        || hasMetaAnnotation((TypeElement) meta.getAnnotationType().asElement(), type, visited));
     }
 
     private static boolean hasAnnotation(Element element, String type) {

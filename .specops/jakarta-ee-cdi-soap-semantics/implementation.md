@@ -2,6 +2,8 @@
 
 ## Summary
 
+Version 2 extends the completed adapter with a truthful Jakarta EE completeness contract. It does not claim full container emulation.
+
 ## Phase 1 Context Summary
 
 - Config: SpecOps defaults; vertical `library`; specsDir `.specops`; task tracking `none`.
@@ -43,3 +45,4 @@
 - Verification: `./scripts/verify-pr.sh` passed on 2026-08-18.
 - Follow-up: Expanded the exact catalog with EJB, Jakarta Security, REST Client, JMS, JSON-B,
   Mail, Servlet, and WebSocket operations. Reflection verification passed for each catalog entry.
+- 2026-08-18T10:48:20Z: Reopened the specification as version 2. Added explicit unresolved CDI, source-semantic, external-boundary, and passive runtime confirmation requirements.

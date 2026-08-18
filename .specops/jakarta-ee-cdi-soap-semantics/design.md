@@ -84,3 +84,46 @@ the selected CDI repository appears without non-bean source candidates.
 | --- | --- | --- | --- | --- |
 | `jakarta.platform:jakarta.jakartaee-api` | 11.0.0 | Maven test | Approved | Supplies real CDI, JAX-RS, JPA, JTA, Bean Validation, and JAX-WS signatures without production coupling. |
 | `io.grpc:grpc-api` | current compatible test version | Maven test | Approved | Supplies real gRPC setup and status signatures without production coupling. |
+
+## Version 2 Architecture
+
+### Decision 5: Separate abstention from unresolved framework selection
+
+**Decision:** Extend the selector result with `UNRESOLVED`. `ABSTAIN` means that a selector does not own the receiver. `UNRESOLVED` means that the selector recognizes the framework injection point but cannot prove its runtime bean set.
+
+**Rationale:** Generic inclusion is safe only when no framework owns the receiver. It is not safe after CDI ownership is known.
+
+### Decision 6: Attach incompleteness to exact external contracts
+
+**Decision:** An external method contract can list coverage-gap facts. The analyzer keeps the known local operation and adds each declared gap at the call site.
+
+**Rationale:** For example, `EntityManager.persist` is a known local action, but entity listeners, callbacks, database rules, and lazy behavior are not reconstructed.
+
+### Decision 7: Add a source-semantic provider SPI
+
+**Decision:** A source-semantic provider inspects one reachable source method and returns deterministic gap descriptions. The Jakarta EE provider identifies container-driven annotations and meta-annotations by binary name.
+
+**Rationale:** Interceptors, validation, events, lifecycle callbacks, security, and timers do not require an explicit method call in application source.
+
+### Decision 8: Keep runtime CDI verification passive
+
+**Decision:** The CDI container creates the contextual reference or proxy. Fachtracing confirms the edge only when execution enters a proven candidate implementation. It does not resolve or instantiate CDI beans.
+
+**Rationale:** Active lookup can invoke producers, create contextual instances, change application state, and disagree with the real injection point.
+
+## Version 2 Data Flow
+
+1. Source analysis resolves receiver origins.
+2. The CDI selector returns include, exclude, abstain, conflict, or unresolved evidence.
+3. The source-semantic provider adds gaps for reachable container-driven annotations.
+4. Exact platform contracts add the known local operation and any incomplete-boundary gaps.
+5. At runtime, the agent records the dispatch expectation and candidate method entry.
+6. A missing candidate entry produces the existing runtime coverage gap.
+
+## Version 2 Failure Modes
+
+- Recognized CDI with unproved deployment state: exclude the unproved candidate path and add a framework-selection gap.
+- Custom scope or stereotype with source-visible meta-annotations: treat it as a bean-defining annotation.
+- Annotation metadata that can invoke container behavior: add a provider-specific gap before the method flow.
+- Exact API call with hidden callbacks or a remote peer: retain the direct operation and add one or more contract gaps.
+- `failOnIncomplete=true`: fail through the current graph completeness gate.

@@ -14,7 +14,21 @@ public record ExternalMethodContract(
         ResultBehavior resultBehavior,
         StateEffect receiverEffect,
         Map<Integer, StateEffect> argumentEffects,
-        Set<String> possibleExceptionTypes) {
+        Set<String> possibleExceptionTypes,
+        Set<String> coverageGaps) {
+    /** Keeps the original complete-contract form. */
+    public ExternalMethodContract(
+            ExternalMethodReference method,
+            OperationKind operationKind,
+            String businessLabel,
+            ResultBehavior resultBehavior,
+            StateEffect receiverEffect,
+            Map<Integer, StateEffect> argumentEffects,
+            Set<String> possibleExceptionTypes) {
+        this(method, operationKind, businessLabel, resultBehavior, receiverEffect,
+                argumentEffects, possibleExceptionTypes, Set.of());
+    }
+
     /** Creates and validates one exact semantic contract. */
     public ExternalMethodContract {
         method = Objects.requireNonNull(method, "method");
@@ -35,6 +49,10 @@ public record ExternalMethodContract(
         var exceptions = new TreeSet<String>();
         possibleExceptionTypes.forEach(type -> exceptions.add(requireText(type, "possibleExceptionType")));
         possibleExceptionTypes = Set.copyOf(exceptions);
+        Objects.requireNonNull(coverageGaps, "coverageGaps");
+        var gaps = new TreeSet<String>();
+        coverageGaps.forEach(gap -> gaps.add(requireText(gap, "coverageGap")));
+        coverageGaps = Set.copyOf(gaps);
         if (operationKind == OperationKind.PREDICATE
                 && resultBehavior != ResultBehavior.BOOLEAN) {
             throw new IllegalArgumentException("predicate contracts must have a Boolean result");
@@ -68,6 +86,12 @@ public record ExternalMethodContract(
             ExternalMethodReference method, String label, ResultBehavior resultBehavior) {
         return new ExternalMethodContract(method, OperationKind.READ, label,
                 resultBehavior, StateEffect.NONE, Map.of(), Set.of());
+    }
+
+    /** Returns this exact contract with explicit incomplete-boundary facts. */
+    public ExternalMethodContract withCoverageGaps(String... gaps) {
+        return new ExternalMethodContract(method, operationKind, businessLabel, resultBehavior,
+                receiverEffect, argumentEffects, possibleExceptionTypes, Set.of(gaps));
     }
 
     /** Contract operation types used by business projection and source analysis. */

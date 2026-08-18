@@ -24,5 +24,5 @@ public interface DynamicDispatchTargetSelector {
     }
 
     /** A selector result. */
-    enum Selection { INCLUDE, EXCLUDE, ABSTAIN }
+    enum Selection { INCLUDE, EXCLUDE, ABSTAIN, UNRESOLVED }
 }

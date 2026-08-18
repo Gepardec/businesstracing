@@ -6,5 +6,7 @@ module at.gepardec.fachtracing.jakartaee {
             with at.gepardec.fachtracing.jakartaee.JakartaEeMethodContractProvider;
     provides at.gepardec.fachtracing.analysis.DynamicDispatchTargetSelector
             with at.gepardec.fachtracing.jakartaee.CdiDispatchTargetSelector;
+    provides at.gepardec.fachtracing.analysis.SourceSemanticProvider
+            with at.gepardec.fachtracing.jakartaee.JakartaEeSourceSemanticProvider;
     exports at.gepardec.fachtracing.jakartaee;
 }

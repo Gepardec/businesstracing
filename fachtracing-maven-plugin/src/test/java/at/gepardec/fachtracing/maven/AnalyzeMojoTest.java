@@ -3,6 +3,7 @@ package at.gepardec.fachtracing.maven;
 import at.gepardec.fachtracing.analysis.ApplicationSourceBoundary;
 import at.gepardec.fachtracing.analysis.ExternalMethodContractProviders;
 import at.gepardec.fachtracing.analysis.DynamicDispatchTargetSelectors;
+import at.gepardec.fachtracing.analysis.SourceSemanticProviders;
 import at.gepardec.fachtracing.business.BusinessGraphJsonExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
@@ -70,6 +71,8 @@ public final class AnalyzeMojoTest {
         assert providers.stream().map(provider -> provider.providerId()).toList()
                 .contains("jakartaee:platform") : providers;
         assert !DynamicDispatchTargetSelectors.load(ProjectGraphGenerator.class.getClassLoader()).isEmpty();
+        assert SourceSemanticProviders.load(ProjectGraphGenerator.class.getClassLoader()).stream()
+                .anyMatch(provider -> provider.providerId().equals("jakartaee:source-semantics"));
         new ProjectGraphGenerator();
     }
 

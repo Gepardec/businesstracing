@@ -7,6 +7,7 @@ module at.gepardec.fachtracing.engine {
 
     uses at.gepardec.fachtracing.analysis.ExternalMethodContractProvider;
     uses at.gepardec.fachtracing.analysis.DynamicDispatchTargetSelector;
+    uses at.gepardec.fachtracing.analysis.SourceSemanticProvider;
 
     exports at.gepardec.fachtracing;
     exports at.gepardec.fachtracing.model;

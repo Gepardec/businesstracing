@@ -130,11 +130,71 @@ repository verification gate.
 1. Task 1
 2. Task 2
 3. Task 3
+4. Task 4
+5. Task 5
+6. Task 6
+
+### Task 4: Add explicit framework and contract incompleteness
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 1, Task 2
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+
+Add unresolved selector results, source-semantic providers, and coverage gaps on exact external contracts.
+
+**Acceptance Criteria:**
+
+- [x] A recognized but unproved framework dispatch creates a visible gap.
+- [x] A source-semantic provider can add a gap to a reachable method.
+- [x] An exact contract can retain its operation and add a visible incomplete-boundary gap.
+
+### Task 5: Expand CDI and Jakarta EE detection
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Task 4
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+
+Support source-visible custom scopes, stereotypes, and priority alternatives. Detect unsupported CDI and container-driven Jakarta EE behavior.
+
+**Acceptance Criteria:**
+
+- [x] CDI tests cover custom scope, stereotype, priority alternative, and unresolved lookup.
+- [x] Container annotation tests cover interceptor, lifecycle, event, timer, transaction, security, and validation families.
+- [x] Platform boundary tests verify explicit callback and remote-peer gaps.
+
+### Task 6: Verify and document the completeness contract
+
+**Status:** In Progress
+**Estimated Effort:** M
+**Dependencies:** Task 5
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+
+Publish the support matrix and run module, repository, external conformance, and pull-request verification.
+
+**Acceptance Criteria:**
+
+- [x] Capability documentation distinguishes proven, runtime-confirmed, and incomplete behavior.
+- [x] `./scripts/verify-pr.sh` passes.
+- [ ] Pull request CI passes after push.
 
 ## Progress Tracking
 
-- Total Tasks: 3
-- Completed: 3
-- In Progress: 0
+- Total Tasks: 6
+- Completed: 5
+- In Progress: 1
 - Blocked: 0
 - Pending: 0

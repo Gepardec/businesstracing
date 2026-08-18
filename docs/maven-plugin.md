@@ -311,10 +311,23 @@ same plugin dependency section:
 </dependency>
 ```
 
-The adapter supports source-visible scoped CDI beans at `@Inject` fields, common Jakarta EE
-service operations, JAX-WS SOAP service setup, and gRPC channel setup. Unsupported CDI features
-and remote SOAP or gRPC method calls remain explicit coverage gaps. Its production code has no
-Jakarta EE or gRPC binary dependency.
+The adapter supports source-visible CDI beans at `@Inject` fields and constructor parameters. It
+identifies built-in scopes, source-visible custom scopes, stereotypes, qualifier binding values,
+and `@Priority` alternatives. XML-selected alternatives, dynamic `Instance<T>` or `Provider<T>`
+lookup, producers, portable extensions, and other unproved injection mechanisms make the graph
+incomplete.
+
+The adapter also reports source-visible container behavior for interceptor bindings, transactions,
+security, validation, CDI events, lifecycle callbacks, decorators, asynchronous EJB methods,
+timers, servlet filters and listeners, JAX-RS providers, and WebSocket endpoints. Exact JPA,
+validation, transaction, JMS, mail, WebSocket, and SOAP contracts keep the known local operation
+but add a gap when callbacks, infrastructure, or a remote peer are not reconstructed.
+
+At runtime, the CDI container still creates and injects each bean or proxy. Fachtracing does not
+call `CDI.current()` or `BeanManager.getReference()`. The agent confirms one static dispatch edge
+when execution enters a proven implementation method. If no proven candidate is entered, the
+execution has an unresolved-dispatch runtime gap. The adapter production code has no Jakarta EE
+or gRPC binary dependency.
 
 ## Business-only artifacts
 

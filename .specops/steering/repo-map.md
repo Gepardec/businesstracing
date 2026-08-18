@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-18T10:30:56Z"
-_sourceHash: "f336de5815557f8132437e962d3874ec7284ce574d45f939e1e5bb33567948f6"
+_generatedAt: "2026-08-18T11:03:07Z"
+_sourceHash: "9e5cabc5d3c70841599d59988f849ed43b0317994f85334be26f9c6fb99c16f0"
 ---
 
 ## Project Structure Map
@@ -86,6 +86,10 @@ fachtracing/
   - immutable source-unavailable method semantics
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContractProvider.java`
   - trusted exact contract provider
+- `src/main/java/at/gepardec/fachtracing/analysis/SourceSemanticProvider.java`
+  - framework-managed source semantic gap provider
+- `src/main/java/at/gepardec/fachtracing/analysis/SourceSemanticProviders.java`
+  - deterministic service loader for source semantic providers
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContractRegistry.java`
   - deterministic exact resolution and conflict detection
 - `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
@@ -225,6 +229,18 @@ fachtracing/
 - `src/main/java/at/gepardec/fachtracing/spring/SpringMethodContractProvider.java`
   - optional exact application-neutral Spring method contracts
 - `src/test/java/at/gepardec/fachtracing/spring/SpringMethodContractProviderTest.java`
+- `src/main/java/module-info.java`
+- `pom.xml`
+
+#### fachtracing-jakartaee/ (11 files)
+
+- `src/main/java/at/gepardec/fachtracing/jakartaee/CdiDispatchTargetSelector.java`
+  - source-visible CDI candidate selection and unresolved proof states
+- `src/main/java/at/gepardec/fachtracing/jakartaee/JakartaEeMethodContractProvider.java`
+  - exact Jakarta EE local operations and incomplete-boundary facts
+- `src/main/java/at/gepardec/fachtracing/jakartaee/JakartaEeSourceSemanticProvider.java`
+  - container-driven annotation and meta-annotation gaps
+- `src/test/java/at/gepardec/fachtracing/jakartaee/JakartaEeMethodContractProviderTest.java`
 - `src/main/java/module-info.java`
 - `pom.xml`
 
