@@ -1,5 +1,21 @@
 [
   {
+    "id": "cdi-dispatch-selection-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-18T10:33:36Z"
+  },
+  {
+    "id": "jakarta-ee-cdi-soap-semantics",
+    "type": "feature",
+    "status": "completed",
+    "version": 2,
+    "author": "lucostus",
+    "updated": "2026-08-18T11:08:32Z"
+  },
+  {
     "id": "self-explainable-runtime-dogfood",
     "type": "feature",
     "status": "completed",

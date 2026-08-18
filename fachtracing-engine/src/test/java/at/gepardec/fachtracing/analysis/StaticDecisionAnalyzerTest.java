@@ -51,6 +51,7 @@ public final class StaticDecisionAnalyzerTest {
         usesProvenValidationRolesWithoutGlobalReceiverRemoval();
         followsDirectCallsAcrossDomains();
         representsDynamicDispatchWithoutGuessing();
+        appliesFrameworkDispatchTargetSelection();
         explainsReceiverCompatibleDispatchCandidates();
         resolvesImplementationsFromSourcesOutsideTheGraphRootScope();
         resolvesImplementationsAcrossProjectAwareSourceRoles();
@@ -731,6 +732,27 @@ public final class StaticDecisionAnalyzerTest {
                 decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
                         && decision.reason() == AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION
                         && decision.subject().endsWith("RemoteScopedRule"))
+                : result.manifest().analysisDecisions();
+    }
+
+    private static void appliesFrameworkDispatchTargetSelection() {
+        Path source = FIXTURES.resolve("strategy/StrategyDecisionService.java");
+        var request = AnalysisRequest.of(List.of(source), CLASSPATH)
+                .withDynamicDispatchTargetSelectors(List.of(target ->
+                        target.candidate().getSimpleName().contentEquals("RegionalRule")
+                                ? DynamicDispatchTargetSelector.Selection.EXCLUDE
+                                : DynamicDispatchTargetSelector.Selection.ABSTAIN));
+        var result = new StaticDecisionAnalyzer().analyzeAll(request).stream()
+                .filter(candidate -> candidate.graph().decisionLabel().equals("delivery eligibility"))
+                .findFirst().orElseThrow();
+        long alternatives = result.graph().edges().stream()
+                .filter(edge -> edge.outcome().equals("selected rule")).count();
+        assert alternatives == 1 : result.graph().edges();
+        assert result.manifest().analysisDecisions().stream().anyMatch(decision ->
+                decision.action() == AnalysisManifest.AnalysisAction.EXCLUDED
+                        && decision.reason()
+                        == AnalysisManifest.AnalysisReason.FRAMEWORK_EXCLUDED_IMPLEMENTATION
+                        && decision.subject().endsWith("RegionalRule"))
                 : result.manifest().analysisDecisions();
     }
 

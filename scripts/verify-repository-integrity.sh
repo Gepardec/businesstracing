@@ -33,6 +33,7 @@ require_tracked scripts/verify-release-gates.sh
 require_tracked scripts/verify-mega-backend.sh
 require_tracked scripts/verify-keycloak.sh
 require_tracked scripts/verify-spring-petclinic.sh
+require_tracked scripts/verify-jakartaee-rest.sh
 require_tracked scripts/verify-postgres.sh
 require_tracked .github/workflows/verify.yml
 require_tracked conformance/mega-backend/README.md
@@ -52,6 +53,9 @@ require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtraci
 require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicConformanceTest.java
 require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java
 require_tracked conformance/spring-petclinic/src/test/resources/oracles/README.md
+require_tracked conformance/jakartaee-rest/README.md
+require_tracked conformance/jakartaee-rest/selection.md
+require_tracked conformance/jakartaee-rest/src/test/java/at/gepardec/fachtracing/conformance/JakartaEeRestConformanceTest.java
 require_tracked docs/self-tracing.md
 require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisSourceSelector.java
 require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphAudit.java
@@ -82,7 +86,7 @@ then
   fail "the self-tracing guide must not embed a fixed Mermaid flowchart"
 fi
 
-PRODUCTION_ROOTS="fachtracing-api/src/main fachtracing-engine/src/main fachtracing-agent/src/main fachtracing-maven-plugin/src/main fachtracing-spring/src/main fachtracing-storage-jdbc/src/main"
+PRODUCTION_ROOTS="fachtracing-api/src/main fachtracing-engine/src/main fachtracing-agent/src/main fachtracing-maven-plugin/src/main fachtracing-spring/src/main fachtracing-jakartaee/src/main fachtracing-storage-jdbc/src/main"
 if grep -E -i -r -q 'keycloak|usersresource|org\.keycloak|com\.gepardec\.mega|mega[-_. ]backend' $PRODUCTION_ROOTS
 then
   fail "production code must not contain reference-application identity"

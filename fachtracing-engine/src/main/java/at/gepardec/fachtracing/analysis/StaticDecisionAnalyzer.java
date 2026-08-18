@@ -126,10 +126,37 @@ public final class StaticDecisionAnalyzer {
             OpaqueLibraryBoundary opaqueLibraries,
             List<ExternalMethodContractProvider> externalMethodContractProviders,
             List<BusinessEntryPoint> businessEntryPoints) {
+        return analyzeAll(boundary, opaqueLibraries, externalMethodContractProviders,
+                List.of(), businessEntryPoints);
+    }
+
+    /** Analyzes project sources with framework dispatch target selection. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries,
+            List<ExternalMethodContractProvider> externalMethodContractProviders,
+            List<DynamicDispatchTargetSelector> dispatchTargetSelectors,
+            List<BusinessEntryPoint> businessEntryPoints) {
+        return analyzeAll(boundary, opaqueLibraries, externalMethodContractProviders,
+                dispatchTargetSelectors, List.of(), businessEntryPoints);
+    }
+
+    /** Analyzes project sources with framework dispatch and source semantics. */
+    public List<AnalysisManifest.AnalysisResult> analyzeAll(
+            ApplicationSourceBoundary boundary,
+            OpaqueLibraryBoundary opaqueLibraries,
+            List<ExternalMethodContractProvider> externalMethodContractProviders,
+            List<DynamicDispatchTargetSelector> dispatchTargetSelectors,
+            List<SourceSemanticProvider> sourceSemanticProviders,
+            List<BusinessEntryPoint> businessEntryPoints) {
         Objects.requireNonNull(boundary, "boundary");
         Objects.requireNonNull(opaqueLibraries, "opaqueLibraries");
         externalMethodContractProviders = List.copyOf(Objects.requireNonNull(
                 externalMethodContractProviders, "externalMethodContractProviders"));
+        dispatchTargetSelectors = List.copyOf(Objects.requireNonNull(
+                dispatchTargetSelectors, "dispatchTargetSelectors"));
+        sourceSemanticProviders = List.copyOf(Objects.requireNonNull(
+                sourceSemanticProviders, "sourceSemanticProviders"));
         businessEntryPoints = List.copyOf(Objects.requireNonNull(
                 businessEntryPoints, "businessEntryPoints"));
         Map<String, List<BusinessEntryPoint>> entryPointsByProject =
@@ -142,7 +169,8 @@ public final class StaticDecisionAnalyzer {
         var results = new ArrayList<AnalysisManifest.AnalysisResult>();
         for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
             Optional<AnalysisSourceSelector.Selection> selected = AnalysisSourceSelector.select(
-                    boundary, project, externalMethodContractProviders,
+                    boundary, project, externalMethodContractProviders, dispatchTargetSelectors,
+                    sourceSemanticProviders,
                     entryPointsByProject.getOrDefault(project.projectId(), List.of()));
             if (selected.isEmpty()) continue;
             AnalysisSourceSelector.Selection selection = selected.orElseThrow();
@@ -418,7 +446,8 @@ public final class StaticDecisionAnalyzer {
                 var diagnostics = new ArrayList<AnalysisManifest.AnalysisDiagnostic>();
                 var extractor = new Extractor(
                         trees, task.getTypes(), task.getElements(), index, builder, diagnostics,
-                        request.compilationClasspath(), opaqueLibraries, externalMethodContracts);
+                        request.compilationClasspath(), opaqueLibraries, externalMethodContracts,
+                        request.dynamicDispatchTargetSelectors(), request.sourceSemanticProviders());
                 String entry = extractor.addEntry(root);
                 extractor.extract(root, entry, true, new HashSet<>());
                 var built = builder.build(entry, sourceFingerprints, diagnostics);
@@ -493,6 +522,8 @@ public final class StaticDecisionAnalyzer {
         private final BinaryTypeOriginResolver binaryTypeOrigins;
         private final OpaqueLibraryBoundary opaqueLibraries;
         private final ExternalMethodContractRegistry externalMethodContracts;
+        private final List<DynamicDispatchTargetSelector> dynamicDispatchTargetSelectors;
+        private final List<SourceSemanticProvider> sourceSemanticProviders;
         private final SourceUnavailableCallClassifier sourceUnavailableCalls =
                 new SourceUnavailableCallClassifier();
         private final List<String> pendingFailureNodes = new ArrayList<>();
@@ -509,7 +540,9 @@ public final class StaticDecisionAnalyzer {
                 List<AnalysisManifest.AnalysisDiagnostic> diagnostics,
                 List<Path> binaryClasspath,
                 OpaqueLibraryBoundary opaqueLibraries,
-                ExternalMethodContractRegistry externalMethodContracts) {
+                ExternalMethodContractRegistry externalMethodContracts,
+                List<DynamicDispatchTargetSelector> dynamicDispatchTargetSelectors,
+                List<SourceSemanticProvider> sourceSemanticProviders) {
             this.trees = trees;
             this.types = types;
             this.elements = elements;
@@ -520,6 +553,8 @@ public final class StaticDecisionAnalyzer {
             this.binaryTypeOrigins = new BinaryTypeOriginResolver(binaryClasspath);
             this.opaqueLibraries = opaqueLibraries;
             this.externalMethodContracts = externalMethodContracts;
+            this.dynamicDispatchTargetSelectors = List.copyOf(dynamicDispatchTargetSelectors);
+            this.sourceSemanticProviders = List.copyOf(sourceSemanticProviders);
         }
 
         private String addEntry(MethodLocation method) {
@@ -1194,6 +1229,11 @@ public final class StaticDecisionAnalyzer {
                             mapping(location, tree), List.of(), ""));
             var flow = new FlowScanner(location, root, activeMethods, dependencies, slice,
                     unknownResultEffects, predecessor);
+            if (methodElement instanceof ExecutableElement executable) {
+                sourceSemanticProviders.stream()
+                        .flatMap(provider -> provider.coverageGaps(executable).stream())
+                        .distinct().sorted().forEach(gap -> flow.addCoverageGap(location.method(), gap));
+            }
             flow.scan(new TreePath(location.path(), location.method().getBody()), null);
             if (methodElement instanceof ExecutableElement executable) activeMethods.remove(executable);
             return new Extraction(flow.lastNode(), flow.exits());
@@ -1863,6 +1903,7 @@ public final class StaticDecisionAnalyzer {
                                 facts.businessLabel(), node, null);
                         advance(action);
                     }
+                    facts.coverageGaps().forEach(gap -> addCoverageGap(node, gap));
                     return null;
                 }
                 if (isSupportedLibraryOperation(executable)) return super.visitMethodInvocation(node, unused);
@@ -2240,6 +2281,7 @@ public final class StaticDecisionAnalyzer {
                 advance(dispatch);
                 var resultTails = new ArrayList<Tail>();
                 int candidate = 0;
+                boolean unresolvedFrameworkSelection = false;
                 for (TypeElement implementation : index.types()) {
                     if (!implementation.getKind().isClass()
                             || !isContractSubtype(implementation, owner)) continue;
@@ -2253,6 +2295,24 @@ public final class StaticDecisionAnalyzer {
                         auditDispatchCandidate(node, implementation,
                                 AnalysisManifest.AnalysisAction.EXCLUDED,
                                 AnalysisManifest.AnalysisReason.INCOMPATIBLE_IMPLEMENTATION, List.of());
+                        continue;
+                    }
+                    DispatchSelection selection = selectDispatchCandidate(node, owner, implementation);
+                    if (selection == DispatchSelection.EXCLUDE) {
+                        auditDispatchCandidate(node, implementation,
+                                AnalysisManifest.AnalysisAction.EXCLUDED,
+                                AnalysisManifest.AnalysisReason.FRAMEWORK_EXCLUDED_IMPLEMENTATION, List.of());
+                        continue;
+                    }
+                    if (selection == DispatchSelection.CONFLICT) {
+                        addCoverageGap(node, "framework dispatch selection is conflicting");
+                        continue;
+                    }
+                    if (selection == DispatchSelection.UNRESOLVED) {
+                        if (!unresolvedFrameworkSelection) {
+                            addCoverageGap(node, "framework dispatch selection cannot be proved");
+                            unresolvedFrameworkSelection = true;
+                        }
                         continue;
                     }
                     String alternative = builder.addNode(
@@ -2276,8 +2336,46 @@ public final class StaticDecisionAnalyzer {
                     Extraction linked = extract(implementationMethod, alternative, false, activeMethods);
                     resultTails.addAll(linked.exits());
                 }
-                if (candidate == 0) addCoverageGap(node, "decision-rule implementations are unavailable");
-                else frontier = List.copyOf(resultTails);
+                if (candidate == 0) {
+                    if (!unresolvedFrameworkSelection) {
+                        addCoverageGap(node, "decision-rule implementations are unavailable");
+                    }
+                } else {
+                    frontier = List.copyOf(resultTails);
+                }
+            }
+
+            private DispatchSelection selectDispatchCandidate(
+                    MethodInvocationTree invocation, TypeElement contract, TypeElement candidate) {
+                if (dynamicDispatchTargetSelectors.isEmpty()) return DispatchSelection.INCLUDE;
+                List<Element> receiverOrigins = dispatchReceiverOrigins(invocation);
+                if (receiverOrigins.isEmpty()) return DispatchSelection.INCLUDE;
+                boolean included = false;
+                boolean excluded = false;
+                boolean unresolved = false;
+                var target = new DynamicDispatchTargetSelector.DispatchTarget(
+                        receiverOrigins, contract, candidate);
+                for (DynamicDispatchTargetSelector selector : dynamicDispatchTargetSelectors) {
+                    DynamicDispatchTargetSelector.Selection choice = Objects.requireNonNull(
+                            selector.select(target), "dispatch selector result");
+                    included |= choice == DynamicDispatchTargetSelector.Selection.INCLUDE;
+                    excluded |= choice == DynamicDispatchTargetSelector.Selection.EXCLUDE;
+                    unresolved |= choice == DynamicDispatchTargetSelector.Selection.UNRESOLVED;
+                }
+                if (unresolved) return DispatchSelection.UNRESOLVED;
+                if (included && excluded) return DispatchSelection.CONFLICT;
+                return excluded ? DispatchSelection.EXCLUDE : DispatchSelection.INCLUDE;
+            }
+
+            private List<Element> dispatchReceiverOrigins(MethodInvocationTree invocation) {
+                if (!(invocation.getMethodSelect() instanceof MemberSelectTree member)) return List.of();
+                TreePath path = TreePath.getPath(location.unit(), member.getExpression());
+                Element receiver = path == null ? null : trees.getElement(path);
+                if (receiver == null) return List.of();
+                var origins = new ArrayList<Element>();
+                origins.add(receiver);
+                origins.addAll(index.constructorParametersByField().getOrDefault(receiver, List.of()));
+                return List.copyOf(origins);
             }
 
             private void auditDispatchCandidate(
@@ -2289,6 +2387,8 @@ public final class StaticDecisionAnalyzer {
                 builder.addAnalysisDecision(action, reason, mapping(location, invocation), nodeIds,
                         implementation.getQualifiedName().toString());
             }
+
+            private enum DispatchSelection { INCLUDE, EXCLUDE, CONFLICT, UNRESOLVED }
 
             private ExecutableElement reflectedContract(
                     MethodInvocationTree invocation, ExecutableElement called) {
@@ -3641,7 +3741,8 @@ public final class StaticDecisionAnalyzer {
     private record SourceIndex(
             Map<ExecutableElement, MethodLocation> rootMethods,
             Map<ExecutableElement, MethodLocation> methods,
-            List<TypeElement> types) {
+            List<TypeElement> types,
+            Map<Element, List<Element>> constructorParametersByField) {
         private static SourceIndex create(
                 List<CompilationUnitTree> units,
                 Trees trees,
@@ -3649,6 +3750,7 @@ public final class StaticDecisionAnalyzer {
             var rootMethods = new LinkedHashMap<ExecutableElement, MethodLocation>();
             var methods = new LinkedHashMap<ExecutableElement, MethodLocation>();
             var types = new ArrayList<TypeElement>();
+            var constructorParametersByField = new LinkedHashMap<Element, List<Element>>();
             Set<Path> rootSources = rootSourceFiles.stream()
                     .map(path -> path.toAbsolutePath().normalize())
                     .collect(Collectors.toUnmodifiableSet());
@@ -3673,9 +3775,26 @@ public final class StaticDecisionAnalyzer {
                         if (element instanceof TypeElement type) types.add(type);
                         return super.visitClass(node, unused);
                     }
+
+                    @Override public Void visitAssignment(AssignmentTree node, Void unused) {
+                        TreePath assignment = getCurrentPath();
+                        Element field = trees.getElement(new TreePath(assignment, node.getVariable()));
+                        Element parameter = trees.getElement(new TreePath(assignment, node.getExpression()));
+                        if (field != null && field.getKind() == ElementKind.FIELD
+                                && parameter != null && parameter.getKind() == ElementKind.PARAMETER
+                                && parameter.getEnclosingElement().getKind() == ElementKind.CONSTRUCTOR) {
+                            constructorParametersByField.computeIfAbsent(
+                                    field, ignored -> new ArrayList<>()).add(parameter);
+                        }
+                        return super.visitAssignment(node, unused);
+                    }
                 }.scan(unit, null);
             }
-            return new SourceIndex(Map.copyOf(rootMethods), Map.copyOf(methods), List.copyOf(types));
+            Map<Element, List<Element>> immutableOrigins = constructorParametersByField.entrySet().stream()
+                    .collect(Collectors.toUnmodifiableMap(
+                            Map.Entry::getKey, entry -> List.copyOf(entry.getValue())));
+            return new SourceIndex(Map.copyOf(rootMethods), Map.copyOf(methods), List.copyOf(types),
+                    immutableOrigins);
         }
     }
 

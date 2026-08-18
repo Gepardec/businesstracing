@@ -24,6 +24,10 @@ for contract in $contracts; do
       file="fachtracing-engine/src/test/java/at/gepardec/fachtracing/model/ApiModelTest.java" ;;
     BusinessGraphProjectionTest)
       file="fachtracing-engine/src/test/java/at/gepardec/fachtracing/business/BusinessGraphProjectionTest.java" ;;
+    JakartaEeMethodContractProviderTest)
+      file="fachtracing-jakartaee/src/test/java/at/gepardec/fachtracing/jakartaee/JakartaEeMethodContractProviderTest.java" ;;
+    JakartaEeRestConformanceTest)
+      file="conformance/jakartaee-rest/src/test/java/at/gepardec/fachtracing/conformance/JakartaEeRestConformanceTest.java" ;;
     *)
       echo "Unknown capability contract class: $class" >&2
       exit 1 ;;
