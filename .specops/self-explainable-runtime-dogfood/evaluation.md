@@ -20,6 +20,6 @@
 
 **Evaluated at:** 2026-08-18T08:40:29Z
 
-The implementation satisfies all static generation, explainability, determinism, input-sensitivity, runtime, and no-fixed-diagram criteria. Focused contracts and the complete local PR gate passed. Mega, PetClinic, and pinned Keycloak conformance passed. PostgreSQL needs the pull request service job because no local PostgreSQL service is available.
+The implementation satisfies all static generation, explainability, determinism, input-sensitivity, runtime, and no-fixed-diagram criteria. Focused contracts and the complete local PR gate passed. Mega, PetClinic, and pinned Keycloak conformance passed. Pull request 30 passed the core, Mega, PetClinic, and PostgreSQL jobs.
 
-**Verdict:** CONDITIONAL PASS — publish and CI PostgreSQL proof remain
+**Verdict:** PASS

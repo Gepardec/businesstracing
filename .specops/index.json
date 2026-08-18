@@ -2,10 +2,10 @@
   {
     "id": "self-explainable-runtime-dogfood",
     "type": "feature",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "codex",
-    "updated": "2026-08-18T08:18:41Z"
+    "updated": "2026-08-18T08:45:28Z"
   },
   {
     "id": "generic-call-specific-business-flow",
