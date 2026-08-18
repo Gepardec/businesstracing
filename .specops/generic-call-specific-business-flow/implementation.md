@@ -155,3 +155,11 @@ proves that map, filter, model, stream, and negated-empty phrases become plain b
 The pinned static Keycloak result has 128 exact nodes, 45 business nodes, zero exact gaps, and zero
 visible gaps. It uses no runtime observations. The non-Java self-review finds no Java term in the
 rendered graph. `realm` and `IdP` remain domain terms, not Java terms.
+
+### Session 10 — Task 6 completed (2026-08-18)
+
+The final local pull-request gate passes with 0.212 percent p95 overhead, 5,000 completed calls, and
+no errors, mismatches, drops, or contamination. Pinned Mega, Spring PetClinic, and Keycloak
+conformance pass. Hosted `pr-gate`, `mega`, `petclinic`, and `postgres` checks pass for commit
+`a82f849`. Task 6 is complete. The specification stays in implementation status until the user
+reviews the generated graph as a person who does not know Java.

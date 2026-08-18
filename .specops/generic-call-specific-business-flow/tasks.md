@@ -240,7 +240,7 @@
 
 ### Task 6: Prove a clear static method overview
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 5
 **Priority:** High
@@ -260,12 +260,12 @@
 
 **Acceptance Criteria:**
 
-- [ ] Static Keycloak output is generated without a runtime call or runtime execution projector.
-- [ ] Synthetic projects prove atomic caller rules, actions, collaborators, and an opaque-value gap.
-- [ ] Synthetic graphs prove plain business language without reference-project labels.
-- [ ] The Keycloak static graph has zero coverage gaps and no prohibited technical term.
-- [ ] Production code contains no Keycloak or Mega fact.
-- [ ] Pull-request CI passes.
+- [x] Static Keycloak output is generated without a runtime call or runtime execution projector.
+- [x] Synthetic projects prove atomic caller rules, actions, collaborators, and an opaque-value gap.
+- [x] Synthetic graphs prove plain business language without reference-project labels.
+- [x] The Keycloak static graph has zero coverage gaps and no prohibited technical term.
+- [x] Production code contains no Keycloak or Mega fact.
+- [x] Pull-request CI passes.
 
 **Files to Modify:**
 
@@ -281,10 +281,10 @@
 
 **Tests Required:**
 
-- [ ] Focused caller-boundary analyzer and language contracts.
-- [ ] Pinned Keycloak static conformance gate.
-- [ ] Mega and PetClinic external gates.
-- [ ] Full pull-request verification and hosted CI.
+- [x] Focused caller-boundary analyzer and language contracts.
+- [x] Pinned Keycloak static conformance gate.
+- [x] Mega and PetClinic external gates.
+- [x] Full pull-request verification and hosted CI.
 
 ## Implementation Order
 
@@ -298,7 +298,7 @@
 ## Progress Tracking
 
 - Total Tasks: 6
-- Completed: 5
-- In Progress: 1
+- Completed: 6
+- In Progress: 0
 - Blocked: 0
 - Pending: 0
