@@ -83,12 +83,20 @@ public final class JakartaEeMethodContractProviderTest {
     }
 
     private static void exposesUnprovedCdiResolution() {
-        for (String label : List.of("apply XML alternative CDI rule", "apply dynamic CDI rule")) {
+        for (String label : List.of(
+                "apply XML alternative CDI rule",
+                "apply dynamic CDI rule",
+                "apply dynamic CDI provider rule")) {
             var result = analyzeCdi(label);
             assert result.graph().coverageGaps().stream().anyMatch(gap ->
                     gap.description().contains("framework dispatch selection cannot be proved"))
                     : result.graph().coverageGaps();
         }
+        assert selectedOwners("apply XML alternative CDI rule").isEmpty();
+        List<String> dynamicOwners = selectedOwners("apply dynamic CDI rule");
+        assert dynamicOwners.contains("fixtures.jakartaee.EuropeanRule") : dynamicOwners;
+        assert dynamicOwners.contains("fixtures.jakartaee.AmericanRule") : dynamicOwners;
+        assert selectedOwners("apply dynamic CDI provider rule").equals(dynamicOwners);
     }
 
     private static void exposesContainerAndContractGaps() {

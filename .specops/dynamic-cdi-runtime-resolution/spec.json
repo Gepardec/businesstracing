@@ -1,0 +1,37 @@
+{
+  "id": "dynamic-cdi-runtime-resolution",
+  "type": "feature",
+  "status": "in-review",
+  "version": 1,
+  "created": "2026-08-18T12:00:56Z",
+  "updated": "2026-08-18T12:00:56Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {"name": "lucostus"},
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "jakarta-ee-cdi-soap-semantics",
+      "reason": "The feature extends its CDI selector and passive runtime contract.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": ["cdi-dispatch-selection-correctness"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"criteriaTestability": 10, "criteriaCompleteness": 10, "designCoherence": 10, "taskCoverage": 10},
+      "evaluatedAt": "2026-08-18T12:11:14Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {"requirementsCorrectness": 10, "designCorrectness": 10, "implementationQuality": 9, "testQuality": 10, "regressionSafety": 10},
+      "evaluatedAt": "2026-08-18T12:11:14Z"
+    }
+  }
+}

@@ -23,6 +23,13 @@ public interface DynamicDispatchTargetSelector {
         }
     }
 
-    /** A selector result. */
-    enum Selection { INCLUDE, EXCLUDE, ABSTAIN, UNRESOLVED }
+    /** One framework decision for a source-visible candidate. */
+    enum Selection {
+        INCLUDE,
+        EXCLUDE,
+        ABSTAIN,
+        UNRESOLVED,
+        /** Keep the graph incomplete, but retain this candidate for runtime entry confirmation. */
+        RUNTIME_OBSERVABLE
+    }
 }

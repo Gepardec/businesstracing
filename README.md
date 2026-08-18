@@ -175,6 +175,15 @@ Run the Jakarta EE CDI conformance command (optionally set `JAKARTAEE_REST_SAMPL
 It analyzes an unchanged, pinned Jakarta EE REST application and proves that its CDI-injected
 repository resolves to the scoped JPA implementation.
 
+Run dynamic CDI runtime conformance:
+
+```sh
+./scripts/verify-dynamic-cdi.sh
+```
+
+It starts Weld SE, selects two qualified beans through `Instance.select()`, and proves that the
+agent records only the implementation that CDI invokes for each call.
+
 Run the optional long load comparison (60 total disabled baseline seconds paired across ten minutes
 enabled at 1,000 requests/second):
 

@@ -9,6 +9,7 @@ import jakarta.enterprise.inject.Stereotype;
 import jakarta.enterprise.util.Nonbinding;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.inject.Qualifier;
 
 import java.lang.annotation.Retention;
@@ -81,6 +82,13 @@ final class DynamicLookupCdiWorkflow {
     @Inject Instance<Rule> rules;
 
     @FachTracing("apply dynamic CDI rule")
+    boolean apply(int value) { return rules.get().accepts(value); }
+}
+
+final class DynamicProviderCdiWorkflow {
+    @Inject Provider<Rule> rules;
+
+    @FachTracing("apply dynamic CDI provider rule")
     boolean apply(int value) { return rules.get().accepts(value); }
 }
 

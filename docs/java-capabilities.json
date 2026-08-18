@@ -29,6 +29,7 @@
     {"id":"generic-polymorphic-dispatch","status":"supported","contract":"StaticDecisionAnalyzerTest.representsDynamicDispatchWithoutGuessing"},
     {"id":"cdi-injection-dispatch","status":"supported","contract":"JakartaEeRestConformanceTest"},
     {"id":"cdi-unproved-resolution","status":"explicit-gap","contract":"JakartaEeMethodContractProviderTest"},
+    {"id":"cdi-dynamic-runtime-resolution","status":"supported","contract":"DynamicCdiRuntimeConformance.runContainer"},
     {"id":"jakarta-container-semantics","status":"explicit-gap","contract":"JakartaEeMethodContractProviderTest"},
     {"id":"jakarta-incomplete-exact-contract","status":"explicit-gap","contract":"JakartaEeMethodContractProviderTest"},
     {"id":"jakarta-ee-soap-grpc-contracts","status":"supported","contract":"JakartaEeMethodContractProviderTest"},

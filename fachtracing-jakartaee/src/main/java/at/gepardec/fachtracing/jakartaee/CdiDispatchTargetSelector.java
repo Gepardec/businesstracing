@@ -51,7 +51,7 @@ public final class CdiDispatchTargetSelector implements DynamicDispatchTargetSel
     @Override
     public Selection select(DispatchTarget target) {
         if (target.receiverOrigins().stream().anyMatch(CdiDispatchTargetSelector::isDynamicLookup)) {
-            return Selection.UNRESOLVED;
+            return Selection.RUNTIME_OBSERVABLE;
         }
         boolean frameworkOwned = target.receiverOrigins().stream()
                 .anyMatch(CdiDispatchTargetSelector::isFrameworkInjectionPoint);

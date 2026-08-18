@@ -119,6 +119,7 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 
 - `cdi-injection-dispatch`: The optional Jakarta EE adapter selects source-visible CDI beans at `@Inject` fields and constructor parameters. It identifies built-in and custom scopes, stereotypes, qualifier binding values, and `@Priority` alternatives. Unproved CDI selection creates a gap.
 - `cdi-unproved-resolution`: XML-selected alternatives, dynamic lookup, deployment metadata, producers, and portable extensions create an explicit gap when the source-visible bean set is not a complete proof.
+- `cdi-dynamic-runtime-resolution`: Dynamic `Instance<T>` and `Provider<T>` lookup retains source-compatible concrete candidates. The real container selects the contextual reference, and instrumented implementation entry confirms only the invoked edge. Real Weld SE conformance covers qualifier-driven `Instance.select()` through normal-scope proxies.
 - `jakarta-container-semantics-gap`: The adapter reports reachable container-driven annotations and meta-annotations. These include interceptors, transactions, security, validation, events, lifecycle callbacks, decorators, asynchronous EJB methods, timers, providers, listeners, and endpoints.
 - `jakarta-container-semantics`: The executable adapter contract verifies the container-driven annotation gaps.
 - `jakarta-incomplete-exact-contract`: Exact JPA, Bean Validation, JTA, JMS, Mail, WebSocket, and SOAP contracts retain the known local operation and add incomplete-boundary facts.
