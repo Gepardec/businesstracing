@@ -17,6 +17,8 @@ This command needs no plugin block. It writes these files for each decision:
 - `<decision>-business.json`
 - `<decision>-structure.mmd`
 - `<decision>-structure.puml`
+- `<decision>-analysis-audit.mmd`
+- `<decision>-projection-audit.mmd`
 - `fachtracing-business-graph-v1.schema.json`
 - `index.md`
 
@@ -54,6 +56,18 @@ or ambiguous.
 
 Configured roots and `@FachTracing` roots are additive. If both select the same method, the plugin
 creates one graph and uses the configured label.
+
+The repository uses this configuration through its `self-tracing` profile. It selects the
+production node-inclusion and source-selection policies without adding `@FachTracing` annotations:
+
+```sh
+mvn -Pself-tracing compile \
+  at.gepardec.fachtracing:fachtracing-maven-plugin:0.1.0-rc.1:analyze-reactor
+```
+
+The command writes the normal static and activation artifacts. It also writes `*-analysis-audit.mmd`
+and `*-projection-audit.mmd`. These developer diagrams come from recorded decisions. They are not
+fixed overview diagrams.
 
 ## Lifecycle analysis
 

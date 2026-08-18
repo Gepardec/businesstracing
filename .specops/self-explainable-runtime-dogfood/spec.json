@@ -1,0 +1,29 @@
+{
+  "id": "self-explainable-runtime-dogfood",
+  "type": "feature",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-18T08:18:41Z",
+  "updated": "2026-08-18T08:18:41Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "codex" },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": ["configured-endpoint-business-tracing"],
+  "relatedSpecs": [
+    "generic-business-graph-projection",
+    "explainable-relevance-and-polymorphic-dispatch"
+  ],
+  "metrics": {
+    "specArtifactTokensEstimate": 3000,
+    "filesChanged": 0,
+    "linesAdded": 0,
+    "linesRemoved": 0,
+    "tasksCompleted": 0,
+    "acceptanceCriteriaVerified": 0,
+    "specDurationMinutes": 0
+  }
+}

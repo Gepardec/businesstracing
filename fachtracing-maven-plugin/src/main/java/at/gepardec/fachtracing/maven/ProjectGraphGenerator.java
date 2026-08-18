@@ -17,6 +17,7 @@ import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
 import at.gepardec.fachtracing.business.BusinessPlantUmlRenderer;
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
 import at.gepardec.fachtracing.developer.DeveloperGraphJsonSchema;
+import at.gepardec.fachtracing.developer.DecisionAuditMermaidRenderer;
 import at.gepardec.fachtracing.mermaid.MermaidRenderer;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.plantuml.PlantUmlRenderer;
@@ -45,6 +46,7 @@ final class ProjectGraphGenerator {
     private final List<ExternalMethodContractProvider> externalMethodContractProviders;
     private final DeveloperGraphExporter developerJson = new DeveloperGraphExporter();
     private final DeveloperGraphJsonSchema developerSchema = new DeveloperGraphJsonSchema();
+    private final DecisionAuditMermaidRenderer decisionAuditMermaid = new DecisionAuditMermaidRenderer();
     private final MermaidRenderer mermaid = new MermaidRenderer();
     private final PlantUmlRenderer plantUml = new PlantUmlRenderer();
     private final BusinessGraphProjector businessProjector = new BusinessGraphProjector();
@@ -226,13 +228,16 @@ final class ProjectGraphGenerator {
             }
             String base = slug(graph.decisionLabel());
             if (slugCounts.get(base) > 1) base += "-" + graph.graphId().substring(0, 8);
-            var businessGraph = businessProjector.project(analysis);
+            var businessAudit = businessProjector.projectWithAudit(analysis);
+            var businessGraph = businessAudit.graph();
             String businessMermaidName = base + "-business.mmd";
             String businessPlantUmlName = base + "-business.puml";
             String businessJsonName = base + "-business.json";
             String mermaidName = base + "-structure.mmd";
             String plantUmlName = base + "-structure.puml";
             String developerJsonName = base + "-developer.json";
+            String analysisAuditName = base + "-analysis-audit.mmd";
+            String projectionAuditName = base + "-projection-audit.mmd";
             Files.writeString(outputDirectory.resolve(businessMermaidName),
                     businessMermaid.render(businessGraph), charset);
             Files.writeString(outputDirectory.resolve(businessPlantUmlName),
@@ -241,6 +246,10 @@ final class ProjectGraphGenerator {
                     businessJson.export(businessGraph), StandardCharsets.UTF_8);
             Files.writeString(outputDirectory.resolve(mermaidName), mermaid.structure(graph), charset);
             Files.writeString(outputDirectory.resolve(plantUmlName), plantUml.structure(graph), charset);
+            Files.writeString(outputDirectory.resolve(analysisAuditName),
+                    decisionAuditMermaid.analysis(analysis), charset);
+            Files.writeString(outputDirectory.resolve(projectionAuditName),
+                    decisionAuditMermaid.projection(businessAudit), charset);
             index.append("- **").append(markdown(graph.decisionLabel())).append("** — ")
                     .append(graph.completeness()).append(" — ")
                     .append("[Business Mermaid](").append(businessMermaidName).append(") · ")
@@ -248,7 +257,9 @@ final class ProjectGraphGenerator {
                     .append("[Business JSON](").append(businessJsonName).append(")\n")
                     .append("  - Technical developer artifacts: ")
                     .append("[structure Mermaid](").append(mermaidName).append(") · ")
-                    .append("[structure PlantUML](").append(plantUmlName).append(')');
+                    .append("[structure PlantUML](").append(plantUmlName).append(") · ")
+                    .append("[analysis audit Mermaid](").append(analysisAuditName).append(") · ")
+                    .append("[projection audit Mermaid](").append(projectionAuditName).append(')');
             if (revision != null) {
                 Files.writeString(outputDirectory.resolve(developerJsonName),
                         developerJson.export(analysis, sourceCatalog),
@@ -273,6 +284,8 @@ final class ProjectGraphGenerator {
                 String name = file.getFileName().toString();
                 if (name.equals("index.md") || name.endsWith("-structure.mmd")
                         || name.endsWith("-structure.puml") || name.endsWith("-developer.json")
+                        || name.endsWith("-analysis-audit.mmd")
+                        || name.endsWith("-projection-audit.mmd")
                         || name.endsWith("-business.mmd") || name.endsWith("-business.puml")
                         || name.endsWith("-business.json") || name.equals(BUSINESS_SCHEMA_V1)
                         || name.equals(DEVELOPER_SCHEMA_V1)
