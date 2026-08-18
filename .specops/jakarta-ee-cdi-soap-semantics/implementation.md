@@ -41,3 +41,5 @@
 - Task 2 complete: The optional adapter selects scoped CDI field injection targets, excludes unscoped and alternative candidates, and verifies exact Jakarta EE, SOAP, and gRPC signatures without production framework dependencies.
 - Task 3 complete: The clean pinned `hantsy/jakartaee-rest-sample` corpus runs in the pull-request gate and proves that `TaskResources.allTasks` reaches `JpaTaskRepository` through CDI dispatch.
 - Verification: `./scripts/verify-pr.sh` passed on 2026-08-18.
+- Follow-up: Expanded the exact catalog with EJB, Jakarta Security, REST Client, JMS, JSON-B,
+  Mail, Servlet, and WebSocket operations. Reflection verification passed for each catalog entry.
