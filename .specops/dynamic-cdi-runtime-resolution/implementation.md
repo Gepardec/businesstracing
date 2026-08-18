@@ -53,9 +53,10 @@ proves two qualifier-selected paths through the Java agent.
 - Design: one selector state, existing implementation-entry probes, and one real-container harness.
 - Coherence and vocabulary checks: pass.
 
-## Phase 3 Progress
+## Phase 3 Completion Summary
 
-- Tasks completed: 2 of 3.
+- Tasks completed: 3 of 3.
 - Local verification: focused CDI assertions, dynamic Weld conformance, repository verification,
   the full pull-request gate, and pinned Keycloak conformance passed.
-- Remaining work: publish the stacked pull request and confirm GitHub Actions.
+- Publication: commit `819b061` opened stacked pull request 32 against the pull request 31 branch.
+- GitHub Actions: run 32135897003 passed all five jobs, including the Weld-enabled core gate.

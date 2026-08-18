@@ -8,7 +8,7 @@
     },
     {
       "category": "runtime-correlation",
-      "count": 11,
+      "count": 12,
       "pattern": "Precompute opaque graph topology and developer-only probe plans, then retain only proven runtime edges and explicit gaps without Java details."
     },
     {
@@ -158,9 +158,10 @@
         "reactor-wide-implementation-resolution",
         "generic-java-extractor-completion",
         "self-dogfood-business-tracing",
-        "developer-graph-json-schema"
+        "developer-graph-json-schema",
+        "dynamic-cdi-runtime-resolution"
       ],
-      "count": 8
+      "count": 9
     },
     {
       "file": "fachtracing-engine/src/test/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzerTest.java",
@@ -217,13 +218,13 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "keycloak-live-business-output-correctness", "cdi-dispatch-selection-correctness", "jakarta-ee-cdi-soap-semantics"],
-      "count": 23
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "keycloak-live-business-output-correctness", "cdi-dispatch-selection-correctness", "jakarta-ee-cdi-soap-semantics", "dynamic-cdi-runtime-resolution"],
+      "count": 24
     },
     {
       "file": "docs/supported-java-constructs.md",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "jakarta-ee-cdi-soap-semantics"],
-      "count": 19
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "jakarta-ee-cdi-soap-semantics", "dynamic-cdi-runtime-resolution"],
+      "count": 20
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisDecisionAuditor.java",
