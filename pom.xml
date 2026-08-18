@@ -21,4 +21,45 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>self-tracing</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>at.gepardec.fachtracing</groupId>
+            <artifactId>fachtracing-maven-plugin</artifactId>
+            <version>${project.version}</version>
+            <inherited>false</inherited>
+            <configuration>
+              <businessEntryPoints>
+                <businessEntryPoint>
+                  <owner>at.gepardec.fachtracing.business.BusinessGraphProjector</owner>
+                  <method>classifyNode</method>
+                  <parameterTypes>
+                    <parameterType>at.gepardec.fachtracing.model.BusinessDecisionGraph.NodeKind</parameterType>
+                    <parameterType>boolean</parameterType>
+                    <parameterType>boolean</parameterType>
+                    <parameterType>boolean</parameterType>
+                    <parameterType>boolean</parameterType>
+                  </parameterTypes>
+                  <label>include exact node in business graph</label>
+                </businessEntryPoint>
+                <businessEntryPoint>
+                  <owner>at.gepardec.fachtracing.analysis.AnalysisSourceSelector</owner>
+                  <method>selectPlan</method>
+                  <parameterTypes>
+                    <parameterType>boolean</parameterType>
+                    <parameterType>boolean</parameterType>
+                  </parameterTypes>
+                  <label>select source inputs for graph analysis</label>
+                </businessEntryPoint>
+              </businessEntryPoints>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

@@ -1,9 +1,13 @@
 # Self-Tracing Fachtracing
 
-Fachtracing analyzes one of its own production decisions. This example shows the policy that
-enables developer graph export in the Maven plugin.
+Fachtracing applies its configured-entry-point feature to two production policies:
 
-## Generate the Graph
+- `BusinessGraphProjector.classifyNode` decides why an exact graph node stays in or leaves the business graph.
+- `AnalysisSourceSelector.selectPlan` decides whether analysis uses no project, connected project sources, or modular project sources. Both source plans also include external sources, the connected classpath, and entry sources.
+
+The production callers use these methods. The example does not duplicate the algorithms and does not add `@FachTracing` annotations.
+
+## Generate and Prove the Graphs
 
 Run:
 
@@ -11,46 +15,17 @@ Run:
 ./scripts/verify-self-tracing.sh
 ```
 
-The script installs the current reactor, runs the public `analyze-reactor` Maven goal, and checks
-the generated files under `target/fachtracing`.
+The script uses the `self-tracing` Maven profile and the public `analyze-reactor` goal. It verifies these generated files under `target/fachtracing` for both policies:
 
-## Decision Graph
+- `*-structure.mmd`: the exact result-relevant algorithm;
+- `*-business.mmd`: the concise business view;
+- `*-business.json`: the same business topology as data;
+- `*-analysis-audit.mmd`: source constructs and their inclusion decisions;
+- `*-projection-audit.mmd`: exact nodes and their keep, remove, or replacement decisions; and
+- `activation.json`: selected owners, methods, probes, fingerprints, and graphs for runtime tracing.
 
-The source method has `@FachTracing("enable developer graph export")`. The verified Mermaid
-output is:
+The script runs the compiled policies through the Java agent. It writes five evaluated Mermaid paths under `target/fachtracing-runtime`: two node-inclusion paths and three source-selection paths. Each path contains the recorded result of the actual call.
 
-```mermaid
-flowchart LR
-    n1(["Start"])
-    n2["derive has repository as repository url exists and not repository url is blank"]
-    n3{"does not have repository"}
-    n4(["Stop"])
-    n1 --> n2
-    n2 --> n3
-    n3 -->|"true; returns optional empty"| n4
-    n3 -->|"false; returns optional of new developer output repository root repository url source url template"| n4
-```
+The gate also checks byte-identical static output on a second run. A focused renderer test changes synthetic input and checks that the generated audit changes. Repository integrity checks prevent fixed self-example labels and AI integrations in production graph generation.
 
-This graph shows two result paths:
-
-- If no repository configuration exists, developer graph export is disabled.
-- If repository configuration exists, the method creates the developer output settings and
-  enables export.
-
-The source method also requires the repository URL and source URL template together. It throws an
-exception if only one value exists. The current result graph does not include this direct thrown
-validation path. This is a known limit of this self-trace, not a claim that the validation does not
-exist.
-
-## What the Gate Proves
-
-The gate uses the same public path as an integrating Maven project. It checks:
-
-- source annotation discovery;
-- aggregate reactor source and classpath resolution;
-- static business-decision analysis;
-- Mermaid and PlantUML rendering;
-- index generation; and
-- runtime activation data generation.
-
-The generated files stay in `target/fachtracing`. Git does not track them.
+All generated files stay under `target`. Git does not track them.

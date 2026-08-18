@@ -141,28 +141,16 @@ public final class StaticDecisionAnalyzer {
                 .sorted().toList() + ", boundary " + boundary.fingerprint();
         var results = new ArrayList<AnalysisManifest.AnalysisResult>();
         for (ApplicationSourceBoundary.ProjectSources project : boundary.projects()) {
-            if (project.entrySourceFiles().isEmpty()) continue;
-            List<ApplicationSourceBoundary.ProjectSources> closure = projectClosure(boundary, project);
-            boolean modular = project.moduleDescriptor().isPresent();
-            List<ApplicationSourceBoundary.ProjectSources> analysisClosure = modular
-                    ? closure.stream().filter(item -> item.moduleDescriptor().isPresent()).toList()
-                    : closure;
-            List<Path> sources = java.util.stream.Stream.concat(
-                            analysisClosure.stream().flatMap(item -> item.resolutionSourceFiles().stream()),
-                            boundary.externalResolutionSources().stream()
-                                    .map(ApplicationSourceBoundary.ResolutionSource::path))
-                    .distinct().sorted(Comparator.comparing(Path::toString)).toList();
-            List<Path> classpath = closure.stream()
-                    .flatMap(item -> item.compilationClasspath().stream()).distinct()
-                    .sorted(Comparator.comparing(Path::toString)).toList();
-            var request = new AnalysisRequest(
-                    sources, classpath, project.compilerModel().charset(), project.entrySourceFiles())
-                    .withExternalMethodContractProviders(externalMethodContractProviders)
-                    .withBusinessEntryPoints(entryPointsByProject.getOrDefault(project.projectId(), List.of()));
-            if (modular) {
-                results.addAll(analyzeModular(request, analysisClosure, boundary, opaqueLibraries));
+            Optional<AnalysisSourceSelector.Selection> selected = AnalysisSourceSelector.select(
+                    boundary, project, externalMethodContractProviders,
+                    entryPointsByProject.getOrDefault(project.projectId(), List.of()));
+            if (selected.isEmpty()) continue;
+            AnalysisSourceSelector.Selection selection = selected.orElseThrow();
+            if (selection.modular()) {
+                results.addAll(analyzeModular(
+                        selection.request(), selection.sourceProjects(), boundary, opaqueLibraries));
             } else {
-                results.addAll(analyzeAll(request, project.compilerModel(), opaqueLibraries));
+                results.addAll(analyzeAll(selection.request(), project.compilerModel(), opaqueLibraries));
             }
         }
         return results.stream()
@@ -217,27 +205,6 @@ public final class StaticDecisionAnalyzer {
             }
         }
         return false;
-    }
-
-    private static List<ApplicationSourceBoundary.ProjectSources> projectClosure(
-            ApplicationSourceBoundary boundary,
-            ApplicationSourceBoundary.ProjectSources root) {
-        Map<String, ApplicationSourceBoundary.ProjectSources> projects = boundary.projects().stream()
-                .collect(Collectors.toMap(ApplicationSourceBoundary.ProjectSources::projectId,
-                        project -> project, (left, right) -> left, LinkedHashMap::new));
-        var pending = new java.util.ArrayDeque<String>();
-        var selected = new LinkedHashSet<String>();
-        pending.add(root.projectId());
-        while (!pending.isEmpty()) {
-            String id = pending.removeFirst();
-            if (!selected.add(id)) continue;
-            pending.addAll(projects.get(id).projectDependencies());
-            projects.values().stream()
-                    .filter(candidate -> candidate.projectDependencies().contains(id))
-                    .map(ApplicationSourceBoundary.ProjectSources::projectId)
-                    .forEach(pending::addLast);
-        }
-        return selected.stream().map(projects::get).toList();
     }
 
     private static AnalysisManifest.AnalysisResult withSearchedBoundary(

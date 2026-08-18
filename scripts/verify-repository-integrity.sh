@@ -53,6 +53,9 @@ require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtraci
 require_tracked conformance/spring-petclinic/src/test/java/at/gepardec/fachtracing/conformance/SpringPetClinicIsolationTest.java
 require_tracked conformance/spring-petclinic/src/test/resources/oracles/README.md
 require_tracked docs/self-tracing.md
+require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/AnalysisSourceSelector.java
+require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphAudit.java
+require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DecisionAuditMermaidRenderer.java
 require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/SourceUnavailableCallClassifier.java
 require_tracked fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/ObservedBusinessSegmentConnector.java
 require_tracked fachtracing-engine/src/test/resources/fixtures/analysis/SourceBoundaryBinaryRules.java
@@ -73,6 +76,10 @@ fi
 if grep -E -q '^[[:space:]]*flowchart[[:space:]]' conformance/keycloak/README.md
 then
   fail "the Keycloak guide must not embed a fixed Mermaid flowchart"
+fi
+if grep -E -q '^[[:space:]]*flowchart[[:space:]]' docs/self-tracing.md
+then
+  fail "the self-tracing guide must not embed a fixed Mermaid flowchart"
 fi
 
 PRODUCTION_ROOTS="fachtracing-api/src/main fachtracing-engine/src/main fachtracing-agent/src/main fachtracing-maven-plugin/src/main fachtracing-spring/src/main fachtracing-storage-jdbc/src/main"
