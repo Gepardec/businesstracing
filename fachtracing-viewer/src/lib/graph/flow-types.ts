@@ -6,12 +6,13 @@ export interface BusinessNodeData extends Record<string, unknown> {
   onPath: boolean;
   current: boolean;
   dimmed: boolean;
-  sequence: number | null;
+  stepNumber: number | null;
 }
 
 export interface BusinessEdgeData extends Record<string, unknown> {
   onPath: boolean;
   current: boolean;
+  showLabel: boolean;
 }
 
 export type BusinessFlowNode = Node<BusinessNodeData, 'business'>;

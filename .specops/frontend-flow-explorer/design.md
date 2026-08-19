@@ -76,6 +76,12 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Rationale:** A local preview lets a user inspect a generated graph before database import. Reusing the contract adapter and canvas keeps one validation rule and one visual grammar. Browser-memory handling also keeps developer source metadata out of network requests and durable storage.
 
+### Decision 12: Make explanation layout responsive to usable CSS width
+
+**Decision:** Keep a resizable 320-to-520-pixel explanation inspector visible at 1,024 CSS pixels or more. Below that width, use a repository-owned shadcn-style Sheet built on the installed Bits UI dialog primitive. Put its trigger in the normal header flow. Cap initial graph fit at 0.9 zoom, show only concise edge tokens, omit the minimap for graphs with eight or fewer nodes, and make current-step decoration replace the full-path ring. Use the compact minimap only through 100 nodes. Above 100 nodes, show the node count and direct users to search and fit controls because a compressed overview is not legible.
+
+**Rationale:** The first dogfood screenshot exposed an intermediate-width gap: the inspector moved off-screen, its absolute trigger was absent, long edge outcomes crossed the graph, and additive state borders competed. CSS width, not screenshot pixel count, controls responsive behavior. A lower pinned-inspector breakpoint, an accessible dialog primitive, bounded labels, and exclusive state rings make the explanation dependable without graph-specific layout data.
+
 ## Component Design
 
 ### Graph Catalog
@@ -132,11 +138,15 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Interface:** Svelte component props for `GraphModel`, `LayoutResult`, and `RunHighlight`.
 
+**Visual behavior:** Cap automatic fit at 0.9 zoom. Show a compact minimap for graphs with 9 through 100 nodes. For larger graphs, show a compact node-count and search-navigation guide. Show short branch tokens for path edges and detailed-zoom edges. Keep the full outcome in the edge tooltip and explanation inspector.
+
 ### Run Inspector
 
 **Responsibility:** Present observations in order and own the active observation index and full-path toggle.
 
 **Interface:** Svelte component props for `RunModel` and selection callbacks.
+
+**Responsive behavior:** Render in a resizable pinned column at 1,024 CSS pixels or more. Render in a modal Sheet below that width. The same active visit and full-path state drive both surfaces.
 
 ### Runs Explorer
 
@@ -225,6 +235,7 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 - Unit tests map every EARS criterion to contract parsing, highlight derivation, cursor encoding, and filter validation.
 - Component tests cover repeated visits, current-step selection, full-path mode, mismatch errors, empty states, and keyboard navigation.
 - Playwright tests cover the list-to-run workflow, responsive inspector, deep links, themes, semantic zoom, and accessibility checks.
+- Layout assertions cover inspector and trigger visibility, header height, bounded edge labels, exclusive run-state rings, one-based display order, compact minimap behavior, Sheet focus and Escape close, and screenshots at 1,440, 1,024, and 390 CSS pixels.
 - Visual tests compare approved desktop and narrow screenshots for both themes and all node states.
 - PostgreSQL integration tests verify the additive migration, immutable graph conflicts, exact graph retrieval, parameterized search, stable pagination, correlation semantics, and timeouts with bounded generated fixtures.
 - A layout benchmark uses generated topology, not a hardcoded product graph, at 250 nodes and 400 edges.

@@ -7,6 +7,7 @@ export interface RunHighlight {
   pathNodeIds: ReadonlySet<string>;
   pathEdgeIds: ReadonlySet<string>;
   activeSequence: number | null;
+  activeStepNumber: number | null;
 }
 
 export function deriveRunHighlight(graph: GraphModel, run: RunModel, activeIndex: number): RunHighlight {
@@ -25,7 +26,8 @@ export function deriveRunHighlight(graph: GraphModel, run: RunModel, activeIndex
     activeEdgeId: active?.selectedEdgeId ?? null,
     pathNodeIds,
     pathEdgeIds,
-    activeSequence: active?.sequence ?? null
+    activeSequence: active?.sequence ?? null,
+    activeStepNumber: active ? activeIndex + 1 : null
   };
 }
 
@@ -35,6 +37,6 @@ export function explainObservation(graph: GraphModel, observation: RunObservatio
     .map(([name, value]) => `${name} was ${value.displayValue}`)
     .join('; ');
   const outcome = observation.outcome;
-  if (evidence) return `${evidence}; ${node?.label ?? observation.nodeId} was ${outcome}`;
-  return `${node?.label ?? observation.nodeId}: ${outcome}. No additional evidence was recorded.`;
+  if (evidence) return `${evidence}. Therefore, ${node?.label ?? observation.nodeId} was ${outcome}.`;
+  return `${node?.label ?? observation.nodeId} was ${outcome}. No additional evidence was recorded.`;
 }

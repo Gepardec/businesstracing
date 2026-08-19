@@ -240,7 +240,7 @@ Build the shadcn-svelte decisions dashboard, confidential generic correlation lo
 
 ### Task 6: Integrate Verification, Documentation, and CI
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Tasks 2, 3, 4, and 5
 **Priority:** Medium
@@ -260,10 +260,10 @@ Add browser workflows, dependency audit, repository verification, and deployment
 
 **Acceptance Criteria:**
 
-- [ ] All EARS criteria have automated evidence or an explicit manual accessibility review item.
+- [x] All EARS criteria have automated evidence or an explicit manual accessibility review item.
 - [x] High and critical npm audit findings block CI.
 - [x] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
-- [ ] Approved visual baselines cover all node kinds, states, themes, responsive sizes, and the 250-node safety profile.
+- [x] Approved visual baselines cover all node kinds, states, themes, responsive sizes, and the 250-node safety profile.
 - [x] The full repository gate and hosted CI pass.
 - [x] Fachtracing's generated developer graph and actual Java-agent path render in the viewer without a fixed test topology.
 - [x] Hosted browser proof is available as a downloadable CI artifact.
@@ -334,6 +334,55 @@ Add a local file preview that validates one current developer graph V1 JSON docu
 - [x] File adapter unit tests
 - [x] Generated-file browser preview test
 
+---
+
+### Task 8: Correct and Approve the Decision Visual Layout
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Tasks 3, 4, 5, and 6
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Correct the dogfood screenshot defects and replace weak visual assertions with viewport-specific layout evidence.
+
+**Implementation Steps:**
+
+1. Refactor the decision header so its summary and explanation action do not overlap or leave the normal layout flow.
+2. Keep a resizable inspector visible from 1,024 CSS pixels and add a Bits UI shadcn-style Sheet below that width.
+3. Bound edge labels, make run-state rings exclusive, use one-based display order, cap fit zoom, and reduce minimap size and scope.
+4. Add layout assertions and dogfood screenshots for desktop, intermediate, narrow, and dark views.
+5. Inspect every generated image and repeat the correction cycle until the visual gate has no open defect.
+
+**Acceptance Criteria:**
+
+- [x] The inspector or its visible Sheet trigger is available at every supported width.
+- [x] Desktop and intermediate headers are compact and preserve access to full values.
+- [x] No edge label covers a node or shows an unbounded compound outcome.
+- [x] Current-step, path, node-kind, and dimmed states remain clear without stacked run rings.
+- [x] Step numbers are one-based in the UI without changing stored sequences.
+- [x] The Sheet has modal focus, Escape close, outside-click close, and focus return.
+- [x] Generated screenshots at 1,440, 1,024, and 390 CSS pixels pass manual inspection in light and dark themes.
+
+**Files to Modify:**
+
+- `fachtracing-viewer/src/routes/runs/[executionId]/+page.svelte`
+- `fachtracing-viewer/src/lib/components/ui/Sheet.svelte` (new)
+- `fachtracing-viewer/src/lib/runs/InspectorResizer.svelte` (new)
+- `fachtracing-viewer/src/lib/runs/RunInspector.svelte`
+- `fachtracing-viewer/src/lib/graph/FlowCanvas.svelte`
+- `fachtracing-viewer/src/lib/graph/BusinessNode.svelte`
+- `fachtracing-viewer/src/lib/graph/BusinessEdge.svelte`
+- `fachtracing-viewer/e2e/decision-explorer.spec.ts`
+
+**Tests Required:**
+
+- [x] Visual-state unit tests
+- [x] Viewport layout and Sheet accessibility tests
+- [x] Generated dogfood screenshot review
+
 ## Implementation Order
 
 1. Task 1 establishes the contracts and build.
@@ -342,11 +391,12 @@ Add a local file preview that validates one current developer graph V1 JSON docu
 4. Task 5 adds the complete runs workflow.
 5. Task 6 adds final proof and delivery documentation.
 6. Task 7 adds the optional browser-only graph preview.
+7. Task 8 corrects and approves the complete decision visual baseline.
 
 ## Progress Tracking
 
-- Total Tasks: 7
-- Completed: 6
-- In Progress: 1
+- Total Tasks: 8
+- Completed: 8
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

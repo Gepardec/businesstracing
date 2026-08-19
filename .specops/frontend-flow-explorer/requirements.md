@@ -34,12 +34,12 @@ Internal support users cannot efficiently find prior business decisions or expla
 
 **Progress Checklist:**
 
-- [ ] Render a deterministic, data-driven graph.
-- [ ] Show all supported node kinds and coverage gaps.
-- [ ] Apply the documented node, edge, state, and theme tokens.
-- [ ] Support semantic zoom without changing graph topology.
-- [ ] Support pan, zoom, fit, and node selection.
-- [ ] Fail closed on invalid graph references.
+- [x] Render a deterministic, data-driven graph.
+- [x] Show all supported node kinds and coverage gaps.
+- [x] Apply the documented node, edge, state, and theme tokens.
+- [x] Support semantic zoom without changing graph topology.
+- [x] Support pan, zoom, fit, and node selection.
+- [x] Fail closed on invalid graph references.
 
 ### Story 2: Follow one run through the graph
 
@@ -59,10 +59,10 @@ Internal support users cannot efficiently find prior business decisions or expla
 
 **Progress Checklist:**
 
-- [ ] Show the ordered run inspector on the right.
-- [ ] Link each step to its graph node and selected edge.
-- [ ] Add the full-path highlight control.
-- [ ] Preserve repeated visits and reject version mismatch.
+- [x] Show the ordered run inspector on the right.
+- [x] Link each step to its graph node and selected edge.
+- [x] Add the full-path highlight control.
+- [x] Preserve repeated visits and reject version mismatch.
 
 ### Story 3: Search all runs
 
@@ -84,12 +84,12 @@ Internal support users cannot efficiently find prior business decisions or expla
 
 **Progress Checklist:**
 
-- [ ] Add the paged and filterable runs view.
-- [ ] Offer stored correlation names without limiting the field to those suggestions.
-- [ ] Show the decision label and final result in each result summary.
-- [ ] Use HTTP `QUERY` with confidential filters in the request body.
-- [ ] Use linkable run URLs.
-- [ ] Add safe empty and error states.
+- [x] Add the paged and filterable runs view.
+- [x] Offer stored correlation names without limiting the field to those suggestions.
+- [x] Show the decision label and final result in each result summary.
+- [x] Use HTTP `QUERY` with confidential filters in the request body.
+- [x] Use linkable run URLs.
+- [x] Add safe empty and error states.
 
 ### Story 4: Preserve current contracts
 
@@ -112,11 +112,11 @@ Internal support users cannot efficiently find prior business decisions or expla
 
 **Progress Checklist:**
 
-- [ ] Add tested graph and run contract adapters.
-- [ ] Add immutable graph import and exact-version retrieval.
-- [ ] Keep developer provenance server-side by default.
-- [ ] Keep the V1 storage payload unchanged.
-- [ ] Reject unsupported schemas and accept unknown fields.
+- [x] Add tested graph and run contract adapters.
+- [x] Add immutable graph import and exact-version retrieval.
+- [x] Keep developer provenance server-side by default.
+- [x] Keep the V1 storage payload unchanged.
+- [x] Reject unsupported schemas and accept unknown fields.
 
 ### Story 5: Prove the viewer with Fachtracing itself
 
@@ -172,6 +172,12 @@ Internal support users cannot efficiently find prior business decisions or expla
 - Security: The browser shall receive already-redacted values only. Database credentials shall remain in server-only environment variables. All filters shall use parameterized queries and bounded lengths.
 - Responsive layout: At widths of 1,200 CSS pixels or more, the graph and inspector shall appear side by side. At smaller widths, the inspector shall become a drawer without hiding the selected step.
 - Visual quality: Reference screenshots for light and dark themes at desktop and narrow widths shall pass automated visual comparison with an approved baseline and manual review of label collisions, clipped controls, focus visibility, and node-state ambiguity.
+- Decision layout: At 1,024 CSS pixels or more, the ordered explanation SHALL be visible beside the graph by default. Below 1,024 pixels, a visible `Explanation` action SHALL open an accessible modal Sheet that supports Escape, outside-click close, focus containment, and focus return.
+- Header density: At a 1,440 by 900 CSS-pixel viewport, the decision summary header SHALL use no more than 170 CSS pixels of vertical space and SHALL provide access to complete truncated values.
+- Edge labels: The canvas SHALL show concise branch tokens of at most 32 visible characters. Full outcome text SHALL remain available through a tooltip and the run inspector. Labels SHALL NOT cover node text.
+- Run states: A current node SHALL use one current-step outer ring. A non-current path node SHALL use one path inner ring. The UI SHALL NOT stack both run-state rings on the same node.
+- Step numbering: User-facing step badges SHALL use one-based visit order. The recorded sequence value SHALL remain unchanged in the run model.
+- Canvas controls: A minimap SHALL use a compact fixed size for graphs with 9 through 100 nodes. It SHALL be omitted for graphs with eight or fewer nodes. For graphs with more than 100 nodes, the UI SHALL replace the compressed minimap with a compact node-count and search-navigation guide.
 
 ## Constraints & Assumptions
 
@@ -206,6 +212,7 @@ Internal support users cannot efficiently find prior business decisions or expla
 - Automated contracts prove that graph and run adapters preserve every ID used for node and edge highlighting.
 - The graph layout benchmark and PostgreSQL search contract meet the stated limits.
 - Hosted dogfood proof shows a real Fachtracing production policy and its Java-agent runtime path in the viewer.
+- Generated dogfood screenshots at 1,440, 1,024, and 390 CSS pixels show no missing inspector action, clipped summary control, label collision, ambiguous run-state ring, or oversized minimap.
 
 ## Out of Scope
 

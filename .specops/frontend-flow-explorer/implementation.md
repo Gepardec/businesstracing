@@ -69,6 +69,8 @@
 | 8 | Keep the POC local, PostgreSQL-only, exact-search-only, and source-metadata-free. | This is the smallest safe scope for confidential records and the existing indexed correlation contract. | 2, 5, 6 | 2026-08-19T13:06:48Z |
 | 9 | Prove the viewer with the existing self-tracing analyzer and Java-agent path. | Generated self-observation proves the complete product chain and avoids a hand-written demonstration diagram. | 6 | 2026-08-19T19:37:37Z |
 | 10 | Preview one graph JSON file in browser memory. | It gives a fast inspection path without a database import, network upload, persistent storage, or a second graph renderer. | 7 | 2026-08-19T20:40:30Z |
+| 11 | Use a real modal Sheet below 1,024 CSS pixels and a resizable inspector at larger widths. | The explanation stays available without shrinking the graph to an unusable width. | 8 | 2026-08-19T21:25:59Z |
+| 12 | Use search and fit guidance instead of a compressed minimap above 100 nodes. | A long top-to-bottom graph collapses into an unreadable line in a fixed-size minimap. Direct node search remains useful at the tested 250-node profile. | 8 | 2026-08-19T21:25:59Z |
 
 ## Deviations from Design
 
@@ -127,3 +129,9 @@ Dogfooding found and fixed two compatibility faults: the TypeScript reader rejec
 Added `/graphs`, an accessible file selection and drop surface, a 5 MiB browser file boundary, local contract validation, provenance removal through the existing adapter, and the shared top-to-bottom Svelte Flow canvas. The preview does not define a server endpoint and does not use browser storage. Invalid files fail before layout, and graphs above 250 nodes remain complete with a tested-profile notice.
 
 Local evidence: zero Svelte diagnostics, 14 passing unit tests, a passing production build, repository integrity, and five passing Chromium journeys. The generated-file journey selects a current Fachtracing self-dogfood graph, reads its expected counts from that JSON, verifies every Svelte Flow node, observes no non-read network request, verifies unchanged browser storage, and captures `fachtracing-graph-preview.png`.
+
+### Session 10 — Decision visual baseline approved (2026-08-19)
+
+Rebuilt the decision page around a compact summary header, a resizable desktop inspector from 1,024 CSS pixels, and a Bits UI modal Sheet below that width. Current, full-path, node-kind, and dimmed states now have exclusive visual roles. User-facing steps are one-based. Edge labels use concise tokens and keep their complete value in the inspector and tooltip. Layout reacts to canvas size changes and refits without clipping.
+
+The visual suite now covers 1,440, 1,024, 900, and 390 CSS-pixel widths, light and dark themes, every node kind, the Sheet focus contract, edge-label collisions, header height, inspector width, one-based steps, and a generated 250-node graph. The dense graph uses node search and fit guidance because its top-to-bottom minimap is not legible. Local evidence: zero Svelte diagnostics, 16 passing unit tests, eight passing Chromium journeys, a passing production build, repository integrity, and manual approval of every generated screenshot.

@@ -17,6 +17,7 @@ describe('run highlighting', () => {
   it('keeps repeated visits and resolves direct connecting edges', () => {
     const highlight = deriveRunHighlight(graph, run, 2);
     expect(highlight.activeSequence).toBe(3);
+    expect(highlight.activeStepNumber).toBe(3);
     expect(highlight.pathNodeIds).toEqual(new Set(['a', 'b']));
     expect(highlight.pathEdgeIds).toEqual(new Set(['e']));
   });

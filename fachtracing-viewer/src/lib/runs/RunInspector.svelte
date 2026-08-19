@@ -6,6 +6,7 @@
   import type { RunModel } from '$contracts/run-contract';
   import Button from '$components/ui/Button.svelte';
   import Badge from '$components/ui/Badge.svelte';
+  import { conciseEdgeLabel } from '$graph/edge-label';
   import { explainObservation } from './run-highlight';
   let { graph, run, activeIndex, fullPath, onSelect, onFullPath }: {
     graph: GraphModel; run: RunModel; activeIndex: number; fullPath: boolean;
@@ -26,14 +27,21 @@
   <ol class="steps">
     {#each run.observations as observation, index}
       {@const node = graph.nodes.find((item) => item.id === observation.nodeId)}
+      {@const selectedEdge = graph.edges.find((item) => item.id === observation.selectedEdgeId)}
       <li class:active={index === activeIndex}>
         <button onclick={() => onSelect(index)} aria-current={index === activeIndex ? 'step' : undefined}>
-          <span class="step-number">{observation.sequence}</span>
+          <span class="step-number" title={`Recorded sequence ${observation.sequence}`}>{index + 1}</span>
           <span class="step-content">
-            <span class="step-meta"><Badge>{node?.kind.replace('_', ' ') ?? 'UNKNOWN'}</Badge>{#if observation.selectedEdgeId}<span>Branch recorded</span>{/if}</span>
+            <span class="step-meta"><Badge>{node?.kind.replace('_', ' ') ?? 'UNKNOWN'}</Badge>{#if selectedEdge}<span>Followed “{conciseEdgeLabel(selectedEdge.outcome)}”</span>{/if}</span>
             <strong>{node?.label ?? observation.nodeId}</strong>
             <span>{explainObservation(graph, observation)}</span>
-            {#if observation.selectedEdgeId}<code>{observation.selectedEdgeId}</code>{/if}
+            <details class="technical-details">
+              <summary>Technical details</summary>
+              <code>Sequence {observation.sequence}</code>
+              <code>Node {observation.nodeId}</code>
+              {#if observation.selectedEdgeId}<code>Edge {observation.selectedEdgeId}</code>{/if}
+              {#if selectedEdge}<code title={selectedEdge.outcome}>Branch {selectedEdge.outcome}</code>{/if}
+            </details>
           </span>
         </button>
       </li>
@@ -57,7 +65,9 @@
   .step-number { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 999px; background: var(--muted); border: 1px solid var(--border); font-weight: 800; font-size: .75rem; z-index: 1; }
   li.active .step-number { background: var(--run-current); color: white; border-color: var(--run-current); }
   .step-content { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: .8rem; line-height: 1.35; }
-  .step-content > span:not(.step-meta) { color: var(--muted-foreground); }
+  .step-content > span:not(.step-meta) { color: var(--muted-foreground); overflow-wrap: anywhere; }
   .step-meta { display: flex; align-items: center; gap: 7px; color: var(--muted-foreground); font-size: .68rem; }
-  code { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .68rem; color: var(--muted-foreground); }
+  .technical-details { margin-top: 1px; color: var(--muted-foreground); font-size: .68rem; }
+  .technical-details summary { width: max-content; cursor: pointer; }
+  .technical-details code { display: block; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .68rem; color: var(--muted-foreground); }
 </style>

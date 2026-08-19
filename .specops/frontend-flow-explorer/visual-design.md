@@ -30,8 +30,8 @@ The viewer must make a recorded decision easy to find and explain before it make
 - Use CSS custom properties in `src/app.css` as the only color source.
 - Use scoped CSS for node silhouettes, connection paths, and required Svelte Flow overrides.
 - Use the system UI font stack for labels and controls. Use the system monospace stack only for IDs and timestamps.
-- At 1,200 CSS pixels or more, use a 56-pixel application rail, a flexible graph canvas, and a 360-pixel right inspector. The inspector can resize from 320 to 520 pixels.
-- Below 1,200 pixels, put the inspector in a shadcn `Sheet`. Keep the selected step and graph viewport when it opens or closes.
+- At 1,024 CSS pixels or more, use the compact application header, a flexible graph canvas, and a 380-pixel right inspector. The inspector can resize from 320 to 520 pixels.
+- Below 1,024 pixels, put the inspector in a shadcn-style `Sheet` built on the accessible dialog primitive. Keep the selected step and graph viewport when it opens or closes.
 - Put graph search, fit, zoom, theme, and minimap controls in one compact canvas toolbar. Keep decision filters on the dashboard.
 
 ## Component Use
@@ -88,6 +88,7 @@ The silhouette can use a CSS mask or `clip-path`, but its text area must stay re
 - Use a three-pixel `--run-current` edge for the active selected edge.
 - Use a dashed amber edge only for a documented coverage gap.
 - Show edge labels at detail zoom or when the edge is hovered, focused, selected, or part of the current step.
+- Reduce compound edge outcomes to their first concise branch token on the canvas. Limit the visible token to 32 characters and expose the full outcome in a title tooltip and the inspector.
 - Do not use animation as the only state signal. Respect `prefers-reduced-motion`.
 
 ## State Precedence
@@ -102,6 +103,8 @@ State decoration does not replace the node-kind decoration. Apply states in this
 6. Compatibility or coverage error: warning icon and patterned or dashed border.
 
 When full-path mode is active, non-path nodes use reduced contrast but stay readable and selectable. The current step remains stronger than the full path. Repeated visits use the active observation sequence number in the badge.
+
+The current-step ring replaces the full-path ring on the active node. It does not add a third state border. User-facing badges show visit order from one; the unchanged recorded sequence is technical data.
 
 ## Top-to-Bottom Layout
 
@@ -121,7 +124,7 @@ The checked-in business-graph fixtures have 7, 8, and 15 nodes. Version one rend
 
 - Keep the 250-node and 400-edge generated benchmark as safety headroom, not as a product threshold.
 - Keep ELK in a worker, cancel obsolete layouts, and cache layout results.
-- Keep node search, fit, minimap, semantic zoom, and current-step focus available.
+- Keep node search, fit, semantic zoom, and current-step focus available. Use the minimap only when the graph has 9 through 100 nodes. For larger graphs, show a node-count and search-navigation guide.
 - Do not add partial graph projections, graph-size modes, or a full-graph confirmation in version one.
 - If future measured graphs approach or exceed the benchmark, record layout, render, memory, and interaction evidence before selecting a new strategy.
 
