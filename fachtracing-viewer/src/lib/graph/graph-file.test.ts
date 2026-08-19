@@ -32,6 +32,17 @@ describe('browser graph file adapter', () => {
     expect(graph.nodes).toHaveLength(4);
   });
 
+  it('parses a business graph V1 JSON file', async () => {
+    const document = {
+      schema: 'fachtracing-business-graph/v1', graphId: 'business-1', version: 1, decision: 'select a result', completeness: 'COMPLETE',
+      entryNodeIds: ['rule-1'], nodes: [{ id: 'rule-1', kind: 'RULE', label: 'input is valid' }, { id: 'result-1', kind: 'RESULT', label: 'accepted' }],
+      edges: [{ id: 'edge-1', from: 'rule-1', to: 'result-1', outcome: 'yes' }]
+    };
+    const graph = await parseGraphFile(file('business.json', JSON.stringify(document)));
+    expect(graph.label).toBe('select a result');
+    expect(graph.nodes.map((node) => node.kind)).toEqual(['PREDICATE', 'OUTCOME']);
+  });
+
   it('rejects invalid file boundaries before rendering', async () => {
     await expect(parseGraphFile(file('graph.txt', '{}'))).rejects.toThrow(/\.json/);
     await expect(parseGraphFile(file('graph.json', '', 0))).rejects.toThrow(/empty/);

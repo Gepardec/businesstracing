@@ -1,4 +1,4 @@
-import { ContractError, parseDeveloperGraphJson, type GraphModel } from '$contracts/graph-contract';
+import { ContractError, parseGraphDocumentJson, type GraphModel } from '$contracts/graph-contract';
 
 export const MAX_GRAPH_FILE_BYTES = 5 * 1024 * 1024;
 
@@ -16,7 +16,7 @@ export async function parseGraphFile(file: BrowserGraphFile): Promise<GraphModel
   if (file.size > MAX_GRAPH_FILE_BYTES) {
     throw new ContractError('The selected JSON file is larger than the 5 MiB limit.');
   }
-  return parseDeveloperGraphJson(new Uint8Array(await file.arrayBuffer()));
+  return parseGraphDocumentJson(new Uint8Array(await file.arrayBuffer()));
 }
 
 export function formatFileSize(bytes: number): string {

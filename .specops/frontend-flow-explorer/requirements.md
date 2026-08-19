@@ -142,12 +142,12 @@ Internal support users cannot efficiently find prior business decisions or expla
 ### Story 6: Preview a graph JSON file
 
 **As a** developer or business analyst
-**I want** to select a developer graph JSON file in the browser
+**I want** to select a supported graph JSON file in the browser
 **So that** I can inspect its complete graph without a database import
 
 **Acceptance Criteria (EARS):**
 
-- WHEN a user selects or drops one current `fachtracing-developer-graph/v1` JSON file THE SYSTEM SHALL validate it in the browser and render its complete graph with the existing top-to-bottom ELK and Svelte Flow canvas.
+- WHEN a user selects or drops one current `fachtracing-developer-graph/v1` or `fachtracing-business-graph/v1` JSON file THE SYSTEM SHALL validate it in the browser, normalize it to the shared graph model, and render its complete graph with the existing top-to-bottom ELK and Svelte Flow canvas.
 - THE SYSTEM SHALL keep the selected file and its content in browser memory only and SHALL NOT send it to the server, write it to PostgreSQL, or persist it in browser storage.
 - THE SYSTEM SHALL render only the provenance-free graph model and SHALL NOT display source origins, source paths, source URLs, or source fingerprints from the file.
 - WHEN the selected file is empty, is larger than 5 MiB, is not named as JSON, has invalid JSON, or does not match the current graph contract THE SYSTEM SHALL show a clear validation message and SHALL NOT render a partial graph.
@@ -162,6 +162,7 @@ Internal support users cannot efficiently find prior business decisions or expla
 - [x] Reuse the existing graph canvas without a run highlight.
 - [x] Show file, graph, size-profile, and validation states.
 - [x] Prove that the preview works with a generated graph file.
+- [ ] Accept and render real developer-graph V1 and business-graph V1 exports.
 
 ## Non-Functional Requirements
 
@@ -178,6 +179,9 @@ Internal support users cannot efficiently find prior business decisions or expla
 - Run states: A current node SHALL use one current-step outer ring. A non-current path node SHALL use one path inner ring. The UI SHALL NOT stack both run-state rings on the same node.
 - Step numbering: User-facing step badges SHALL use one-based visit order. The recorded sequence value SHALL remain unchanged in the run model.
 - Canvas controls: A minimap SHALL use a compact fixed size for graphs with 9 through 100 nodes. It SHALL be omitted for graphs with eight or fewer nodes. For graphs with more than 100 nodes, the UI SHALL replace the compressed minimap with a compact node-count and search-navigation guide.
+- Edge routing: The canvas SHALL render the orthogonal routes that ELK computes. An edge SHALL NOT cross an unrelated node, and parallel edges SHALL use distinct visible paths.
+- Read-only canvas: Node handles SHALL NOT be visible. A node SHALL use one primary border for its default, path, or current state, and SHALL NOT stack competing state borders.
+- Preview compatibility: The local preview SHALL accept the current developer-graph V1 and business-graph V1 JSON contracts. The database graph catalog remains developer-graph V1 only.
 
 ## Constraints & Assumptions
 
@@ -213,6 +217,8 @@ Internal support users cannot efficiently find prior business decisions or expla
 - The graph layout benchmark and PostgreSQL search contract meet the stated limits.
 - Hosted dogfood proof shows a real Fachtracing production policy and its Java-agent runtime path in the viewer.
 - Generated dogfood screenshots at 1,440, 1,024, and 390 CSS pixels show no missing inspector action, clipped summary control, label collision, ambiguous run-state ring, or oversized minimap.
+- Generated branch-topology proof shows distinct parallel routes, no edge crossing through an unrelated node, hidden connection handles, and readable labels in light and dark themes.
+- A checked-in business-graph V1 conformance fixture opens in the local graph preview without a contract error.
 
 ## Out of Scope
 

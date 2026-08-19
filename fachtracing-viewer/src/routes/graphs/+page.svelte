@@ -52,7 +52,7 @@
     <div class="preview-canvas"><FlowCanvas {graph} highlight={null} fullPath={false} /></div>
   {:else}
     <Card class="upload-card"><GraphUpload {busy} onFile={selectFile} /></Card>
-    <p class="contract-note">Accepted format: the current merged <code>fachtracing-developer-graph/v1</code> JSON contract. A page reload clears the preview.</p>
+    <p class="contract-note">Accepted formats: <code>fachtracing-developer-graph/v1</code> and <code>fachtracing-business-graph/v1</code>. A page reload clears the preview.</p>
   {/if}
 </div>
 

@@ -75,7 +75,7 @@ All nodes use a 12-pixel corner system, a minimum 44-pixel interaction target, a
 | Choice | Hexagonal card | `Split` | Violet | Multi-path selection |
 | Computation | Rounded rectangle | `FunctionSquare` or closest current Lucide icon | Neutral slate | Calculation or transformation |
 | Dispatch | Cut-corner card | `Send` | Cyan | Call or dispatch to another operation |
-| Outcome | Double-border terminal card | `CircleCheck` | Green-neutral | Declared business result; success or failure uses a separate status badge |
+| Outcome | Rounded terminal card | `CircleCheck` | Green-neutral | Declared business result; success or failure uses a separate status badge |
 | Coverage gap | Dashed octagonal card | `TriangleAlert` | Amber | Known missing or unresolved flow |
 
 The silhouette can use a CSS mask or `clip-path`, but its text area must stay rectangular. The component test must prove that a user can identify every kind in monochrome.
@@ -87,24 +87,26 @@ The silhouette can use a CSS mask or `clip-path`, but its text area must stay re
 - Use a two-pixel `--run-path` edge for the selected run path.
 - Use a three-pixel `--run-current` edge for the active selected edge.
 - Use a dashed amber edge only for a documented coverage gap.
+- Render the exact orthogonal sections that ELK returns. Do not replace them with derived center-to-center paths.
+- Keep parallel edges on distinct routes and keep all routes outside unrelated node rectangles.
 - Show edge labels at detail zoom or when the edge is hovered, focused, selected, or part of the current step.
 - Reduce compound edge outcomes to their first concise branch token on the canvas. Limit the visible token to 32 characters and expose the full outcome in a title tooltip and the inspector.
 - Do not use animation as the only state signal. Respect `prefers-reduced-motion`.
 
 ## State Precedence
 
-State decoration does not replace the node-kind decoration. Apply states in this order, from lowest to highest:
+The type icon, label, and silhouette always identify the node kind. The primary border uses one state at a time in this order, from lowest to highest:
 
-1. Default: type silhouette, icon, label, and token.
+1. Default: type silhouette, icon, label, token, and one-pixel neutral border.
 2. Hover or keyboard focus: neutral two-pixel focus outline.
-3. Full run path: `--run-path` inner border and path badge.
-4. Selected node: elevated border and selection handle.
-5. Current run step: three-pixel `--run-current` outer ring, step-number badge, and matching inspector marker.
+3. Full run path: two-pixel `--run-path` primary border and path badge.
+4. Selected node: elevated neutral border without a connection handle.
+5. Current run step: three-pixel `--run-current` primary border, restrained halo, step-number badge, and matching inspector marker.
 6. Compatibility or coverage error: warning icon and patterned or dashed border.
 
 When full-path mode is active, non-path nodes use reduced contrast but stay readable and selectable. The current step remains stronger than the full path. Repeated visits use the active observation sequence number in the badge.
 
-The current-step ring replaces the full-path ring on the active node. It does not add a third state border. User-facing badges show visit order from one; the unchanged recorded sequence is technical data.
+The current-step border replaces the full-path and default borders on the active node. The canvas is read-only, so connection handles are visually hidden. User-facing badges show visit order from one; the unchanged recorded sequence is technical data.
 
 ## Top-to-Bottom Layout
 
@@ -113,6 +115,7 @@ The current-step ring replaces the full-path ring on the active node. It does no
 - Use fixed node and layer gaps from tokens, not graph-specific values.
 - Sort graph inputs by stable IDs before layout.
 - Route outgoing branches to south ports and incoming branches to north ports.
+- Return ELK edge sections with node positions and render those sections directly.
 - Place the inspector on the right so it does not compete with the main flow direction.
 - Do not persist dragged positions in version one. A fit or reload returns to the generated layout.
 

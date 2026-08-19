@@ -1,5 +1,6 @@
 import type { Edge, Node } from '@xyflow/svelte';
 import type { GraphNode } from '$contracts/graph-contract';
+import type { LayoutPoint } from './edge-route';
 
 export interface BusinessNodeData extends Record<string, unknown> {
   node: GraphNode;
@@ -10,6 +11,8 @@ export interface BusinessNodeData extends Record<string, unknown> {
 }
 
 export interface BusinessEdgeData extends Record<string, unknown> {
+  route: readonly LayoutPoint[];
+  labelPosition: LayoutPoint;
   onPath: boolean;
   current: boolean;
   showLabel: boolean;

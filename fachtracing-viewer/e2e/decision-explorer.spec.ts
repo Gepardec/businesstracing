@@ -1,6 +1,47 @@
 import { expect, test } from '@playwright/test';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+
+async function canvasGeometry(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const nodeRects = new Map([...document.querySelectorAll<HTMLElement>('.svelte-flow__node[data-id]')].map((node) => [node.dataset.id!, node.getBoundingClientRect()]));
+    const intrusions: string[] = [];
+    const routes: { id: string; source: string; target: string; path: string }[] = [];
+    for (const edge of document.querySelectorAll<SVGGElement>('.svelte-flow__edge[data-source-node][data-target-node]')) {
+      const path = edge.querySelector<SVGPathElement>('path[data-route-edge]');
+      if (!path) continue;
+      const id = path.dataset.routeEdge!;
+      const source = edge.dataset.sourceNode!;
+      const target = edge.dataset.targetNode!;
+      routes.push({ id, source, target, path: path.getAttribute('d') ?? '' });
+      const matrix = path.getScreenCTM();
+      if (!matrix) continue;
+      const length = path.getTotalLength();
+      for (let offset = 0; offset <= length; offset += 3) {
+        const point = path.getPointAtLength(offset);
+        const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+        for (const [nodeId, box] of nodeRects) {
+          if (nodeId === source || nodeId === target) continue;
+          if (screen.x > box.left + 1 && screen.x < box.right - 1 && screen.y > box.top + 1 && screen.y < box.bottom - 1) {
+            intrusions.push(`${id} enters ${nodeId}`);
+            break;
+          }
+        }
+      }
+    }
+    const labels = [...document.querySelectorAll<HTMLElement>('.business-edge-label')].map((label) => ({ id: label.dataset.edgeLabel!, box: label.getBoundingClientRect() }));
+    const labelNodeCollisions = labels.flatMap(({ id, box }) => [...nodeRects].filter(([, node]) => box.left < node.right && box.right > node.left && box.top < node.bottom && box.bottom > node.top).map(([nodeId]) => `${id} covers ${nodeId}`));
+    const labelCollisions: string[] = [];
+    labels.forEach((first, index) => labels.slice(index + 1).forEach((second) => {
+      if (first.box.left < second.box.right && first.box.right > second.box.left && first.box.top < second.box.bottom && first.box.bottom > second.box.top) labelCollisions.push(`${first.id} covers ${second.id}`);
+    }));
+    const parallelRoutes = [...Map.groupBy(routes, (route) => `${route.source}\u0000${route.target}`).values()]
+      .filter((group) => group.length > 1)
+      .map((group) => ({ ids: group.map((route) => route.id), distinctPaths: new Set(group.map((route) => route.path)).size }));
+    const handleOpacity = [...document.querySelectorAll<HTMLElement>('.business-handle')].map((handle) => getComputedStyle(handle).opacity);
+    return { routeCount: routes.length, intrusions, labelNodeCollisions, labelCollisions, parallelRoutes, handleOpacity };
+  });
+}
 
 async function openGeneratedFachtracingRun(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/runs');
@@ -32,6 +73,47 @@ function generatedGraphFile(nodeCount: number): { name: string; mimeType: string
     }
   };
   return { name: `generated-${nodeCount}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) };
+}
+
+function generatedBranchingGraphFile(ruleCount = 2, finalParallelEdgeCount = 2): { name: string; mimeType: string; buffer: Buffer } {
+  const rules = Array.from({ length: ruleCount }, (_, index) => ({ id: `rule-${index}`, kind: 'PREDICATE', label: `generated rule ${index + 1} matches`, attributes: {} }));
+  const edges = [{ id: 'edge-entry', from: 'entry', to: rules[0].id, outcome: 'next' }];
+  rules.forEach((rule, index) => {
+    if (index < rules.length - 1) edges.push({ id: `edge-${rule.id}-continue`, from: rule.id, to: rules[index + 1].id, outcome: 'no' });
+    const exitCount = index === rules.length - 1 ? finalParallelEdgeCount : 1;
+    for (let exit = 0; exit < exitCount; exit += 1) edges.push({ id: `edge-${rule.id}-outcome-${exit}`, from: rule.id, to: 'outcome', outcome: exit % 2 ? 'yes' : 'no' });
+  });
+  const document = {
+    schema: 'fachtracing-developer-graph/v1',
+    sourceOrigins: [{ id: 'generated', kind: 'GENERATED', identity: 'browser route test', checksum: 'fixture' }], sourceFiles: [],
+    graph: {
+      id: 'generated-browser-branching', version: 1, label: 'generated branching route proof', entryNodeId: 'entry', completeness: 'COMPLETE',
+      nodes: [{ id: 'entry', kind: 'ENTRY', label: 'start', attributes: {} }, ...rules, { id: 'outcome', kind: 'OUTCOME', label: 'selected result', attributes: {} }],
+      edges, coverageGaps: []
+    }
+  };
+  return { name: 'generated-branching.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) };
+}
+
+function generatedNodeGrammarFile(): { name: string; mimeType: string; buffer: Buffer } {
+  const kinds = ['ENTRY', 'PREDICATE', 'CHOICE', 'COMPUTATION', 'DISPATCH', 'COVERAGE_GAP', 'OUTCOME'];
+  const nodes = kinds.map((kind, index) => ({ id: `node-${index}`, kind, label: `generated ${kind.toLowerCase().replace('_', ' ')}`, attributes: {} }));
+  const decisionNodes = nodes.slice(1, 3);
+  const actionNodes = nodes.slice(3, -1);
+  const edges = decisionNodes.map((node, index) => ({ id: `edge-entry-${index}`, from: nodes[0].id, to: node.id, outcome: index % 2 ? 'no' : 'yes' }));
+  actionNodes.forEach((node, index) => {
+    edges.push({ id: `edge-decision-${index}`, from: decisionNodes[index % decisionNodes.length].id, to: node.id, outcome: index % 2 ? 'no' : 'yes' });
+    edges.push({ id: `edge-outcome-${index}`, from: node.id, to: nodes.at(-1)!.id, outcome: 'yes' });
+  });
+  const document = {
+    schema: 'fachtracing-developer-graph/v1',
+    sourceOrigins: [{ id: 'generated', kind: 'GENERATED', identity: 'browser node grammar', checksum: 'fixture' }], sourceFiles: [],
+    graph: {
+      id: 'generated-node-grammar', version: 1, label: 'generated node grammar', entryNodeId: nodes[0].id, completeness: 'INCOMPLETE',
+      nodes, edges, coverageGaps: [{ nodeId: nodes.find((node) => node.kind === 'COVERAGE_GAP')!.id, description: 'generated coverage gap' }]
+    }
+  };
+  return { name: 'generated-node-grammar.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) };
 }
 
 test('shows a generic correlation search without placing values in the URL', async ({ page }) => {
@@ -114,11 +196,15 @@ test('previews a generated developer graph JSON file without storage', async ({ 
   });
   const storageBefore = await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }));
   await expect(page.getByRole('heading', { name: 'Preview a graph JSON' })).toBeVisible();
-  await page.getByLabel('Developer graph JSON').setInputFiles(graphPath);
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
   await expect(page.getByRole('heading', { name: document.graph.label })).toBeVisible();
   await expect(page.getByText(`${document.graph.nodes.length} nodes`, { exact: true })).toBeVisible();
   await expect(page.getByText(`${document.graph.edges.length} edges`, { exact: true })).toBeVisible();
   await expect(page.locator('.svelte-flow__node')).toHaveCount(document.graph.nodes.length, { timeout: 15_000 });
+  const geometry = await canvasGeometry(page);
+  expect(geometry.routeCount).toBe(document.graph.edges.length);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.handleOpacity.every((opacity) => opacity === '0')).toBe(true);
   await expect(page.getByText('Your file is not uploaded or saved.')).toBeVisible();
   expect(nonReadRequests).toEqual([]);
   await expect.poll(() => page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual(storageBefore);
@@ -149,18 +235,19 @@ test('keeps the generated decision explanation clear at every supported width', 
   await page.keyboard.press('ArrowRight');
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.locator('.business-node[data-run-state="current"]')).toHaveCount(1);
+  const currentStyle = await page.locator('.business-node[data-run-state="current"]').evaluate((node) => ({ border: getComputedStyle(node).borderTopWidth, outline: getComputedStyle(node).outlineStyle }));
+  expect(currentStyle).toEqual({ border: '3px', outline: 'none' });
   const stepNumbers = await desktopInspector.locator('.step-number').allTextContents();
   expect(stepNumbers).toEqual(stepNumbers.map((_, index) => String(index + 1)));
   expect(await desktopInspector.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
   const edgeLabels = page.locator('.business-edge-label');
   for (const label of await edgeLabels.allTextContents()) expect(label.length).toBeLessThanOrEqual(32);
-  const edgeNodeCollisions = await page.evaluate(() => {
-    const labels = [...document.querySelectorAll<HTMLElement>('.business-edge-label')].map((item) => item.getBoundingClientRect());
-    const nodes = [...document.querySelectorAll<HTMLElement>('.business-node')].map((item) => item.getBoundingClientRect());
-    return labels.filter((label) => nodes.some((node) => label.left < node.right && label.right > node.left && label.top < node.bottom && label.bottom > node.top)).length;
-  });
-  expect(edgeNodeCollisions).toBe(0);
+  const dogfoodGeometry = await canvasGeometry(page);
+  expect(dogfoodGeometry.routeCount).toBeGreaterThan(0);
+  expect(dogfoodGeometry.intrusions).toEqual([]);
+  expect(dogfoodGeometry.labelNodeCollisions).toEqual([]);
+  expect(dogfoodGeometry.labelCollisions).toEqual([]);
   if (await page.locator('.svelte-flow__node').count() <= 8) await expect(page.locator('.business-minimap')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/visual/decision-1440-light.png', fullPage: true });
 
@@ -216,7 +303,7 @@ test('renders the complete generated node grammar in both themes', async ({ page
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/graphs');
-  await page.getByLabel('Developer graph JSON').setInputFiles(generatedGraphFile(7));
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedNodeGrammarFile());
   await expect(page.locator('.svelte-flow__node')).toHaveCount(7, { timeout: 15_000 });
   for (const kind of ['entry', 'predicate', 'choice', 'computation', 'dispatch', 'outcome', 'coverage_gap']) {
     await expect(page.locator(`.business-node--${kind}`)).toBeVisible();
@@ -226,15 +313,19 @@ test('renders the complete generated node grammar in both themes', async ({ page
     choiceClip: getComputedStyle(document.querySelector<HTMLElement>('.business-node--choice')!).clipPath,
     dispatchClip: getComputedStyle(document.querySelector<HTMLElement>('.business-node--dispatch')!).clipPath,
     gapClip: getComputedStyle(document.querySelector<HTMLElement>('.business-node--coverage_gap')!).clipPath,
-    outcomeShadow: getComputedStyle(document.querySelector<HTMLElement>('.business-node--outcome')!).boxShadow,
-    colors: [...document.querySelectorAll<HTMLElement>('.business-node')].map((node) => getComputedStyle(node).borderLeftColor)
+    outcomeRadius: getComputedStyle(document.querySelector<HTMLElement>('.business-node--outcome')!).borderRadius,
+    colors: [...document.querySelectorAll<HTMLElement>('.business-node')].map((node) => getComputedStyle(node).getPropertyValue('--node-color')),
+    borders: [...document.querySelectorAll<HTMLElement>('.business-node')].map((node) => getComputedStyle(node).borderTopWidth),
+    handles: [...document.querySelectorAll<HTMLElement>('.business-handle')].map((handle) => getComputedStyle(handle).opacity)
   }));
   expect(grammar.entryRadius).not.toBe('12px');
   expect(grammar.choiceClip).not.toBe('none');
   expect(grammar.dispatchClip).not.toBe('none');
   expect(grammar.gapClip).not.toBe('none');
-  expect(grammar.outcomeShadow).toContain('inset');
+  expect(grammar.outcomeRadius).not.toBe('12px');
   expect(new Set(grammar.colors).size).toBe(7);
+  expect(grammar.borders.every((width) => width === '1px')).toBe(true);
+  expect(grammar.handles.every((opacity) => opacity === '0')).toBe(true);
   await page.screenshot({ path: 'test-results/visual/node-grammar-1440-light.png', fullPage: true });
   await page.getByRole('button', { name: 'Use dark theme' }).click();
   await page.screenshot({ path: 'test-results/visual/node-grammar-1440-dark.png', fullPage: true });
@@ -245,7 +336,7 @@ test('keeps a generated 250-node graph navigable', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/graphs');
-  await page.getByLabel('Developer graph JSON').setInputFiles(generatedGraphFile(250));
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedGraphFile(250));
   await expect(page.locator('.svelte-flow__node')).toHaveCount(250, { timeout: 15_000 });
   await expect(page.locator('.business-minimap')).toHaveCount(0);
   await expect(page.getByLabel('250-node graph navigation')).toContainText('Search to jump');
@@ -258,4 +349,42 @@ test('keeps a generated 250-node graph navigable', async ({ page }) => {
     return Boolean(canvas && node && node.width > 100 && node.left >= canvas.left && node.right <= canvas.right && node.top >= canvas.top && node.bottom <= canvas.bottom);
   })).toBe(true);
   await page.screenshot({ path: 'test-results/visual/graph-250-focused.png', fullPage: true });
+});
+
+test('previews the stable business graph V1 contract from the repository', async ({ page }) => {
+  const graphPath = resolve('..', 'conformance/spring-petclinic/src/test/resources/oracles/owner-search-business.json');
+  const document = JSON.parse(await readFile(graphPath, 'utf8')) as { decision: string; nodes: unknown[]; edges: unknown[] };
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
+  await expect(page.getByRole('heading', { name: document.decision })).toBeVisible();
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(document.nodes.length, { timeout: 15_000 });
+  await expect(page.locator('path[data-route-edge]')).toHaveCount(document.edges.length);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.parallelRoutes.length).toBeGreaterThan(0);
+  for (const group of geometry.parallelRoutes) expect(group.distinctPaths).toBe(group.ids.length);
+  await mkdir('test-results/visual', { recursive: true });
+  await page.screenshot({ path: 'test-results/visual/business-v1-preview-light.png', fullPage: true });
+});
+
+test('renders branching and parallel routes without overlap in both themes', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedBranchingGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
+  await expect(page.locator('path[data-route-edge]')).toHaveCount(5);
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.parallelRoutes).toHaveLength(1);
+  expect(geometry.parallelRoutes[0].distinctPaths).toBe(geometry.parallelRoutes[0].ids.length);
+  expect(geometry.handleOpacity.every((opacity) => opacity === '0')).toBe(true);
+  await page.screenshot({ path: 'test-results/visual/branch-routes-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/branch-routes-1440-dark.png', fullPage: true });
 });

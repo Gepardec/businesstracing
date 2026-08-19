@@ -82,6 +82,12 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Rationale:** The first dogfood screenshot exposed an intermediate-width gap: the inspector moved off-screen, its absolute trigger was absent, long edge outcomes crossed the graph, and additive state borders competed. CSS width, not screenshot pixel count, controls responsive behavior. A lower pinned-inspector breakpoint, an accessible dialog primitive, bounded labels, and exclusive state rings make the explanation dependable without graph-specific layout data.
 
+### Decision 13: Preserve ELK edge routes and normalize both stable graph exports
+
+**Decision:** Return node positions and complete edge sections from the ELK layout worker. Render those orthogonal sections directly, with separate routes for parallel edges. Hide connection handles because the canvas is read-only. Use one exclusive node border for the default, path, or current state. Let the browser-only preview normalize both `fachtracing-developer-graph/v1` and `fachtracing-business-graph/v1` documents to the shared graph model. Keep the PostgreSQL graph catalog restricted to developer graph V1.
+
+**Rationale:** ELK already routes edges around nodes, but the original canvas discarded those sections and recomputed overlapping smooth-step paths. The repository also publishes a stable business-only graph format whose root contains `graphId`; rejecting it made the preview incompatible with a real exporter. The shared presentation model can support both browser inputs without changing durable graph storage.
+
 ## Component Design
 
 ### Graph Catalog
@@ -138,7 +144,7 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Interface:** Svelte component props for `GraphModel`, `LayoutResult`, and `RunHighlight`.
 
-**Visual behavior:** Cap automatic fit at 0.9 zoom. Show a compact minimap for graphs with 9 through 100 nodes. For larger graphs, show a compact node-count and search-navigation guide. Show short branch tokens for path edges and detailed-zoom edges. Keep the full outcome in the edge tooltip and explanation inspector.
+**Visual behavior:** Cap automatic fit at 0.9 zoom. Show a compact minimap for graphs with 9 through 100 nodes. For larger graphs, show a compact node-count and search-navigation guide. Show short branch tokens for path edges and detailed-zoom edges. Keep the full outcome in the edge tooltip and explanation inspector. Render exact ELK edge routes, keep parallel routes distinct, hide read-only connection handles, and use one primary node border for the active visual state.
 
 ### Run Inspector
 
@@ -156,7 +162,7 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 ### Browser Graph Preview
 
-**Responsibility:** Select or drop one local developer graph V1 JSON file, validate its name and size, convert it to the provenance-free graph model, and show it on the shared canvas.
+**Responsibility:** Select or drop one local developer graph V1 or business graph V1 JSON file, validate its name and size, convert it to the provenance-free graph model, and show it on the shared canvas.
 
 **Interface:** `/graphs` page and `parseGraphFile(file): Promise<GraphModel>`.
 
@@ -240,6 +246,8 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 - PostgreSQL integration tests verify the additive migration, immutable graph conflicts, exact graph retrieval, parameterized search, stable pagination, correlation semantics, and timeouts with bounded generated fixtures.
 - A layout benchmark uses generated topology, not a hardcoded product graph, at 250 nodes and 400 edges.
 - Browser tests select a generated graph JSON file and prove that the shared canvas renders it without PostgreSQL or a fixed topology.
+- Browser tests load a checked-in business graph V1 conformance fixture and prove that it renders without a contract error.
+- Browser geometry tests sample rendered SVG paths and prove that routes do not enter unrelated node rectangles, parallel edges remain distinct, labels do not cover nodes or each other, and connection handles are not visible.
 
 ## Rollout Plan
 

@@ -383,6 +383,54 @@ Correct the dogfood screenshot defects and replace weak visual assertions with v
 - [x] Viewport layout and Sheet accessibility tests
 - [x] Generated dogfood screenshot review
 
+---
+
+### Task 9: Repair Graph Compatibility, Routing, and Visual Quality
+
+**Status:** In Progress
+**Estimated Effort:** M
+**Dependencies:** Tasks 3, 7, and 8
+**Priority:** Critical
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Repair the contract and rendering defects found during user acceptance. Prove the result with real exported graph documents and geometry-based browser checks.
+
+**Implementation Steps:**
+
+1. Normalize developer graph V1 and business graph V1 JSON files in the browser-only preview.
+2. Return ELK edge sections from the layout worker and render them without recomputing paths.
+3. Keep parallel routes distinct, prevent edge crossings through unrelated nodes, hide read-only handles, and simplify node state borders.
+4. Add unit and browser tests for real business fixtures, branch geometry, labels, themes, responsive widths, and the 250-node profile.
+5. Inspect all generated proof images and repeat the correction cycle until no open visual defect remains.
+
+**Acceptance Criteria:**
+
+- [x] A real business graph V1 fixture and a real developer graph V1 artifact render in the local preview.
+- [x] Rendered edge routes use ELK geometry and do not enter unrelated node rectangles.
+- [x] Parallel edges have distinct visible paths and readable labels.
+- [x] Read-only connection handles are not visible and node states do not stack borders.
+- [x] Generated light, dark, focused, responsive, and 250-node evidence passes manual inspection.
+- [ ] Unit, browser, repository, and hosted CI gates pass.
+
+**Files to Modify:**
+
+- `fachtracing-viewer/src/lib/contracts/graph-contract.ts`
+- `fachtracing-viewer/src/lib/graph/layout-definition.ts`
+- `fachtracing-viewer/src/lib/graph/edge-route.ts` (new)
+- `fachtracing-viewer/src/lib/graph/BusinessEdge.svelte`
+- `fachtracing-viewer/src/lib/graph/BusinessNode.svelte`
+- `fachtracing-viewer/src/lib/graph/FlowCanvas.svelte`
+- `fachtracing-viewer/src/lib/graph/graph-file.ts`
+- `fachtracing-viewer/e2e/decision-explorer.spec.ts`
+
+**Tests Required:**
+
+- [x] Contract and route geometry unit tests
+- [x] Real fixture and generated branching browser tests
+- [x] Generated visual proof review
+
 ## Implementation Order
 
 1. Task 1 establishes the contracts and build.
@@ -392,11 +440,12 @@ Correct the dogfood screenshot defects and replace weak visual assertions with v
 5. Task 6 adds final proof and delivery documentation.
 6. Task 7 adds the optional browser-only graph preview.
 7. Task 8 corrects and approves the complete decision visual baseline.
+8. Task 9 repairs user-acceptance defects and reopens visual approval.
 
 ## Progress Tracking
 
-- Total Tasks: 8
+- Total Tasks: 9
 - Completed: 8
-- In Progress: 0
+- In Progress: 1
 - Blocked: 0
 - Pending: 0

@@ -42,10 +42,18 @@
   })));
   let edges = $derived(layoutEdges.map((item) => ({
     ...item,
+    zIndex: highlight?.activeEdgeId === item.id ? 3 : fullPath && (highlight?.pathEdgeIds.has(item.id) ?? false) ? 2 : 0,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 11,
+      height: 11,
+      color: highlight?.activeEdgeId === item.id ? 'var(--run-current)' : fullPath && (highlight?.pathEdgeIds.has(item.id) ?? false) ? 'var(--run-path)' : 'var(--graph-edge)'
+    },
     data: {
+      ...item.data,
       onPath: fullPath && (highlight?.pathEdgeIds.has(item.id) ?? false),
       current: highlight?.activeEdgeId === item.id,
-      showLabel: viewport.zoom >= 0.92
+      showLabel: viewport.zoom >= 0.72
     }
   })));
 
@@ -56,6 +64,7 @@
       const layout = await layoutGraph(input);
       if (request !== layoutRequest) return;
       const positions = new Map(layout.nodes.map((node) => [node.id, node]));
+      const routes = new Map(layout.edges.map((edge) => [edge.id, edge]));
       layoutNodes = input.nodes.map((node) => ({
         id: node.id, type: 'business', position: positions.get(node.id) ?? { x: 0, y: 0 },
         data: { node, onPath: false, current: false, dimmed: false, stepNumber: null }, draggable: false, selectable: true, focusable: true,
@@ -63,8 +72,15 @@
       }));
       layoutEdges = input.edges.map((edge) => ({
         id: edge.id, type: 'business', source: edge.from, target: edge.to, label: edge.outcome || undefined,
-        markerEnd: { type: MarkerType.ArrowClosed },
-        data: { onPath: false, current: false, showLabel: false },
+        interactionWidth: 14,
+        domAttributes: { 'data-source-node': edge.from, 'data-target-node': edge.to },
+        data: {
+          route: routes.get(edge.id)!.points,
+          labelPosition: routes.get(edge.id)!.labelPosition,
+          onPath: false,
+          current: false,
+          showLabel: false
+        },
         focusable: true, ariaLabel: `${edge.outcome || 'next'} from ${edge.from} to ${edge.to}`
       }));
       fitRevision += 1;

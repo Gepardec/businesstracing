@@ -34,18 +34,18 @@
   <input
     class="file-input"
     bind:this={input}
-    id="developer-graph-file"
+    id="graph-file"
     type="file"
     accept=".json,application/json"
-    aria-label="Developer graph JSON"
+    aria-label="Graph JSON"
     disabled={busy}
     onchange={(event) => selected(event.currentTarget.files)}
   />
   {#if !compact}
     <span class="upload-icon"><FileJson size={26} /></span>
     <div class="upload-copy">
-      <strong>Drop a developer graph JSON file here</strong>
-      <span>Current V1 JSON · 5 MiB maximum · browser memory only</span>
+      <strong>Drop a graph JSON file here</strong>
+      <span>Developer or business V1 · 5 MiB maximum · browser memory only</span>
     </div>
   {/if}
   <Button variant={compact ? 'outline' : 'default'} onclick={choose} disabled={busy}>

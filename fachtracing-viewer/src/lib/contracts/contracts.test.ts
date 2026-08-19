@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDeveloperGraph } from './graph-contract';
+import { parseBusinessGraph, parseDeveloperGraph, parseGraphDocument } from './graph-contract';
 import { assertRunMatchesGraph, parseDecisionRecord } from './run-contract';
 
 const graphDocument = {
@@ -54,5 +54,27 @@ describe('contract adapters', () => {
     const graph = parseDeveloperGraph(graphDocument);
     const run = parseDecisionRecord({ ...runDocument, graphVersion: 2 });
     expect(() => assertRunMatchesGraph(run, graph)).toThrow(/versions do not match/);
+  });
+
+  it('normalizes the stable business graph V1 export', () => {
+    const graph = parseBusinessGraph({
+      schema: 'fachtracing-business-graph/v1', graphId: 'business-graph', version: 2, decision: 'choose a route',
+      completeness: 'INCOMPLETE', entryNodeIds: ['rule-a', 'action-b'], futureField: true,
+      nodes: [
+        { id: 'rule-a', kind: 'RULE', label: 'route is local', futureField: true },
+        { id: 'action-b', kind: 'ACTION', label: 'load timetable' },
+        { id: 'result-c', kind: 'RESULT', label: 'route selected' },
+        { id: 'gap-d', kind: 'GAP', label: 'remote result is unresolved' }
+      ],
+      edges: [
+        { id: 'edge-a', from: 'rule-a', to: 'result-c', outcome: 'yes' },
+        { id: 'edge-b', from: 'action-b', to: 'gap-d', outcome: '' }
+      ]
+    });
+    expect(graph.schema).toBe('fachtracing-business-graph/v1');
+    expect(graph.entryNodeIds).toEqual(['rule-a', 'action-b']);
+    expect(graph.nodes.map((node) => node.kind)).toEqual(['PREDICATE', 'COMPUTATION', 'OUTCOME', 'COVERAGE_GAP']);
+    expect(graph.coverageGaps).toEqual([{ nodeId: 'gap-d', description: 'remote result is unresolved' }]);
+    expect(parseGraphDocument(graphDocument).schema).toBe('fachtracing-developer-graph/v1');
   });
 });

@@ -71,11 +71,13 @@
 | 10 | Preview one graph JSON file in browser memory. | It gives a fast inspection path without a database import, network upload, persistent storage, or a second graph renderer. | 7 | 2026-08-19T20:40:30Z |
 | 11 | Use a real modal Sheet below 1,024 CSS pixels and a resizable inspector at larger widths. | The explanation stays available without shrinking the graph to an unusable width. | 8 | 2026-08-19T21:25:59Z |
 | 12 | Use search and fit guidance instead of a compressed minimap above 100 nodes. | A long top-to-bottom graph collapses into an unreadable line in a fixed-size minimap. Direct node search remains useful at the tested 250-node profile. | 8 | 2026-08-19T21:25:59Z |
+| 13 | Preserve ELK edge routes and normalize both stable graph exports in the local preview. | Discarding ELK sections caused edges to cross nodes and overlap. Rejecting business graph V1 rejected a real repository export. | 9 | 2026-08-19T21:49:51Z |
 
 ## Deviations from Design
 
 | Planned | Actual | Reason | Task |
 | --- | --- | --- | --- |
+| Task 8 visual approval was complete. | User acceptance found route crossings, overlapping parallel edges, visible edit handles, stacked node borders, and a valid business graph V1 rejection. | The original browser checks measured labels but did not verify SVG route geometry or both stable graph exports. Task 9 reopens approval. | 9 |
 
 ## Blockers Encountered
 
