@@ -265,8 +265,8 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - [x] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
 - [ ] Approved visual baselines cover all node kinds, states, themes, responsive sizes, and the 250-node safety profile.
 - [x] The full repository gate and hosted CI pass.
-- [ ] Fachtracing's generated developer graph and actual Java-agent path render in the viewer without a fixed test topology.
-- [ ] Hosted browser proof is available as a downloadable CI artifact.
+- [x] Fachtracing's generated developer graph and actual Java-agent path render in the viewer without a fixed test topology.
+- [x] Hosted browser proof is available as a downloadable CI artifact.
 
 **Files to Modify:**
 
@@ -288,7 +288,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - [x] Playwright end-to-end suite
 - [x] Dependency audit
 - [x] Full repository verification
-- [ ] Generated self-dogfood PostgreSQL browser journey
+- [x] Generated self-dogfood PostgreSQL browser journey
 
 ## Implementation Order
 

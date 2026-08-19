@@ -3,9 +3,9 @@
     "id": "frontend-flow-explorer",
     "type": "feature",
     "status": "implementing",
-    "version": 8,
+    "version": 9,
     "author": "lucostus",
-    "updated": "2026-08-19T19:37:37Z"
+    "updated": "2026-08-19T20:22:34Z"
   },
   {
     "id": "self-explainable-runtime-dogfood",

@@ -115,6 +115,8 @@ Local evidence: zero Svelte diagnostics, 11 passing unit tests, a passing produc
 
 The hosted verification run `32285683620` passed all four jobs at commit `c281382`. The PostgreSQL job passed the repeatable storage migration, viewer unit and build gates, dependency audit, seeded graph import, HTTP `QUERY` workflow, desktop run explanation, and narrow inspector journey in 1 minute 45 seconds. Mega Backend, Spring PetClinic, and the core repository gate also passed. Task 6 stays in progress only because visual baseline approval is a manual product review item.
 
-### Session 8 — Generated self-dogfood proof started (2026-08-19)
+### Session 8 — Generated self-dogfood proof completed (2026-08-19)
 
-Recovered the existing self-tracing implementation. It analyzes two production policies and records five complete Java-agent paths, but it writes only business JSON and evaluated Mermaid. The current change will emit the existing developer graph V1 and decision-record V1 contracts, import them into the hosted viewer database, and capture browser proof from the generated graph.
+The normal analyzer now emits three current developer graph V1 files. Five real Java-agent executions emit decision-record V1 files with the generic `application=fachtracing` correlation. The production import adapters load these unchanged artifacts into PostgreSQL. The Playwright journey finds them through HTTP `QUERY`, opens one result, verifies Svelte Flow nodes and full-path mode, and captures the page.
+
+Dogfooding found and fixed two compatibility faults: the TypeScript reader rejected the Java contract's zero-based observation sequence, and an ELK bundled library cannot run inside another worker. The final client uses ELK's supported API plus dedicated worker split and initializes it only in the browser. Hosted run `32297906019` passed all four jobs at commit `0a96961`. The PostgreSQL job passed all four browser journeys in 4.5 seconds and published `fachtracing-viewer-dogfood-32297906019`. Task 6 stays in progress only for manual visual baseline approval.

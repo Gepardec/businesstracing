@@ -1,7 +1,7 @@
 ---
 specId: "frontend-flow-explorer"
 startedAt: "2026-08-19T19:37:37Z"
-completedAt: null
+completedAt: "2026-08-19T20:22:34Z"
 finalStatus: "implementing"
 phases: [1, 2, 3]
 ---
@@ -26,3 +26,8 @@ phases: [1, 2, 3]
 
 - Action: Emit decision-record V1 files from real Java-agent executions, add a generic run importer, and add a PostgreSQL browser journey.
 - Result: The viewer checks pass and repository integrity is valid. Hosted browser proof remains pending.
+
+### [22:22:34] Complete the hosted dogfood proof
+
+- Action: Fix V1 zero-based sequences, replace the unsupported nested ELK bundle with ELK's API and dedicated worker, and run the full hosted workflow.
+- Result: Run `32297906019` passed all four jobs. PostgreSQL, HTTP `QUERY`, generated graph import, five real runs, Svelte Flow rendering, full-path highlighting, and screenshot upload all passed.

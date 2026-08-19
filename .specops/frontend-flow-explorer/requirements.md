@@ -134,10 +134,10 @@ Internal support users cannot efficiently find prior business decisions or expla
 
 **Progress Checklist:**
 
-- [ ] Emit developer graph V1 and decision-record V1 self-tracing artifacts.
-- [ ] Import the generated artifacts into the viewer database.
-- [ ] Search and open the self-traced runs in the browser.
-- [ ] Capture reviewable browser proof from the actual generated graph.
+- [x] Emit developer graph V1 and decision-record V1 self-tracing artifacts.
+- [x] Import the generated artifacts into the viewer database.
+- [x] Search and open the self-traced runs in the browser.
+- [x] Capture reviewable browser proof from the actual generated graph.
 
 ## Non-Functional Requirements
 
