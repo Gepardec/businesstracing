@@ -44,6 +44,8 @@ persistence, and response APIs. The generic engine does not depend on Spring.
 See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
 generates from its own Maven plugin policy.
 
+The [viewer guide](fachtracing-viewer/README.md#show-fachtracing-tracing-itself) shows how to open those generated graphs and real Java-agent paths in the Svelte flow explorer.
+
 See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
 delivery, JDBC, upgrade, and rollback flow.
 

@@ -31,6 +31,7 @@ export interface RunModel {
   failure: { canonicalValue: string; displayValue: string } | null;
   observations: readonly RunObservation[];
   coverageGaps: readonly string[];
+  correlationKeys: Readonly<Record<string, DecisionValue>>;
 }
 
 type JsonObject = Record<string, unknown>;
@@ -71,23 +72,27 @@ function value(raw: unknown, path: string): DecisionValue | null {
   });
 }
 
+function values(raw: unknown, path: string): Readonly<Record<string, DecisionValue>> {
+  const input = object(raw, path);
+  const result: Record<string, DecisionValue> = {};
+  for (const [key, rawValue] of Object.entries(input)) {
+    const parsed = value(rawValue, `${path}.${key}`);
+    if (parsed === null) throw new ContractError(`${path}.${key} cannot be null`);
+    result[key] = parsed;
+  }
+  return Object.freeze(result);
+}
+
 export function parseDecisionRecord(input: unknown): RunModel {
   const root = object(input, 'decision record');
   if (root.schema !== DECISION_RECORD_SCHEMA) throw new ContractError('unsupported decision record schema');
   const observations = array(root.observations, 'observations').map((raw, index): RunObservation => {
     const item = object(raw, `observations[${index}]`);
-    const evidenceInput = object(item.evidence, `observations[${index}].evidence`);
-    const evidence: Record<string, DecisionValue> = {};
-    for (const [key, rawValue] of Object.entries(evidenceInput)) {
-      const parsed = value(rawValue, `observations[${index}].evidence.${key}`);
-      if (parsed === null) throw new ContractError('evidence values cannot be null');
-      evidence[key] = parsed;
-    }
     return Object.freeze({
       sequence: positiveInteger(item.sequence, `observations[${index}].sequence`),
       nodeId: text(item.nodeId, `observations[${index}].nodeId`),
       outcome: text(item.outcome, `observations[${index}].outcome`),
-      evidence: Object.freeze(evidence),
+      evidence: values(item.evidence, `observations[${index}].evidence`),
       selectedEdgeId: item.selectedEdgeId === null ? null : text(item.selectedEdgeId, `observations[${index}].selectedEdgeId`)
     });
   }).sort((left, right) => left.sequence - right.sequence);
@@ -112,7 +117,8 @@ export function parseDecisionRecord(input: unknown): RunModel {
       displayValue: text(failureObject.displayValue, 'failure.displayValue')
     }),
     observations: Object.freeze(observations),
-    coverageGaps: Object.freeze(array(root.coverageGaps, 'coverageGaps').map((item, index) => text(item, `coverageGaps[${index}]`)))
+    coverageGaps: Object.freeze(array(root.coverageGaps, 'coverageGaps').map((item, index) => text(item, `coverageGaps[${index}]`))),
+    correlationKeys: values(root.correlationKeys, 'correlationKeys')
   });
 }
 

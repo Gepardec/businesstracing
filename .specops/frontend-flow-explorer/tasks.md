@@ -256,6 +256,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 2. Add `npm audit --audit-level=high`, checks, unit tests, build, and browser tests to the repository verifier and CI.
 3. Document graph import, PostgreSQL variables, loopback-only binding, correlation lookup policy, backup and retention, and compatibility limits.
 4. Run the full Java, PostgreSQL, frontend, and repository-integrity gates.
+5. Generate Fachtracing's own developer graphs and Java-agent decision records, import them into the hosted PostgreSQL test, open a real run, and capture browser proof.
 
 **Acceptance Criteria:**
 
@@ -264,6 +265,8 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - [x] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
 - [ ] Approved visual baselines cover all node kinds, states, themes, responsive sizes, and the 250-node safety profile.
 - [x] The full repository gate and hosted CI pass.
+- [ ] Fachtracing's generated developer graph and actual Java-agent path render in the viewer without a fixed test topology.
+- [ ] Hosted browser proof is available as a downloadable CI artifact.
 
 **Files to Modify:**
 
@@ -273,12 +276,19 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - `scripts/verify-pr.sh`
 - `.github/workflows/` (existing workflow files as required)
 - `README.md`
+- `scripts/verify-self-tracing.sh`
+- `scripts/verify-viewer-dogfood.sh` (new)
+- `fachtracing-maven-plugin/src/test/java/at/gepardec/fachtracing/maven/SelfTracingRuntimeTest.java`
+- `fachtracing-viewer/src/cli/import-runs.ts` (new)
+- `fachtracing-viewer/src/lib/server/run-import-repository.server.ts` (new)
+- `fachtracing-viewer/src/lib/server/run-import.server.ts` (new)
 
 **Tests Required:**
 
 - [x] Playwright end-to-end suite
 - [x] Dependency audit
 - [x] Full repository verification
+- [ ] Generated self-dogfood PostgreSQL browser journey
 
 ## Implementation Order
 

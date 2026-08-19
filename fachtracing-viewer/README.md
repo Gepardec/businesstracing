@@ -30,6 +30,27 @@ The command validates each document, stores the unchanged UTF-8 bytes and SHA-25
 
 The search accepts any stored correlation name and its exact canonical value. The viewer does not convert raw application values. If users know a different value, the traced application must store a separate lookup-safe correlation or a separate adapter must define the conversion. Search bodies use HTTP `QUERY`; names and values do not enter URLs or application logs.
 
+## Show Fachtracing tracing itself
+
+From a clean checkout, generate the self-traced developer graphs and five real Java-agent runs:
+
+```sh
+./scripts/verify-viewer-dogfood.sh
+```
+
+After the PostgreSQL migration, import the generated artifacts:
+
+```sh
+cd fachtracing-viewer
+npm run import-graphs -- --directory ../target/viewer-dogfood/graphs
+npm run import-runs -- --directory ../target/viewer-dogfood/runs
+npm run dev
+```
+
+Open `http://127.0.0.1:5173/runs` and search for correlation name `application` with exact value `fachtracing`. The results show two Fachtracing production policies and five recorded executions. The script generates every graph, node, edge, observation, and selected path from the analyzer and Java agent. No demonstration topology is stored in the viewer.
+
+The hosted PostgreSQL job runs the same sequence and publishes `fachtracing-viewer.png` as its `fachtracing-viewer-dogfood-*` artifact.
+
 ## Development
 
 ```sh

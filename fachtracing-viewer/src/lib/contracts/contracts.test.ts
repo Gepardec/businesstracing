@@ -40,6 +40,7 @@ describe('contract adapters', () => {
     expect(graph.edges.map((edge) => edge.id)).toEqual(['e1', 'e2']);
     expect(run.observations.map((item) => item.nodeId)).toEqual(['entry', 'choice']);
     expect(run.observations[1].selectedEdgeId).toBe('e2');
+    expect(run.correlationKeys).toEqual({});
   });
 
   it('rejects unsupported schemas and dangling references', () => {

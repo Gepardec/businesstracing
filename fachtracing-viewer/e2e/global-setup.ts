@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto';
+import { join } from 'node:path';
 import pg from 'pg';
+import { GraphCatalogRepository } from '../src/lib/server/graph-catalog-repository.server';
+import { readGraphDirectory } from '../src/lib/server/graph-import.server';
+import { RunImportRepository } from '../src/lib/server/run-import-repository.server';
+import { readRunDirectory } from '../src/lib/server/run-import.server';
 
 const graph = {
   schema: 'fachtracing-developer-graph/v1',
@@ -34,23 +39,27 @@ const run = {
 export default async function setup(): Promise<void> {
   const connectionString = process.env.FACHTRACING_DATABASE_URL;
   if (!connectionString) return;
-  const client = new pg.Client({ connectionString });
-  await client.connect();
+  const pool = new pg.Pool({ connectionString, max: 2 });
   try {
     const graphBytes = Buffer.from(`${JSON.stringify(graph)}\n`);
     const runBytes = Buffer.from(`${JSON.stringify(run)}\n`);
-    await client.query('delete from fachtracing_decision_record where record_id = $1', [run.recordId]);
-    await client.query('delete from fachtracing_graph where graph_id = $1 and graph_version = $2', [graph.graph.id, graph.graph.version]);
-    await client.query(`insert into fachtracing_graph
+    await pool.query('delete from fachtracing_decision_record where record_id = $1', [run.recordId]);
+    await pool.query('delete from fachtracing_graph where graph_id = $1 and graph_version = $2', [graph.graph.id, graph.graph.version]);
+    await pool.query(`insert into fachtracing_graph
       (graph_id, graph_version, schema_id, media_type, payload, sha256, imported_at)
       values ($1, $2, $3, $4, $5, $6, current_timestamp)`, [graph.graph.id, 1, graph.schema,
       'application/vnd.fachtracing.developer-graph+json;version=1', graphBytes, createHash('sha256').update(graphBytes).digest('hex')]);
-    await client.query(`insert into fachtracing_decision_record
+    await pool.query(`insert into fachtracing_decision_record
       (record_id, execution_id, graph_id, graph_version, started_at, completed_at, status, schema_id, payload)
       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, [run.recordId, run.executionId, run.graphId, run.graphVersion,
       run.startedAt, run.completedAt, run.status, run.schema, runBytes]);
-    await client.query(`insert into fachtracing_correlation
+    await pool.query(`insert into fachtracing_correlation
       (record_id, correlation_name, correlation_value, completed_at) values ($1, $2, $3, $4)`,
       [run.recordId, 'routeId', 'route-17', run.completedAt]);
-  } finally { await client.end(); }
+    const dogfood = process.env.FACHTRACING_DOGFOOD_DIRECTORY;
+    if (dogfood) {
+      await new GraphCatalogRepository(pool).importGraphs(await readGraphDirectory(join(dogfood, 'graphs')));
+      await new RunImportRepository(pool).importRuns(await readRunDirectory(join(dogfood, 'runs')));
+    }
+  } finally { await pool.end(); }
 }

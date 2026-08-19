@@ -21,6 +21,7 @@ require_tracked AGENTS.md
 require_tracked README.md
 require_tracked scripts/verify.sh
 require_tracked scripts/verify-self-tracing.sh
+require_tracked scripts/verify-viewer-dogfood.sh
 require_tracked scripts/capture-gate-output.sh
 require_tracked scripts/maven-repository-path.sh
 require_tracked scripts/test-capture-gate-output.sh

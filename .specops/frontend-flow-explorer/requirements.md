@@ -118,6 +118,27 @@ Internal support users cannot efficiently find prior business decisions or expla
 - [ ] Keep the V1 storage payload unchanged.
 - [ ] Reject unsupported schemas and accept unknown fields.
 
+### Story 5: Prove the viewer with Fachtracing itself
+
+**As a** maintainer or reviewer
+**I want** the viewer to show Fachtracing's own generated graphs and runtime paths
+**So that** I can verify the complete extraction, storage, query, and explanation chain without a hand-written demonstration
+
+**Acceptance Criteria (EARS):**
+
+- WHEN the self-tracing gate runs THE SYSTEM SHALL generate current developer graph V1 documents for the selected Fachtracing production policies.
+- WHEN each selected production policy executes through the Java agent THE SYSTEM SHALL write its actual decision-record V1 payload with a generic `application=fachtracing` correlation.
+- WHEN the dogfood browser proof runs THE SYSTEM SHALL import those generated graphs and runs into PostgreSQL and SHALL find them through HTTP `QUERY`.
+- WHEN a reviewer opens a dogfood result THE SYSTEM SHALL render the complete generated graph, the observed path, the final result, and the ordered explanation.
+- THE SYSTEM SHALL capture browser proof from generated artifacts and SHALL NOT contain a fixed Fachtracing graph, fixed node IDs, fixed edge IDs, or graph-specific positions.
+
+**Progress Checklist:**
+
+- [ ] Emit developer graph V1 and decision-record V1 self-tracing artifacts.
+- [ ] Import the generated artifacts into the viewer database.
+- [ ] Search and open the self-traced runs in the browser.
+- [ ] Capture reviewable browser proof from the actual generated graph.
+
 ## Non-Functional Requirements
 
 - Accessibility: All run navigation and graph selection actions shall work with a keyboard. Visible controls shall meet WCAG 2.2 AA contrast and focus requirements.
@@ -159,6 +180,7 @@ Internal support users cannot efficiently find prior business decisions or expla
 - A reviewer can find a stored run, open it, and identify its final result and every observed step without reading Java or Mermaid source.
 - Automated contracts prove that graph and run adapters preserve every ID used for node and edge highlighting.
 - The graph layout benchmark and PostgreSQL search contract meet the stated limits.
+- Hosted dogfood proof shows a real Fachtracing production policy and its Java-agent runtime path in the viewer.
 
 ## Out of Scope
 

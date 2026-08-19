@@ -5,6 +5,7 @@ import at.gepardec.fachtracing.explain.BusinessExecutionMermaidRenderer;
 import at.gepardec.fachtracing.explain.BusinessExplanationProjector;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
+import at.gepardec.fachtracing.model.DecisionRecordEnvelope;
 import at.gepardec.fachtracing.runtime.RuntimeActivationBundle;
 import at.gepardec.fachtracing.runtime.RuntimeCollector;
 import at.gepardec.fachtracing.runtime.TraceRuntime;
@@ -14,6 +15,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Executes the two selected production policies through the current Java agent. */
@@ -129,6 +131,16 @@ public final class SelfTracingRuntimeTest {
         require(diagram.contains("Result: " + expectedResult),
                 "evaluated Mermaid does not contain the method result");
         Files.writeString(mermaidFile, diagram);
+        Path decisionFile = mermaidFile.resolveSibling(
+                mermaidFile.getFileName().toString().replace(".mmd", ".decision.json"));
+        var application = new DecisionExecution.DecisionValue("string", "fachtracing", "Fachtracing");
+        var policy = new DecisionExecution.DecisionValue(
+                "string", graph.decisionLabel(), graph.decisionLabel());
+        var envelope = new DecisionRecordEnvelope(
+                "self-" + execution.executionId(), execution,
+                "self-tracing:" + graph.graphId() + ":v" + graph.version(),
+                Map.of("application", application, "policy", policy), "self-dogfood-v1");
+        Files.write(decisionFile, envelope.toJson());
         System.out.printf("FACHTRACING_SELF_RUNTIME_PATH file=%s result=%s observations=%d%n",
                 mermaidFile.getFileName(), expectedResult, execution.observations().size());
     }

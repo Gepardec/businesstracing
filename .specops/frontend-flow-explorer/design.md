@@ -64,6 +64,12 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Rationale:** A decision record is explainable only while its exact graph version exists. Database storage keeps graph retention with decision retention and permits JSON or a future documented binary media type without changing the table. Version one imports only the current JSON contract and does not invent a binary wire format.
 
+### Decision 10: Use generated self-tracing artifacts as browser proof
+
+**Decision:** Configure the existing self-tracing profile to emit developer graph V1 JSON. Extend the existing Java-agent runtime proof to emit the captured decision-record V1 payloads. Import these generated files into the PostgreSQL browser test and capture a screenshot from the real run detail page.
+
+**Rationale:** This exercises the same analyzer, graph exporter, agent, runtime collector, JSON contracts, database schema, HTTP `QUERY` endpoint, ELK layout, and Svelte Flow UI that an integrating application uses. A fixed demonstration graph would not prove this chain.
+
 ## Component Design
 
 ### Graph Catalog
@@ -81,6 +87,14 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 **Interface:** `npm run import-graphs -- --directory <path>`.
 
 **Failure behavior:** Reject path traversal, files outside the selected directory, invalid JSON Schema documents, conflicting graph bytes, unsupported media types, and partial imports. Re-importing identical bytes is successful.
+
+### Run Import Command
+
+**Responsibility:** Import generated decision-record V1 files for local demonstrations and offline runtime sinks after their exact graphs exist.
+
+**Interface:** `npm run import-runs -- --directory <path>`.
+
+**Failure behavior:** Reject invalid records, absent graph versions, and different bytes for an existing record or execution identity. Import correlations from the unchanged payload in the same transaction.
 
 ### Run Repository
 
@@ -123,6 +137,14 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 **Responsibility:** Show all newest decision summaries, submit arbitrary exact correlation and metadata searches, own cursor navigation, and keep loading, empty, and retry states.
 
 **Interface:** `/runs` page and `/runs/[executionId]` detail route.
+
+### Self-Dogfood Proof
+
+**Responsibility:** Generate, import, search, render, and capture Fachtracing's own production-policy graphs and runtime decisions.
+
+**Interface:** `./scripts/verify-viewer-dogfood.sh` for generation and artifact checks; the hosted PostgreSQL browser job for import and screenshot proof.
+
+**Failure behavior:** Fail if the developer graph, decision record, correlation, observed path, or screenshot is absent. The proof reads generated JSON and cannot define graph topology.
 
 ## System Flow
 

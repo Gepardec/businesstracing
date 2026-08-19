@@ -18,6 +18,7 @@
 - Coherence check: Pass. The layout, interaction, and query limits refer to distinct measured operations and do not conflict.
 - Dependency introduction gate: Eight Node.js dependencies are approved in `design.md`. The application lockfile and npm audit remain Phase 3 gates.
 - Vocabulary check: Not required for the full-stack vertical.
+- Session 8 context: The existing self-tracing profile generates exact and business graphs and executes five real paths through the Java agent. The viewer proof must add only generated developer JSON, decision-record JSON, PostgreSQL import, and browser evidence.
 
 ## Phase 2 Completion Summary
 
@@ -66,6 +67,7 @@
 | 6 | Store immutable graph V1 bytes in PostgreSQL. | Historical decisions require their exact graph version. Co-located retention avoids an unsynchronized deployment directory. | 2 | 2026-08-19T13:06:48Z |
 | 7 | Make correlation-to-decision explanation the primary workflow. | Support users need to find all decisions for a known business reference and explain the recorded branch evidence, not browse graphs in isolation. | 4, 5 | 2026-08-19T13:06:48Z |
 | 8 | Keep the POC local, PostgreSQL-only, exact-search-only, and source-metadata-free. | This is the smallest safe scope for confidential records and the existing indexed correlation contract. | 2, 5, 6 | 2026-08-19T13:06:48Z |
+| 9 | Prove the viewer with the existing self-tracing analyzer and Java-agent path. | Generated self-observation proves the complete product chain and avoids a hand-written demonstration diagram. | 6 | 2026-08-19T19:37:37Z |
 
 ## Deviations from Design
 
@@ -112,3 +114,7 @@ Local evidence: zero Svelte diagnostics, 11 passing unit tests, a passing produc
 ### Session 7 — Hosted verification completed (2026-08-19)
 
 The hosted verification run `32285683620` passed all four jobs at commit `c281382`. The PostgreSQL job passed the repeatable storage migration, viewer unit and build gates, dependency audit, seeded graph import, HTTP `QUERY` workflow, desktop run explanation, and narrow inspector journey in 1 minute 45 seconds. Mega Backend, Spring PetClinic, and the core repository gate also passed. Task 6 stays in progress only because visual baseline approval is a manual product review item.
+
+### Session 8 — Generated self-dogfood proof started (2026-08-19)
+
+Recovered the existing self-tracing implementation. It analyzes two production policies and records five complete Java-agent paths, but it writes only business JSON and evaluated Mermaid. The current change will emit the existing developer graph V1 and decision-record V1 contracts, import them into the hosted viewer database, and capture browser proof from the generated graph.

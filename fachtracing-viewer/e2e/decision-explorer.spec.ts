@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
 
 test('shows a generic correlation search without placing values in the URL', async ({ page }) => {
   await page.goto('/runs');
@@ -34,4 +35,21 @@ test('keeps the explanation available at a narrow width', async ({ page }) => {
   await page.goto('/runs/e2e-execution');
   await page.getByRole('button', { name: 'Explanation' }).click();
   await expect(page.getByRole('complementary', { name: 'Run explanation' })).toBeVisible();
+});
+
+test('renders Fachtracing from its generated graph and Java-agent run', async ({ page }) => {
+  test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY, 'Generated Fachtracing artifacts are required');
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto('/runs');
+  await page.getByLabel('Correlation name').fill('application');
+  await page.getByLabel('Exact stored value').fill('fachtracing');
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByText('include exact node in business graph').first()).toBeVisible();
+  await expect(page.getByText('select source inputs for graph analysis').first()).toBeVisible();
+  await page.getByRole('link', { name: 'Explain' }).first().click();
+  await expect(page.getByRole('complementary', { name: 'Run explanation' })).toContainText(/\d+ steps/);
+  await expect(page.locator('.svelte-flow__node').first()).toBeVisible();
+  await expect(page.getByLabel('Full path')).toBeChecked();
+  await mkdir('test-results/dogfood', { recursive: true });
+  await page.screenshot({ path: 'test-results/dogfood/fachtracing-viewer.png', fullPage: true });
 });
