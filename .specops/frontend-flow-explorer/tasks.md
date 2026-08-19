@@ -104,21 +104,20 @@ Add the single-responsibility graph catalog and PostgreSQL run repository, then 
 **Blocker:** None
 
 **Description:**
-Render the complete node and edge grammar with Svelte Flow, compute deterministic top-to-bottom positions with ELK in a worker, and add progressive large-graph views.
+Render the complete node and edge grammar with Svelte Flow and compute deterministic top-to-bottom positions with ELK in a worker.
 
 **Implementation Steps:**
 
 1. Implement the top-to-bottom layout worker with stable sorting, measured sizes, north/south ports, and spacing.
 2. Implement one custom node component and one custom edge component with the documented kind and state variants.
-3. Implement the graph view model, semantic zoom, viewport-only rendering, and explicit run-focus projection.
-4. Add pan, zoom, fit, node search, minimap, keyboard selection, loading, partial-view, and layout-error states.
+3. Implement semantic zoom without changing graph topology.
+4. Add pan, zoom, fit, node search, minimap, keyboard selection, loading, and layout-error states.
 5. Add generated-topology layout, monochrome recognition, component, and visual tests.
 
 **Acceptance Criteria:**
 
 - [ ] All contract nodes and edges render from data with no graph-specific positions.
 - [ ] Layout is deterministic and completes within 2 seconds for 250 nodes and 400 edges.
-- [ ] A 1,000-node and 1,600-edge view becomes interactive within 5 seconds, and larger graphs open in an explicit run-focus view.
 - [ ] Every node kind is distinguishable by silhouette, icon, text, and token in light, dark, and monochrome checks.
 - [ ] Coverage gaps and invalid references never appear as invented normal flow.
 - [ ] Keyboard and focus behavior meet the accessibility criteria.
@@ -126,7 +125,6 @@ Render the complete node and edge grammar with Svelte Flow, compute deterministi
 **Files to Modify:**
 
 - `fachtracing-viewer/src/lib/graph/layout-worker.ts` (new)
-- `fachtracing-viewer/src/lib/graph/graph-view-model.ts` (new)
 - `fachtracing-viewer/src/lib/graph/FlowCanvas.svelte` (new)
 - `fachtracing-viewer/src/lib/graph/BusinessNode.svelte` (new)
 - `fachtracing-viewer/src/lib/graph/BusinessEdge.svelte` (new)
@@ -136,7 +134,7 @@ Render the complete node and edge grammar with Svelte Flow, compute deterministi
 
 - [ ] Layout benchmark and determinism tests
 - [ ] Canvas component and keyboard tests
-- [ ] Node-state and large-graph visual tests
+- [ ] Node-state and 250-node safety-profile visual tests
 
 ---
 
@@ -238,7 +236,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 
 **Implementation Steps:**
 
-1. Add Playwright flows for search, run selection, step navigation, full-path mode, semantic zoom, large-graph focus, themes, deep links, and narrow layout.
+1. Add Playwright flows for search, run selection, step navigation, full-path mode, semantic zoom, themes, deep links, and narrow layout.
 2. Add `npm audit --audit-level=high`, checks, unit tests, build, and browser tests to the repository verifier and CI.
 3. Document graph directory, PostgreSQL variables, loopback binding, reverse-proxy requirement, and compatibility limits.
 4. Run the full Java, PostgreSQL, frontend, and repository-integrity gates.
@@ -248,7 +246,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - [ ] All EARS criteria have automated evidence or an explicit manual accessibility review item.
 - [ ] High and critical npm audit findings block CI.
 - [ ] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
-- [ ] Approved visual baselines cover all node kinds, states, themes, sizes, and large-graph modes.
+- [ ] Approved visual baselines cover all node kinds, states, themes, responsive sizes, and the 250-node safety profile.
 - [ ] The full repository gate and hosted CI pass.
 
 **Files to Modify:**

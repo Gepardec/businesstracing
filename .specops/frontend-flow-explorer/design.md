@@ -6,7 +6,7 @@
 
 The repository has stable graph JSON, versioned run JSON, and indexed PostgreSQL storage, but it has no browser delivery layer. A new `fachtracing-viewer` SvelteKit application owns the read-only web experience. Server-only modules load versioned graph artifacts and query existing tables; client modules adapt these contracts into Svelte Flow nodes, edges, and run-selection state. This boundary keeps database credentials out of the browser and keeps layout concerns out of the Java engine.
 
-The application uses `@xyflow/svelte` for interaction and ELK's layered algorithm for positions. ELK runs from graph data in a Web Worker. Stable input sorting, measured node sizes, orthogonal routing, and fixed spacing options produce repeatable layouts without graph-specific coordinates. `visual-design.md` defines the application shell, node language, state precedence, themes, and large-graph behavior.
+The application uses `@xyflow/svelte` for interaction and ELK's layered algorithm for positions. ELK runs from graph data in a Web Worker. Stable input sorting, measured node sizes, orthogonal routing, and fixed spacing options produce repeatable layouts without graph-specific coordinates. `visual-design.md` defines the application shell, node language, state precedence, themes, and scale budget.
 
 ## Technical Decisions
 
@@ -34,11 +34,11 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Rationale:** This gives the viewer consistent accessible controls while keeping the generated component source in the repository. It also keeps graph-specific styling separate from application-shell styling. The latest shadcn-svelte line targets Svelte 5 and Tailwind CSS v4.
 
-### Decision 5: Use progressive large-graph modes
+### Decision 5: Design for the measured graph scale
 
-**Decision:** Render full detail through 250 nodes. From 251 through 1,000 nodes, use semantic zoom, viewport-only rendering, reduced edge labels, and cached worker layouts. Above 1,000 nodes, open with the selected run path plus one-hop context and require an explicit full-graph action.
+**Decision:** Render the complete graph in version one. Keep the generated 250-node and 400-edge benchmark as safety headroom. Defer partial graph projections and size-specific rendering modes until repository evidence or production measurements require them.
 
-**Rationale:** A single fixed level of detail becomes unreadable before it becomes technically impossible to draw. Progressive modes preserve orientation and interaction. The UI always states when it shows a partial topology and never changes the stored graph.
+**Rationale:** The checked-in business graphs have 7, 8, and 15 nodes. A 250-node benchmark already gives substantial headroom. A second graph model and unproved 1,000-node behavior add complexity without serving a current graph.
 
 ### Decision 6: Derive run highlights from IDs
 
@@ -92,14 +92,6 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Interface:** Svelte component props for `GraphModel`, `LayoutResult`, and `RunHighlight`.
 
-### Graph View Model
-
-**Responsibility:** Select the full, large, or run-focus projection without changing graph contracts.
-
-**Interface:** `buildGraphView(graph, run, mode): GraphViewModel`.
-
-**Failure behavior:** Mark every partial view, keep original counts, and never create synthetic business edges. A one-hop context view can include only existing nodes and edges.
-
 ### Run Inspector
 
 **Responsibility:** Present observations in order and own the active observation index and full-path toggle.
@@ -118,12 +110,12 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 2. The server queries run metadata with a cursor and returns at most 50 summaries.
 3. Run selection loads the V1 run payload and its exact graph ID/version.
 4. The graph catalog loads the matching JSON artifact and the contract adapters validate both documents.
-5. The graph view model selects a full or explicit run-focus projection, and the layout worker computes top-to-bottom positions from it.
-6. The canvas renders the selected graph view. The inspector derives and applies current-step or full-path highlighting.
+5. The layout worker computes top-to-bottom positions from the complete validated graph.
+6. The canvas renders the complete graph. The inspector derives and applies current-step or full-path highlighting.
 
 ## State Management
 
-Route parameters and search parameters are the durable state. Local Svelte state contains the parsed graph, parsed run, graph view mode, layout result, active observation index, panel state, theme, and full-path flag. The graph document and layout are cached by graph ID, graph version, direction, node-size profile, and view mode. The run payload is cached by execution ID for the current navigation session.
+Route parameters and search parameters are the durable state. Local Svelte state contains the parsed graph, parsed run, layout result, active observation index, panel state, theme, and full-path flag. The graph document and layout are cached by graph ID, graph version, direction, and node-size profile. The run payload is cached by execution ID for the current navigation session.
 
 ## API Changes
 
@@ -156,10 +148,9 @@ All endpoints use `application/json`, reject unknown schema versions, and return
 
 - Use one ELK worker and discard stale layout replies by request token.
 - Use the ELK layered `DOWN` direction and north/south ports by default.
-- Render only visible Svelte Flow elements when the library option is compatible with accessibility checks.
 - Apply three semantic zoom levels: overview symbols, readable labels, and full node detail.
 - Hide edge labels unless the edge is selected, highlighted, or sufficiently zoomed.
-- Use explicit run-focus mode above 1,000 nodes. Never silently omit topology.
+- Render the complete topology. Enable viewport-only rendering only after a benchmark proves a net benefit and accessibility tests pass.
 - Cache validated graph documents and layout results by graph/version and file modification time.
 - Keep run pages at 50 rows and return summary columns only.
 
@@ -167,10 +158,10 @@ All endpoints use `application/json`, reject unknown schema versions, and return
 
 - Unit tests map every EARS criterion to contract parsing, highlight derivation, cursor encoding, and filter validation.
 - Component tests cover repeated visits, current-step selection, full-path mode, mismatch errors, empty states, and keyboard navigation.
-- Playwright tests cover the list-to-run workflow, responsive inspector, deep links, themes, semantic zoom, large-graph modes, and accessibility checks.
+- Playwright tests cover the list-to-run workflow, responsive inspector, deep links, themes, semantic zoom, and accessibility checks.
 - Visual tests compare approved desktop and narrow screenshots for both themes and all node states.
 - PostgreSQL integration tests use the existing V1 migration and verify parameterized search, stable pagination, correlation semantics, timeouts, and the performance fixture.
-- Layout benchmarks use generated topology, not a hardcoded product graph, at 250 nodes and 400 edges and at 1,000 nodes and 1,600 edges.
+- A layout benchmark uses generated topology, not a hardcoded product graph, at 250 nodes and 400 edges.
 
 ## Rollout Plan
 
@@ -182,7 +173,7 @@ All endpoints use `application/json`, reject unknown schema versions, and return
 ## Risks & Mitigations
 
 - **Risk:** Svelte Flow API changes affect the viewer. **Mitigation:** Isolate it behind `FlowCanvas.svelte`, pin the lockfile, and exercise browser behavior.
-- **Risk:** Layout work blocks the page or creates an unreadable result on large graphs. **Mitigation:** Run ELK in a worker, cancel stale results, use progressive graph modes, and test both size profiles.
+- **Risk:** Layout work blocks the page on an unexpectedly large graph. **Mitigation:** Run ELK in a worker, cancel stale results, keep node search available, and measure the 250-node safety profile before adding more architecture.
 - **Risk:** Direct SQL drifts from the Java migration. **Mitigation:** Test against `JdbcDecisionRecordRepository.migrate()` and keep all SQL in one server-only repository.
 - **Risk:** A run references a graph artifact that is not deployed. **Mitigation:** Keep the run visible, show a compatibility error, and disable highlighting.
 

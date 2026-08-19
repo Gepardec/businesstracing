@@ -96,17 +96,17 @@ When full-path mode is active, non-path nodes use reduced contrast but stay read
 
 Top-to-bottom is the only supported direction in version one. An orientation switch can be added later only if user tests show a recurring need.
 
-## Large Graph Behavior
+## Scale Budget
 
-| Graph size | Initial view | Detail behavior |
-| --- | --- | --- |
-| Up to 250 nodes | Full graph | All normal interactions and three semantic zoom levels |
-| 251 to 1,000 nodes | Full graph in large mode | Viewport-only elements, overview symbols at low zoom, conditional edge labels, minimap, node search, cached worker layout |
-| More than 1,000 nodes | Selected run path plus one-hop context | Persistent partial-view notice, visible shown/total counts, node search, and explicit `Load full graph` action |
+The checked-in business-graph fixtures have 7, 8, and 15 nodes. Version one renders the complete validated graph and uses one interaction model for all current graphs.
 
-If no run is selected for a graph above 1,000 nodes, show an overview based on the full topology with simplified symbols and no edge labels. Do not remove nodes without a visible partial-view notice. A run-focus projection contains only existing nodes and edges and must not add a synthetic connection.
+- Keep the 250-node and 400-edge generated benchmark as safety headroom, not as a product threshold.
+- Keep ELK in a worker, cancel obsolete layouts, and cache layout results.
+- Keep node search, fit, minimap, semantic zoom, and current-step focus available.
+- Do not add partial graph projections, graph-size modes, or a full-graph confirmation in version one.
+- If future measured graphs approach or exceed the benchmark, record layout, render, memory, and interaction evidence before selecting a new strategy.
 
-The canvas must offer these recovery actions: find node, fit current view, return to current step, switch between full graph and run focus, and reset zoom.
+The canvas must offer these recovery actions: find node, fit the graph, return to the current step, and reset zoom.
 
 ## Semantic Zoom
 
@@ -123,7 +123,7 @@ Use generated graph fixtures, never checked-in product diagrams, for visual test
 - Light and dark theme at 1,440 by 900 pixels.
 - Narrow layout at 390 by 844 pixels with the inspector open and closed.
 - Every node kind in default, focused, selected, path, current-step, and warning states.
-- A 250-node full graph, a 1,000-node large graph, and a more-than-1,000-node run-focus view.
+- A 250-node and 400-edge generated safety graph.
 - Long labels, repeated run visits, empty results, loading, compatibility failure, and layout failure.
 
 Automated image comparison must use a small documented tolerance for font rendering. A reviewer must also check label collisions, clipped controls, state ambiguity, keyboard focus, theme contrast, and reduced motion.
