@@ -133,7 +133,7 @@ Render the complete node and edge grammar with Svelte Flow and compute determini
 
 **Files to Modify:**
 
-- `fachtracing-viewer/src/lib/graph/layout-worker.ts` (new)
+- `fachtracing-viewer/src/lib/graph/layout-definition.ts` (new)
 - `fachtracing-viewer/src/lib/graph/FlowCanvas.svelte` (new)
 - `fachtracing-viewer/src/lib/graph/BusinessNode.svelte` (new)
 - `fachtracing-viewer/src/lib/graph/BusinessEdge.svelte` (new)

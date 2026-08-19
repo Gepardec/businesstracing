@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { NODE_HEIGHT, NODE_WIDTH } from './layout-engine';
+  import { NODE_HEIGHT, NODE_WIDTH } from './layout-definition';
   let { nodeId }: { nodeId: string | null } = $props();
   const { getNode, getZoom, setCenter } = useSvelteFlow();
   let previous = '';
