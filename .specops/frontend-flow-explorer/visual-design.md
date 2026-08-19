@@ -2,23 +2,23 @@
 
 ## Design Goal
 
-The viewer must make a customer decision easy to find and explain before it makes the complete graph easy to inspect. It uses a quiet application shell, a strong graph hierarchy, and a fixed visual grammar. It does not copy Mermaid styling and it does not store graph-specific positions.
+The viewer must make a recorded decision easy to find and explain before it makes the complete graph easy to inspect. It uses a quiet application shell, a strong graph hierarchy, and a fixed visual grammar. It does not copy Mermaid styling and it does not store graph-specific positions.
 
 ## Information Architecture
 
 ### Decisions Dashboard
 
 - Make `Decisions` the default route and primary navigation item.
-- Put the customer lookup first, followed by optional graph, status, and completion-time filters.
-- Show newest decisions before a search. After a customer lookup, show all exact matches in the same table.
+- Put the correlation-name and correlation-value lookup first, followed by optional graph, status, and completion-time filters. Use an editable combobox for stored correlation-name suggestions and a normal input for the exact value.
+- Show newest decisions before a search. After a correlation lookup, show all exact matches in the same table.
 - Each row shows completion time, business decision label, status, already-redacted final result, and an `Explain` action.
-- Keep the confidential customer value in component memory only. Do not show it in the URL or recent-search history.
+- Keep the confidential correlation name and value in component memory only. Do not show them in the URL or recent-search history.
 
 ### Decision Explanation
 
 - Put the business decision label, final result, status, completion time, and execution ID in a compact header.
 - Keep the complete graph as the main surface and the ordered explanation inspector on the right.
-- Start with the full customer path highlighted and the first observation selected. Provide next and previous step actions.
+- Start with the full selected-run path highlighted and the first observation selected. Provide next and previous step actions.
 - For each step, lead with one plain-language explanation. Show recorded evidence and technical identifiers in separate disclosure sections.
 - If evidence is absent, say `No additional evidence was recorded` instead of guessing a reason.
 - Do not show developer source links, paths, origins, or fingerprints in the POC.
@@ -39,7 +39,7 @@ The viewer must make a customer decision easy to find and explain before it make
 | UI purpose | shadcn-svelte component |
 | --- | --- |
 | Application actions | `Button`, `DropdownMenu`, `Tooltip` |
-| Customer and decision search | `Input`, `Command`, `Select` |
+| Correlation and decision search | `Input`, `Command`, `Select` |
 | Decision status and node kind | `Badge` |
 | Path mode | `Toggle` or `Switch` with a text label |
 | Desktop sections | `Card`, `Separator`, `ScrollArea` |
@@ -144,7 +144,7 @@ Use generated graph fixtures, never checked-in product diagrams, for visual test
 - Every node kind in default, focused, selected, path, current-step, and warning states.
 - A 250-node and 400-edge generated safety graph.
 - Long labels, repeated run visits, empty results, loading, compatibility failure, and layout failure.
-- Customer lookup with no matches, one match, and several decisions for the same customer.
+- Arbitrary correlation lookup with no matches, one match, and several matching decisions.
 - Decision detail with complete evidence, missing evidence, failed result, and incomplete trace.
 
 Automated image comparison must use a small documented tolerance for font rendering. A reviewer must also check label collisions, clipped controls, state ambiguity, keyboard focus, theme contrast, and reduced motion.

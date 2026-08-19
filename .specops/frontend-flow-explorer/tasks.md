@@ -4,7 +4,7 @@
 
 | Dependent Spec | Reason | Required | Status |
 | --- | --- | --- | --- |
-| developer-graph-json-schema | Graph input contract | Yes | completed |
+| unify-developer-graph-contract | Current multi-source V1 graph input contract | Yes | completed |
 | generic-application-readiness | Run, storage, and SQL input contract | Yes | completed |
 
 ## Task Breakdown
@@ -71,7 +71,7 @@ Add the immutable PostgreSQL graph catalog, its separate import command, the dec
 1. Add the graph catalog table and completion/execution cursor index through the repository storage migration.
 2. Implement the explicit graph import command with JSON Schema validation, unchanged payload bytes, checksums, and immutable conflict behavior.
 3. Implement exact graph retrieval and the provenance-free browser projection.
-4. Implement bounded, parameterized run detail and cursor-search queries.
+4. Implement bounded, parameterized correlation-name discovery, run detail, and cursor-search queries.
 5. Implement `QUERY /api/v1/runs` through the SvelteKit fallback method handler with JSON content, `Accept-Query`, and `no-store` responses.
 6. Add the remaining SvelteKit server routes and generic problem responses.
 7. Verify the API and migration against the PostgreSQL fixture.
@@ -79,8 +79,8 @@ Add the immutable PostgreSQL graph catalog, its separate import command, the dec
 **Acceptance Criteria:**
 
 - [ ] The import command stores one exact graph version immutably and rejects conflicting bytes.
-- [ ] The API returns graph summaries, one provenance-free exact graph version, decision summaries with final results, and one unchanged V1 run payload.
-- [ ] Customer correlation search uses HTTP `QUERY`; confidential search fields never enter the URI or logs.
+- [ ] The API returns graph summaries, one provenance-free exact graph version, up to 200 distinct correlation names without values, decision summaries with final results, and one unchanged V1 run payload.
+- [ ] Arbitrary exact correlation search uses HTTP `QUERY`; confidential search fields never enter the URI or logs.
 - [ ] Cursor pages are stable and correlation/time semantics match the JDBC repository.
 - [ ] Invalid input, timeout, missing data, and unavailable graph states expose no internal details.
 
@@ -200,23 +200,24 @@ Add the right-side ordered explanation inspector, current-step navigation, graph
 **Blocker:** None
 
 **Description:**
-Build the shadcn-svelte decisions dashboard, confidential customer lookup, paged result list, deep-link detail navigation, themes, and responsive explanation layout.
+Build the shadcn-svelte decisions dashboard, confidential generic correlation lookup, paged result list, deep-link detail navigation, themes, and responsive explanation layout.
 
 **Implementation Steps:**
 
 1. Compose the navigation, toolbar, cards, forms, table, badges, tooltips, and alerts from repository-owned shadcn-svelte components.
 2. Show newest decision summaries with label, status, completion time, and already-redacted final result.
-3. Add bounded execution, graph, status, time, and exact customer correlation filters.
+3. Add an editable stored-correlation-name combobox and bounded execution, graph, status, time, and arbitrary exact correlation-name and correlation-value filters.
 4. Submit searches with HTTP `QUERY` and retain confidential inputs only in component memory.
 5. Add cursor navigation, loading, empty, error, and retry states.
-6. Link each row to the exact run detail URL without copying the customer lookup into it.
+6. Link each row to the exact run detail URL without copying correlation filters into it.
 7. Add token-based light and dark themes.
 8. Move the inspector into an accessible sheet below 1,200 pixels.
 
 **Acceptance Criteria:**
 
 - [ ] Filters execute on the server and reset the cursor.
-- [ ] One customer lookup shows every matching decision page without exposing the lookup value in a URL or log.
+- [ ] The correlation-name control offers stored names, accepts another valid name, and never enumerates values.
+- [ ] One arbitrary exact correlation lookup shows every matching decision page without exposing its name or value in a URL or log.
 - [ ] Result order and cursor navigation stay stable as new runs arrive.
 - [ ] Run detail URLs are linkable and restore the selected run.
 - [ ] Desktop and narrow layouts preserve the selected step and keyboard access.
@@ -251,7 +252,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 
 **Implementation Steps:**
 
-1. Add Playwright flows for the customer-support journey: newest decisions, customer lookup, multiple results, decision selection, evidence explanation, step navigation, full-path mode, semantic zoom, themes, deep links, and narrow layout.
+1. Add Playwright flows for the generic correlation-to-explanation journey: newest decisions, arbitrary correlation lookup, multiple results, decision selection, evidence explanation, step navigation, full-path mode, semantic zoom, themes, deep links, and narrow layout.
 2. Add `npm audit --audit-level=high`, checks, unit tests, build, and browser tests to the repository verifier and CI.
 3. Document graph import, PostgreSQL variables, loopback-only binding, correlation lookup policy, backup and retention, and compatibility limits.
 4. Run the full Java, PostgreSQL, frontend, and repository-integrity gates.

@@ -2,9 +2,9 @@
   "id": "frontend-flow-explorer",
   "type": "feature",
   "status": "draft",
-  "version": 4,
+  "version": 5,
   "created": "2026-08-19T10:52:40Z",
-  "updated": "2026-08-19T13:06:48Z",
+  "updated": "2026-08-19T13:38:10Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -16,8 +16,8 @@
   "requiredApprovals": 0,
   "specDependencies": [
     {
-      "specId": "developer-graph-json-schema",
-      "reason": "The viewer consumes the published developer graph schema.",
+      "specId": "unify-developer-graph-contract",
+      "reason": "The viewer consumes the sole current merged multi-source V1 developer graph schema.",
       "required": true
     },
     {
@@ -38,15 +38,15 @@
   ],
   "evaluation": {
     "spec": {
-      "iterations": 4,
+      "iterations": 5,
       "passed": true,
       "scores": {
-        "criteriaTestability": 9,
-        "criteriaCompleteness": 9,
-        "designCoherence": 9,
-        "taskCoverage": 9
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 10,
+        "designCoherence": 10,
+        "taskCoverage": 10
       },
-      "evaluatedAt": "2026-08-19T13:06:48Z"
+      "evaluatedAt": "2026-08-19T13:38:10Z"
     }
   }
 }

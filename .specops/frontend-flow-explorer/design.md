@@ -18,7 +18,7 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 ### Decision 2: Read the current contracts through narrow adapters
 
-**Decision:** Put schema parsing in `graph-contract.ts` and `run-contract.ts`. Put graph import and retrieval in `graph-catalog-repository.server.ts`, and put run SQL in `run-repository.server.ts`.
+**Decision:** Put schema parsing in `graph-contract.ts` and `run-contract.ts`. Put graph import and retrieval in `graph-catalog-repository.server.ts`, and put run SQL in `run-repository.server.ts`. Treat `fachtracing-developer-graph/v1` as the sole current developer graph contract. Its current shape is the merged multi-source shape with `sourceOrigins`, `sourceFiles`, and per-source `originId` fields.
 
 **Rationale:** Narrow adapters make schema handling testable and keep PostgreSQL-specific work in server-only components. The browser graph projection is a presentation model, not a stored tracing format. It removes developer provenance while preserving every graph, node, and edge ID needed for path explanation.
 
@@ -56,7 +56,7 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Decision:** Send search documents to `QUERY /api/v1/runs` as `application/json`. Use the SvelteKit fallback method handler to accept `QUERY` and reject all other unhandled methods.
 
-**Rationale:** RFC 10008 defines `QUERY` as safe and idempotent and gives request content explicit query semantics. It keeps confidential customer lookup values out of the request URI. The local same-origin POC does not need CORS. A future proxy must explicitly allow the method.
+**Rationale:** RFC 10008 defines `QUERY` as safe and idempotent and gives request content explicit query semantics. It keeps confidential correlation values out of the request URI. The local same-origin POC does not need CORS. A future proxy must explicitly allow the method.
 
 ### Decision 9: Store immutable graph payloads in PostgreSQL
 
@@ -120,7 +120,7 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 ### Runs Explorer
 
-**Responsibility:** Show all newest decision summaries, submit customer and metadata searches, own cursor navigation, and keep loading, empty, and retry states.
+**Responsibility:** Show all newest decision summaries, submit arbitrary exact correlation and metadata searches, own cursor navigation, and keep loading, empty, and retry states.
 
 **Interface:** `/runs` page and `/runs/[executionId]` detail route.
 
@@ -143,6 +143,7 @@ The selected execution ID and non-confidential display settings can use route pa
 
 - `GET /api/v1/graphs` returns available graph summaries.
 - `GET /api/v1/graphs/{graphId}/versions/{graphVersion}` returns one provenance-free browser graph document.
+- `GET /api/v1/correlation-names` returns at most 200 distinct stored correlation names and no values.
 - `QUERY /api/v1/runs` accepts a JSON search document and returns decision summaries and the next cursor.
 - `GET /api/v1/runs/{executionId}` returns one unchanged `fachtracing-decision-record/v1` payload.
 
@@ -154,7 +155,8 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 
 - Summary queries select `execution_id`, `graph_id`, `graph_version`, `started_at`, `completed_at`, `status`, and `payload` from at most 50 matching records. The server reads the already-redacted final result from each V1 payload and resolves the business decision label from the graph catalog.
 - Detail queries select `payload` by exact `execution_id`.
-- Correlation filters join `fachtracing_correlation` by record ID and use exact `correlation_name`, exact already-redacted `correlation_value`, and the inclusive completion range.
+- Correlation-name discovery selects at most 200 distinct names in lexical order. The UI keeps the combobox editable so the cap does not restrict valid searches.
+- Correlation filters join `fachtracing_correlation` by record ID and use an operator-supplied exact `correlation_name`, its exact already-redacted canonical `correlation_value`, and the inclusive completion range.
 - Cursor predicates use `completed_at < ? OR (completed_at = ? AND execution_id < ?)` with descending order.
 - The storage migration adds `idx_fachtracing_completed_execution` on `(completed_at desc, execution_id desc)` for the newest-decision page.
 - The storage migration adds `fachtracing_graph` with `graph_id`, `graph_version`, `schema_id`, `media_type`, `payload`, `sha256`, and `imported_at`; `(graph_id, graph_version)` is the primary key.
@@ -166,7 +168,7 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 - Data classification: graph labels and decision summaries are Internal. Already-redacted evidence, final results, and correlation values are Confidential.
 - Database credentials exist only in server environment variables.
 - Server responses set a restrictive content security policy and do not render graph labels as HTML.
-- Search request bodies have a small byte limit. Graph ID, execution ID, correlation, cursor, and filter fields have individual length and character limits before database access.
+- Search request bodies have a small byte limit. Graph ID, execution ID, correlation, cursor, and filter fields have individual length and character limits before database access. Correlation-name discovery never returns correlation values.
 - Request and application logs exclude `QUERY` content, run payloads, graph developer provenance, and response bodies.
 - The server binds to loopback. Shared and public deployment is unsupported in the proof of concept.
 
@@ -202,7 +204,8 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 - **Risk:** Layout work blocks the page on an unexpectedly large graph. **Mitigation:** Run ELK in a worker, cancel stale results, keep node search available, and measure the 250-node safety profile before adding more architecture.
 - **Risk:** Direct SQL drifts from the Java migration. **Mitigation:** Test against `JdbcDecisionRecordRepository.migrate()` and keep all SQL in one server-only repository.
 - **Risk:** A run references a graph that was never imported. **Mitigation:** Keep the run visible, show a compatibility error, disable highlighting, and provide the exact graph ID and version to the operator.
-- **Risk:** A customer identifier cannot reproduce its stored redacted canonical value. **Mitigation:** Make the correlation lookup transformation an explicit deployment contract and keep the question open until the POC identity policy is known.
+- **Risk:** An operator knows only a raw value that differs from the stored canonical correlation. **Mitigation:** The POC does not guess or reproduce application-specific transformations. The deployment must expose the stored canonical value, record a separate lookup-safe correlation, or specify an adapter later.
+- **Risk:** Historical specifications describe separate developer graph V1 and V2 shapes. **Mitigation:** Use the current exporter, generated JSON Schema, tests, and commit `b26b198` as authoritative. The current V1 identifier contains the merged multi-source fields, and the build removes stale V2 schema files.
 
 ## Dependencies & Blockers
 
@@ -210,7 +213,7 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 
 | Dependent Spec | Reason | Required | Status |
 | --- | --- | --- | --- |
-| developer-graph-json-schema | Supplies validated graph contracts. | Yes | completed |
+| unify-developer-graph-contract | Supplies the sole current multi-source V1 graph contract. | Yes | completed |
 | generic-application-readiness | Supplies the V1 database, payload, and storage contracts. | Yes | completed |
 
 ### Dependency Decisions

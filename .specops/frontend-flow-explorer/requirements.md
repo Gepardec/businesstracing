@@ -2,15 +2,15 @@
 
 ## Overview
 
-Internal support users cannot efficiently find a customer's prior business decisions or explain one decision from the current text and Mermaid outputs. This proof of concept adds a local browser dashboard that lists stored decisions, finds decisions through an exact customer correlation, opens one decision, presents its complete business graph, and explains the observed path without changing the current graph or decision-record wire contracts.
+Internal support users cannot efficiently find prior business decisions or explain one decision from the current text and Mermaid outputs. This proof of concept adds a local browser dashboard that lists stored decisions, finds decisions through an arbitrary exact correlation, opens one decision, presents its complete business graph, and explains the observed path without changing the current graph or decision-record wire contracts.
 
 ## Primary Workflow
 
 1. A support user opens the dashboard and sees the newest recorded decisions.
-2. The user searches with a configured customer correlation, such as a customer ID.
+2. The user enters a correlation name and its exact stored value. Examples can include a route ID, person reference, address reference, or customer ID.
 3. The dashboard shows all matching decisions with completion time, business decision label, status, and final result.
 4. The user opens one decision.
-5. The application loads the exact graph ID and version, highlights the customer's path, and shows the ordered explanation beside the complete graph.
+5. The application loads the exact graph ID and version, highlights the selected run path, and shows the ordered explanation beside the complete graph.
 6. Each step combines the business node label, the recorded outcome, the selected edge, and only the already-redacted evidence captured for that observation.
 
 ## User Stories
@@ -74,9 +74,10 @@ Internal support users cannot efficiently find a customer's prior business decis
 
 - WHEN the dashboard opens THE SYSTEM SHALL show cursor-paged decision summaries ordered by completion time descending and execution ID descending.
 - THE SYSTEM SHALL show completion time, business decision label, status, and already-redacted final result for each summary.
-- WHEN a user submits an execution ID, graph ID, status, inclusive time range, or exact customer correlation value THE SYSTEM SHALL send a JSON search document with HTTP `QUERY`, apply the filters on the server, and reset pagination.
+- WHEN the search form loads THE SYSTEM SHALL offer up to 200 distinct stored correlation names in an editable combobox and SHALL NOT enumerate correlation values.
+- WHEN a user submits an execution ID, graph ID, status, inclusive time range, or exact correlation name and value THE SYSTEM SHALL send a JSON search document with HTTP `QUERY`, apply the filters on the server, and reset pagination.
 - THE SYSTEM SHALL keep correlation names and values out of the request URI, browser history, result URLs, and application logs.
-- WHEN a customer correlation matches several decisions THE SYSTEM SHALL show all matching decisions in the same result list.
+- WHEN an exact correlation matches several decisions THE SYSTEM SHALL show all matching decisions in the same result list.
 - WHEN a user selects a result THE SYSTEM SHALL open the matching graph version and run inspector through a linkable URL.
 - IF no result matches THEN THE SYSTEM SHALL show an empty result state without changing the active filters.
 - IF a database query fails or exceeds its timeout THEN THE SYSTEM SHALL show a retry action and SHALL NOT expose connection details, SQL, or credentials.
@@ -84,6 +85,7 @@ Internal support users cannot efficiently find a customer's prior business decis
 **Progress Checklist:**
 
 - [ ] Add the paged and filterable runs view.
+- [ ] Offer stored correlation names without limiting the field to those suggestions.
 - [ ] Show the decision label and final result in each result summary.
 - [ ] Use HTTP `QUERY` with confidential filters in the request body.
 - [ ] Use linkable run URLs.
@@ -97,7 +99,7 @@ Internal support users cannot efficiently find a customer's prior business decis
 
 **Acceptance Criteria (EARS):**
 
-- THE SYSTEM SHALL accept `fachtracing-developer-graph/v1` graph documents and `fachtracing-decision-record/v1` payloads through explicit adapters.
+- THE SYSTEM SHALL accept the current merged multi-source `fachtracing-developer-graph/v1` graph documents and `fachtracing-decision-record/v1` payloads through explicit adapters.
 - THE SYSTEM SHALL query the existing `fachtracing_decision_record` and `fachtracing_correlation` schema without changing stored payloads or correlation semantics.
 - WHEN an operator imports a valid developer graph V1 document THE SYSTEM SHALL store its unchanged bytes immutably by graph ID and graph version in PostgreSQL.
 - WHEN the same graph ID and version are imported again with identical bytes THE SYSTEM SHALL accept the import as idempotent.
@@ -129,7 +131,8 @@ Internal support users cannot efficiently find a customer's prior business decis
 ## Constraints & Assumptions
 
 - The proof of concept targets PostgreSQL only. H2 remains a test-only Java adapter.
-- The proof of concept uses one deployment-configured customer correlation name. It does not hardcode `customerId` or an insurance-specific field name.
+- The proof of concept accepts any bounded correlation name and exact canonical value that already exists in `fachtracing_correlation`. It does not hardcode a domain field or apply an application-specific value transformation.
+- The operator must search with the canonical value that the traced application stored after its redaction policy. A deployment that needs lookup from a different raw value must store an additional lookup-safe correlation or add a separately specified adapter.
 - A separate import command reads developer graph V1 JSON files and stores unchanged payload bytes in the PostgreSQL graph catalog. The running dashboard reads graphs and runs but does not import or delete data.
 - The application is a local internal tool. It binds to loopback by default. Authentication, authorization, tenant isolation, and public deployment are outside this proof of concept.
 - The UI displays business graph labels. Developer source metadata stays server-side and is disabled in browser responses by default.
@@ -141,7 +144,7 @@ Internal support users cannot efficiently find a customer's prior business decis
 
 | Dependent Spec | Reason | Required | Status |
 | --- | --- | --- | --- |
-| developer-graph-json-schema | Defines the graph documents consumed by the viewer. | Yes | completed |
+| unify-developer-graph-contract | Defines the sole current multi-source V1 graph document and schema consumed by the viewer. | Yes | completed |
 | generic-application-readiness | Defines the stored run payload, storage port, and PostgreSQL schema. | Yes | completed |
 | mermaid-diagram-rendering | Provides the existing path semantics that the interactive view must preserve. | No | completed |
 
@@ -149,7 +152,7 @@ Internal support users cannot efficiently find a customer's prior business decis
 
 | Blocker | Blocking Spec | Resolution Type | Resolution Detail | Status |
 | --- | --- | --- | --- | --- |
-| Customer lookup transformation | frontend-flow-explorer | user decision | Decide how an operator-entered raw customer ID becomes the already-redacted canonical value stored in `fachtracing_correlation`. | open |
+| None | — | — | The POC searches an arbitrary exact correlation name and its already-stored canonical value. | resolved |
 
 ## Success Metrics
 
@@ -173,4 +176,4 @@ Internal support users cannot efficiently find a customer's prior business decis
 
 ## Review Questions
 
-- Confirm whether the operator enters the raw customer ID and the viewer applies the same redaction or lookup transformation as the traced application, or whether the stored redacted canonical value is already the value that the operator knows.
+None. The specification is ready for implementation.
