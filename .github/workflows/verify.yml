@@ -125,11 +125,9 @@ jobs:
         run: ./scripts/verify-postgres.sh
       - name: Run viewer verification
         run: ./scripts/verify-viewer.sh
-      - name: Install Chromium
-        working-directory: fachtracing-viewer
-        run: npx playwright install --with-deps chromium
       - name: Run viewer PostgreSQL journey
         working-directory: fachtracing-viewer
         env:
           FACHTRACING_DATABASE_URL: postgresql://fachtracing:fachtracing@localhost:5432/fachtracing
+          PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npm run test:browser
