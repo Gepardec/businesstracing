@@ -76,6 +76,8 @@
 
 | Blocker | Resolution | Impact | Task |
 | --- | --- | --- | --- |
+| PostgreSQL rejected the caught duplicate schema-version insert because the transaction stayed aborted. | Replaced exception-based idempotency with PostgreSQL `ON CONFLICT` and H2 `MERGE`. | One focused fix; the repeatable PostgreSQL migration then passed. | 2, 6 |
+| Downloading Chromium exceeded the fixed three-minute PostgreSQL job budget. | Configured Playwright to use Chrome already installed on the GitHub Ubuntu runner. | Removed the download without reducing browser coverage; the job completed in 1 minute 45 seconds. | 6 |
 
 ## Session Log
 
@@ -106,3 +108,7 @@ Implemented Tasks 1 through 5 and started Task 6. Added the Svelte 5 and SvelteK
 The first dependency audit found high and critical advisories in the proposed SvelteKit, Vite, Vitest, and Playwright point versions. Patched same-major versions replaced them. The deprecated `lucide-svelte` package was replaced with maintained `@lucide/svelte`. The final high-severity audit gate passes with six low findings in the current SvelteKit `cookie` dependency.
 
 Local evidence: zero Svelte diagnostics, 11 passing unit tests, a passing production build, a passing HTTP `QUERY` Chromium test, the 250-node layout below two seconds, focused JDBC tests, and the complete repository gate. The full PostgreSQL browser journey is assigned to the hosted PostgreSQL job because no local PostgreSQL daemon is available. A manual Docker attempt did not start because the local Docker daemon is not running.
+
+### Session 7 — Hosted verification completed (2026-08-19)
+
+The hosted verification run `32285683620` passed all four jobs at commit `c281382`. The PostgreSQL job passed the repeatable storage migration, viewer unit and build gates, dependency audit, seeded graph import, HTTP `QUERY` workflow, desktop run explanation, and narrow inspector journey in 1 minute 45 seconds. Mega Backend, Spring PetClinic, and the core repository gate also passed. Task 6 stays in progress only because visual baseline approval is a manual product review item.

@@ -263,7 +263,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - [x] High and critical npm audit findings block CI.
 - [x] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
 - [ ] Approved visual baselines cover all node kinds, states, themes, responsive sizes, and the 250-node safety profile.
-- [ ] The full repository gate and hosted CI pass.
+- [x] The full repository gate and hosted CI pass.
 
 **Files to Modify:**
 
