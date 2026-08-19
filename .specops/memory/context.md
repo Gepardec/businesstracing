@@ -521,3 +521,10 @@ stays passive: the container injects the bean or proxy and implementation entry 
 Custom scopes, stereotypes, priority and XML alternatives, dynamic lookup, interceptor bindings,
 transactions, security, validation, events, lifecycle callbacks, timers, JAX-RS, and JPA boundaries
 have executable regression coverage. The local pull-request gate and GitHub Actions run 116 passed.
+
+### normalize-nested-map-transfer-label (bugfix) — 2026-08-19
+
+Completed one task. Nested mapped collection transfers now use a guarded business label with
+`converted` and no technical map term. The pinned Hogarama reactor generated two complete V1 JSON
+graphs. The Mega conformance harness generated five complete V1 JSON graphs and the shared schema.
+The full pull-request gate passed with all pinned corpora and no new dependency.

@@ -18,7 +18,7 @@
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 7,
+      "count": 8,
       "pattern": "Preserve result-relevant optionality as absent/exists, strip language- and persistence-specific vocabulary including method references, and reject structural terms only in their structural context."
     },
     {
@@ -115,8 +115,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java",
-      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
-      "count": 2
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness", "normalize-nested-map-transfer-label"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java",

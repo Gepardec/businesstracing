@@ -26,7 +26,7 @@
   {
     "id": "generic-call-specific-business-flow",
     "type": "feature",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-18T06:57:49Z"
@@ -421,5 +421,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-14T08:58:18Z"
+  },
+  {
+    "id": "normalize-nested-map-transfer-label",
+    "type": "bugfix",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-19T21:19:42Z"
   }
 ]

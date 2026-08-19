@@ -9,6 +9,8 @@ import at.gepardec.fachtracing.agent.FachtracingTransformer;
 import at.gepardec.fachtracing.api.DecisionValueRedactor;
 import at.gepardec.fachtracing.business.BusinessExecutionGraphProjector;
 import at.gepardec.fachtracing.business.BusinessExecutionTextRenderer;
+import at.gepardec.fachtracing.business.BusinessGraphJsonExporter;
+import at.gepardec.fachtracing.business.BusinessGraphJsonSchema;
 import at.gepardec.fachtracing.business.BusinessGraphProjector;
 import at.gepardec.fachtracing.business.BusinessLogicArtifactGuard;
 import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
@@ -118,9 +120,12 @@ public final class MegaBackendConformanceTest {
         assert graphs.keySet().equals(EXPECTED_DECISIONS) : graphs.keySet();
         Files.createDirectories(generated);
         Files.createDirectories(oracles);
+        Files.writeString(generated.resolve("fachtracing-business-graph-v1.schema.json"),
+                new BusinessGraphJsonSchema().generate());
         var renderer = new PlantUmlRenderer();
         var mermaid = new MermaidRenderer();
         var businessProjector = new BusinessGraphProjector();
+        var businessJson = new BusinessGraphJsonExporter();
         var businessMermaid = new BusinessMermaidRenderer();
         var topologyMismatches = new ArrayList<String>();
         for (var entry : graphs.entrySet()) {
@@ -145,6 +150,7 @@ public final class MegaBackendConformanceTest {
                     : entry.getKey() + " business overview has no result";
             assertBusinessArtifact(entry.getKey() + " business overview", businessDiagram);
             Files.writeString(generated.resolve(name + "-business.mmd"), businessDiagram);
+            Files.writeString(generated.resolve(name + "-business.json"), businessJson.export(businessGraph));
             Path oracle = oracles.resolve(name + ".txt");
             assert Files.exists(oracle) : "missing reviewed oracle " + oracle;
             if (!Files.readString(oracle).equals(semantic)) topologyMismatches.add(entry.getKey());

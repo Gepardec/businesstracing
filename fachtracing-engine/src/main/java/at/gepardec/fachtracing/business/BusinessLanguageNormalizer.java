@@ -10,6 +10,8 @@ final class BusinessLanguageNormalizer {
     private static final Pattern EMPTY_NEGATION = Pattern.compile("(?i)^not (.+) is empty$");
     private static final Pattern FILTER_PERMISSION = Pattern.compile("(?i)^filter (.+) by can (.+)$");
     private static final Pattern FILTER_RULE = Pattern.compile("(?i)^filter (.+) by (.+)$");
+    private static final Pattern MAPPED_TRANSFER =
+            Pattern.compile("(?i)^add map ([a-z]+) \\1 (.+) to (.+)$");
     private static final Pattern MAP_SETTER = Pattern.compile("(?i)^map (.+) using set (.+)$");
     private static final Pattern MAP_CALLBACK = Pattern.compile("(?i)^map (.+) using (.+)$");
     private static final Pattern SEARCH_STREAM = Pattern.compile("(?i)^search for (.+) stream$");
@@ -37,6 +39,10 @@ final class BusinessLanguageNormalizer {
         if (match.matches()) return "keep " + match.group(1) + " with " + match.group(2) + " permission";
         match = FILTER_RULE.matcher(value);
         if (match.matches()) return "keep " + match.group(1) + " that satisfy the " + match.group(2) + " rule";
+        match = MAPPED_TRANSFER.matcher(value);
+        if (match.matches()) {
+            return "add converted " + match.group(1) + " " + match.group(2) + " to " + match.group(3);
+        }
         match = MAP_SETTER.matcher(value);
         if (match.matches()) return "set " + match.group(2) + " for " + inputItems(match.group(1));
         match = MAP_CALLBACK.matcher(value);

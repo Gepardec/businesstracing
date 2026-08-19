@@ -1240,6 +1240,16 @@
       "task": "Task 5",
       "date": "2026-08-18",
       "completedAt": "2026-08-18T11:08:32Z"
+    },
+    {
+      "specId": "normalize-nested-map-transfer-label",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Normalize nested mapped transfers before the artifact guard",
+      "rationale": "The guard must stay strict, and a repeated-subject back reference proves the generic label shape.",
+      "task": "Task 1",
+      "date": "2026-08-19",
+      "completedAt": "2026-08-19T21:19:42Z"
     }
   ]
 }

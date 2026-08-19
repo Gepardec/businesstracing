@@ -1,0 +1,62 @@
+{
+  "id": "normalize-nested-map-transfer-label",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-19T21:05:49Z",
+  "updated": "2026-08-19T21:19:42Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "It introduced business normalization and guarded exports.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "context-aware-operation-labels",
+    "hogajama-business-time-vocabulary",
+    "hogajama-strict-aggregate-regression"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-19T21:05:59Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-19T21:19:42Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 2987,
+    "filesChanged": 14,
+    "linesAdded": 482,
+    "linesRemoved": 10,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 6,
+    "specDurationMinutes": 14
+  }
+}
