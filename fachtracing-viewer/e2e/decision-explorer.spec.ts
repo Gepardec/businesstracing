@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 
 test('shows a generic correlation search without placing values in the URL', async ({ page }) => {
   await page.goto('/runs');
@@ -63,4 +64,32 @@ test('renders Fachtracing from its generated graph and Java-agent run', async ({
   } finally {
     await page.screenshot({ path: 'test-results/dogfood/fachtracing-viewer.png', fullPage: true });
   }
+});
+
+test('previews a generated developer graph JSON file without storage', async ({ page }) => {
+  const dogfoodDirectory = process.env.FACHTRACING_DOGFOOD_DIRECTORY;
+  test.skip(!dogfoodDirectory, 'Generated Fachtracing artifacts are required');
+  const graphDirectory = join(dogfoodDirectory!, 'graphs');
+  const graphFiles = (await readdir(graphDirectory)).filter((name) => name.endsWith('.json')).sort();
+  expect(graphFiles.length).toBeGreaterThan(0);
+  const graphPath = join(graphDirectory, graphFiles[0]);
+  const document = JSON.parse(await readFile(graphPath, 'utf8')) as { graph: { label: string; nodes: unknown[]; edges: unknown[] } };
+
+  await page.goto('/graphs');
+  const nonReadRequests: string[] = [];
+  page.on('request', (request) => {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) nonReadRequests.push(`${request.method()} ${request.url()}`);
+  });
+  const storageBefore = await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }));
+  await expect(page.getByRole('heading', { name: 'Preview a graph JSON' })).toBeVisible();
+  await page.getByLabel('Developer graph JSON').setInputFiles(graphPath);
+  await expect(page.getByRole('heading', { name: document.graph.label })).toBeVisible();
+  await expect(page.getByText(`${document.graph.nodes.length} nodes`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`${document.graph.edges.length} edges`, { exact: true })).toBeVisible();
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(document.graph.nodes.length, { timeout: 15_000 });
+  await expect(page.getByText('Your file is not uploaded or saved.')).toBeVisible();
+  expect(nonReadRequests).toEqual([]);
+  await expect.poll(() => page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual(storageBefore);
+  await mkdir('test-results/dogfood', { recursive: true });
+  await page.screenshot({ path: 'test-results/dogfood/fachtracing-graph-preview.png', fullPage: true });
 });

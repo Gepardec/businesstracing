@@ -139,6 +139,30 @@ Internal support users cannot efficiently find prior business decisions or expla
 - [x] Search and open the self-traced runs in the browser.
 - [x] Capture reviewable browser proof from the actual generated graph.
 
+### Story 6: Preview a graph JSON file
+
+**As a** developer or business analyst
+**I want** to select a developer graph JSON file in the browser
+**So that** I can inspect its complete graph without a database import
+
+**Acceptance Criteria (EARS):**
+
+- WHEN a user selects or drops one current `fachtracing-developer-graph/v1` JSON file THE SYSTEM SHALL validate it in the browser and render its complete graph with the existing top-to-bottom ELK and Svelte Flow canvas.
+- THE SYSTEM SHALL keep the selected file and its content in browser memory only and SHALL NOT send it to the server, write it to PostgreSQL, or persist it in browser storage.
+- THE SYSTEM SHALL render only the provenance-free graph model and SHALL NOT display source origins, source paths, source URLs, or source fingerprints from the file.
+- WHEN the selected file is empty, is larger than 5 MiB, is not named as JSON, has invalid JSON, or does not match the current graph contract THE SYSTEM SHALL show a clear validation message and SHALL NOT render a partial graph.
+- WHEN a valid graph contains more than 250 nodes THE SYSTEM SHALL permit the preview and SHALL state that 250 nodes is the tested safety profile.
+- WHEN the page reloads THE SYSTEM SHALL clear the selected file and graph.
+- THE SYSTEM SHALL provide a control to replace the selected file without opening a new page.
+
+**Progress Checklist:**
+
+- [x] Add a browser-only graph file adapter.
+- [x] Add an accessible file selection and drop surface.
+- [x] Reuse the existing graph canvas without a run highlight.
+- [x] Show file, graph, size-profile, and validation states.
+- [x] Prove that the preview works with a generated graph file.
+
 ## Non-Functional Requirements
 
 - Accessibility: All run navigation and graph selection actions shall work with a keyboard. Visible controls shall meet WCAG 2.2 AA contrast and focus requirements.
@@ -157,6 +181,7 @@ Internal support users cannot efficiently find prior business decisions or expla
 - A separate import command reads developer graph V1 JSON files and stores unchanged payload bytes in the PostgreSQL graph catalog. The running dashboard reads graphs and runs but does not import or delete data.
 - The application is a local internal tool. It binds to loopback by default. Authentication, authorization, tenant isolation, and public deployment are outside this proof of concept.
 - The UI displays business graph labels. Developer source metadata stays server-side and is disabled in browser responses by default.
+- The graph preview reads one local JSON file into browser memory. It does not upload or persist that file. Binary graph preview is a future compatible extension and is not part of this increment.
 - Layout positions are always computed from graph data. No graph-specific coordinates or hardcoded diagrams are permitted.
 
 ## Dependencies & Blockers
@@ -189,6 +214,7 @@ Internal support users cannot efficiently find prior business decisions or expla
 - Live streaming of in-progress runs.
 - Cross-run overlays on one graph, aggregate analytics, and custom saved searches.
 - Support for databases other than PostgreSQL in the SvelteKit server.
+- Uploading, storing, sharing, or editing a graph selected on the preview page.
 
 ## Team Conventions
 

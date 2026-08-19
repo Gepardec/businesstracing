@@ -4,5 +4,5 @@
   let { children }: { children?: import('svelte').Snippet } = $props();
 </script>
 
-<svelte:head><title>Fachtracing Decisions</title><meta name="description" content="Explore recorded business decisions and their execution paths." /></svelte:head>
+<svelte:head><title>Fachtracing</title><meta name="description" content="Explore recorded business decisions and preview generated business graphs." /></svelte:head>
 <AppShell>{@render children?.()}</AppShell>

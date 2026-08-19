@@ -14,10 +14,14 @@
 <div class="app-shell">
   <header class="app-header">
     <a class="brand" href="/runs"><span class="brand__mark"><Network size={18} /></span><span>Fachtracing</span></a>
-    <nav aria-label="Primary navigation"><a class="nav-link" href="/runs">Decisions</a></nav>
+    <nav aria-label="Primary navigation"><a class="nav-link" href="/runs">Decisions</a><a class="nav-link" href="/graphs">Graph preview</a></nav>
     <Button variant="ghost" size="icon" onclick={toggleTheme} aria-label={dark ? 'Use light theme' : 'Use dark theme'}>
       {#if dark}<Sun size={17} />{:else}<Moon size={17} />{/if}
     </Button>
   </header>
   <main class="app-main">{@render children?.()}</main>
 </div>
+
+<style>
+  nav { display: flex; align-items: center; gap: 20px; }
+</style>

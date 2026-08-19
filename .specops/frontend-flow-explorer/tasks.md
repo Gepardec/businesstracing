@@ -290,6 +290,50 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - [x] Full repository verification
 - [x] Generated self-dogfood PostgreSQL browser journey
 
+---
+
+### Task 7: Add Browser-Only Graph JSON Preview
+
+**Status:** Completed
+**Estimated Effort:** S
+**Dependencies:** Tasks 1 and 3
+**Priority:** Medium
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Add a local file preview that validates one current developer graph V1 JSON document in browser memory and renders it with the shared graph canvas.
+
+**Implementation Steps:**
+
+1. Add a small file adapter for JSON name, empty-file, and 5 MiB size checks.
+2. Add an accessible file selection and drag-and-drop component.
+3. Add `/graphs` with transient state, clear validation errors, graph summary data, and the shared canvas.
+4. Add the graph preview to the application navigation and user documentation.
+5. Add unit and browser proof with a generated graph artifact and no hardcoded topology.
+
+**Acceptance Criteria:**
+
+- [x] A valid merged developer graph V1 JSON file renders without PostgreSQL.
+- [x] File content remains in browser memory and is not sent or persisted.
+- [x] Invalid names, sizes, JSON, and contracts produce clear messages and no partial render.
+- [x] The preview uses the existing top-to-bottom layout, node grammar, controls, and semantic node list.
+- [x] The browser proof selects generated graph JSON and makes no assumption about node IDs or positions.
+
+**Files to Modify:**
+
+- `fachtracing-viewer/src/lib/graph/graph-file.ts` (new)
+- `fachtracing-viewer/src/lib/graph/GraphUpload.svelte` (new)
+- `fachtracing-viewer/src/routes/graphs/+page.svelte` (new)
+- `fachtracing-viewer/src/lib/layout/AppShell.svelte`
+- `fachtracing-viewer/e2e/decision-explorer.spec.ts`
+- `fachtracing-viewer/README.md`
+
+**Tests Required:**
+
+- [x] File adapter unit tests
+- [x] Generated-file browser preview test
+
 ## Implementation Order
 
 1. Task 1 establishes the contracts and build.
@@ -297,11 +341,12 @@ Add browser workflows, dependency audit, repository verification, and deployment
 3. Task 4 adds run navigation and highlighting.
 4. Task 5 adds the complete runs workflow.
 5. Task 6 adds final proof and delivery documentation.
+6. Task 7 adds the optional browser-only graph preview.
 
 ## Progress Tracking
 
-- Total Tasks: 6
-- Completed: 5
+- Total Tasks: 7
+- Completed: 6
 - In Progress: 1
 - Blocked: 0
 - Pending: 0

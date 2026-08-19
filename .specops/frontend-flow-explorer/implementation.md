@@ -68,6 +68,7 @@
 | 7 | Make correlation-to-decision explanation the primary workflow. | Support users need to find all decisions for a known business reference and explain the recorded branch evidence, not browse graphs in isolation. | 4, 5 | 2026-08-19T13:06:48Z |
 | 8 | Keep the POC local, PostgreSQL-only, exact-search-only, and source-metadata-free. | This is the smallest safe scope for confidential records and the existing indexed correlation contract. | 2, 5, 6 | 2026-08-19T13:06:48Z |
 | 9 | Prove the viewer with the existing self-tracing analyzer and Java-agent path. | Generated self-observation proves the complete product chain and avoids a hand-written demonstration diagram. | 6 | 2026-08-19T19:37:37Z |
+| 10 | Preview one graph JSON file in browser memory. | It gives a fast inspection path without a database import, network upload, persistent storage, or a second graph renderer. | 7 | 2026-08-19T20:40:30Z |
 
 ## Deviations from Design
 
@@ -120,3 +121,9 @@ The hosted verification run `32285683620` passed all four jobs at commit `c28138
 The normal analyzer now emits three current developer graph V1 files. Five real Java-agent executions emit decision-record V1 files with the generic `application=fachtracing` correlation. The production import adapters load these unchanged artifacts into PostgreSQL. The Playwright journey finds them through HTTP `QUERY`, opens one result, verifies Svelte Flow nodes and full-path mode, and captures the page.
 
 Dogfooding found and fixed two compatibility faults: the TypeScript reader rejected the Java contract's zero-based observation sequence, and an ELK bundled library cannot run inside another worker. The final client uses ELK's supported API plus dedicated worker split and initializes it only in the browser. Hosted run `32297906019` passed all four jobs at commit `0a96961`. The PostgreSQL job passed all four browser journeys in 4.5 seconds and published `fachtracing-viewer-dogfood-32297906019`. Task 6 stays in progress only for manual visual baseline approval.
+
+### Session 9 — Browser-only graph preview completed (2026-08-19)
+
+Added `/graphs`, an accessible file selection and drop surface, a 5 MiB browser file boundary, local contract validation, provenance removal through the existing adapter, and the shared top-to-bottom Svelte Flow canvas. The preview does not define a server endpoint and does not use browser storage. Invalid files fail before layout, and graphs above 250 nodes remain complete with a tested-profile notice.
+
+Local evidence: zero Svelte diagnostics, 14 passing unit tests, a passing production build, repository integrity, and five passing Chromium journeys. The generated-file journey selects a current Fachtracing self-dogfood graph, reads its expected counts from that JSON, verifies every Svelte Flow node, observes no non-read network request, verifies unchanged browser storage, and captures `fachtracing-graph-preview.png`.

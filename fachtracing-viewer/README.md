@@ -26,6 +26,12 @@ npm run import-graphs -- --directory /absolute/path/to/generated/graphs
 
 The command validates each document, stores the unchanged UTF-8 bytes and SHA-256 checksum, and rejects different bytes for an existing graph ID and version. An identical import is idempotent. Back up `fachtracing_graph` with the decision and correlation tables. Do not delete a graph while a decision record references its ID and version.
 
+## Preview one graph file
+
+Open `http://127.0.0.1:5173/graphs` and select or drop one current `fachtracing-developer-graph/v1` JSON file. The viewer validates the file in the browser and uses the same top-to-bottom graph canvas as a stored decision. It does not send the file to the server, write it to PostgreSQL, or store it in browser storage. A page reload clears the preview.
+
+The preview accepts JSON files up to 5 MiB. The tested safety profile is 250 nodes and 400 edges. A larger valid graph is not truncated, but it can take longer to arrange. The preview does not support the future binary graph format yet.
+
 ## Correlation lookup
 
 The search accepts any stored correlation name and its exact canonical value. The viewer does not convert raw application values. If users know a different value, the traced application must store a separate lookup-safe correlation or a separate adapter must define the conversion. Search bodies use HTTP `QUERY`; names and values do not enter URLs or application logs.

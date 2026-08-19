@@ -2,9 +2,9 @@
   "id": "frontend-flow-explorer",
   "type": "feature",
   "status": "implementing",
-  "version": 9,
+  "version": 11,
   "created": "2026-08-19T10:52:40Z",
-  "updated": "2026-08-19T20:22:34Z",
+  "updated": "2026-08-19T20:46:36Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {

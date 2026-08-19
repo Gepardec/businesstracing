@@ -70,6 +70,12 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Rationale:** This exercises the same analyzer, graph exporter, agent, runtime collector, JSON contracts, database schema, HTTP `QUERY` endpoint, ELK layout, and Svelte Flow UI that an integrating application uses. A fixed demonstration graph would not prove this chain.
 
+### Decision 11: Preview graph JSON in browser memory
+
+**Decision:** Add a `/graphs` page that accepts one JSON file of at most 5 MiB. Read and validate the file in the browser with the existing developer graph adapter. Pass only its provenance-free `GraphModel` to the existing `FlowCanvas`. Do not send the file to a server endpoint or store it in browser storage.
+
+**Rationale:** A local preview lets a user inspect a generated graph before database import. Reusing the contract adapter and canvas keeps one validation rule and one visual grammar. Browser-memory handling also keeps developer source metadata out of network requests and durable storage.
+
 ## Component Design
 
 ### Graph Catalog
@@ -138,6 +144,14 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 
 **Interface:** `/runs` page and `/runs/[executionId]` detail route.
 
+### Browser Graph Preview
+
+**Responsibility:** Select or drop one local developer graph V1 JSON file, validate its name and size, convert it to the provenance-free graph model, and show it on the shared canvas.
+
+**Interface:** `/graphs` page and `parseGraphFile(file): Promise<GraphModel>`.
+
+**Failure behavior:** Reject non-JSON names, empty files, files larger than 5 MiB, invalid JSON, and unsupported graph contracts. Keep the prior valid graph visible only until the user starts another selection. Never send, log, or persist file content.
+
 ### Self-Dogfood Proof
 
 **Responsibility:** Generate, import, search, render, and capture Fachtracing's own production-policy graphs and runtime decisions.
@@ -154,10 +168,11 @@ The application uses `@xyflow/svelte` for interaction and ELK's layered algorith
 4. The graph catalog loads the matching immutable payload, validates it, and creates a provenance-free browser graph.
 5. The layout worker computes top-to-bottom positions from the complete validated graph.
 6. The canvas renders the complete graph. The inspector derives and applies current-step or full-path highlighting.
+7. As a separate flow, the graph preview reads one selected JSON file into browser memory, validates it through the same adapter, and sends the resulting graph model directly to the canvas.
 
 ## State Management
 
-The selected execution ID and non-confidential display settings can use route parameters. Correlation names, correlation values, and complete search documents do not enter URLs or browser persistence. Local Svelte state contains the current search, result page, parsed graph, parsed run, layout result, active observation index, panel state, theme, and full-path flag. The graph document and layout are cached by graph ID, graph version, direction, and node-size profile. The run payload is cached by execution ID for the current navigation session.
+The selected execution ID and non-confidential display settings can use route parameters. Correlation names, correlation values, complete search documents, and selected preview files do not enter URLs or browser persistence. Local Svelte state contains the current search, result page, parsed graph, parsed run, preview graph, layout result, active observation index, panel state, theme, and full-path flag. The graph document and layout are cached by graph ID, graph version, direction, and node-size profile. The run payload is cached by execution ID for the current navigation session. Preview state ends when the page reloads or closes.
 
 ## API Changes
 
@@ -192,6 +207,7 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 - Server responses set a restrictive content security policy and do not render graph labels as HTML.
 - Search request bodies have a small byte limit. Graph ID, execution ID, correlation, cursor, and filter fields have individual length and character limits before database access. Correlation-name discovery never returns correlation values.
 - Request and application logs exclude `QUERY` content, run payloads, graph developer provenance, and response bodies.
+- The preview has no upload endpoint. Its file input and parser run in the browser, and the rendered graph model excludes developer provenance.
 - The server binds to loopback. Shared and public deployment is unsupported in the proof of concept.
 
 ## Performance Considerations
@@ -212,6 +228,7 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 - Visual tests compare approved desktop and narrow screenshots for both themes and all node states.
 - PostgreSQL integration tests verify the additive migration, immutable graph conflicts, exact graph retrieval, parameterized search, stable pagination, correlation semantics, and timeouts with bounded generated fixtures.
 - A layout benchmark uses generated topology, not a hardcoded product graph, at 250 nodes and 400 edges.
+- Browser tests select a generated graph JSON file and prove that the shared canvas renders it without PostgreSQL or a fixed topology.
 
 ## Rollout Plan
 
