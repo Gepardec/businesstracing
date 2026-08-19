@@ -135,9 +135,10 @@ jobs:
           PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: npm run test:browser
       - name: Upload Fachtracing viewer proof
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: fachtracing-viewer-dogfood-${{ github.run_id }}
-          path: fachtracing-viewer/test-results/dogfood/fachtracing-viewer.png
+          path: fachtracing-viewer/test-results
           if-no-files-found: error
           retention-days: 14

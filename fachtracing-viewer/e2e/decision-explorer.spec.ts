@@ -39,6 +39,9 @@ test('keeps the explanation available at a narrow width', async ({ page }) => {
 
 test('renders Fachtracing from its generated graph and Java-agent run', async ({ page }) => {
   test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY, 'Generated Fachtracing artifacts are required');
+  const browserErrors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') browserErrors.push(message.text()); });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto('/runs');
   await page.getByLabel('Correlation name').fill('application');
@@ -48,8 +51,16 @@ test('renders Fachtracing from its generated graph and Java-agent run', async ({
   await expect(page.getByText('select source inputs for graph analysis').first()).toBeVisible();
   await page.getByRole('link', { name: 'Explain' }).first().click();
   await expect(page.getByRole('complementary', { name: 'Run explanation' })).toContainText(/\d+ steps/);
-  await expect(page.locator('.svelte-flow__node').first()).toBeVisible();
-  await expect(page.getByLabel('Full path')).toBeChecked();
   await mkdir('test-results/dogfood', { recursive: true });
-  await page.screenshot({ path: 'test-results/dogfood/fachtracing-viewer.png', fullPage: true });
+  try {
+    const nodes = page.locator('.svelte-flow__node');
+    const layoutError = page.getByRole('alert');
+    await expect.poll(async () => await nodes.count() > 0 || await layoutError.count() > 0, { timeout: 15_000 }).toBe(true);
+    if (await layoutError.count() > 0) throw new Error(`graph layout failed: ${await layoutError.textContent()}`);
+    expect(browserErrors, `browser errors: ${browserErrors.join(' | ')}`).toEqual([]);
+    await expect(nodes.first()).toBeVisible();
+    await expect(page.getByLabel('Full path')).toBeChecked();
+  } finally {
+    await page.screenshot({ path: 'test-results/dogfood/fachtracing-viewer.png', fullPage: true });
+  }
 });
