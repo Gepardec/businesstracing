@@ -44,6 +44,20 @@
 
 **Verdict:** PASS — 4 of 4 dimensions passed
 
+### Iteration 4
+
+**Evaluated at:** 2026-08-19T13:06:48Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Threshold | Pass/Fail |
+| --- | --- | --- | --- | --- | --- |
+| Criteria Testability | The primary customer-support journey now has observable dashboard, multi-result, exact-graph, step-evidence, missing-evidence, and confidentiality outcomes. | The raw-to-redacted customer lookup transformation remains open. | 9 | 7 | Pass |
+| Criteria Completeness | Requirements cover V1 contracts, HTTP `QUERY`, graph retention, final-result summaries, evidence honesty, loopback deployment, source removal, and accessible alternatives. | Authentication and shared deployment remain intentionally outside the POC. | 9 | 7 | Pass |
+| Design Coherence | Import, catalog read, decision search, graph projection, layout, and explanation have separate responsibilities. | The graph table requires an additive storage migration across the Java and Node parts. | 9 | 7 | Pass |
+| Task Coverage | Six tasks now cover storage migration, graph import, `QUERY`, dashboard summaries, complete explanation, confidentiality, and delivery proof. | Exact customer lookup cannot be accepted until its transformation policy is selected. | 9 | 7 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed; one explicit product blocker remains
+
 ## Implementation Evaluation
 
 Not started.

@@ -2,7 +2,16 @@
 
 ## Overview
 
-Business users cannot efficiently inspect large Fachtracing graphs or compare stored runs in the current text and Mermaid outputs. This feature adds a browser application that presents a stable, readable graph, shows one run as an ordered path, and supports search across persisted runs without changing the existing graph or decision-record contracts.
+Internal support users cannot efficiently find a customer's prior business decisions or explain one decision from the current text and Mermaid outputs. This proof of concept adds a local browser dashboard that lists stored decisions, finds decisions through an exact customer correlation, opens one decision, presents its complete business graph, and explains the observed path without changing the current graph or decision-record wire contracts.
+
+## Primary Workflow
+
+1. A support user opens the dashboard and sees the newest recorded decisions.
+2. The user searches with a configured customer correlation, such as a customer ID.
+3. The dashboard shows all matching decisions with completion time, business decision label, status, and final result.
+4. The user opens one decision.
+5. The application loads the exact graph ID and version, highlights the customer's path, and shows the ordered explanation beside the complete graph.
+6. Each step combines the business node label, the recorded outcome, the selected edge, and only the already-redacted evidence captured for that observation.
 
 ## User Stories
 
@@ -40,7 +49,9 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 
 **Acceptance Criteria (EARS):**
 
-- WHEN a run is selected THE SYSTEM SHALL show its observations in sequence order in a right-side inspector with outcome and already-redacted display evidence.
+- WHEN a run is selected THE SYSTEM SHALL show its observations in sequence order in a right-side inspector with the business label, recorded outcome, selected branch, and already-redacted display evidence.
+- WHEN recorded evidence explains a predicate THE SYSTEM SHALL present a plain-language statement such as `age was 17; age below 18 was true` without deriving or inventing an unrecorded fact.
+- IF an observation has no recorded business evidence THEN THE SYSTEM SHALL show its outcome and SHALL state that no additional evidence was recorded.
 - WHEN a step is selected THE SYSTEM SHALL focus and highlight the matching node and its selected edge while preserving the user's current zoom when the item is already visible.
 - WHERE full-path highlighting is enabled THE SYSTEM SHALL highlight all observed nodes and resolved connecting edges for the selected run.
 - WHEN a run visits the same node more than once THE SYSTEM SHALL keep each visit as a separate ordered step and identify the active visit.
@@ -56,13 +67,16 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 ### Story 3: Search all runs
 
 **As a** support user
-**I want** a searchable run list
+**I want** a searchable decision list
 **So that** I can find the execution that explains a reported result
 
 **Acceptance Criteria (EARS):**
 
-- WHEN the runs view opens THE SYSTEM SHALL show cursor-paged run summaries ordered by completion time descending and execution ID descending.
-- WHEN a user submits an execution ID, graph ID, status, inclusive time range, or exact redacted correlation key/value filter THE SYSTEM SHALL apply the filters on the server and reset pagination.
+- WHEN the dashboard opens THE SYSTEM SHALL show cursor-paged decision summaries ordered by completion time descending and execution ID descending.
+- THE SYSTEM SHALL show completion time, business decision label, status, and already-redacted final result for each summary.
+- WHEN a user submits an execution ID, graph ID, status, inclusive time range, or exact customer correlation value THE SYSTEM SHALL send a JSON search document with HTTP `QUERY`, apply the filters on the server, and reset pagination.
+- THE SYSTEM SHALL keep correlation names and values out of the request URI, browser history, result URLs, and application logs.
+- WHEN a customer correlation matches several decisions THE SYSTEM SHALL show all matching decisions in the same result list.
 - WHEN a user selects a result THE SYSTEM SHALL open the matching graph version and run inspector through a linkable URL.
 - IF no result matches THEN THE SYSTEM SHALL show an empty result state without changing the active filters.
 - IF a database query fails or exceeds its timeout THEN THE SYSTEM SHALL show a retry action and SHALL NOT expose connection details, SQL, or credentials.
@@ -70,6 +84,8 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 **Progress Checklist:**
 
 - [ ] Add the paged and filterable runs view.
+- [ ] Show the decision label and final result in each result summary.
+- [ ] Use HTTP `QUERY` with confidential filters in the request body.
 - [ ] Use linkable run URLs.
 - [ ] Add safe empty and error states.
 
@@ -81,32 +97,42 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 
 **Acceptance Criteria (EARS):**
 
-- THE SYSTEM SHALL accept `fachtracing-developer-graph/v1` and `/v2` graph documents and `fachtracing-decision-record/v1` payloads through explicit adapters.
+- THE SYSTEM SHALL accept `fachtracing-developer-graph/v1` graph documents and `fachtracing-decision-record/v1` payloads through explicit adapters.
 - THE SYSTEM SHALL query the existing `fachtracing_decision_record` and `fachtracing_correlation` schema without changing stored payloads or correlation semantics.
+- WHEN an operator imports a valid developer graph V1 document THE SYSTEM SHALL store its unchanged bytes immutably by graph ID and graph version in PostgreSQL.
+- WHEN the same graph ID and version are imported again with identical bytes THE SYSTEM SHALL accept the import as idempotent.
+- IF the same graph ID and version are imported with different bytes THEN THE SYSTEM SHALL reject the import as a contract conflict.
+- WHEN a stored run is opened THE SYSTEM SHALL load its exact graph from the PostgreSQL graph catalog.
+- THE SYSTEM SHALL NOT delete an imported graph automatically. Graph deletion requires an explicit maintenance operation that first proves that no stored run references the graph ID and version.
+- THE SYSTEM SHALL omit developer source paths, source URLs, source origins, and source fingerprints from browser responses by default.
 - WHEN an unsupported schema ID is received THE SYSTEM SHALL reject it with a visible compatibility message.
 - WHEN a supported record contains unknown fields THE SYSTEM SHALL ignore those fields in line with the V1 forward-read contract.
 
 **Progress Checklist:**
 
 - [ ] Add tested graph and run contract adapters.
+- [ ] Add immutable graph import and exact-version retrieval.
+- [ ] Keep developer provenance server-side by default.
 - [ ] Keep the V1 storage payload unchanged.
 - [ ] Reject unsupported schemas and accept unknown fields.
 
 ## Non-Functional Requirements
 
 - Accessibility: All run navigation and graph selection actions shall work with a keyboard. Visible controls shall meet WCAG 2.2 AA contrast and focus requirements.
+- Accessible alternative: The dashboard shall provide a semantic decision table, a semantic ordered explanation list, and a searchable semantic node list so that the recorded decision can be understood without operating the graph canvas.
 - Performance: With 250 nodes and 400 edges, initial layout shall finish within 2 seconds on the CI browser profile. A step selection shall update visible highlighting within 100 milliseconds after the data is loaded.
-- Search: A page request of at most 50 run summaries shall complete within 500 milliseconds at p95 against the PostgreSQL contract fixture with one million metadata rows, excluding network latency.
+- Search: A query shall return at most 50 decision summaries per page. Version one has no production-scale latency benchmark.
 - Security: The browser shall receive already-redacted values only. Database credentials shall remain in server-only environment variables. All filters shall use parameterized queries and bounded lengths.
 - Responsive layout: At widths of 1,200 CSS pixels or more, the graph and inspector shall appear side by side. At smaller widths, the inspector shall become a drawer without hiding the selected step.
 - Visual quality: Reference screenshots for light and dark themes at desktop and narrow widths shall pass automated visual comparison with an approved baseline and manual review of label collisions, clipped controls, focus visibility, and node-state ambiguity.
 
 ## Constraints & Assumptions
 
-- The first deployable version targets PostgreSQL because it is the required production JDBC contract. H2 remains a test-only Java adapter.
-- The SvelteKit server reads graph artifacts from a configured read-only directory and reads runs from the existing PostgreSQL tables.
-- Deployment is behind a trusted reverse proxy. Authentication and role management are outside this increment; the server must not bind publicly by default in documented examples.
-- The UI displays business graph labels by default. Developer source links are an optional graph capability and never appear in run payloads.
+- The proof of concept targets PostgreSQL only. H2 remains a test-only Java adapter.
+- The proof of concept uses one deployment-configured customer correlation name. It does not hardcode `customerId` or an insurance-specific field name.
+- A separate import command reads developer graph V1 JSON files and stores unchanged payload bytes in the PostgreSQL graph catalog. The running dashboard reads graphs and runs but does not import or delete data.
+- The application is a local internal tool. It binds to loopback by default. Authentication, authorization, tenant isolation, and public deployment are outside this proof of concept.
+- The UI displays business graph labels. Developer source metadata stays server-side and is disabled in browser responses by default.
 - Layout positions are always computed from graph data. No graph-specific coordinates or hardcoded diagrams are permitted.
 
 ## Dependencies & Blockers
@@ -123,7 +149,7 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 
 | Blocker | Blocking Spec | Resolution Type | Resolution Detail | Status |
 | --- | --- | --- | --- | --- |
-| None | — | — | — | resolved |
+| Customer lookup transformation | frontend-flow-explorer | user decision | Decide how an operator-entered raw customer ID becomes the already-redacted canonical value stored in `fachtracing_correlation`. | open |
 
 ## Success Metrics
 
@@ -134,7 +160,7 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 ## Out of Scope
 
 - Editing graphs, moving nodes persistently, or writing records from the UI.
-- Authentication, authorization, tenant isolation, and public internet deployment.
+- Authentication, authorization, tenant isolation, shared-service deployment, and public internet deployment.
 - Live streaming of in-progress runs.
 - Cross-run overlays on one graph, aggregate analytics, and custom saved searches.
 - Support for databases other than PostgreSQL in the SvelteKit server.
@@ -147,6 +173,4 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 
 ## Review Questions
 
-- Confirm whether PostgreSQL-only server access is acceptable for the first version.
-- Confirm whether the initial deployment can rely on a trusted reverse proxy for authentication.
-- Confirm whether exact redacted correlation-value search is sufficient, or whether prefix/full-text search is required later.
+- Confirm whether the operator enters the raw customer ID and the viewer applies the same redaction or lookup transformation as the traced application, or whether the stored redacted canonical value is already the value that the operator knows.

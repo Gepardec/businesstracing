@@ -25,7 +25,7 @@ Create the SvelteKit Node application, install only approved dependencies, initi
 
 1. Create `fachtracing-viewer/` with SvelteKit, Svelte 5, the Node adapter, and a committed lockfile.
 2. Initialize Tailwind CSS v4 and shadcn-svelte with the `new-york` style, neutral base, Svelte 5 components, and explicit CSS tokens.
-3. Copy generated schemas and synthetic documents into test fixtures without changing their wire shape.
+3. Copy the generated developer graph V1 schema and synthetic graph and run documents into test fixtures without changing their wire shape.
 4. Implement graph and run parsers with explicit version dispatch and integrity checks.
 5. Add unit tests for supported, forward-compatible, invalid, and mismatched documents.
 
@@ -33,7 +33,7 @@ Create the SvelteKit Node application, install only approved dependencies, initi
 
 - [ ] The viewer builds with strict TypeScript checks.
 - [ ] The application shell uses repository-owned shadcn-svelte components and Tailwind CSS v4 tokens.
-- [ ] V1/V2 graph and V1 run adapters preserve all node, edge, observation, and selected-edge IDs.
+- [ ] Developer graph V1 and decision-record V1 adapters preserve all node, edge, observation, and selected-edge IDs.
 - [ ] Unsupported versions, dangling references, duplicate IDs, and graph mismatches fail visibly.
 
 **Files to Modify:**
@@ -54,7 +54,7 @@ Create the SvelteKit Node application, install only approved dependencies, initi
 
 ---
 
-### Task 2: Add the Read-Only Graph and Run API
+### Task 2: Add the Graph Catalog and Decision API
 
 **Status:** Pending
 **Estimated Effort:** L
@@ -64,24 +64,32 @@ Create the SvelteKit Node application, install only approved dependencies, initi
 **Blocker:** None
 
 **Description:**
-Add the single-responsibility graph catalog and PostgreSQL run repository, then expose the four versioned read endpoints.
+Add the immutable PostgreSQL graph catalog, its separate import command, the decision repository, and the versioned dashboard endpoints.
 
 **Implementation Steps:**
 
-1. Load supported graph files from a contained read-only directory.
-2. Implement bounded, parameterized run detail and cursor-search queries.
-3. Add SvelteKit server routes and generic problem responses.
-4. Verify the API against the Java V1 migration and PostgreSQL fixture.
+1. Add the graph catalog table and completion/execution cursor index through the repository storage migration.
+2. Implement the explicit graph import command with JSON Schema validation, unchanged payload bytes, checksums, and immutable conflict behavior.
+3. Implement exact graph retrieval and the provenance-free browser projection.
+4. Implement bounded, parameterized run detail and cursor-search queries.
+5. Implement `QUERY /api/v1/runs` through the SvelteKit fallback method handler with JSON content, `Accept-Query`, and `no-store` responses.
+6. Add the remaining SvelteKit server routes and generic problem responses.
+7. Verify the API and migration against the PostgreSQL fixture.
 
 **Acceptance Criteria:**
 
-- [ ] The API returns graph summaries, one exact graph version, run summaries, and one unchanged V1 payload.
+- [ ] The import command stores one exact graph version immutably and rejects conflicting bytes.
+- [ ] The API returns graph summaries, one provenance-free exact graph version, decision summaries with final results, and one unchanged V1 run payload.
+- [ ] Customer correlation search uses HTTP `QUERY`; confidential search fields never enter the URI or logs.
 - [ ] Cursor pages are stable and correlation/time semantics match the JDBC repository.
 - [ ] Invalid input, timeout, missing data, and unavailable graph states expose no internal details.
 
 **Files to Modify:**
 
-- `fachtracing-viewer/src/lib/server/graph-catalog.server.ts` (new)
+- `fachtracing-storage-jdbc/src/main/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepository.java`
+- `fachtracing-viewer/src/lib/server/graph-catalog-repository.server.ts` (new)
+- `fachtracing-viewer/src/lib/server/graph-import.server.ts` (new)
+- `fachtracing-viewer/src/cli/import-graphs.ts` (new)
 - `fachtracing-viewer/src/lib/server/run-repository.server.ts` (new)
 - `fachtracing-viewer/src/routes/api/v1/` (new)
 - `fachtracing-viewer/tests/postgres/` (new)
@@ -89,8 +97,8 @@ Add the single-responsibility graph catalog and PostgreSQL run repository, then 
 **Tests Required:**
 
 - [ ] Server route tests
-- [ ] PostgreSQL integration and pagination tests
-- [ ] Million-row query-plan and latency contract
+- [ ] Immutable graph catalog and migration integration tests
+- [ ] HTTP `QUERY`, confidentiality, and cursor pagination tests
 
 ---
 
@@ -121,6 +129,7 @@ Render the complete node and edge grammar with Svelte Flow and compute determini
 - [ ] Every node kind is distinguishable by silhouette, icon, text, and token in light, dark, and monochrome checks.
 - [ ] Coverage gaps and invalid references never appear as invented normal flow.
 - [ ] Keyboard and focus behavior meet the accessibility criteria.
+- [ ] A semantic node list exposes the graph without requiring canvas operation.
 
 **Files to Modify:**
 
@@ -134,6 +143,7 @@ Render the complete node and edge grammar with Svelte Flow and compute determini
 
 - [ ] Layout benchmark and determinism tests
 - [ ] Canvas component and keyboard tests
+- [ ] Semantic node-list and screen-reader structure tests
 - [ ] Node-state and 250-node safety-profile visual tests
 
 ---
@@ -148,18 +158,20 @@ Render the complete node and edge grammar with Svelte Flow and compute determini
 **Blocker:** None
 
 **Description:**
-Add the right-side ordered inspector, current-step navigation, graph focus, and optional full-path highlighting.
+Add the right-side ordered explanation inspector, current-step navigation, graph focus, and optional full-path highlighting.
 
 **Implementation Steps:**
 
 1. Derive highlight state from ordered observations and graph topology.
-2. Implement the inspector, active step, next/previous actions, and full-path toggle.
-3. Connect list selection to canvas focus without unwanted zoom resets.
-4. Test repeated visits, selected edges, inferred connecting edges, failures, and mismatches.
+2. Build plain-language step explanations from the node label, recorded outcome, selected edge, and already-redacted display evidence.
+3. Implement the inspector, active step, next/previous actions, missing-evidence state, and full-path toggle.
+4. Connect list selection to canvas focus without unwanted zoom resets.
+5. Test repeated visits, selected edges, inferred connecting edges, absent evidence, failures, and mismatches.
 
 **Acceptance Criteria:**
 
 - [ ] Every observation appears once and in sequence order.
+- [ ] Every step explains only recorded facts and states when no additional evidence exists.
 - [ ] Step selection focuses and highlights the correct node and selected edge within 100 milliseconds.
 - [ ] Full-path mode highlights all proved nodes and connecting edges.
 - [ ] Repeated nodes remain distinct steps and graph/version mismatch disables highlights.
@@ -178,7 +190,7 @@ Add the right-side ordered inspector, current-step navigation, graph focus, and 
 
 ---
 
-### Task 5: Add the Searchable Runs Explorer
+### Task 5: Add the Decisions Dashboard
 
 **Status:** Pending
 **Estimated Effort:** M
@@ -188,20 +200,23 @@ Add the right-side ordered inspector, current-step navigation, graph focus, and 
 **Blocker:** None
 
 **Description:**
-Build the shadcn-svelte application shell, URL-backed filter form, paged result list, deep-link navigation, themes, and responsive detail layout.
+Build the shadcn-svelte decisions dashboard, confidential customer lookup, paged result list, deep-link detail navigation, themes, and responsive explanation layout.
 
 **Implementation Steps:**
 
 1. Compose the navigation, toolbar, cards, forms, table, badges, tooltips, and alerts from repository-owned shadcn-svelte components.
-2. Add bounded execution, graph, status, time, and correlation filters.
-3. Add cursor navigation, loading, empty, error, and retry states.
-4. Link each row to the exact run detail URL.
-5. Add token-based light and dark themes.
-6. Move the inspector into an accessible sheet below 1,200 pixels.
+2. Show newest decision summaries with label, status, completion time, and already-redacted final result.
+3. Add bounded execution, graph, status, time, and exact customer correlation filters.
+4. Submit searches with HTTP `QUERY` and retain confidential inputs only in component memory.
+5. Add cursor navigation, loading, empty, error, and retry states.
+6. Link each row to the exact run detail URL without copying the customer lookup into it.
+7. Add token-based light and dark themes.
+8. Move the inspector into an accessible sheet below 1,200 pixels.
 
 **Acceptance Criteria:**
 
 - [ ] Filters execute on the server and reset the cursor.
+- [ ] One customer lookup shows every matching decision page without exposing the lookup value in a URL or log.
 - [ ] Result order and cursor navigation stay stable as new runs arrive.
 - [ ] Run detail URLs are linkable and restore the selected run.
 - [ ] Desktop and narrow layouts preserve the selected step and keyboard access.
@@ -236,9 +251,9 @@ Add browser workflows, dependency audit, repository verification, and deployment
 
 **Implementation Steps:**
 
-1. Add Playwright flows for search, run selection, step navigation, full-path mode, semantic zoom, themes, deep links, and narrow layout.
+1. Add Playwright flows for the customer-support journey: newest decisions, customer lookup, multiple results, decision selection, evidence explanation, step navigation, full-path mode, semantic zoom, themes, deep links, and narrow layout.
 2. Add `npm audit --audit-level=high`, checks, unit tests, build, and browser tests to the repository verifier and CI.
-3. Document graph directory, PostgreSQL variables, loopback binding, reverse-proxy requirement, and compatibility limits.
+3. Document graph import, PostgreSQL variables, loopback-only binding, correlation lookup policy, backup and retention, and compatibility limits.
 4. Run the full Java, PostgreSQL, frontend, and repository-integrity gates.
 
 **Acceptance Criteria:**

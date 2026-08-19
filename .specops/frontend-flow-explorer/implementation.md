@@ -25,7 +25,7 @@
 - Design: A standalone SvelteKit Node application uses narrow server adapters, Svelte Flow, an ELK layout worker, ID-derived highlights, and PostgreSQL cursor queries.
 - Tasks: Six ordered tasks cover contracts, read APIs, graph layout, run inspection, run search, and delivery verification.
 - Dependencies: SvelteKit, Svelte Flow, ELK, PostgreSQL, and test tools are explicit approved dependencies. Existing completed JSON and JDBC specs are required.
-- Open review points: PostgreSQL-only scope, reverse-proxy authentication, and exact-only correlation search.
+- Initial open review points were PostgreSQL-only scope, reverse-proxy authentication, and exact-only correlation search. Session 4 resolved these as PostgreSQL-only, loopback-only, and exact-only for the POC.
 
 ## Phase 2 Revision Summary (scale decisions superseded by Session 3)
 
@@ -43,6 +43,17 @@
 - The 250-node and 400-edge generated graph remains a safety benchmark, not a UI threshold.
 - The unproved 1,000-node mode, partial run projection, and graph view model are deferred.
 
+## Phase 2 Product Workflow Revision Summary
+
+- The POC is a local internal decision-support dashboard for customer calls.
+- The default page lists newest decisions. Exact customer lookup returns all matching decisions.
+- Decision detail shows the final result, complete business graph, highlighted path, and ordered evidence-based explanation.
+- Developer graph V1 is the only graph wire contract. V2 does not exist.
+- HTTP `QUERY` carries confidential search content outside the URI.
+- An immutable PostgreSQL graph catalog retains exact graph versions. The POC imports JSON bytes and leaves a media-type seam for a future specified binary format.
+- Production-scale benchmarking is removed. Bounded functional and integration fixtures remain.
+- Developer provenance stays server-side, and the POC binds to loopback.
+
 ## Decision Log
 
 | # | Decision | Rationale | Task | Timestamp |
@@ -51,6 +62,10 @@
 | 2 | Use shadcn-svelte with Tailwind CSS v4. | It supplies consistent accessible controls while keeping component source and theme tokens in the repository. | 1, 5 | 2026-08-19T11:58:25Z |
 | 3 | Use progressive modes above 250 and 1,000 nodes. | A fixed detail level becomes unreadable on large graphs. Explicit focus mode prevents silent data loss. | 3 | 2026-08-19T11:58:25Z |
 | 4 | Supersede decision 3 and render the complete graph in version one. | Current checked-in graphs have at most 15 nodes. The 250-node benchmark gives enough headroom without a second topology model. | 3 | 2026-08-19T12:15:33Z |
+| 5 | Use HTTP `QUERY` for decision search. | RFC 10008 gives safe, idempotent request-content semantics and keeps confidential customer lookup values out of URIs. | 2, 5 | 2026-08-19T13:06:48Z |
+| 6 | Store immutable graph V1 bytes in PostgreSQL. | Historical decisions require their exact graph version. Co-located retention avoids an unsynchronized deployment directory. | 2 | 2026-08-19T13:06:48Z |
+| 7 | Make customer decision explanation the primary workflow. | Support users need to find all decisions for a caller and explain the recorded branch evidence, not browse graphs in isolation. | 4, 5 | 2026-08-19T13:06:48Z |
+| 8 | Keep the POC local, PostgreSQL-only, exact-search-only, and source-metadata-free. | This is the smallest safe scope for confidential records and the existing indexed correlation contract. | 2, 5, 6 | 2026-08-19T13:06:48Z |
 
 ## Deviations from Design
 
@@ -75,3 +90,7 @@ Added the missing visual language and large-graph contract after user review. Th
 ### Session 3 — Scale scope corrected (2026-08-19)
 
 Checked current repository fixtures after user feedback. The largest checked-in business graph has 15 nodes and 20 edges. Removed speculative 1,000-node behavior and partial graph projections. Kept a generated 250-node and 400-edge test as safety headroom. No implementation task started.
+
+### Session 4 — Customer decision workflow completed (2026-08-19)
+
+Reframed the POC around the support workflow: find a customer, see all matching decisions, open one result, and explain every recorded branch on the complete graph. Removed graph V2, selected HTTP `QUERY`, added immutable PostgreSQL graph retention, removed the million-row performance fixture, hid developer provenance, and fixed the deployment scope to local loopback. One input remains open: how a raw operator-entered customer ID becomes the stored redacted canonical lookup value. No implementation task started.

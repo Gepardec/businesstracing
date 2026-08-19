@@ -2,7 +2,26 @@
 
 ## Design Goal
 
-The viewer must make a run easy to follow before it makes the complete graph easy to inspect. It uses a quiet application shell, a strong graph hierarchy, and a fixed visual grammar. It does not copy Mermaid styling and it does not store graph-specific positions.
+The viewer must make a customer decision easy to find and explain before it makes the complete graph easy to inspect. It uses a quiet application shell, a strong graph hierarchy, and a fixed visual grammar. It does not copy Mermaid styling and it does not store graph-specific positions.
+
+## Information Architecture
+
+### Decisions Dashboard
+
+- Make `Decisions` the default route and primary navigation item.
+- Put the customer lookup first, followed by optional graph, status, and completion-time filters.
+- Show newest decisions before a search. After a customer lookup, show all exact matches in the same table.
+- Each row shows completion time, business decision label, status, already-redacted final result, and an `Explain` action.
+- Keep the confidential customer value in component memory only. Do not show it in the URL or recent-search history.
+
+### Decision Explanation
+
+- Put the business decision label, final result, status, completion time, and execution ID in a compact header.
+- Keep the complete graph as the main surface and the ordered explanation inspector on the right.
+- Start with the full customer path highlighted and the first observation selected. Provide next and previous step actions.
+- For each step, lead with one plain-language explanation. Show recorded evidence and technical identifiers in separate disclosure sections.
+- If evidence is absent, say `No additional evidence was recorded` instead of guessing a reason.
+- Do not show developer source links, paths, origins, or fingerprints in the POC.
 
 ## Application Shell
 
@@ -13,19 +32,19 @@ The viewer must make a run easy to follow before it makes the complete graph eas
 - Use the system UI font stack for labels and controls. Use the system monospace stack only for IDs and timestamps.
 - At 1,200 CSS pixels or more, use a 56-pixel application rail, a flexible graph canvas, and a 360-pixel right inspector. The inspector can resize from 320 to 520 pixels.
 - Below 1,200 pixels, put the inspector in a shadcn `Sheet`. Keep the selected step and graph viewport when it opens or closes.
-- Put graph search, fit, zoom, view mode, theme, and minimap controls in one compact canvas toolbar. Keep run filters on the runs page.
+- Put graph search, fit, zoom, theme, and minimap controls in one compact canvas toolbar. Keep decision filters on the dashboard.
 
 ## Component Use
 
 | UI purpose | shadcn-svelte component |
 | --- | --- |
 | Application actions | `Button`, `DropdownMenu`, `Tooltip` |
-| Run and graph search | `Input`, `Command`, `Select` |
-| Run status and node kind | `Badge` |
+| Customer and decision search | `Input`, `Command`, `Select` |
+| Decision status and node kind | `Badge` |
 | Path mode | `Toggle` or `Switch` with a text label |
 | Desktop sections | `Card`, `Separator`, `ScrollArea` |
 | Narrow inspector | `Sheet` |
-| Run results | semantic table with shadcn table styles |
+| Decision results | semantic table with shadcn table styles |
 | Loading and failures | `Skeleton`, `Alert` |
 
 Generated shadcn source stays in `src/lib/components/ui/`. Product components can compose it but must not mix data access with presentation.
@@ -112,7 +131,7 @@ The canvas must offer these recovery actions: find node, fit the graph, return t
 
 - Overview: show silhouette, icon, short label, and state rings. Hide metadata and normal edge labels.
 - Reading: show business label, type icon, type name, and relevant edge labels.
-- Detail: add source location or business metadata only when the graph contract supplies it.
+- Detail: add business metadata only when the graph contract supplies it. Do not expose developer source metadata.
 
 The same zoom thresholds apply to all graphs. Selection must not change a node's measured layout size.
 
@@ -125,5 +144,7 @@ Use generated graph fixtures, never checked-in product diagrams, for visual test
 - Every node kind in default, focused, selected, path, current-step, and warning states.
 - A 250-node and 400-edge generated safety graph.
 - Long labels, repeated run visits, empty results, loading, compatibility failure, and layout failure.
+- Customer lookup with no matches, one match, and several decisions for the same customer.
+- Decision detail with complete evidence, missing evidence, failed result, and incomplete trace.
 
 Automated image comparison must use a small documented tolerance for font rendering. A reviewer must also check label collisions, clipped controls, state ambiguity, keyboard focus, theme contrast, and reduced motion.
