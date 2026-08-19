@@ -27,10 +27,22 @@
 - Dependencies: SvelteKit, Svelte Flow, ELK, PostgreSQL, and test tools are explicit approved dependencies. Existing completed JSON and JDBC specs are required.
 - Open review points: PostgreSQL-only scope, reverse-proxy authentication, and exact-only correlation search.
 
+## Phase 2 Revision Summary
+
+- The visual design is now explicit in `visual-design.md`.
+- The default ELK direction changed from left-to-right to top-to-bottom.
+- The application shell now uses shadcn-svelte in the `new-york` style with Tailwind CSS v4.
+- Every node kind has a stable silhouette, icon, label, and semantic color token.
+- Large graphs use measured full, large, and run-focus modes. Partial views are always visible to the user.
+- Visual regression, monochrome recognition, theme, and large-graph tests are now delivery gates.
+
 ## Decision Log
 
 | # | Decision | Rationale | Task | Timestamp |
 | --- | --- | --- | --- | --- |
+| 1 | Use top-to-bottom layout in version one. | It follows normal page scrolling and keeps the right inspector outside the main flow direction. | 3 | 2026-08-19T11:58:25Z |
+| 2 | Use shadcn-svelte with Tailwind CSS v4. | It supplies consistent accessible controls while keeping component source and theme tokens in the repository. | 1, 5 | 2026-08-19T11:58:25Z |
+| 3 | Use progressive modes above 250 and 1,000 nodes. | A fixed detail level becomes unreadable on large graphs. Explicit focus mode prevents silent data loss. | 3 | 2026-08-19T11:58:25Z |
 
 ## Deviations from Design
 
@@ -47,3 +59,7 @@
 ### Session 1 — Specification created (2026-08-19)
 
 Created a full-stack draft from the current graph JSON, decision-record V1, and JDBC schema. No implementation task started. The user review can change the three open deployment and search assumptions before Phase 3.
+
+### Session 2 — Visual design revised (2026-08-19)
+
+Added the missing visual language and large-graph contract after user review. The revision specifies top-to-bottom layout, shadcn-svelte and Tailwind CSS v4, node shapes and colors, state precedence, semantic zoom, explicit run-focus mode, and visual quality gates. No implementation task started.

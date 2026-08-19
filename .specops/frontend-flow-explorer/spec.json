@@ -2,9 +2,9 @@
   "id": "frontend-flow-explorer",
   "type": "feature",
   "status": "draft",
-  "version": 1,
+  "version": 2,
   "created": "2026-08-19T10:52:40Z",
-  "updated": "2026-08-19T10:52:40Z",
+  "updated": "2026-08-19T11:58:25Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -38,15 +38,15 @@
   ],
   "evaluation": {
     "spec": {
-      "iterations": 1,
+      "iterations": 2,
       "passed": true,
       "scores": {
         "criteriaTestability": 9,
-        "criteriaCompleteness": 8,
+        "criteriaCompleteness": 9,
         "designCoherence": 9,
-        "taskCoverage": 8
+        "taskCoverage": 9
       },
-      "evaluatedAt": "2026-08-19T10:52:40Z"
+      "evaluatedAt": "2026-08-19T11:58:25Z"
     }
   }
 }

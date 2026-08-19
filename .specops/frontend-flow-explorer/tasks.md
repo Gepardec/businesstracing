@@ -19,18 +19,20 @@
 **Blocker:** None
 
 **Description:**
-Create the SvelteKit Node application, install only approved dependencies, add strict TypeScript settings, and implement immutable graph and run adapters from existing schema fixtures.
+Create the SvelteKit Node application, install only approved dependencies, initialize Tailwind CSS v4 and shadcn-svelte, add strict TypeScript settings, and implement immutable graph and run adapters from existing schema fixtures.
 
 **Implementation Steps:**
 
 1. Create `fachtracing-viewer/` with SvelteKit, Svelte 5, the Node adapter, and a committed lockfile.
-2. Copy generated schemas and synthetic documents into test fixtures without changing their wire shape.
-3. Implement graph and run parsers with explicit version dispatch and integrity checks.
-4. Add unit tests for supported, forward-compatible, invalid, and mismatched documents.
+2. Initialize Tailwind CSS v4 and shadcn-svelte with the `new-york` style, neutral base, Svelte 5 components, and explicit CSS tokens.
+3. Copy generated schemas and synthetic documents into test fixtures without changing their wire shape.
+4. Implement graph and run parsers with explicit version dispatch and integrity checks.
+5. Add unit tests for supported, forward-compatible, invalid, and mismatched documents.
 
 **Acceptance Criteria:**
 
 - [ ] The viewer builds with strict TypeScript checks.
+- [ ] The application shell uses repository-owned shadcn-svelte components and Tailwind CSS v4 tokens.
 - [ ] V1/V2 graph and V1 run adapters preserve all node, edge, observation, and selected-edge IDs.
 - [ ] Unsupported versions, dangling references, duplicate IDs, and graph mismatches fail visibly.
 
@@ -38,6 +40,9 @@ Create the SvelteKit Node application, install only approved dependencies, add s
 
 - `fachtracing-viewer/package.json` (new)
 - `fachtracing-viewer/package-lock.json` (new)
+- `fachtracing-viewer/components.json` (new)
+- `fachtracing-viewer/src/app.css` (new)
+- `fachtracing-viewer/src/lib/components/ui/` (new)
 - `fachtracing-viewer/src/lib/contracts/graph-contract.ts` (new)
 - `fachtracing-viewer/src/lib/contracts/run-contract.ts` (new)
 - `fachtracing-viewer/src/lib/contracts/contracts.test.ts` (new)
@@ -99,25 +104,29 @@ Add the single-responsibility graph catalog and PostgreSQL run repository, then 
 **Blocker:** None
 
 **Description:**
-Render custom business nodes and edges with Svelte Flow and compute deterministic layered positions with ELK in a worker.
+Render the complete node and edge grammar with Svelte Flow, compute deterministic top-to-bottom positions with ELK in a worker, and add progressive large-graph views.
 
 **Implementation Steps:**
 
-1. Implement the layout worker with stable sorting, measured sizes, ports, and spacing.
-2. Implement one custom node component and one custom edge component with kind and state variants.
-3. Add pan, zoom, fit, minimap, keyboard selection, loading, and layout-error states.
-4. Add generated-topology layout and component tests.
+1. Implement the top-to-bottom layout worker with stable sorting, measured sizes, north/south ports, and spacing.
+2. Implement one custom node component and one custom edge component with the documented kind and state variants.
+3. Implement the graph view model, semantic zoom, viewport-only rendering, and explicit run-focus projection.
+4. Add pan, zoom, fit, node search, minimap, keyboard selection, loading, partial-view, and layout-error states.
+5. Add generated-topology layout, monochrome recognition, component, and visual tests.
 
 **Acceptance Criteria:**
 
 - [ ] All contract nodes and edges render from data with no graph-specific positions.
 - [ ] Layout is deterministic and completes within 2 seconds for 250 nodes and 400 edges.
+- [ ] A 1,000-node and 1,600-edge view becomes interactive within 5 seconds, and larger graphs open in an explicit run-focus view.
+- [ ] Every node kind is distinguishable by silhouette, icon, text, and token in light, dark, and monochrome checks.
 - [ ] Coverage gaps and invalid references never appear as invented normal flow.
 - [ ] Keyboard and focus behavior meet the accessibility criteria.
 
 **Files to Modify:**
 
 - `fachtracing-viewer/src/lib/graph/layout-worker.ts` (new)
+- `fachtracing-viewer/src/lib/graph/graph-view-model.ts` (new)
 - `fachtracing-viewer/src/lib/graph/FlowCanvas.svelte` (new)
 - `fachtracing-viewer/src/lib/graph/BusinessNode.svelte` (new)
 - `fachtracing-viewer/src/lib/graph/BusinessEdge.svelte` (new)
@@ -127,6 +136,7 @@ Render custom business nodes and edges with Svelte Flow and compute deterministi
 
 - [ ] Layout benchmark and determinism tests
 - [ ] Canvas component and keyboard tests
+- [ ] Node-state and large-graph visual tests
 
 ---
 
@@ -180,14 +190,16 @@ Add the right-side ordered inspector, current-step navigation, graph focus, and 
 **Blocker:** None
 
 **Description:**
-Build the URL-backed filter form, paged result list, deep-link navigation, and responsive detail layout.
+Build the shadcn-svelte application shell, URL-backed filter form, paged result list, deep-link navigation, themes, and responsive detail layout.
 
 **Implementation Steps:**
 
-1. Add bounded execution, graph, status, time, and correlation filters.
-2. Add cursor navigation, loading, empty, error, and retry states.
-3. Link each row to the exact run detail URL.
-4. Move the inspector into an accessible drawer below 1,200 pixels.
+1. Compose the navigation, toolbar, cards, forms, table, badges, tooltips, and alerts from repository-owned shadcn-svelte components.
+2. Add bounded execution, graph, status, time, and correlation filters.
+3. Add cursor navigation, loading, empty, error, and retry states.
+4. Link each row to the exact run detail URL.
+5. Add token-based light and dark themes.
+6. Move the inspector into an accessible sheet below 1,200 pixels.
 
 **Acceptance Criteria:**
 
@@ -195,6 +207,7 @@ Build the URL-backed filter form, paged result list, deep-link navigation, and r
 - [ ] Result order and cursor navigation stay stable as new runs arrive.
 - [ ] Run detail URLs are linkable and restore the selected run.
 - [ ] Desktop and narrow layouts preserve the selected step and keyboard access.
+- [ ] Light and dark themes preserve contrast, node-state meaning, and layout.
 
 **Files to Modify:**
 
@@ -202,6 +215,7 @@ Build the URL-backed filter form, paged result list, deep-link navigation, and r
 - `fachtracing-viewer/src/routes/runs/+page.svelte` (new)
 - `fachtracing-viewer/src/lib/runs/RunFilters.svelte` (new)
 - `fachtracing-viewer/src/lib/runs/RunList.svelte` (new)
+- `fachtracing-viewer/src/lib/layout/AppShell.svelte` (new)
 
 **Tests Required:**
 
@@ -224,7 +238,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 
 **Implementation Steps:**
 
-1. Add Playwright flows for search, run selection, step navigation, full-path mode, deep links, and narrow layout.
+1. Add Playwright flows for search, run selection, step navigation, full-path mode, semantic zoom, large-graph focus, themes, deep links, and narrow layout.
 2. Add `npm audit --audit-level=high`, checks, unit tests, build, and browser tests to the repository verifier and CI.
 3. Document graph directory, PostgreSQL variables, loopback binding, reverse-proxy requirement, and compatibility limits.
 4. Run the full Java, PostgreSQL, frontend, and repository-integrity gates.
@@ -234,6 +248,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 - [ ] All EARS criteria have automated evidence or an explicit manual accessibility review item.
 - [ ] High and critical npm audit findings block CI.
 - [ ] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
+- [ ] Approved visual baselines cover all node kinds, states, themes, sizes, and large-graph modes.
 - [ ] The full repository gate and hosted CI pass.
 
 **Files to Modify:**

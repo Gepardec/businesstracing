@@ -15,14 +15,21 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 **Acceptance Criteria (EARS):**
 
 - WHEN the application loads a supported graph JSON document THE SYSTEM SHALL render every node and edge with a deterministic layered layout derived from the document.
-- THE SYSTEM SHALL distinguish entry, predicate, choice, computation, dispatch, outcome, and coverage-gap nodes without exposing Java symbols.
+- THE SYSTEM SHALL use a top-to-bottom layout by default so that the main execution direction follows normal page reading and scrolling.
+- THE SYSTEM SHALL distinguish entry, predicate, choice, computation, dispatch, outcome, and coverage-gap nodes by a documented combination of silhouette, icon, text label, and color without exposing Java symbols.
+- THE SYSTEM SHALL use the visual tokens and node-state precedence defined in `visual-design.md`; color SHALL NOT be the only signal for type, selection, run path, or status.
 - WHEN a user pans, zooms, fits, or selects a node THE SYSTEM SHALL keep labels readable and preserve the generated layout.
+- WHEN zoom makes node text unreadable THE SYSTEM SHALL replace detail with a stable type symbol and short label before hiding optional metadata.
+- WHEN a graph contains more than 250 nodes THE SYSTEM SHALL enter the documented large-graph mode and keep search, selected-run focus, fit, pan, and zoom available.
+- WHEN a graph contains more than 1,000 nodes and a run is selected THE SYSTEM SHALL open with the selected run path and one-hop context, state that the view is partial, show the total node count, and provide an explicit action to request the full graph.
 - IF a graph is incomplete or references an unknown node or edge THEN THE SYSTEM SHALL show an explicit non-technical gap and SHALL NOT invent a connection.
 
 **Progress Checklist:**
 
 - [ ] Render a deterministic, data-driven graph.
 - [ ] Show all supported node kinds and coverage gaps.
+- [ ] Apply the documented node, edge, state, and theme tokens.
+- [ ] Support semantic zoom and explicit large-graph focus mode.
 - [ ] Support pan, zoom, fit, and node selection.
 - [ ] Fail closed on invalid graph references.
 
@@ -89,10 +96,11 @@ Business users cannot efficiently inspect large Fachtracing graphs or compare st
 ## Non-Functional Requirements
 
 - Accessibility: All run navigation and graph selection actions shall work with a keyboard. Visible controls shall meet WCAG 2.2 AA contrast and focus requirements.
-- Performance: With 250 nodes and 400 edges, initial layout shall finish within 2 seconds on the CI browser profile. A step selection shall update visible highlighting within 100 milliseconds after the data is loaded.
+- Performance: With 250 nodes and 400 edges, initial layout shall finish within 2 seconds on the CI browser profile. With 1,000 nodes and 1,600 edges, a cached or fresh large-graph view shall become interactive within 5 seconds. A step selection shall update visible highlighting within 100 milliseconds after the data is loaded.
 - Search: A page request of at most 50 run summaries shall complete within 500 milliseconds at p95 against the PostgreSQL contract fixture with one million metadata rows, excluding network latency.
 - Security: The browser shall receive already-redacted values only. Database credentials shall remain in server-only environment variables. All filters shall use parameterized queries and bounded lengths.
 - Responsive layout: At widths of 1,200 CSS pixels or more, the graph and inspector shall appear side by side. At smaller widths, the inspector shall become a drawer without hiding the selected step.
+- Visual quality: Reference screenshots for light and dark themes at desktop and narrow widths shall pass automated visual comparison with an approved baseline and manual review of label collisions, clipped controls, focus visibility, and node-state ambiguity.
 
 ## Constraints & Assumptions
 
