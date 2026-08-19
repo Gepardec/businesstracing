@@ -100,14 +100,15 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
     }
 
     private void recordSchemaVersion(Connection connection, int version) throws SQLException {
-        try (var statement = connection.prepareStatement(
-                "insert into fachtracing_schema_version(version, applied_at) values(?, ?)")) {
+        String sql = isPostgres(connection)
+                ? "insert into fachtracing_schema_version(version, applied_at) values(?, ?) "
+                        + "on conflict (version) do nothing"
+                : "merge into fachtracing_schema_version(version, applied_at) key(version) values(?, ?)";
+        try (var statement = connection.prepareStatement(sql)) {
             timeout(statement);
             statement.setInt(1, version);
             statement.setTimestamp(2, Timestamp.from(Instant.now()));
-            try { statement.executeUpdate(); } catch (SQLException duplicate) {
-                if (!duplicateKey(duplicate)) throw duplicate;
-            }
+            statement.executeUpdate();
         }
     }
 
@@ -226,8 +227,11 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
         try (var statement = connection.createStatement()) { timeout(statement); statement.execute(sql); }
     }
     private static String payloadType(Connection connection) throws SQLException {
+        return isPostgres(connection) ? "bytea" : "blob";
+    }
+    private static boolean isPostgres(Connection connection) throws SQLException {
         String product = connection.getMetaData().getDatabaseProductName().toLowerCase(java.util.Locale.ROOT);
-        return product.contains("postgresql") ? "bytea" : "blob";
+        return product.contains("postgresql");
     }
     private void timeout(java.sql.Statement statement) throws SQLException {
         statement.setQueryTimeout(statementTimeoutSeconds);
