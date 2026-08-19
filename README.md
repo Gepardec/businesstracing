@@ -127,6 +127,16 @@ explanations, persisted decision records, Mermaid, or PlantUML.
 
 ## Verification
 
+## Interactive decision viewer
+
+The optional [Svelte 5 decision viewer](fachtracing-viewer/README.md) lists stored runs, searches by any exact correlation name and canonical value, and explains one recorded path on a complete data-driven graph. It uses Svelte Flow with a deterministic top-to-bottom ELK layout. The local POC reads PostgreSQL and never sends developer source provenance to the browser.
+
+Run its focused checks with:
+
+```sh
+./scripts/verify-viewer.sh
+```
+
 Run all dependency-free executable contracts:
 
 ```sh

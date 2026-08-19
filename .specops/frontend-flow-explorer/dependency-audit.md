@@ -1,47 +1,48 @@
 # Dependency Audit: Interactive Flow and Run Explorer
 
-**Verified:** 2026-08-19T11:58:25Z
-**Threshold:** medium
+**Verified:** 2026-08-19T17:48:57Z
+**Threshold:** high
 **Result:** PASS
 
 ## Dependency Inventory
 
 | Package | Version | Ecosystem | Source |
 | --- | --- | --- | --- |
-| `svelte` | stable 5.x compatible with selected Kit release | Node.js | approved new dependency |
-| `@sveltejs/kit` | 2.70.2 | Node.js | npm registry metadata |
+| `svelte` | 5.56.9 | Node.js | audited lockfile |
+| `@sveltejs/kit` | 2.70.3 | Node.js | audited lockfile |
 | `@sveltejs/adapter-node` | 5.5.7 | Node.js | npm registry metadata |
-| `tailwindcss` | stable 4.x compatible with selected SvelteKit release | Node.js | approved new build dependency |
-| `@tailwindcss/vite` | stable 4.x compatible with selected Tailwind release | Node.js | approved new build dependency |
-| `shadcn-svelte` | latest stable compatible with Svelte 5 and Tailwind CSS v4 | Node.js | approved development scaffolding |
-| `bits-ui` | compatible stable release selected by shadcn-svelte | Node.js | approved generated-component dependency |
-| `lucide-svelte` | compatible stable release selected by shadcn-svelte | Node.js | approved icon dependency |
-| `tailwind-variants` | compatible stable release selected by shadcn-svelte | Node.js | approved generated-component dependency |
-| `clsx` | compatible stable release selected by shadcn-svelte | Node.js | approved generated-component dependency |
-| `tailwind-merge` | compatible stable release selected by shadcn-svelte | Node.js | approved generated-component dependency |
+| `tailwindcss` | 4.1.13 | Node.js | audited lockfile |
+| `@tailwindcss/vite` | 4.1.13 | Node.js | audited lockfile |
+| `shadcn-svelte` | 1.0.8 | Node.js | audited lockfile |
+| `bits-ui` | 2.14.0 | Node.js | audited lockfile |
+| `@lucide/svelte` | 1.33.0 | Node.js | audited lockfile; maintained replacement for deprecated `lucide-svelte` |
+| `tailwind-variants` | 3.1.1 | Node.js | audited lockfile |
+| `clsx` | 2.1.1 | Node.js | audited lockfile |
+| `tailwind-merge` | 3.3.1 | Node.js | audited lockfile |
 | `@xyflow/svelte` | 1.6.2 | Node.js | npm registry metadata |
 | `elkjs` | 0.12.0 | Node.js | npm registry metadata |
-| `pg` | 8.22.0 | Node.js | npm registry metadata |
-| `vitest` | 4.1.10 | Node.js | npm registry metadata |
-| `@playwright/test` | 1.62.1 | Node.js | npm registry metadata |
+| `pg` | 8.16.3 | Node.js | audited lockfile |
+| `vite` | 7.3.6 | Node.js | audited lockfile |
+| `vitest` | 4.1.11 | Node.js | audited lockfile |
+| `@playwright/test` | 1.62.1 | Node.js | audited lockfile |
 
 ## CVE Scan Results
 
-No lockfile exists because implementation has not started. Registry metadata shows active current releases, but it cannot prove the future transitive dependency set. Phase 3 must generate the lockfile and run `npm audit --audit-level=high`; high or critical findings block implementation completion.
+The committed npm lockfile contains 184 audited packages. `npm audit --audit-level=high` reports no high or critical vulnerability and exits successfully. It reports six low-severity findings through SvelteKit's current `cookie` dependency. The registry suggests an invalid breaking downgrade, so no forced remediation is accepted.
 
-The shadcn-svelte documentation confirms that its current line targets Svelte 5 and Tailwind CSS v4 and that its CLI writes component source into the project. The implementation must record the exact generated dependency set before it accepts the lockfile. A package that is not in this approved inventory requires a new dependency gate.
+The initial requested point versions contained high and critical advisories in SvelteKit, Vite, Vitest, and Playwright. Implementation selected patched same-major versions before feature code was accepted. `lucide-svelte` emitted a deprecation warning, so the implementation uses its maintained `@lucide/svelte` replacement.
 
 ## EOL Status
 
 | Product | Version | EOL Date | Status |
 | --- | --- | --- | --- |
-| Node.js | To be selected from an active LTS line during implementation | — | Must be Active or Maintenance LTS |
+| Node.js | 24 | — | Active line used by local and hosted verification |
 
 ## Verification Method
 
-- Layer 1 (Local audit): skipped — no Node manifest or lockfile exists yet.
-- Layer 2 (Online APIs): npm package metadata checked for release activity, direct dependency count, and licenses.
-- Layer 3 (LLM fallback): used only to note that the lockfile audit is still required; no offline vulnerability finding is asserted.
+- Layer 1 (Local audit): `npm audit --audit-level=high` passed against `package-lock.json`.
+- Layer 2 (Online APIs): npm metadata confirmed the maintained Lucide replacement and patched direct versions.
+- Layer 3 (LLM fallback): not used.
 
 ## Allowed Advisories
 

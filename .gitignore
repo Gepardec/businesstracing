@@ -1,5 +1,10 @@
 # Maven build output
 target/
+fachtracing-viewer/node_modules/
+fachtracing-viewer/.svelte-kit/
+fachtracing-viewer/build/
+fachtracing-viewer/test-results/
+fachtracing-viewer/playwright-report/
 
 # Java/JVM artifacts
 *.class

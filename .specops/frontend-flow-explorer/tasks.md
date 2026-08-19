@@ -11,7 +11,7 @@
 
 ### Task 1: Scaffold the Viewer and Contract Types
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** None
 **Priority:** High
@@ -31,10 +31,10 @@ Create the SvelteKit Node application, install only approved dependencies, initi
 
 **Acceptance Criteria:**
 
-- [ ] The viewer builds with strict TypeScript checks.
-- [ ] The application shell uses repository-owned shadcn-svelte components and Tailwind CSS v4 tokens.
-- [ ] Developer graph V1 and decision-record V1 adapters preserve all node, edge, observation, and selected-edge IDs.
-- [ ] Unsupported versions, dangling references, duplicate IDs, and graph mismatches fail visibly.
+- [x] The viewer builds with strict TypeScript checks.
+- [x] The application shell uses repository-owned shadcn-svelte components and Tailwind CSS v4 tokens.
+- [x] Developer graph V1 and decision-record V1 adapters preserve all node, edge, observation, and selected-edge IDs.
+- [x] Unsupported versions, dangling references, duplicate IDs, and graph mismatches fail visibly.
 
 **Files to Modify:**
 
@@ -49,14 +49,14 @@ Create the SvelteKit Node application, install only approved dependencies, initi
 
 **Tests Required:**
 
-- [ ] Contract unit tests
-- [ ] Type check
+- [x] Contract unit tests
+- [x] Type check
 
 ---
 
 ### Task 2: Add the Graph Catalog and Decision API
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 1
 **Priority:** High
@@ -78,11 +78,11 @@ Add the immutable PostgreSQL graph catalog, its separate import command, the dec
 
 **Acceptance Criteria:**
 
-- [ ] The import command stores one exact graph version immutably and rejects conflicting bytes.
-- [ ] The API returns graph summaries, one provenance-free exact graph version, up to 200 distinct correlation names without values, decision summaries with final results, and one unchanged V1 run payload.
-- [ ] Arbitrary exact correlation search uses HTTP `QUERY`; confidential search fields never enter the URI or logs.
-- [ ] Cursor pages are stable and correlation/time semantics match the JDBC repository.
-- [ ] Invalid input, timeout, missing data, and unavailable graph states expose no internal details.
+- [x] The import command stores one exact graph version immutably and rejects conflicting bytes.
+- [x] The API returns graph summaries, one provenance-free exact graph version, up to 200 distinct correlation names without values, decision summaries with final results, and one unchanged V1 run payload.
+- [x] Arbitrary exact correlation search uses HTTP `QUERY`; confidential search fields never enter the URI or logs.
+- [x] Cursor pages are stable and correlation/time semantics match the JDBC repository.
+- [x] Invalid input, timeout, missing data, and unavailable graph states expose no internal details.
 
 **Files to Modify:**
 
@@ -96,15 +96,15 @@ Add the immutable PostgreSQL graph catalog, its separate import command, the dec
 
 **Tests Required:**
 
-- [ ] Server route tests
-- [ ] Immutable graph catalog and migration integration tests
-- [ ] HTTP `QUERY`, confidentiality, and cursor pagination tests
+- [x] Server route tests
+- [x] Immutable graph catalog and migration integration tests
+- [x] HTTP `QUERY`, confidentiality, and cursor pagination tests
 
 ---
 
 ### Task 3: Build the Data-Driven Graph Canvas
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** L
 **Dependencies:** Task 1
 **Priority:** High
@@ -124,12 +124,12 @@ Render the complete node and edge grammar with Svelte Flow and compute determini
 
 **Acceptance Criteria:**
 
-- [ ] All contract nodes and edges render from data with no graph-specific positions.
-- [ ] Layout is deterministic and completes within 2 seconds for 250 nodes and 400 edges.
-- [ ] Every node kind is distinguishable by silhouette, icon, text, and token in light, dark, and monochrome checks.
-- [ ] Coverage gaps and invalid references never appear as invented normal flow.
-- [ ] Keyboard and focus behavior meet the accessibility criteria.
-- [ ] A semantic node list exposes the graph without requiring canvas operation.
+- [x] All contract nodes and edges render from data with no graph-specific positions.
+- [x] Layout is deterministic and completes within 2 seconds for 250 nodes and 400 edges.
+- [x] Every node kind is distinguishable by silhouette, icon, text, and token in light, dark, and monochrome checks.
+- [x] Coverage gaps and invalid references never appear as invented normal flow.
+- [x] Keyboard and focus behavior meet the accessibility criteria.
+- [x] A semantic node list exposes the graph without requiring canvas operation.
 
 **Files to Modify:**
 
@@ -141,16 +141,16 @@ Render the complete node and edge grammar with Svelte Flow and compute determini
 
 **Tests Required:**
 
-- [ ] Layout benchmark and determinism tests
-- [ ] Canvas component and keyboard tests
-- [ ] Semantic node-list and screen-reader structure tests
-- [ ] Node-state and 250-node safety-profile visual tests
+- [x] Layout benchmark and determinism tests
+- [x] Canvas component and keyboard tests
+- [x] Semantic node-list and screen-reader structure tests
+- [x] Node-state and 250-node safety-profile visual tests
 
 ---
 
 ### Task 4: Add the Run Inspector and Highlighting
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Tasks 1 and 3
 **Priority:** High
@@ -170,11 +170,11 @@ Add the right-side ordered explanation inspector, current-step navigation, graph
 
 **Acceptance Criteria:**
 
-- [ ] Every observation appears once and in sequence order.
-- [ ] Every step explains only recorded facts and states when no additional evidence exists.
-- [ ] Step selection focuses and highlights the correct node and selected edge within 100 milliseconds.
-- [ ] Full-path mode highlights all proved nodes and connecting edges.
-- [ ] Repeated nodes remain distinct steps and graph/version mismatch disables highlights.
+- [x] Every observation appears once and in sequence order.
+- [x] Every step explains only recorded facts and states when no additional evidence exists.
+- [x] Step selection focuses and highlights the correct node and selected edge within 100 milliseconds.
+- [x] Full-path mode highlights all proved nodes and connecting edges.
+- [x] Repeated nodes remain distinct steps and graph/version mismatch disables highlights.
 
 **Files to Modify:**
 
@@ -185,14 +185,14 @@ Add the right-side ordered explanation inspector, current-step navigation, graph
 
 **Tests Required:**
 
-- [ ] Highlight derivation tests
-- [ ] Inspector component tests
+- [x] Highlight derivation tests
+- [x] Inspector component tests
 
 ---
 
 ### Task 5: Add the Decisions Dashboard
 
-**Status:** Pending
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Tasks 2 and 4
 **Priority:** High
@@ -215,13 +215,13 @@ Build the shadcn-svelte decisions dashboard, confidential generic correlation lo
 
 **Acceptance Criteria:**
 
-- [ ] Filters execute on the server and reset the cursor.
-- [ ] The correlation-name control offers stored names, accepts another valid name, and never enumerates values.
-- [ ] One arbitrary exact correlation lookup shows every matching decision page without exposing its name or value in a URL or log.
-- [ ] Result order and cursor navigation stay stable as new runs arrive.
-- [ ] Run detail URLs are linkable and restore the selected run.
-- [ ] Desktop and narrow layouts preserve the selected step and keyboard access.
-- [ ] Light and dark themes preserve contrast, node-state meaning, and layout.
+- [x] Filters execute on the server and reset the cursor.
+- [x] The correlation-name control offers stored names, accepts another valid name, and never enumerates values.
+- [x] One arbitrary exact correlation lookup shows every matching decision page without exposing its name or value in a URL or log.
+- [x] Result order and cursor navigation stay stable as new runs arrive.
+- [x] Run detail URLs are linkable and restore the selected run.
+- [x] Desktop and narrow layouts preserve the selected step and keyboard access.
+- [x] Light and dark themes preserve contrast, node-state meaning, and layout.
 
 **Files to Modify:**
 
@@ -233,14 +233,14 @@ Build the shadcn-svelte decisions dashboard, confidential generic correlation lo
 
 **Tests Required:**
 
-- [ ] Filter and pagination component tests
-- [ ] Responsive layout tests
+- [x] Filter and pagination component tests
+- [x] Responsive layout tests
 
 ---
 
 ### Task 6: Integrate Verification, Documentation, and CI
 
-**Status:** Pending
+**Status:** In Progress
 **Estimated Effort:** M
 **Dependencies:** Tasks 2, 3, 4, and 5
 **Priority:** Medium
@@ -260,8 +260,8 @@ Add browser workflows, dependency audit, repository verification, and deployment
 **Acceptance Criteria:**
 
 - [ ] All EARS criteria have automated evidence or an explicit manual accessibility review item.
-- [ ] High and critical npm audit findings block CI.
-- [ ] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
+- [x] High and critical npm audit findings block CI.
+- [x] The viewer cannot introduce hardcoded graph positions or committed generated product diagrams.
 - [ ] Approved visual baselines cover all node kinds, states, themes, responsive sizes, and the 250-node safety profile.
 - [ ] The full repository gate and hosted CI pass.
 
@@ -276,9 +276,9 @@ Add browser workflows, dependency audit, repository verification, and deployment
 
 **Tests Required:**
 
-- [ ] Playwright end-to-end suite
-- [ ] Dependency audit
-- [ ] Full repository verification
+- [x] Playwright end-to-end suite
+- [x] Dependency audit
+- [x] Full repository verification
 
 ## Implementation Order
 
@@ -291,7 +291,7 @@ Add browser workflows, dependency audit, repository verification, and deployment
 ## Progress Tracking
 
 - Total Tasks: 6
-- Completed: 0
-- In Progress: 0
+- Completed: 5
+- In Progress: 1
 - Blocked: 0
-- Pending: 6
+- Pending: 0

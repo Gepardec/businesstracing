@@ -98,3 +98,11 @@ Reframed the POC around the support workflow: find a customer, see all matching 
 ### Session 5 — Generic correlation contract completed (2026-08-19)
 
 Removed the customer-specific product model. The dashboard accepts an arbitrary bounded correlation name and its exact stored canonical value. Customer ID, route ID, person reference, and address reference are examples only. An editable combobox offers up to 200 stored correlation names but never enumerates values. The viewer does not guess an application-specific transformation. Confirmed from commit `b26b198`, the current exporter, schema generator, and tests that the sole current `fachtracing-developer-graph/v1` contract is the merged multi-source shape. The exact V2 filename remains only for stale-file cleanup. No product or contract question remains open. No implementation task started.
+
+### Session 6 — Viewer implementation started (2026-08-19)
+
+Implemented Tasks 1 through 5 and started Task 6. Added the Svelte 5 and SvelteKit Node application, repository-owned shadcn-style components, Tailwind CSS v4 tokens, strict V1 adapters, immutable PostgreSQL graph catalog, graph import command, generic `QUERY` search API, Svelte Flow canvas, top-to-bottom ELK worker, run inspector, evidence explanations, exact-correlation dashboard, responsive inspector, themes, CSP, documentation, and CI wiring. The Java storage migration now adds the graph catalog and cursor index as storage schema version 2.
+
+The first dependency audit found high and critical advisories in the proposed SvelteKit, Vite, Vitest, and Playwright point versions. Patched same-major versions replaced them. The deprecated `lucide-svelte` package was replaced with maintained `@lucide/svelte`. The final high-severity audit gate passes with six low findings in the current SvelteKit `cookie` dependency.
+
+Local evidence: zero Svelte diagnostics, 11 passing unit tests, a passing production build, a passing HTTP `QUERY` Chromium test, the 250-node layout below two seconds, focused JDBC tests, and the complete repository gate. The full PostgreSQL browser journey is assigned to the hosted PostgreSQL job because no local PostgreSQL daemon is available. A manual Docker attempt did not start because the local Docker daemon is not running.

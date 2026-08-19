@@ -227,7 +227,7 @@ The `QUERY` endpoint requires `Content-Type: application/json`, advertises `Acce
 | `@tailwindcss/vite` | compatible stable 4.x | Node.js | Approved | Official Tailwind CSS v4 integration for the existing Vite build. |
 | `shadcn-svelte` | compatible latest stable | Node.js | Approved for development | Generates repository-owned Svelte 5 component source. It is not an application runtime abstraction. |
 | `bits-ui` | compatible stable release selected by shadcn-svelte | Node.js | Approved | Accessible headless behavior used by selected shadcn-svelte components. |
-| `lucide-svelte` | compatible stable release selected by shadcn-svelte | Node.js | Approved | Consistent SVG icons for node type and application actions. |
+| `@lucide/svelte` | 1.33.0 | Node.js | Approved | Maintained Lucide Svelte package for consistent node-type and application-action SVG icons. It replaces the deprecated `lucide-svelte` package. |
 | `tailwind-variants` | compatible stable release selected by shadcn-svelte | Node.js | Approved | Typed component variants used by generated components. |
 | `clsx` | compatible stable release selected by shadcn-svelte | Node.js | Approved | Conditional class composition used by generated components. |
 | `tailwind-merge` | compatible stable release selected by shadcn-svelte | Node.js | Approved | Resolves Tailwind class conflicts in generated component utilities. |
