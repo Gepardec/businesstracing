@@ -3,7 +3,7 @@
 - Run ID: `20260819-214951`
 - Started: `2026-08-19T21:49:51Z`
 - SpecOps version: `1.8.0`
-- Status: in progress
+- Status: completed
 
 ## Objective
 
@@ -16,9 +16,9 @@ Repair graph JSON compatibility, exact edge routing, and visual quality after us
 - The edge component recomputes smooth-step paths, which makes skip edges cross nodes and parallel edges overlap.
 - The read-only canvas exposes connection handles and combines type, path, and current borders.
 
-## Current Task
+## Completion
 
-Task 9 is in progress. Completion requires real exported fixtures, geometry-based browser checks, inspected light and dark proof, the 250-node safety profile, and green hosted CI.
+Task 9 is complete. Real exported fixtures, geometry-based browser checks, inspected light and dark proof, the 250-node safety profile, and hosted CI all passed.
 
 ## Local Verification
 
@@ -32,4 +32,13 @@ Task 9 is in progress. Completion requires real exported fixtures, geometry-base
 - PostgreSQL storage contract: passed with JDK 21.
 - Dependency audit: no high or critical findings; six low findings remain in the current SvelteKit cookie dependency.
 
-Hosted pull-request verification is pending.
+## Hosted Verification
+
+Run `32307869463` passed all four jobs at commit `1770f4f`:
+
+- PostgreSQL viewer journey and proof upload: passed.
+- Core repository gate: passed.
+- Spring PetClinic conformance: passed.
+- Mega Backend conformance: passed.
+
+Task 9 and specification version 14 are complete.

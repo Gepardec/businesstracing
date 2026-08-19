@@ -49,7 +49,7 @@
 - The POC is a generic local internal decision-support dashboard.
 - The default page lists newest decisions. An arbitrary exact correlation-name and canonical-value lookup returns all matching decisions.
 - Decision detail shows the final result, complete business graph, highlighted path, and ordered evidence-based explanation.
-- Developer graph V1 is the only graph wire contract. It is the merged multi-source shape. V2 is only a stale filename cleanup target.
+- Developer graph V1 is the PostgreSQL catalog contract and is the merged multi-source shape. The browser-only preview also accepts the stable business graph V1 export. V2 is only a stale filename cleanup target.
 - HTTP `QUERY` carries confidential search content outside the URI.
 - An immutable PostgreSQL graph catalog retains exact graph versions. The POC imports JSON bytes and leaves a media-type seam for a future specified binary format.
 - Production-scale benchmarking is removed. Bounded functional and integration fixtures remain.
@@ -137,3 +137,11 @@ Local evidence: zero Svelte diagnostics, 14 passing unit tests, a passing produc
 Rebuilt the decision page around a compact summary header, a resizable desktop inspector from 1,024 CSS pixels, and a Bits UI modal Sheet below that width. Current, full-path, node-kind, and dimmed states now have exclusive visual roles. User-facing steps are one-based. Edge labels use concise tokens and keep their complete value in the inspector and tooltip. Layout reacts to canvas size changes and refits without clipping.
 
 The visual suite now covers 1,440, 1,024, 900, and 390 CSS-pixel widths, light and dark themes, every node kind, the Sheet focus contract, edge-label collisions, header height, inspector width, one-based steps, and a generated 250-node graph. The dense graph uses node search and fit guidance because its top-to-bottom minimap is not legible. Local evidence: zero Svelte diagnostics, 16 passing unit tests, eight passing Chromium journeys, a passing production build, repository integrity, and manual approval of every generated screenshot.
+
+### Session 11 — Graph compatibility and route geometry approved (2026-08-19)
+
+Reopened the specification after user acceptance found that the browser preview rejected business graph V1 and that the canvas discarded ELK edge sections. Added one browser-only adapter for both stable graph exports. The PostgreSQL catalog remains developer graph V1 only. The layout worker now returns fixed north/south port routes, keeps parallel edges separate, and renders the exact ELK sections with rounded corners. Read-only handles are invisible, node run states use one primary border, and route labels use separate safe positions.
+
+The test suite now samples rendered SVG paths and fails if an edge enters an unrelated node. It also checks distinct parallel paths, node and label collisions, hidden handles, exclusive state borders, a checked-in Spring PetClinic business graph V1 fixture, generated developer artifacts, light and dark themes, responsive widths, and focused 250-node navigation. Local evidence: zero Svelte diagnostics, 21 passing unit tests, 10 passing Chromium journeys with PostgreSQL and generated Fachtracing artifacts, a passing production build, repository and PostgreSQL gates, and no high or critical audit findings. Every generated proof image passed manual inspection.
+
+Hosted run `32307869463` passed PostgreSQL, core, Spring PetClinic, and Mega Backend jobs at commit `1770f4f`. The PostgreSQL job passed graph generation, viewer verification, all browser journeys, and proof upload in 2 minutes 28 seconds.

@@ -162,7 +162,7 @@ Internal support users cannot efficiently find prior business decisions or expla
 - [x] Reuse the existing graph canvas without a run highlight.
 - [x] Show file, graph, size-profile, and validation states.
 - [x] Prove that the preview works with a generated graph file.
-- [ ] Accept and render real developer-graph V1 and business-graph V1 exports.
+- [x] Accept and render real developer-graph V1 and business-graph V1 exports.
 
 ## Non-Functional Requirements
 

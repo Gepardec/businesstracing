@@ -387,7 +387,7 @@ Correct the dogfood screenshot defects and replace weak visual assertions with v
 
 ### Task 9: Repair Graph Compatibility, Routing, and Visual Quality
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Tasks 3, 7, and 8
 **Priority:** Critical
@@ -412,7 +412,7 @@ Repair the contract and rendering defects found during user acceptance. Prove th
 - [x] Parallel edges have distinct visible paths and readable labels.
 - [x] Read-only connection handles are not visible and node states do not stack borders.
 - [x] Generated light, dark, focused, responsive, and 250-node evidence passes manual inspection.
-- [ ] Unit, browser, repository, and hosted CI gates pass.
+- [x] Unit, browser, repository, and hosted CI gates pass.
 
 **Files to Modify:**
 
@@ -440,12 +440,12 @@ Repair the contract and rendering defects found during user acceptance. Prove th
 5. Task 6 adds final proof and delivery documentation.
 6. Task 7 adds the optional browser-only graph preview.
 7. Task 8 corrects and approves the complete decision visual baseline.
-8. Task 9 repairs user-acceptance defects and reopens visual approval.
+8. Task 9 repairs user-acceptance defects and completes the renewed visual approval.
 
 ## Progress Tracking
 
 - Total Tasks: 9
-- Completed: 8
-- In Progress: 1
+- Completed: 9
+- In Progress: 0
 - Blocked: 0
 - Pending: 0
