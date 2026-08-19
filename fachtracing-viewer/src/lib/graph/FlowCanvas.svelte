@@ -13,8 +13,8 @@
   let { graph, highlight, fullPath = true, onNodeSelect }: {
     graph: GraphModel; highlight: RunHighlight | null; fullPath?: boolean; onNodeSelect?: (nodeId: string) => void
   } = $props();
-  let nodes = $state<BusinessFlowNode[]>([]);
-  let edges = $state<BusinessFlowEdge[]>([]);
+  let layoutNodes = $state<BusinessFlowNode[]>([]);
+  let layoutEdges = $state<BusinessFlowEdge[]>([]);
   let layoutError = $state('');
   let search = $state('');
   let layoutRequest = 0;
@@ -27,6 +27,18 @@
     return { current, onPath, dimmed: fullPath && Boolean(highlight) && !onPath, sequence: current ? highlight?.activeSequence ?? null : null };
   }
 
+  let nodes = $derived(layoutNodes.map((item) => ({
+    ...item,
+    data: { ...item.data, ...decorateNode(item.id) }
+  })));
+  let edges = $derived(layoutEdges.map((item) => ({
+    ...item,
+    data: {
+      onPath: fullPath && (highlight?.pathEdgeIds.has(item.id) ?? false),
+      current: highlight?.activeEdgeId === item.id
+    }
+  })));
+
   async function createLayout(input: GraphModel) {
     const request = ++layoutRequest;
     layoutError = '';
@@ -34,12 +46,12 @@
       const layout = await layoutGraph(input);
       if (request !== layoutRequest) return;
       const positions = new Map(layout.nodes.map((node) => [node.id, node]));
-      nodes = input.nodes.map((node) => ({
+      layoutNodes = input.nodes.map((node) => ({
         id: node.id, type: 'business', position: positions.get(node.id) ?? { x: 0, y: 0 },
         data: { node, onPath: false, current: false, dimmed: false, sequence: null }, draggable: false, selectable: true, focusable: true,
         ariaLabel: `${node.kind}: ${node.label}`
       }));
-      edges = input.edges.map((edge) => ({
+      layoutEdges = input.edges.map((edge) => ({
         id: edge.id, type: 'business', source: edge.from, target: edge.to, label: edge.outcome || undefined,
         markerEnd: { type: MarkerType.ArrowClosed },
         data: { onPath: false, current: false },
@@ -52,13 +64,6 @@
   }
 
   $effect(() => { createLayout(graph); });
-  $effect(() => {
-    highlight; fullPath;
-    nodes = nodes.map((item) => ({ ...item, data: { ...item.data, ...decorateNode(item.id) } }));
-    edges = edges.map((item) => ({ ...item, data: {
-      onPath: fullPath && (highlight?.pathEdgeIds.has(item.id) ?? false), current: highlight?.activeEdgeId === item.id
-    } }));
-  });
 
   function selectSearchResult() {
     const normalized = search.trim().toLowerCase();
@@ -74,7 +79,7 @@
   {#if layoutError}
     <div class="layout-error" role="alert"><TriangleAlert size={20} /><div><strong>Graph layout unavailable</strong><p>{layoutError}</p></div></div>
   {:else}
-    <SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.16 }} minZoom={0.12} maxZoom={1.8}
+    <SvelteFlow {nodes} {edges} {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.16 }} minZoom={0.12} maxZoom={1.8}
       deleteKey={null} nodesDraggable={false} nodesConnectable={false}
       onnodeclick={({ node }) => onNodeSelect?.(node.id)}>
       <Background variant={BackgroundVariant.Dots} patternColor="var(--graph-grid)" gap={22} size={1.2} />
