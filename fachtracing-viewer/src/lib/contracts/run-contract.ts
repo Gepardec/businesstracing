@@ -56,6 +56,11 @@ function positiveInteger(value: unknown, path: string): number {
   return Number(value);
 }
 
+function nonNegativeInteger(value: unknown, path: string): number {
+  if (!Number.isSafeInteger(value) || Number(value) < 0) throw new ContractError(`${path} must be a non-negative integer`);
+  return Number(value);
+}
+
 function instant(value: unknown, path: string): string {
   const result = text(value, path);
   if (Number.isNaN(Date.parse(result))) throw new ContractError(`${path} must be an ISO date-time`);
@@ -89,7 +94,7 @@ export function parseDecisionRecord(input: unknown): RunModel {
   const observations = array(root.observations, 'observations').map((raw, index): RunObservation => {
     const item = object(raw, `observations[${index}]`);
     return Object.freeze({
-      sequence: positiveInteger(item.sequence, `observations[${index}].sequence`),
+      sequence: nonNegativeInteger(item.sequence, `observations[${index}].sequence`),
       nodeId: text(item.nodeId, `observations[${index}].nodeId`),
       outcome: text(item.outcome, `observations[${index}].outcome`),
       evidence: values(item.evidence, `observations[${index}].evidence`),

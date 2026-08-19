@@ -8,7 +8,7 @@ function bytes(result = 'BUSINESS_ACTION'): Buffer {
     graphId: 'self-graph', graphVersion: 1, startedAt: '2026-08-19T10:00:00Z',
     completedAt: '2026-08-19T10:00:01Z', status: 'SUCCEEDED', terminalStatus: 'SUCCEEDED',
     completeness: 'COMPLETE', finalDecision: { type: 'category', canonicalValue: result, displayValue: result },
-    failure: null, observations: [{ sequence: 1, nodeId: 'entry', outcome: 'entered', evidence: {}, selectedEdgeId: null }],
+    failure: null, observations: [{ sequence: 0, nodeId: 'entry', outcome: 'entered', evidence: {}, selectedEdgeId: null }],
     coverageGaps: [], correlationKeys: {
       application: { type: 'string', canonicalValue: 'fachtracing', displayValue: 'Fachtracing' }
     }, redactionPolicyId: 'self-dogfood-v1'

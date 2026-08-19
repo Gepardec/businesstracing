@@ -27,7 +27,7 @@ const runDocument = {
   finalDecision: { type: 'string', canonicalValue: 'local', displayValue: 'Local route' }, failure: null,
   observations: [
     { sequence: 2, nodeId: 'choice', outcome: 'true', evidence: { route: { type: 'string', canonicalValue: 'local', displayValue: 'Local' } }, selectedEdgeId: 'e2' },
-    { sequence: 1, nodeId: 'entry', outcome: 'entered', evidence: {}, selectedEdgeId: 'e1' }
+    { sequence: 0, nodeId: 'entry', outcome: 'entered', evidence: {}, selectedEdgeId: 'e1' }
   ],
   coverageGaps: [], correlationKeys: {}, redactionPolicyId: 'test', futureField: true
 };
