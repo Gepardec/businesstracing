@@ -1,0 +1,49 @@
+# Implementation Journal: Interactive Flow and Run Explorer
+
+## Summary
+
+## Phase 1 Context Summary
+
+- Config: SpecOps defaults; full-stack vertical; `.specops` specification directory; no external task tracker; review not required; evaluation enabled with a 7/10 threshold and two iterations.
+- Context recovery: Two unrelated specs are implementing: `generic-call-specific-business-flow` and `release-gate-timeout-budget`. This spec does not modify their current files.
+- Steering files: Loaded `dependencies.md`, `product.md`, `repo-map.md`, `structure.md`, and `tech.md`.
+- Repo map: Stale because the tracked file-list hash changed; refreshed during this specification run.
+- Memory: Loaded 118 decisions, 18 recurring decision categories, and existing file-overlap patterns. No production learnings file exists.
+- Vertical: Full-stack. The request adds a Svelte frontend, server-side read API, graph artifact access, and PostgreSQL search.
+- Affected files: New `fachtracing-viewer/` application, root verification and CI scripts, root documentation, and existing JDBC migration fixtures for read-contract tests.
+- Project state: Brownfield Java 21 Maven multi-module repository with no current frontend.
+- Scope assessment: Three user-facing capabilities and three code domains are present. SpecOps recommends graph display, run detail, and run search as separable specs. This non-delegated run keeps one spec because the first useful release requires their shared contracts and one end-to-end stored-run path.
+- Primary constraint: Prove compatibility with existing graph IDs, graph versions, node IDs, selected edge IDs, V1 payloads, and PostgreSQL semantics before UI polish.
+- Plan validation: Pass. Existing contract and documentation paths resolve. Every frontend path is marked as new.
+- Coherence check: Pass. The layout, interaction, and query limits refer to distinct measured operations and do not conflict.
+- Dependency introduction gate: Eight Node.js dependencies are approved in `design.md`. The application lockfile and npm audit remain Phase 3 gates.
+- Vocabulary check: Not required for the full-stack vertical.
+
+## Phase 2 Completion Summary
+
+- Requirements: One interactive graph, a right-side ordered run inspector, current-step and full-path highlighting, a searchable cursor-paged runs view, and strict compatibility with current JSON and SQL contracts.
+- Design: A standalone SvelteKit Node application uses narrow server adapters, Svelte Flow, an ELK layout worker, ID-derived highlights, and PostgreSQL cursor queries.
+- Tasks: Six ordered tasks cover contracts, read APIs, graph layout, run inspection, run search, and delivery verification.
+- Dependencies: SvelteKit, Svelte Flow, ELK, PostgreSQL, and test tools are explicit approved dependencies. Existing completed JSON and JDBC specs are required.
+- Open review points: PostgreSQL-only scope, reverse-proxy authentication, and exact-only correlation search.
+
+## Decision Log
+
+| # | Decision | Rationale | Task | Timestamp |
+| --- | --- | --- | --- | --- |
+
+## Deviations from Design
+
+| Planned | Actual | Reason | Task |
+| --- | --- | --- | --- |
+
+## Blockers Encountered
+
+| Blocker | Resolution | Impact | Task |
+| --- | --- | --- | --- |
+
+## Session Log
+
+### Session 1 — Specification created (2026-08-19)
+
+Created a full-stack draft from the current graph JSON, decision-record V1, and JDBC schema. No implementation task started. The user review can change the three open deployment and search assumptions before Phase 3.

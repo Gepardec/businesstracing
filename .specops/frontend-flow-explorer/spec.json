@@ -1,0 +1,52 @@
+{
+  "id": "frontend-flow-explorer",
+  "type": "feature",
+  "status": "draft",
+  "version": 1,
+  "created": "2026-08-19T10:52:40Z",
+  "updated": "2026-08-19T10:52:40Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "developer-graph-json-schema",
+      "reason": "The viewer consumes the published developer graph schema.",
+      "required": true
+    },
+    {
+      "specId": "generic-application-readiness",
+      "reason": "The viewer reads the V1 run payload and PostgreSQL schema.",
+      "required": true
+    },
+    {
+      "specId": "mermaid-diagram-rendering",
+      "reason": "The interactive highlight behavior must preserve existing execution-path semantics.",
+      "required": false
+    }
+  ],
+  "relatedSpecs": [
+    "developer-graph-json-export",
+    "maven-developer-graph-export",
+    "runtime-decision-path-capture"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-19T10:52:40Z"
+    }
+  }
+}

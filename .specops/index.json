@@ -1,5 +1,13 @@
 [
   {
+    "id": "frontend-flow-explorer",
+    "type": "feature",
+    "status": "draft",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-19T10:52:40Z"
+  },
+  {
     "id": "self-explainable-runtime-dogfood",
     "type": "feature",
     "status": "completed",
