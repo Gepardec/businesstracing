@@ -425,9 +425,17 @@
   {
     "id": "normalize-nested-map-transfer-label",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-19T21:19:42Z"
+  },
+  {
+    "id": "keycloak-business-graph-json-output",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-21T11:36:06Z"
   }
 ]

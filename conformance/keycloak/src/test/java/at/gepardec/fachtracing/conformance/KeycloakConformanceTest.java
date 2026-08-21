@@ -7,6 +7,8 @@ import at.gepardec.fachtracing.analysis.BusinessEntryPoint;
 import at.gepardec.fachtracing.analysis.StaticDecisionAnalyzer;
 import at.gepardec.fachtracing.business.BusinessGraphProjector;
 import at.gepardec.fachtracing.business.BusinessExecutionGraphProjector;
+import at.gepardec.fachtracing.business.BusinessGraphJsonExporter;
+import at.gepardec.fachtracing.business.BusinessGraphJsonSchema;
 import at.gepardec.fachtracing.business.BusinessLogicArtifactGuard;
 import at.gepardec.fachtracing.business.BusinessMermaidRenderer;
 import at.gepardec.fachtracing.model.BusinessLogicGraph;
@@ -142,6 +144,10 @@ public final class KeycloakConformanceTest {
 
         Files.createDirectories(output);
         Files.writeString(output.resolve("search-users-business.mmd"), businessDiagram);
+        Files.writeString(output.resolve("search-users-business.json"),
+                new BusinessGraphJsonExporter().export(fullBusinessGraph));
+        Files.writeString(output.resolve("fachtracing-business-graph-v1.schema.json"),
+                new BusinessGraphJsonSchema().generate());
         Files.writeString(output.resolve("search-users-evaluated-example.mmd"), evaluatedDiagram);
         var bundle = new RuntimeActivationBundle(
                 "keycloak-eba869ee597b933efc8fa2c84713db9e6c0983cf",

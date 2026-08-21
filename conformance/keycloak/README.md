@@ -31,6 +31,8 @@ conformance command and is not part of pull-request CI.
 The command writes these disposable files under `conformance/keycloak/target/generated`:
 
 - `search-users-business.mmd`: the generated all-path, non-technical method overview.
+- `search-users-business.json`: the same all-path overview in the V1 business graph contract.
+- `fachtracing-business-graph-v1.schema.json`: the JSON Schema for the V1 business graph contract.
 - `search-users-evaluated-example.mmd`: one concise successful path selected from the analyzed graph.
 - `activation.json`: exact probes and class fingerprints for the pinned build.
 
