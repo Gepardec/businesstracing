@@ -109,13 +109,14 @@ Apply the restrained node family, non-status run states, and measurable edge rou
 
 1. Update node shapes, type rails, icons, labels, borders, and state precedence.
 2. Remove the predicate diamond marker and success-like outcome styling.
-3. Update edge width, color, label mapping, label clearance, and arrowheads.
-4. Add stable route corridor selection and simple-fixture route quality checks.
-5. Add the monochrome and interaction-state galleries.
+3. Expose four-side layout ports and preserve the selected source and target port for each rendered edge.
+4. Update edge width, color, label mapping, label clearance, and arrowheads.
+5. Add shortest-valid-route selection, stable route corridors, and simple-fixture route quality checks.
+6. Add the monochrome and interaction-state galleries.
 
 **Acceptance Criteria:**
 
-- [ ] GR-01 through GR-09 and ED-01 through ED-07 pass.
+- [ ] GR-01 through GR-09 and ED-01 through ED-08 pass.
 - [ ] Every node kind remains identifiable in monochrome.
 - [ ] Current, path, focus, status, and coverage-gap states cannot be confused by color or border role.
 - [ ] All existing route intrusion and parallel-route tests pass.
@@ -136,6 +137,7 @@ Apply the restrained node family, non-status run states, and measurable edge rou
 
 - [ ] Node grammar unit and visual tests
 - [ ] Edge label mapping tests
+- [ ] Four-side port selection and shortest-valid-route tests
 - [ ] Route bend, segment, reversal, clearance, collision, and parallel-path tests
 
 ---

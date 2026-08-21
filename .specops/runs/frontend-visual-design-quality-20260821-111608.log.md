@@ -1,7 +1,7 @@
 ---
 specId: "frontend-visual-design-quality"
 startedAt: "2026-08-21T11:16:08Z"
-completedAt: "2026-08-21T11:27:17Z"
+completedAt: "2026-08-21T11:32:26Z"
 finalStatus: "spec-complete"
 phases: [1, 2]
 ---
@@ -73,3 +73,7 @@ phases: [1, 2]
 ### [11:27:17] Step 7: Verify specification artifacts
 
 - Result: JSON validation and whitespace checks passed. Svelte check passed with zero errors and warnings. All 21 viewer unit tests passed.
+
+### [11:32:26] Step 8: Incorporate routing feedback
+
+- Result: Added ED-08 for fixed-port detours. Defined four-side port selection and shortest collision-free route comparison. Adversarial evaluation iteration 2 passed.

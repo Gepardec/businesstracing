@@ -36,6 +36,7 @@ The current quality gate checks route collisions, label collisions, hidden handl
 - Entry, choice, dispatch, outcome, and gap shapes do not form one calm visual family.
 - Edge labels are small pills that can look detached from the branch they describe.
 - Parallel and converging routes are collision-free but can still form tight hooks and visual tangles.
+- Every node exposes only top and bottom connection handles, so a branch to a node on the right can leave through the source bottom, turn sideways, and take an avoidable detour instead of attaching to the source right side.
 - The detail header gives long IDs and raw enum values too much space.
 - Long values are cut without a clear reveal action.
 - The success badge is far from the title it describes.
@@ -140,6 +141,7 @@ The current quality gate checks route collisions, label collisions, hidden handl
 | ED-05 | Medium | Normal edges are too weak in dark mode. | Normal routes, arrowheads, and labels must meet a 3:1 non-text contrast ratio against the canvas in both themes. |
 | ED-06 | Medium | Selected and path edges use status-like colors. | Apply the state color model from GR-03 and GR-04 to edges and arrowheads. |
 | ED-07 | Medium | Geometry tests permit excessive bends. | For the generated four-node branching fixture, each edge must have no more than four bends and no avoidable reversal toward its source. |
+| ED-08 | High | Fixed north and south ports create avoidable detours to targets on the left or right. | Evaluate valid ports on all four node sides and select the shortest collision-free orthogonal route. A route to a target outside the source horizontal span must use an east or west source port when that produces the shortest valid route. |
 
 ### E. Explanation inspector and content
 
@@ -222,6 +224,7 @@ The current quality gate checks route collisions, label collisions, hidden handl
 - **Gap:** effective text size and useful initial zoom → no current test
 - **Gap:** semantic color separation and rendered contrast → no current test
 - **Gap:** route bend, segment-length, and visual-corridor quality → no current test
+- **Gap:** source and target port choice and shortest valid route → nodes expose only fixed north and south handles
 - **Gap:** structured business explanation language → current test checks only one evidence phrase
 - **Gap:** complete interaction-state gallery → no current test
 - **Gap:** dashboard phone layout and no horizontal scroll → no current test
@@ -278,6 +281,7 @@ The graph opens in a readable view, not an unconditional complete fit. An explic
 - WHEN a predicate observation is selected THE SYSTEM SHALL show its question, answer, and evidence before technical data.
 - WHEN an edge is the only outgoing continuation THE SYSTEM SHALL hide the `next` label.
 - WHEN a Boolean branch label is shown THE SYSTEM SHALL show `Yes` or `No` and keep the raw token in technical details.
+- WHEN an edge target is to the right or left of its source THE SYSTEM SHALL use the shortest collision-free port pair and SHALL NOT force an avoidable route through the source bottom.
 - WHEN the dashboard is 390 CSS pixels wide THE SYSTEM SHALL show decision results without horizontal page scroll.
 - WHEN visual regression tests run THE SYSTEM SHALL compare every approved reference image and fail beyond the documented threshold.
 
@@ -287,7 +291,7 @@ The graph opens in a readable view, not an unconditional complete fit. An explic
 
 ## Acceptance Criteria
 
-- [ ] Every finding IA-01 through QA-05 maps to a design rule and an implementation task.
+- [ ] Every finding IA-01 through QA-05, including ED-08, maps to a design rule and an implementation task.
 - [ ] The initial reading view meets the 12-pixel effective text floor and 0.78 minimum zoom rule.
 - [ ] Status colors are not used for node kind, path, current step, selection, or focus.
 - [ ] The inspector shows structured question, answer, and evidence without inferred causal prose.

@@ -149,6 +149,24 @@ Do not use an outer glow for current or path. Keep dimmed node text at full cont
 
 For generated simple acyclic fixtures, reject avoidable backtracking, segments shorter than 16 pixels, more than four bends per route, unrelated-node intrusion, label collision, and non-distinct parallel paths.
 
+### Port selection and shortest valid routes
+
+Nodes expose north, east, south, and west ports to the layout model. The ports stay hidden in the read-only Svelte Flow canvas. Each routed edge records its selected source port and target port. The renderer must use those exact ports and ELK sections.
+
+For each edge, evaluate valid source and target port pairs before final layout:
+
+1. Reject a pair if its orthogonal route enters an unrelated node or crosses a protected label area.
+2. Reject an avoidable upward first segment in a top-to-bottom acyclic flow.
+3. Minimize total Manhattan route length.
+4. When route lengths differ by 8 CSS pixels or less, prefer fewer bends.
+5. Prefer a side port when the target center is outside the source horizontal span and the side route is shorter than a south-port route.
+6. Spread edges that share one side across distinct port slots with at least 16 CSS pixels between adjacent slots.
+7. Use stable edge ID order only as the final tie-breaker.
+
+An edge from a source to a target on its right must normally leave the source east side. It must not leave the south side, turn left or right under the source, and then travel to the distant target unless obstacle avoidance proves that route shorter. The matching rule applies to a target on the left.
+
+The route-quality test must compare the chosen route with all valid port-pair candidates. It fails when another collision-free candidate is shorter by more than 8 CSS pixels or has the same length with fewer bends.
+
 ## Viewport Modes
 
 ### Reading view
@@ -280,7 +298,7 @@ All images use generated fixtures or generated runtime artifacts.
 1. **Visual regression:** Compare approved images with Playwright `threshold: 0.2` and `maxDiffPixelRatio: 0.005`. Mask only unstable timestamps or browser-native controls. A reviewer must approve any threshold or mask change.
 2. **Rendered scale:** Read Svelte Flow transforms and computed font sizes. Enforce the 12-pixel effective node-label floor in reading view.
 3. **Composition:** For 2-to-15-node fixtures, enforce 45% use of one usable canvas dimension.
-4. **Route quality:** Enforce intrusion, parallel distinction, minimum segment, bend count, reversal, and label clearance rules.
+4. **Route quality:** Enforce port choice, shortest valid route, intrusion, parallel distinction, minimum segment, bend count, reversal, and label clearance rules.
 5. **Color roles:** Assert that status token values differ from interaction and node-type tokens. Measure rendered contrast in both themes.
 6. **Content:** Assert question, answer, evidence, missing evidence, raw technical values, and readable final result placement.
 7. **Responsive:** Assert no horizontal page scroll at 390 pixels and focus restoration from the sheet.

@@ -49,3 +49,19 @@
 **Verdict:** PASS — 4 of 4 dimensions passed.
 
 **Known review points:** Human approval remains required for the visual references. Implementation must not weaken the image threshold, contrast rules, or reading-size floor to make tests pass.
+
+### Iteration 2
+
+**Evaluated at:** 2026-08-21T11:32:26Z
+**Threshold:** 7/10
+
+**Change reviewed:** Added ED-08 after the user showed an edge that takes a long detour because every node uses fixed north and south ports.
+
+| Dimension | Evidence and finding | Score | Result |
+| --- | --- | --- | --- |
+| Criteria Testability | ED-08 defines the visible defect. The design compares all valid port pairs and fails if another valid route is shorter by more than 8 pixels. Finding: complex cyclic graphs can require a longer route, so collision and direction rejection must run before length comparison. | 10 | Pass |
+| Criteria Completeness | The rule covers left and right targets, shared-side spacing, first-segment direction, length, bends, and stable ties. Finding: exact equality can vary with fractional layout values, so the 8-pixel tolerance is necessary. | 9 | Pass |
+| Design Coherence | Four-side ports fit the existing top-down ELK design and preserve exact layout sections. Finding: Svelte Flow handle IDs must remain presentation data and must not enter graph JSON. | 10 | Pass |
+| Task Coverage | Task 3 now includes port output, candidate comparison, rendering, and unit plus browser tests. Finding: port selection must stay in layout code, not in `BusinessEdge.svelte`, to preserve single responsibility. | 9 | Pass |
+
+**Verdict:** PASS — 4 of 4 dimensions passed.

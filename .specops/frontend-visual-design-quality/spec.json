@@ -4,7 +4,7 @@
   "status": "draft",
   "version": 1,
   "created": "2026-08-21T11:16:08Z",
-  "updated": "2026-08-21T11:26:12Z",
+  "updated": "2026-08-21T11:32:26Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -28,15 +28,15 @@
   ],
   "evaluation": {
     "spec": {
-      "iterations": 1,
+      "iterations": 2,
       "passed": true,
       "scores": {
-        "criteriaTestability": 9,
-        "criteriaCompleteness": 8,
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
         "designCoherence": 10,
         "taskCoverage": 9
       },
-      "evaluatedAt": "2026-08-21T11:26:12Z"
+      "evaluatedAt": "2026-08-21T11:32:26Z"
     }
   }
 }
