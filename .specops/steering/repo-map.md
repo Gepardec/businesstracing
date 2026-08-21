@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-19T10:52:40Z"
-_sourceHash: "242952658ec22bbdcdb063ba2c2381e6fc12e4d22eab7167c821bdb17ae88e3d"
+_generatedAt: "2026-08-21T11:16:08Z"
+_sourceHash: "e8804c63b8705e4a712c3eca48518c84cbd05b586e9103c94dabf2535811d6d2"
 ---
 
 ## Project Structure Map
@@ -35,6 +35,10 @@ fachtracing/
   fachtracing-storage-jdbc/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
+  fachtracing-viewer/
+    src/lib/{components,contracts,graph,layout,runs,server}/
+    src/routes/{api,graphs,runs}/
+    e2e/
   conformance/mega-backend/
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/

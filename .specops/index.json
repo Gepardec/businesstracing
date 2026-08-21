@@ -1,5 +1,13 @@
 [
   {
+    "id": "frontend-visual-design-quality",
+    "type": "bugfix",
+    "status": "draft",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-21T11:26:12Z"
+  },
+  {
     "id": "frontend-flow-explorer",
     "type": "feature",
     "status": "completed",
