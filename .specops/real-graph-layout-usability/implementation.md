@@ -2,7 +2,7 @@
 
 ## Summary
 
-All six tasks are complete. Static graph preview now has an explicit arranging state, separate Reading and Overview modes, route-aware deterministic ELK placement, bounded route-set refinement, persistent static node selection, safe control-aware focus, and a generic file-driven review command. Reading mode keeps the focus and its direct topology at full contrast and fades unrelated presentation geometry without removing graph data. Both V1 graph formats, all three supplied real graphs, the generated 250-node safety graph, and the graph-only browser suite pass.
+All six tasks are complete. Static graph preview now has an explicit arranging state, separate Reading and Overview modes, route-aware deterministic ELK placement, bounded route-set refinement, persistent static node selection, safe control-aware focus, and a generic file-driven review command. Reading mode keeps the focus and its direct topology at full contrast and fades unrelated presentation geometry without removing graph data. A compact canvas summary identifies the current focus, run step, or whole-graph overview. Both V1 graph formats, all three supplied real graphs, the generated 250-node safety graph, and the graph-only browser suite pass.
 
 ## Phase 1 Context Summary
 
@@ -87,6 +87,13 @@ All six tasks are complete. Static graph preview now has an explicit arranging s
 - Completed Task 6 with the generic review command, real-file SHA-256 verification, light and dark references, both V1 contracts, and production-build browser review.
 - Corrected a selected-node visibility defect found during screenshot inspection and strengthened the browser assertion to require full canvas containment plus 16-pixel control clearance.
 - Final objective results: search users 45/77 at 371 ms with 17 crossings; determine journey warnings 55/89 at 306 ms with 22 crossings; validate journey direction 19/29 at 49 ms with 3 crossings. Every graph has zero overlaps, intrusions, label collisions, avoidable crossings, branch violations, corridor violations, and avoidable detours.
+
+### Session 3 — Completion audit (2026-08-25)
+
+- Re-inspected Reading, selected Reading, and Overview screenshots for all three supplied graphs at full resolution.
+- Added a data-driven canvas summary that names the focused node and direct-neighbor count, the current run step, or the whole-graph node count.
+- Corrected the summary to use plain visible text so it does not duplicate the existing screen-reader status channel.
+- Rebuilt the production application and reran the complete browser suite. Eleven applicable journeys pass, and five unavailable external-fixture journeys skip.
 
 ## Phase 3 Completion Summary
 

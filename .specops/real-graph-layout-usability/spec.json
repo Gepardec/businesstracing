@@ -4,7 +4,7 @@
   "status": "completed",
   "version": 1,
   "created": "2026-08-25T09:48:51Z",
-  "updated": "2026-08-25T11:00:13Z",
+  "updated": "2026-08-25T11:10:47Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -53,7 +53,7 @@
   "metrics": {
     "specArtifactTokensEstimate": 12000,
     "filesChanged": 36,
-    "linesAdded": 1748,
+    "linesAdded": 1770,
     "linesRemoved": 289,
     "tasksCompleted": 6,
     "acceptanceCriteriaVerified": 8,

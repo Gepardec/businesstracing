@@ -52,7 +52,16 @@
     return { current, onPath, dimmed: fullPath && Boolean(highlight) && !onPath, stepNumber: current ? highlight?.activeStepNumber ?? null : null };
   }
 
-  let readingContext = $derived(viewMode === 'reading' && focusNodeId && !highlight ? directNeighborhood(graph, focusNodeId) : null);
+  let focusNeighborhood = $derived(focusNodeId ? directNeighborhood(graph, focusNodeId) : null);
+  let readingContext = $derived(viewMode === 'reading' && !highlight ? focusNeighborhood : null);
+  let focusedNode = $derived(focusNodeId ? graph.nodes.find((node) => node.id === focusNodeId) ?? null : null);
+  let viewSummary = $derived(viewMode === 'overview'
+    ? `Whole graph · ${graph.nodes.length} nodes · select or search to inspect`
+    : focusedNode && highlight?.activeStepNumber
+      ? `Step ${highlight.activeStepNumber} · ${focusedNode.label}`
+    : focusedNode
+      ? `Focus · ${focusedNode.label} · ${Math.max(0, (focusNeighborhood?.nodeIds.size ?? 1) - 1)} connected`
+      : 'Preparing the reading view');
 
   let nodes = $derived(layoutNodes.map((item) => ({
     ...item,
@@ -273,6 +282,7 @@
       <button type="button" class:active={viewMode === 'reading'} aria-pressed={viewMode === 'reading'} onclick={() => changeViewMode('reading')}><BookOpen size={14} />Reading</button>
       <button type="button" class:active={viewMode === 'overview'} aria-pressed={viewMode === 'overview'} onclick={() => changeViewMode('overview')}><MapIcon size={14} />Overview</button>
     </div>
+    {#if layoutStatus === 'ready'}<div class="view-summary" title={viewSummary}>{viewSummary}</div>{/if}
   </div>
   {#if layoutError}
     <div class="layout-error" role="alert"><TriangleAlert size={20} /><div><strong>Graph layout unavailable</strong><p>{layoutError}</p></div></div>
@@ -339,6 +349,7 @@
   .view-modes button { height: 28px; display: flex; align-items: center; gap: 5px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: var(--muted-foreground); font-size: 11px; font-weight: 700; cursor: pointer; }
   .view-modes button.active { background: var(--secondary); color: var(--foreground); }
   .view-modes button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  .view-summary { box-sizing: border-box; height: 36px; max-width: min(420px, 34vw); display: flex; align-items: center; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in oklch, var(--card), transparent 3%); color: var(--muted-foreground); box-shadow: var(--shadow); font-size: 11px; font-weight: 650; }
   .layout-error { height: 100%; display: flex; justify-content: center; align-items: center; gap: 12px; color: var(--status-failure); }
   .layout-error p { color: var(--muted-foreground); margin: 4px 0 0; }
   .semantic-node-list { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -357,5 +368,6 @@
     .canvas-toolbar { right: 14px; align-items: stretch; flex-direction: column; }
     label { width: auto; }
     .view-modes { align-self: flex-start; }
+    .view-summary { max-width: calc(100vw - 56px); }
   }
 </style>

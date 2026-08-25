@@ -378,6 +378,7 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
     if (index === 0) await expect(page.getByText(`Arranging ${document.nodes.length} nodes`, { exact: false })).toBeVisible({ timeout: 1_000 });
     await expect(page.locator('.svelte-flow__node')).toHaveCount(document.nodes.length, { timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.view-summary')).toContainText('connected');
     const entry = page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"] .business-node`);
     await expect(entry).toBeVisible();
     expect((await entry.boundingBox())!.width).toBeGreaterThanOrEqual(199);
@@ -386,6 +387,7 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
 
     await page.getByRole('button', { name: 'Overview' }).click();
     await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.view-summary')).toHaveText(`Whole graph · ${document.nodes.length} nodes · select or search to inspect`);
     await expect(page.locator('.node-overview').first()).toBeAttached();
     await page.screenshot({ path: `test-results/real-graphs/${stem}-overview.png`, fullPage: true });
 
@@ -394,6 +396,7 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
     await page.getByPlaceholder('Find a node').press('Enter');
     await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
     await expect(page.getByRole('status')).toContainText(`Selected ${selected.label}`);
+    await expect(page.locator('.view-summary')).toContainText(selected.label);
     await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
     const selectedGeometry = () => page.evaluate((nodeId) => {
       const selectedNode = document.querySelector<HTMLElement>(`.svelte-flow__node[data-id="${CSS.escape(nodeId)}"]`)?.getBoundingClientRect();
