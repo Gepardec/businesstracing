@@ -58,7 +58,7 @@ button, input, select { font: inherit; }
 .nav-link { font-size: 0.875rem; color: var(--muted-foreground); text-decoration: none; }
 .nav-link:hover { color: var(--foreground); }
 .app-main { min-height: calc(100vh - 58px); }
-.button { border: 1px solid transparent; border-radius: 8px; height: 38px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 620; font-size: 0.875rem; cursor: pointer; transition: background 140ms, border 140ms, opacity 140ms; }
+.button { border: 1px solid transparent; border-radius: 8px; height: 38px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 620; font-size: 0.875rem; cursor: pointer; transition: opacity 140ms; }
 .button:disabled { cursor: not-allowed; opacity: 0.5; }
 .button--default { background: var(--primary); color: var(--primary-foreground); }
 .button--outline { background: var(--card); color: var(--foreground); border-color: var(--border); }

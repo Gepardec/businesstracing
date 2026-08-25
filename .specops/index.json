@@ -2,10 +2,10 @@
   {
     "id": "static-graph-layout-quality",
     "type": "bugfix",
-    "status": "draft",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-25T07:42:57Z"
+    "updated": "2026-08-25T09:23:18Z"
   },
   {
     "id": "frontend-visual-design-quality",

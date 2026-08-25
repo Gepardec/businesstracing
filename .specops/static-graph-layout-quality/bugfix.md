@@ -255,16 +255,19 @@ Update the node and edge renderers to show branch meaning near its source, disti
 
 ## Acceptance Criteria
 
-- [ ] Every finding ST-01 through LR-06 has an implementation task and at least one objective verification method.
-- [ ] Fixed north/south edge ports no longer exist as the only routing option.
-- [ ] Generated chain, branch, diamond, fan-in, cycle, duplicate-label, long-edge, and unavoidable-crossing fixtures pass their defined geometry gates.
-- [ ] Simple planar fixtures have zero avoidable crossings and zero unrelated-node intrusions.
-- [ ] Every unavoidable crossing has a visible bridge or gap and is not rendered as a junction.
-- [ ] Every fan-in of four or more uses a presentation-only convergence junction with accessible edge membership.
-- [ ] Every multi-outgoing source shows distinct, source-adjacent branch labels.
-- [ ] The graph JSON contracts and stored payloads do not change.
-- [ ] All Must-Test unchanged behaviors pass.
-- [ ] Light and dark reference images receive human design approval.
+- [x] Every finding ST-01 through LR-06 has an implementation task and at least one objective verification method.
+- [x] Fixed north/south edge ports no longer exist as the only routing option.
+- [x] Generated chain, branch, diamond, fan-in, cycle, duplicate-label, long-edge, and unavoidable-crossing fixtures pass their defined geometry gates.
+- [x] Simple planar fixtures have zero avoidable crossings and zero unrelated-node intrusions.
+- [x] Every unavoidable crossing has a visible bridge or gap and is not rendered as a junction.
+- [x] Every fan-in of four or more uses a presentation-only convergence junction with accessible edge membership.
+- [x] Every multi-outgoing source shows distinct, source-adjacent branch labels.
+- [x] The graph JSON contracts and stored payloads do not change.
+
+### Deferred Criteria
+
+- All Must-Test unchanged behaviors pass. *(deferred only for the four PostgreSQL-backed run-detail browser journeys; the contract, privacy, upload, ID-mapping, and shared-canvas checks pass)*
+- Light and dark reference images receive human design approval. *(deferred — objective geometry gates and assistant visual review pass; final approval must come from the user)*
 
 ## Team Conventions
 

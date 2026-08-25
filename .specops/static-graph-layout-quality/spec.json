@@ -1,10 +1,10 @@
 {
   "id": "static-graph-layout-quality",
   "type": "bugfix",
-  "status": "draft",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-25T07:29:57Z",
-  "updated": "2026-08-25T07:42:57Z",
+  "updated": "2026-08-25T09:23:18Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -36,6 +36,26 @@
         "taskCoverage": 9
       },
       "evaluatedAt": "2026-08-25T07:42:57Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 9,
+        "fixCompleteness": 8,
+        "regressionSafety": 7,
+        "testVerification": 8
+      },
+      "evaluatedAt": "2026-08-25T09:23:18Z"
     }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 16500,
+    "filesChanged": 33,
+    "linesAdded": 2746,
+    "linesRemoved": 252,
+    "tasksCompleted": 6,
+    "acceptanceCriteriaVerified": 8,
+    "specDurationMinutes": 113
   }
 }

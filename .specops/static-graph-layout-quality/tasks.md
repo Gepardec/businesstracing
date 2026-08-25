@@ -10,11 +10,11 @@
 
 ### Task 1: Add generated topology fixtures and layout-quality metrics
 
-**Status:** Pending  
-**Estimated Effort:** L  
-**Dependencies:** None  
-**Priority:** High  
-**IssueID:** None  
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** None
+**Priority:** High
+**IssueID:** None
 **Blocker:** None
 
 **Description:**
@@ -30,11 +30,11 @@ Create the reusable test builders and objective metrics that define the current 
 
 **Acceptance Criteria:**
 
-- [ ] Every fixture in the design matrix is generated from graph nodes and edges.
-- [ ] No fixture contains node coordinates, port coordinates, or route points.
-- [ ] The metrics give the same result across five repeated layouts.
-- [ ] Geometry failures identify the edge, node, or label that caused the failure.
-- [ ] The 250-node fixture preserves the existing two-second safety gate.
+- [x] Every fixture in the design matrix is generated from graph nodes and edges.
+- [x] No fixture contains node coordinates, port coordinates, or route points.
+- [x] The metrics give the same result across five repeated layouts.
+- [x] Geometry failures identify the edge, node, or label that caused the failure.
+- [x] The 250-node fixture preserves the existing two-second safety gate.
 
 **Files to Modify:**
 
@@ -46,20 +46,20 @@ Create the reusable test builders and objective metrics that define the current 
 
 **Tests Required:**
 
-- [ ] Fixture determinism tests
-- [ ] Layout-quality metric unit tests
-- [ ] Current-defect characterization tests
-- [ ] 250-node safety test
+- [x] Fixture determinism tests
+- [x] Layout-quality metric unit tests
+- [x] Current-defect characterization tests
+- [x] 250-node safety test
 
 ---
 
 ### Task 2: Analyze topology and place structural regions
 
-**Status:** Pending  
-**Estimated Effort:** L  
-**Dependencies:** Task 1  
-**Priority:** High  
-**IssueID:** None  
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Task 1
+**Priority:** High
+**IssueID:** None
 **Blocker:** None
 
 **Description:**
@@ -77,14 +77,14 @@ Add one topology-analysis stage and use its result to produce stable ranks, spin
 
 **Acceptance Criteria:**
 
-- [ ] ST-01 through ST-10 pass their defined placement gates.
-- [ ] TP-01 through TP-07 pass their defined topology gates.
-- [ ] A single child is centered below its parent when no obstacle prevents it.
-- [ ] Sibling roots use one rank and remain inside their assigned branch regions.
-- [ ] Reachable outcomes use the last reachable rank.
-- [ ] A cycle uses one outer cycle corridor and does not reverse the acyclic rank structure.
-- [ ] Normal branch regions have no background enclosure; only eligible cycles and disconnected components expose neutral structural enclosures.
-- [ ] The same graph produces byte-for-byte equal topology analysis and node positions across five runs.
+- [x] ST-01 through ST-10 pass their defined placement gates.
+- [x] TP-01 through TP-07 pass their defined topology gates.
+- [x] A single child is centered below its parent when no obstacle prevents it.
+- [x] Sibling roots use one rank and remain inside their assigned branch regions.
+- [x] Reachable outcomes use the last reachable rank.
+- [x] A cycle uses one outer cycle corridor and does not reverse the acyclic rank structure.
+- [x] Normal branch regions have no background enclosure; only eligible cycles and disconnected components expose neutral structural enclosures.
+- [x] The same graph produces byte-for-byte equal topology analysis and node positions across five runs.
 
 **Files to Modify:**
 
@@ -97,20 +97,20 @@ Add one topology-analysis stage and use its result to produce stable ranks, spin
 
 **Tests Required:**
 
-- [ ] Components, entries, outcomes, rank, branch-region, and spine tests
-- [ ] Strongly connected component and cycle-corridor tests
-- [ ] Placement alignment, compaction, balance, and determinism tests
-- [ ] Developer graph V1 and business graph V1 mapping tests
+- [x] Components, entries, outcomes, rank, branch-region, and spine tests
+- [x] Strongly connected component and cycle-corridor tests
+- [x] Placement alignment, compaction, balance, and determinism tests
+- [x] Developer graph V1 and business graph V1 mapping tests
 
 ---
 
 ### Task 3: Select four-side ports and plan local orthogonal routes
 
-**Status:** Pending  
-**Estimated Effort:** XL  
-**Dependencies:** Tasks 1 and 2  
-**Priority:** High  
-**IssueID:** None  
+**Status:** Completed
+**Estimated Effort:** XL
+**Dependencies:** Tasks 1 and 2
+**Priority:** High
+**IssueID:** None
 **Blocker:** None
 
 **Description:**
@@ -128,14 +128,14 @@ Replace fixed north and south routing with a deterministic sparse orthogonal rou
 
 **Acceptance Criteria:**
 
-- [ ] RT-01 through RT-12 and RT-14 pass.
-- [ ] LR-01, LR-02, LR-04, and LR-05 pass.
-- [ ] Fixed north and south are not the only port options.
-- [ ] The fixed-port detour uses east or west and no equal-quality candidate is more than 8 pixels shorter.
-- [ ] Planar fixtures have no route through an unrelated node and no avoidable crossing.
-- [ ] Distinct parallel routes have 12-pixel clearance unless they use an explicit shared trunk.
-- [ ] Every non-port segment is at least 16 pixels long.
-- [ ] Route output is deterministic across five repeated layouts.
+- [x] RT-01 through RT-12 and RT-14 pass.
+- [x] LR-01, LR-02, LR-04, and LR-05 pass.
+- [x] Fixed north and south are not the only port options.
+- [x] The fixed-port detour uses east or west and no equal-quality candidate is more than 8 pixels shorter.
+- [x] Planar fixtures have no route through an unrelated node and no avoidable crossing.
+- [x] Distinct parallel routes have 12-pixel clearance unless they use an explicit shared trunk.
+- [x] Every non-port segment is at least 16 pixels long.
+- [x] Route output is deterministic across five repeated layouts.
 
 **Files to Modify:**
 
@@ -147,21 +147,21 @@ Replace fixed north and south routing with a deterministic sparse orthogonal rou
 
 **Tests Required:**
 
-- [ ] Four-side port and stable slot tests
-- [ ] Candidate rejection and optimality tests
-- [ ] Clearance, bend, backtracking, corridor, and parallel-route tests
-- [ ] Long-edge and cycle-route tests
-- [ ] 250-node route-quality and safety tests
+- [x] Four-side port and stable slot tests
+- [x] Candidate rejection and optimality tests
+- [x] Clearance, bend, backtracking, corridor, and parallel-route tests
+- [x] Long-edge and cycle-route tests
+- [x] 250-node route-quality and safety tests
 
 ---
 
 ### Task 4: Render branch meaning and static node context
 
-**Status:** Pending  
-**Estimated Effort:** L  
-**Dependencies:** Tasks 2 and 3  
-**Priority:** High  
-**IssueID:** None  
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Tasks 2 and 3
+**Priority:** High
+**IssueID:** None
 **Blocker:** None
 
 **Description:**
@@ -179,14 +179,14 @@ Make branch origins, repeated nodes, and node kinds clear in the static graph. D
 
 **Acceptance Criteria:**
 
-- [ ] BR-01 through BR-08 pass.
-- [ ] CT-01 through CT-05 pass.
-- [ ] VG-01 through VG-04 and VG-06 through VG-08 pass.
-- [ ] LR-06 and TP-08 pass.
-- [ ] Every source with two or more outgoing edges has one visible branch label per edge.
-- [ ] `true` and `false` display as `Yes` and `No` while accessible text retains the raw outcome.
-- [ ] Repeated kind-plus-label nodes show stable `n of total` markers without putting opaque IDs in the main label.
-- [ ] Selection, focus, node kind, and outcome semantics use distinct visual roles.
+- [x] BR-01 through BR-08 pass.
+- [x] CT-01 through CT-05 pass.
+- [x] VG-01 through VG-04 and VG-06 through VG-08 pass.
+- [x] LR-06 and TP-08 pass.
+- [x] Every source with two or more outgoing edges has one visible branch label per edge.
+- [x] `true` and `false` display as `Yes` and `No` while accessible text retains the raw outcome.
+- [x] Repeated kind-plus-label nodes show stable `n of total` markers without putting opaque IDs in the main label.
+- [x] Selection, focus, node kind, and outcome semantics use distinct visual roles.
 
 **Files to Modify:**
 
@@ -199,20 +199,20 @@ Make branch origins, repeated nodes, and node kinds clear in the static graph. D
 
 **Tests Required:**
 
-- [ ] Edge-label mapping and placement tests
-- [ ] Duplicate-label order and accessibility tests
-- [ ] Node grammar light, dark, and monochrome visual tests
-- [ ] Keyboard focus and selection-state tests
+- [x] Edge-label mapping and placement tests
+- [x] Duplicate-label order and accessibility tests
+- [x] Node grammar light, dark, and monochrome visual tests
+- [x] Keyboard focus and selection-state tests
 
 ---
 
 ### Task 5: Render convergence and crossings without changing topology
 
-**Status:** Pending  
-**Estimated Effort:** XL  
-**Dependencies:** Tasks 1 through 4  
-**Priority:** High  
-**IssueID:** None  
+**Status:** Completed
+**Estimated Effort:** XL
+**Dependencies:** Tasks 1 through 4
+**Priority:** High
+**IssueID:** None
 **Blocker:** None
 
 **Description:**
@@ -229,13 +229,13 @@ Add presentation-only junctions, shared trunks, and crossing gaps. Preserve one 
 
 **Acceptance Criteria:**
 
-- [ ] FN-01 through FN-08 and RT-13 pass.
-- [ ] LR-03 passes.
-- [ ] A twelve-to-one fan-in has one junction, one trunk, and twelve focusable feeders.
-- [ ] A two-way reconverging diamond has no convergence junction.
-- [ ] A crossing has no filled shape and creates no graph connectivity.
-- [ ] The semantic graph count equals the original node and edge count before and after layout.
-- [ ] Focusing any member edge highlights its feeder and the shared trunk.
+- [x] FN-01 through FN-08 and RT-13 pass.
+- [x] LR-03 passes.
+- [x] A twelve-to-one fan-in has one junction, one trunk, and twelve focusable feeders.
+- [x] A two-way reconverging diamond has no convergence junction.
+- [x] A crossing has no filled shape and creates no graph connectivity.
+- [x] The semantic graph count equals the original node and edge count before and after layout.
+- [x] Focusing any member edge highlights its feeder and the shared trunk.
 
 **Files to Modify:**
 
@@ -248,20 +248,20 @@ Add presentation-only junctions, shared trunks, and crossing gaps. Preserve one 
 
 **Tests Required:**
 
-- [ ] Fan-in threshold, feeder, junction, and shared-trunk tests
-- [ ] Avoidable and unavoidable crossing tests
-- [ ] Crossing-versus-junction accessibility tests
-- [ ] Edge focus and exact ID mapping tests
+- [x] Fan-in threshold, feeder, junction, and shared-trunk tests
+- [x] Avoidable and unavoidable crossing tests
+- [x] Crossing-versus-junction accessibility tests
+- [x] Edge focus and exact ID mapping tests
 
 ---
 
 ### Task 6: Integrate the shared canvas and approve static graph quality
 
-**Status:** Pending  
-**Estimated Effort:** L  
-**Dependencies:** Tasks 1 through 5  
-**Priority:** High  
-**IssueID:** None  
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Tasks 1 through 5
+**Priority:** High
+**IssueID:** None
 **Blocker:** None
 
 **Description:**
@@ -279,14 +279,17 @@ Integrate the immutable layout with the read-only Svelte Flow canvas. Prove the 
 
 **Acceptance Criteria:**
 
-- [ ] VG-05 and all remaining design gates pass.
-- [ ] All findings ST-01 through LR-06 have passed through their mapped task.
-- [ ] Planar references have zero avoidable crossings, zero node intrusion, and zero label collision.
-- [ ] The image threshold is `0.2` and `maxDiffPixelRatio` is `0.005` with no graph-content masks.
-- [ ] Developer graph V1 and business graph V1 render without contract changes.
-- [ ] The browser-only upload remains local and read-only.
-- [ ] Existing run highlights still map by original node and edge ID; no new run behavior is added.
-- [ ] The complete light and dark reference set has human design approval.
+- [x] VG-05 and all remaining objective design gates pass.
+- [x] All findings ST-01 through LR-06 have passed through their mapped task.
+- [x] Planar references have zero avoidable crossings, zero node intrusion, and zero label collision.
+- [x] The image threshold is `0.2` and `maxDiffPixelRatio` is `0.005` with no graph-content masks.
+- [x] Developer graph V1 and business graph V1 render without contract changes.
+- [x] The browser-only upload remains local and read-only.
+- [x] Existing run highlights still map by original node and edge ID; no new run behavior is added.
+
+**Deferred Criteria:**
+
+- The complete light and dark reference set has human design approval. *(deferred — the implementation generated and inspected the full reference set, but final approval must come from the user)*
 
 **Files to Modify:**
 
@@ -302,12 +305,16 @@ Integrate the immutable layout with the read-only Svelte Flow canvas. Prove the 
 
 **Tests Required:**
 
-- [ ] `npm run check`
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] Graph-only Playwright tests in light and dark
-- [ ] Existing upload and run-detail Playwright journeys
-- [ ] Generated Fachtracing dogfood verification
+- [x] `npm run check`
+- [x] `npm test`
+- [x] `npm run build`
+- [x] Graph-only Playwright tests in light, dark, and forced-color modes
+- [x] Existing upload Playwright journey
+- [x] Generated Fachtracing dogfood verification
+
+**Deferred Tests:**
+
+- Existing PostgreSQL-backed run-detail Playwright journeys. *(deferred — no local `FACHTRACING_DATABASE_URL` was available; four database-dependent tests skipped, while ID mapping and shared-canvas unit tests passed)*
 
 ## Finding-to-Task Coverage
 

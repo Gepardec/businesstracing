@@ -1,91 +1,176 @@
-import type { ELK, ElkEdgeSection, ElkExtendedEdge, ElkNode } from 'elkjs/lib/elk-api';
+import type { ELK, ElkNode } from 'elkjs/lib/elk-api';
 import type { GraphModel } from '$contracts/graph-contract';
-import { routeLabelPosition, type LayoutPoint } from './edge-route';
+import { measureBranchRegionViolations, measureLayoutQuality, type LayoutQualityMetrics } from './route-quality';
+import { analyzeTopology, type DuplicateOccurrence, type TopologyAnalysis } from './topology-analysis';
+import { planRoutes, type LayoutJunction, type LayoutPort, type RenderedRoute, type RouteCrossing, type SharedRouteSegment } from './route-planner';
 
 export const NODE_WIDTH = 232;
 export const NODE_HEIGHT = 92;
+const HORIZONTAL_GAP = 64;
+const VERTICAL_GAP = 96;
+const COMPONENT_GAP = 96;
+const PADDING = 32;
 
-export interface PositionedNode { id: string; x: number; y: number }
-export interface RoutedEdge { id: string; points: LayoutPoint[]; labelPosition: LayoutPoint }
-export interface LayoutResult { nodes: PositionedNode[]; edges: RoutedEdge[]; width: number; height: number }
-
-function sectionPoints(section: ElkEdgeSection): LayoutPoint[] {
-  return [section.startPoint, ...(section.bendPoints ?? []), section.endPoint].map(({ x, y }) => ({ x, y }));
+export interface PositionedNode {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  ports: readonly LayoutPort[];
+  occurrence: DuplicateOccurrence | null;
+  incomingCount: number;
+  outgoingCount: number;
 }
 
-function edgePoints(edge: ElkExtendedEdge): LayoutPoint[] {
-  const sections = edge.sections ?? [];
-  if (sections.length === 0) throw new Error(`ELK did not return a route for edge ${edge.id}.`);
-  const byId = new Map(sections.map((section) => [section.id, section]));
-  let section: ElkEdgeSection | undefined = sections.find((candidate) => !candidate.incomingSections?.length) ?? sections[0];
-  const visited = new Set<string>();
-  const points: LayoutPoint[] = [];
-  while (section && !visited.has(section.id)) {
-    visited.add(section.id);
-    for (const point of sectionPoints(section)) {
-      const previous = points.at(-1);
-      if (!previous || previous.x !== point.x || previous.y !== point.y) points.push(point);
-    }
-    const nextId: string | undefined = section.outgoingSections?.[0];
-    section = nextId ? byId.get(nextId) : undefined;
-  }
-  if (points.length < 2) throw new Error(`ELK returned an incomplete route for edge ${edge.id}.`);
-  return points;
+export interface PositionedRegion {
+  id: string;
+  label: 'Cycle' | 'Component';
+  nodeIds: readonly string[];
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
-export async function computeLayoutWith(elk: Pick<ELK, 'layout'>, graph: GraphModel): Promise<LayoutResult> {
-  const result = await elk.layout({
+export interface LayoutResult {
+  nodes: PositionedNode[];
+  edges: RenderedRoute[];
+  junctions: LayoutJunction[];
+  sharedSegments: SharedRouteSegment[];
+  crossings: RouteCrossing[];
+  regions: PositionedRegion[];
+  width: number;
+  height: number;
+  metrics: LayoutQualityMetrics;
+}
+
+function placementGraph(graph: GraphModel): ElkNode {
+  return {
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
-      'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.spacing.nodeNode': '42',
-      'elk.spacing.edgeEdge': '16',
-      'elk.layered.spacing.edgeEdgeBetweenLayers': '18',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '96',
+      'elk.spacing.nodeNode': String(HORIZONTAL_GAP),
+      'elk.layered.spacing.nodeNodeBetweenLayers': String(VERTICAL_GAP),
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-      'elk.layered.mergeEdges': 'false',
-      'elk.padding': '[top=32,left=32,bottom=32,right=32]'
+      'elk.layered.cycleBreaking.strategy': 'GREEDY',
+      'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+      'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+      'elk.layered.compaction.postCompaction.strategy': 'LEFT_RIGHT_CONSTRAINT_LOCKING',
+      'elk.separateConnectedComponents': 'true',
+      'elk.padding': `[top=${PADDING},left=${PADDING},bottom=${PADDING},right=${PADDING}]`
     },
-    children: [...graph.nodes].sort((a, b) => a.id.localeCompare(b.id)).map((node) => {
-      const incoming = graph.edges.filter((edge) => edge.to === node.id).sort((a, b) => a.id.localeCompare(b.id));
-      const outgoing = graph.edges.filter((edge) => edge.from === node.id).sort((a, b) => a.id.localeCompare(b.id));
-      return {
-        id: node.id,
-        width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-        layoutOptions: { 'elk.portConstraints': 'FIXED_ORDER' },
-        ports: [
-          ...incoming.map((edge) => ({ id: `${node.id}::in::${edge.id}`, width: 1, height: 1, layoutOptions: { 'elk.port.side': 'NORTH' } })),
-          ...outgoing.map((edge) => ({ id: `${node.id}::out::${edge.id}`, width: 1, height: 1, layoutOptions: { 'elk.port.side': 'SOUTH' } }))
-        ]
-      };
-    }),
-    edges: [...graph.edges].sort((a, b) => a.id.localeCompare(b.id)).map((edge) => ({
-      id: edge.id, sources: [`${edge.from}::out::${edge.id}`], targets: [`${edge.to}::in::${edge.id}`]
-    }))
-  }) as ElkNode;
-  const positions = (result.children ?? []).map((node) => ({ id: node.id, x: node.x ?? 0, y: node.y ?? 0 }));
-  const positionById = new Map(positions.map((node) => [node.id, node]));
-  const siblingGroups = new Map<string, string[]>();
-  for (const edge of [...graph.edges].sort((a, b) => a.id.localeCompare(b.id))) {
-    const key = `${edge.from}\u0000${edge.to}`;
-    siblingGroups.set(key, [...(siblingGroups.get(key) ?? []), edge.id]);
-  }
-  const graphEdges = new Map(graph.edges.map((edge) => [edge.id, edge]));
-  const routes = (result.edges ?? []).map((edge): RoutedEdge => {
-    const modelEdge = graphEdges.get(edge.id);
-    if (!modelEdge) throw new Error(`ELK returned an unknown edge ${edge.id}.`);
-    const points = edgePoints(edge);
-    const siblings = siblingGroups.get(`${modelEdge.from}\u0000${modelEdge.to}`) ?? [edge.id];
-    const siblingIndex = siblings.indexOf(edge.id);
-    const labelFraction = siblings.length === 1 ? 0.5 : 0.24 + (0.52 * siblingIndex) / (siblings.length - 1);
-    const source = positionById.get(modelEdge.from)!;
-    const target = positionById.get(modelEdge.to)!;
-    const flowCenterX = (source.x + target.x + NODE_WIDTH) / 2;
-    return { id: edge.id, points, labelPosition: routeLabelPosition(points, labelFraction, flowCenterX) };
+    children: [...graph.nodes]
+      .sort((first, second) => first.id.localeCompare(second.id))
+      .map((node) => ({ id: node.id, width: NODE_WIDTH, height: NODE_HEIGHT })),
+    edges: [...graph.edges]
+      .sort((first, second) => first.id.localeCompare(second.id))
+      .map((edge) => ({ id: edge.id, sources: [edge.from], targets: [edge.to] }))
+  };
+}
+
+function compactPositions(result: ElkNode, graph: GraphModel, topology: TopologyAnalysis): { positions: Array<{ id: string; x: number; y: number }>; width: number; height: number } {
+  const elkX = new Map((result.children ?? []).map((node) => [node.id, node.x ?? 0]));
+  const componentIds = [...new Set(topology.componentByNodeId.values())];
+  const entryComponents = new Set(graph.entryNodeIds.map((nodeId) => topology.componentByNodeId.get(nodeId)!));
+  componentIds.sort((first, second) => {
+    const firstEntry = entryComponents.has(first) ? 0 : 1;
+    const secondEntry = entryComponents.has(second) ? 0 : 1;
+    return firstEntry - secondEntry || first.localeCompare(second);
   });
-  if (routes.length !== graph.edges.length) throw new Error('ELK did not return every graph edge.');
-  return { nodes: positions, edges: routes, width: result.width ?? 0, height: result.height ?? 0 };
+
+  const positions: Array<{ id: string; x: number; y: number }> = [];
+  let componentOffset = PADDING;
+  let maximumRank = 0;
+  for (const componentId of componentIds) {
+    const componentNodes = graph.nodes.filter((node) => topology.componentByNodeId.get(node.id) === componentId);
+    const rankGroups = new Map<number, string[]>();
+    for (const node of componentNodes) {
+      const rank = topology.rankByNodeId.get(node.id) ?? 0;
+      rankGroups.set(rank, [...(rankGroups.get(rank) ?? []), node.id]);
+      maximumRank = Math.max(maximumRank, rank);
+    }
+    for (const nodeIds of rankGroups.values()) nodeIds.sort((first, second) => elkX.get(first)! - elkX.get(second)! || first.localeCompare(second));
+    const componentWidth = Math.max(NODE_WIDTH, ...[...rankGroups.values()].map((nodeIds) => nodeIds.length * NODE_WIDTH + Math.max(0, nodeIds.length - 1) * HORIZONTAL_GAP));
+    for (const [rank, nodeIds] of [...rankGroups].sort(([first], [second]) => first - second)) {
+      const rankWidth = nodeIds.length * NODE_WIDTH + Math.max(0, nodeIds.length - 1) * HORIZONTAL_GAP;
+      const rankOffset = componentOffset + (componentWidth - rankWidth) / 2;
+      nodeIds.forEach((nodeId, index) => positions.push({
+        id: nodeId,
+        x: rankOffset + index * (NODE_WIDTH + HORIZONTAL_GAP),
+        y: PADDING + rank * (NODE_HEIGHT + VERTICAL_GAP)
+      }));
+    }
+    componentOffset += componentWidth + COMPONENT_GAP;
+  }
+  const width = Math.max(PADDING * 2 + NODE_WIDTH, componentOffset - COMPONENT_GAP + PADDING);
+  const height = PADDING * 2 + NODE_HEIGHT + maximumRank * (NODE_HEIGHT + VERTICAL_GAP);
+  return { positions: positions.sort((first, second) => first.id.localeCompare(second.id)), width, height };
+}
+
+function positionedRegions(graph: GraphModel, topology: TopologyAnalysis, positions: readonly { id: string; x: number; y: number }[]): PositionedRegion[] {
+  const positionById = new Map(positions.map((position) => [position.id, position]));
+  const regions: Array<{ id: string; label: 'Cycle' | 'Component'; nodeIds: readonly string[] }> = [];
+  for (const component of topology.stronglyConnectedComponents) {
+    if (component.cyclic && component.nodeIds.length > 1) regions.push({ id: `region-${component.id}`, label: 'Cycle', nodeIds: component.nodeIds });
+  }
+  const entryComponents = new Set(graph.entryNodeIds.map((nodeId) => topology.componentByNodeId.get(nodeId)!));
+  for (const componentId of [...new Set(topology.componentByNodeId.values())].sort()) {
+    if (entryComponents.has(componentId)) continue;
+    regions.push({
+      id: `region-${componentId}`,
+      label: 'Component',
+      nodeIds: graph.nodes.filter((node) => topology.componentByNodeId.get(node.id) === componentId).map((node) => node.id)
+    });
+  }
+  return regions.map((region) => {
+    const members = region.nodeIds.map((nodeId) => positionById.get(nodeId)!).filter(Boolean);
+    const left = Math.min(...members.map((position) => position.x)) - 18;
+    const top = Math.min(...members.map((position) => position.y)) - 28;
+    const right = Math.max(...members.map((position) => position.x + NODE_WIDTH)) + 18;
+    const bottom = Math.max(...members.map((position) => position.y + NODE_HEIGHT)) + 18;
+    return { ...region, x: left, y: top, width: right - left, height: bottom - top };
+  });
+}
+
+export async function computeLayoutWith(elk: Pick<ELK, 'layout'>, graph: GraphModel): Promise<LayoutResult> {
+  const topology = analyzeTopology(graph);
+  const elkResult = await elk.layout(placementGraph(graph)) as ElkNode;
+  const compacted = compactPositions(elkResult, graph, topology);
+  const plan = planRoutes(graph, compacted.positions, topology, compacted.width, compacted.height, NODE_WIDTH, NODE_HEIGHT);
+  const portsByNodeId = new Map<string, LayoutPort[]>();
+  for (const route of plan.routes) {
+    portsByNodeId.set(route.sourcePort.nodeId, [...(portsByNodeId.get(route.sourcePort.nodeId) ?? []), route.sourcePort]);
+    portsByNodeId.set(route.targetPort.nodeId, [...(portsByNodeId.get(route.targetPort.nodeId) ?? []), route.targetPort]);
+  }
+  const nodes = compacted.positions.map((position): PositionedNode => ({
+    ...position,
+    width: NODE_WIDTH,
+    height: NODE_HEIGHT,
+    ports: [...new Map((portsByNodeId.get(position.id) ?? []).map((port) => [port.id, port])).values()]
+      .sort((first, second) => first.id.localeCompare(second.id)),
+    occurrence: topology.duplicateByNodeId.get(position.id) ?? null,
+    incomingCount: topology.incomingByNodeId.get(position.id)?.length ?? 0,
+    outgoingCount: topology.outgoingByNodeId.get(position.id)?.length ?? 0
+  }));
+  const measured = measureLayoutQuality(graph, nodes, plan.routes);
+  const metrics: LayoutQualityMetrics = {
+    ...measured,
+    avoidableCrossings: plan.avoidableCrossings,
+    unavoidableCrossings: plan.crossings.length,
+    branchRegionViolations: measureBranchRegionViolations(graph, nodes, plan.routes, topology.branchRegions, topology.longEdgeIds)
+  };
+  return {
+    nodes,
+    edges: plan.routes,
+    junctions: plan.junctions,
+    sharedSegments: plan.sharedSegments,
+    crossings: plan.crossings,
+    regions: positionedRegions(graph, topology, compacted.positions),
+    width: compacted.width,
+    height: compacted.height,
+    metrics
+  };
 }

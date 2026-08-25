@@ -90,9 +90,44 @@
       "category": "automatic-business-output-boundary",
       "count": 2,
       "pattern": "Keep automatic endpoint files redacted and business-safe while exact developer records retain detailed result and coverage diagnostics."
+    },
+    {
+      "category": "static-graph-presentation",
+      "count": 1,
+      "pattern": "Analyze topology before placement, keep final route planning outside the renderer, and add junctions, crossings, regions, and duplicate context as presentation-only data that preserves exact graph IDs."
     }
   ],
   "fileOverlaps": [
+    {
+      "file": "fachtracing-viewer/src/lib/graph/FlowCanvas.svelte",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/src/lib/graph/BusinessNode.svelte",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/src/lib/graph/BusinessEdge.svelte",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/src/lib/graph/layout-definition.ts",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/e2e/decision-explorer.spec.ts",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/README.md",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
     {
       "file": "fachtracing-agent/src/main/java/at/gepardec/fachtracing/agent/BusinessTraceFileSink.java",
       "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness"],

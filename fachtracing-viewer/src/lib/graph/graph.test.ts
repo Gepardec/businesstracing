@@ -42,7 +42,7 @@ describe('ELK graph layout', () => {
   it('is deterministic and top-to-bottom', async () => {
     const graph = generatedGraph(12);
     const first = await computeLayout(graph);
-    expect(await computeLayout(graph)).toEqual(first);
+    for (let run = 1; run < 5; run += 1) expect(await computeLayout(graph)).toEqual(first);
     expect(first.nodes.at(-1)!.y).toBeGreaterThan(first.nodes[0].y);
   });
 
@@ -50,6 +50,8 @@ describe('ELK graph layout', () => {
     const started = performance.now();
     const result = await computeLayout(generatedGraph(250));
     expect(result.nodes).toHaveLength(250);
+    expect(result.edges).toHaveLength(249);
+    expect(result.metrics.unrelatedNodeIntrusions).toBe(0);
     expect(performance.now() - started).toBeLessThan(2_000);
   });
 

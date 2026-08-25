@@ -32,6 +32,16 @@ Open `http://127.0.0.1:5173/graphs` and select or drop one current `fachtracing-
 
 The preview accepts JSON files up to 5 MiB. The tested safety profile is 250 nodes and 400 edges. A larger valid graph is not truncated, but it can take longer to arrange. The preview does not support the future binary graph format yet.
 
+## Graph layout
+
+The viewer analyzes the supplied topology before it draws the graph. It puts entries first, outcomes last, direct siblings in one rank, and disconnected components in stable columns. ELK orders the node boxes. A deterministic router then selects north, east, south, or west connection points and draws collision-free orthogonal routes. The router does not add positions or routes to the JSON document.
+
+Every predicate branch shows its outcome near the source. Boolean values display as `Yes` and `No`; the accessible edge name keeps the raw value. Repeated kind-and-label pairs show an occurrence marker, such as `2 of 3`, and keep their exact node IDs in the accessible description.
+
+Four or more routes that enter one node use one presentation-only junction and shared trunk. Each supplied edge stays a separate keyboard focus target. Pointer or keyboard inspection highlights its feeder and the shared trunk. Route crossings use a bridge, not a graph node. Cycles and disconnected components can use neutral structural outlines. These presentation items do not change the supplied node or edge count.
+
+The canvas is read-only. Use node search to jump to an exact ID or matching label. Use the fit control for an overview and zoom in to inspect a dense graph. Graphs with more than 100 nodes use search guidance instead of a minimap.
+
 ## Correlation lookup
 
 The search accepts any stored correlation name and its exact canonical value. The viewer does not convert raw application values. If users know a different value, the traced application must store a separate lookup-safe correlation or a separate adapter must define the conversion. Search bodies use HTTP `QUERY`; names and values do not enter URLs or application logs.

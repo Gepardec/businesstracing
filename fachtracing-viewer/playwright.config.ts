@@ -7,6 +7,9 @@ export default defineConfig({
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
+  expect: {
+    toHaveScreenshot: { threshold: 0.2, maxDiffPixelRatio: 0.005 }
+  },
   globalSetup: './e2e/global-setup.ts',
   use: {
     baseURL: 'http://127.0.0.1:4177',

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { crossingGraphFile, cycleGraphFile, duplicateGraphFile, fanInGraphFile, generatedBranchingGraphFile, longShortcutGraphFile } from './visual-fixtures';
 
 async function canvasGeometry(page: import('@playwright/test').Page) {
   return page.evaluate(() => {
@@ -35,11 +36,29 @@ async function canvasGeometry(page: import('@playwright/test').Page) {
     labels.forEach((first, index) => labels.slice(index + 1).forEach((second) => {
       if (first.box.left < second.box.right && first.box.right > second.box.left && first.box.top < second.box.bottom && first.box.bottom > second.box.top) labelCollisions.push(`${first.id} covers ${second.id}`);
     }));
+    const routeLabelCollisions: string[] = [];
+    for (const { id: labelId, box } of labels) {
+      for (const path of document.querySelectorAll<SVGPathElement>('path[data-route-edge]')) {
+        const routeId = path.dataset.routeEdge!;
+        if (routeId === labelId) continue;
+        const matrix = path.getScreenCTM();
+        if (!matrix) continue;
+        const length = path.getTotalLength();
+        for (let offset = 0; offset <= length; offset += 2) {
+          const point = path.getPointAtLength(offset);
+          const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+          if (screen.x > box.left - 1 && screen.x < box.right + 1 && screen.y > box.top - 1 && screen.y < box.bottom + 1) {
+            routeLabelCollisions.push(`${routeId} crosses ${labelId}`);
+            break;
+          }
+        }
+      }
+    }
     const parallelRoutes = [...Map.groupBy(routes, (route) => `${route.source}\u0000${route.target}`).values()]
       .filter((group) => group.length > 1)
       .map((group) => ({ ids: group.map((route) => route.id), distinctPaths: new Set(group.map((route) => route.path)).size }));
     const handleOpacity = [...document.querySelectorAll<HTMLElement>('.business-handle')].map((handle) => getComputedStyle(handle).opacity);
-    return { routeCount: routes.length, intrusions, labelNodeCollisions, labelCollisions, parallelRoutes, handleOpacity };
+    return { routeCount: routes.length, intrusions, labelNodeCollisions, labelCollisions, routeLabelCollisions, parallelRoutes, handleOpacity };
   });
 }
 
@@ -73,26 +92,6 @@ function generatedGraphFile(nodeCount: number): { name: string; mimeType: string
     }
   };
   return { name: `generated-${nodeCount}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) };
-}
-
-function generatedBranchingGraphFile(ruleCount = 2, finalParallelEdgeCount = 2): { name: string; mimeType: string; buffer: Buffer } {
-  const rules = Array.from({ length: ruleCount }, (_, index) => ({ id: `rule-${index}`, kind: 'PREDICATE', label: `generated rule ${index + 1} matches`, attributes: {} }));
-  const edges = [{ id: 'edge-entry', from: 'entry', to: rules[0].id, outcome: 'next' }];
-  rules.forEach((rule, index) => {
-    if (index < rules.length - 1) edges.push({ id: `edge-${rule.id}-continue`, from: rule.id, to: rules[index + 1].id, outcome: 'no' });
-    const exitCount = index === rules.length - 1 ? finalParallelEdgeCount : 1;
-    for (let exit = 0; exit < exitCount; exit += 1) edges.push({ id: `edge-${rule.id}-outcome-${exit}`, from: rule.id, to: 'outcome', outcome: exit % 2 ? 'yes' : 'no' });
-  });
-  const document = {
-    schema: 'fachtracing-developer-graph/v1',
-    sourceOrigins: [{ id: 'generated', kind: 'GENERATED', identity: 'browser route test', checksum: 'fixture' }], sourceFiles: [],
-    graph: {
-      id: 'generated-browser-branching', version: 1, label: 'generated branching route proof', entryNodeId: 'entry', completeness: 'COMPLETE',
-      nodes: [{ id: 'entry', kind: 'ENTRY', label: 'start', attributes: {} }, ...rules, { id: 'outcome', kind: 'OUTCOME', label: 'selected result', attributes: {} }],
-      edges, coverageGaps: []
-    }
-  };
-  return { name: 'generated-branching.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) };
 }
 
 function generatedNodeGrammarFile(): { name: string; mimeType: string; buffer: Buffer } {
@@ -153,7 +152,7 @@ test('keeps the explanation available at a narrow width', async ({ page }) => {
 });
 
 test('renders Fachtracing from its generated graph and Java-agent run', async ({ page }) => {
-  test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY, 'Generated Fachtracing artifacts are required');
+  test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY || !process.env.FACHTRACING_DATABASE_URL, 'Generated Fachtracing artifacts and PostgreSQL are required');
   const browserErrors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') browserErrors.push(message.text()); });
   page.on('pageerror', (error) => browserErrors.push(error.message));
@@ -204,16 +203,21 @@ test('previews a generated developer graph JSON file without storage', async ({ 
   const geometry = await canvasGeometry(page);
   expect(geometry.routeCount).toBe(document.graph.edges.length);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
   expect(geometry.handleOpacity.every((opacity) => opacity === '0')).toBe(true);
   await expect(page.getByText('Your file is not uploaded or saved.')).toBeVisible();
   expect(nonReadRequests).toEqual([]);
   await expect.poll(() => page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual(storageBefore);
   await mkdir('test-results/dogfood', { recursive: true });
-  await page.screenshot({ path: 'test-results/dogfood/fachtracing-graph-preview.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/dogfood/fachtracing-graph-preview-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/dogfood/fachtracing-graph-preview-dark.png', fullPage: true });
 });
 
 test('keeps the generated decision explanation clear at every supported width', async ({ page }) => {
-  test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY, 'Generated Fachtracing artifacts are required');
+  test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY || !process.env.FACHTRACING_DATABASE_URL, 'Generated Fachtracing artifacts and PostgreSQL are required');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await mkdir('test-results/visual', { recursive: true });
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -329,6 +333,8 @@ test('renders the complete generated node grammar in both themes', async ({ page
   await page.screenshot({ path: 'test-results/visual/node-grammar-1440-light.png', fullPage: true });
   await page.getByRole('button', { name: 'Use dark theme' }).click();
   await page.screenshot({ path: 'test-results/visual/node-grammar-1440-dark.png', fullPage: true });
+  await page.emulateMedia({ colorScheme: 'light', forcedColors: 'active', reducedMotion: 'reduce' });
+  await page.screenshot({ path: 'test-results/visual/node-grammar-1440-monochrome.png', fullPage: true });
 });
 
 test('keeps a generated 250-node graph navigable', async ({ page }) => {
@@ -363,6 +369,9 @@ test('previews the stable business graph V1 contract from the repository', async
   await expect(page.getByRole('alert')).toHaveCount(0);
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
   expect(geometry.parallelRoutes.length).toBeGreaterThan(0);
   for (const group of geometry.parallelRoutes) expect(group.distinctPaths).toBe(group.ids.length);
   await mkdir('test-results/visual', { recursive: true });
@@ -381,10 +390,103 @@ test('renders branching and parallel routes without overlap in both themes', asy
   expect(geometry.intrusions).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
   expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
   expect(geometry.parallelRoutes).toHaveLength(1);
   expect(geometry.parallelRoutes[0].distinctPaths).toBe(geometry.parallelRoutes[0].ids.length);
   expect(geometry.handleOpacity.every((opacity) => opacity === '0')).toBe(true);
   await page.screenshot({ path: 'test-results/visual/branch-routes-1440-light.png', fullPage: true });
   await page.getByRole('button', { name: 'Use dark theme' }).click();
   await page.screenshot({ path: 'test-results/visual/branch-routes-1440-dark.png', fullPage: true });
+});
+
+test('renders a twelve-source convergence as one inspectable junction', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(fanInGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(14, { timeout: 15_000 });
+  await expect(page.locator('.svelte-flow__edge')).toHaveCount(24);
+  const junction = page.locator('[data-junction]');
+  const trunk = page.locator('[data-shared-segment]');
+  await expect(junction).toHaveCount(1);
+  await expect(junction).toHaveAttribute('data-member-count', '12');
+  await expect(trunk).toHaveCount(1);
+  await expect(trunk).toHaveAttribute('data-member-count', '12');
+  await page.locator('.svelte-flow__edge[data-id="edge-merge-0"]').focus();
+  await expect(trunk).toHaveClass(/shared-segment--inspect/);
+  await expect(junction).toHaveClass(/junction--inspect/);
+  await expect(page.getByText('12 routes converge before combined result.')).toBeAttached();
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/fan-in-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/fan-in-1440-dark.png', fullPage: true });
+  await page.getByPlaceholder('Find a node').fill('combined result');
+  await page.getByPlaceholder('Find a node').press('Enter');
+  await expect(page.getByRole('status')).toContainText('Focused combined result');
+  await page.screenshot({ path: 'test-results/visual/fan-in-focused-1440-dark.png', fullPage: true });
+});
+
+test('renders duplicate context and a cycle without changing semantic node count', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(duplicateGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
+  await expect(page.getByText('1 of 2')).toBeVisible();
+  await expect(page.getByText('2 of 2')).toBeVisible();
+  await expect(page.locator('.svelte-flow__node[data-id="first-check"]')).toHaveAttribute('aria-label', /Node first-check/);
+  await page.screenshot({ path: 'test-results/visual/duplicates-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/duplicates-1440-dark.png', fullPage: true });
+
+  await page.getByRole('button', { name: 'Choose another file' }).click();
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(cycleGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
+  await expect(page.locator('.structural-region')).toHaveCount(1);
+  await expect(page.locator('.structural-region text')).toHaveText('Cycle');
+  await expect(page.locator('.semantic-node-list summary')).toHaveText('Accessible graph list (4 nodes, 4 edges)');
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/cycle-1440-dark.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use light theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/cycle-1440-light.png', fullPage: true });
+});
+
+test('keeps a proven long route in a separate continuation corridor', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(longShortcutGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(6, { timeout: 15_000 });
+  await expect(page.locator('path.long-route')).toHaveCount(1);
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/long-route-1440-light.png', fullPage: true });
+});
+
+test('renders crossings as bridges without adding graph nodes', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(crossingGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(7, { timeout: 15_000 });
+  await expect(page.locator('.svelte-flow__edge')).toHaveCount(12);
+  await expect(page.locator('[data-route-crossing]').first()).toBeAttached();
+  await expect(page.locator('.semantic-node-list summary')).toHaveText('Accessible graph list (7 nodes, 12 edges)');
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/crossings-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/crossings-1440-dark.png', fullPage: true });
 });
