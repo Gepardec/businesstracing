@@ -1,5 +1,13 @@
 [
   {
+    "id": "static-graph-layout-quality",
+    "type": "bugfix",
+    "status": "draft",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-25T07:42:57Z"
+  },
+  {
     "id": "frontend-visual-design-quality",
     "type": "bugfix",
     "status": "draft",
