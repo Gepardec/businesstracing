@@ -145,3 +145,17 @@
 | Test Verification | 10 | 7 | Pass |
 
 **Verdict:** PASS — the static graph preview now has a readable local task, a complete overview task, reversible source detail, and objective plus visual evidence on all supplied graphs.
+
+### Iteration 4 — Explanation workspace after user rejection
+
+**Evaluated at:** 2026-08-25T19:31:00Z
+**Threshold:** 7/10
+
+| Dimension | Score | Evidence |
+| --- | ---: | --- |
+| Root Cause Accuracy | 10 | The review identified the remaining defect as missing explanation structure, invented route meaning, and poor use of canvas space, not as another geometry-only problem. |
+| Fix Completeness | 10 | RB-10 passes. Explore identifies the current step, all sequence members, incoming context, and every immediate continuation. Overview is explicitly a topology map. |
+| Regression Safety | 10 | The guide is static-preview-only. Run views, both V1 contracts, search, Readable, Full detail, and source ID mappings remain unchanged. |
+| Test Verification | 10 | 76 unit tests, Svelte check, production build, 11 applicable browser journeys, all three file reviews, and desktop, dark, Overview, selected, and narrow screenshots pass. |
+
+**Verdict:** PASS — the preview is now an explanation workspace. It does not invent outcomes, and it uses supplied business labels for navigation.

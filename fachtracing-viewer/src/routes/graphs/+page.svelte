@@ -5,9 +5,7 @@
   import Card from '$components/ui/Card.svelte';
   import type { GraphModel } from '$contracts/graph-contract';
   import FlowCanvas from '$graph/FlowCanvas.svelte';
-  import GraphNarrative from '$graph/GraphNarrative.svelte';
   import GraphUpload from '$graph/GraphUpload.svelte';
-  import { createGraphPresentation } from '$graph/graph-presentation';
   import { formatFileSize, parseGraphFile } from '$graph/graph-file';
 
   let graph = $state<GraphModel | null>(null);
@@ -15,7 +13,6 @@
   let fileSize = $state(0);
   let error = $state('');
   let busy = $state(false);
-  let readablePresentation = $derived(graph ? createGraphPresentation(graph, 'readable') : null);
 
   async function selectFile(file: File) {
     busy = true;
@@ -51,13 +48,8 @@
       <div class="graph-identity"><div><span class="eyebrow">Graph</span><h2>{graph.label}</h2></div><div class="badges"><Badge>{graph.nodes.length} nodes</Badge><Badge>{graph.edges.length} edges</Badge><Badge tone={graph.completeness === 'COMPLETE' ? 'success' : 'warning'}>{graph.completeness.toLowerCase()}</Badge></div></div>
       {#if graph.nodes.length > 250}<p class="profile-note">This graph is larger than the tested 250-node safety profile. The complete graph is still available.</p>{/if}
       <GraphUpload compact {busy} onFile={selectFile} />
-      {#if readablePresentation}
-        <GraphNarrative narrative={readablePresentation.narrative}
-          sourceNodeCount={graph.nodes.length} sourceEdgeCount={graph.edges.length}
-          visibleNodeCount={readablePresentation.graph.nodes.length} visibleEdgeCount={readablePresentation.graph.edges.length} />
-      {/if}
     </Card>
-    <div class="preview-canvas"><FlowCanvas {graph} highlight={null} fullPath={false} /></div>
+    <div class="preview-canvas"><FlowCanvas {graph} highlight={null} fullPath={false} showGuide /></div>
   {:else}
     <Card class="upload-card"><GraphUpload {busy} onFile={selectFile} /></Card>
     <p class="contract-note">Accepted formats: <code>fachtracing-developer-graph/v1</code> and <code>fachtracing-business-graph/v1</code>. A page reload clears the preview.</p>
@@ -65,7 +57,7 @@
 </div>
 
 <style>
-  .graphs-page { max-width: 1600px; margin: 0 auto; padding: 36px clamp(18px, 4vw, 54px) 48px; display: grid; gap: 18px; }
+  .graphs-page { max-width: 1600px; margin: 0 auto; padding: 24px clamp(18px, 4vw, 54px) 36px; display: grid; gap: 14px; }
   .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; }
   h1 { margin: 5px 0 4px; font-size: clamp(1.75rem, 3vw, 2.35rem); letter-spacing: -.045em; }
   .page-heading p, .contract-note { margin: 0; color: var(--muted-foreground); font-size: .9rem; }
@@ -85,7 +77,7 @@
   .graph-identity h2 { margin: 2px 0 0; max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1rem; }
   .badges { display: flex; flex-wrap: wrap; gap: 6px; }
   .profile-note { grid-column: 1 / -1; margin: 0; color: var(--muted-foreground); font-size: .78rem; text-align: center; }
-  .preview-canvas { height: calc(100vh - 240px); min-height: 620px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  .preview-canvas { height: calc(100vh - 205px); min-height: 650px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
   @media (max-width: 900px) {
     .page-heading { align-items: flex-start; flex-direction: column; }
     .privacy { white-space: normal; }

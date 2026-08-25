@@ -42,6 +42,12 @@ The first implementation passed its own metrics but failed direct visual review 
 
 The viewport adds a focus summary and reduces unrelated graph content to 10 to 12 percent opacity. This makes the complete graph hard to understand and makes navigation feel destructive. Overview also removes the node header and business label below a fixed zoom threshold, which leaves empty node boxes.
 
+### Rejected completion evidence — explanation layout
+
+The third implementation passes geometry checks but still fails the product goal. Explore places a small local graph in a large undifferentiated canvas. It invents `Path 1`, `Path 2`, and `Path 3` for connections that have no supplied outcome. These labels do not explain the business alternatives. Sequence cards hide most member rules, Overview is only technically rendered at an unreadable scale, and the three-sentence summary reports counts instead of explaining the first decision and possible results.
+
+Geometry is necessary but is not visual acceptance. A completed result must let a user identify the start, understand the first alternatives, inspect every collapsed step, and continue through the graph without guessing what an invented path number means.
+
 ## Root Cause Analysis
 
 ### 1. Complete fit is also the default reading policy
@@ -192,6 +198,18 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 - [x] THE SYSTEM SHALL use the readable map by default only when it removes at least one redundant node or connection.
 - [x] THE SYSTEM SHALL keep current-run highlighting correct when a recorded node or edge belongs to a grouped presentation item.
 - [x] THE SYSTEM SHALL calculate cycle feedback edges from directed entry traversal and SHALL NOT use lexical node-ID order to decide edge direction.
+
+### RB-10 — Business explanation workspace
+
+- [x] THE SYSTEM SHALL NOT invent a visible path name when the source graph supplies no outcome.
+- [x] WHILE Explore is active THE SYSTEM SHALL use the right side of the canvas for a persistent explanation panel instead of leaving it as undifferentiated empty graph space.
+- [x] THE explanation panel SHALL identify the current step, its type, its complete sequence members, its incoming context, and each immediate continuation that exists.
+- [x] WHEN a continuation has no supplied outcome THE SYSTEM SHALL identify it by its target business label without adding a synthetic route label to the graph.
+- [x] WHEN the user selects a continuation in the explanation panel THE SYSTEM SHALL move Explore to that target and show its local graph.
+- [x] WHEN a readable node represents multiple source nodes THE SYSTEM SHALL expose every member label in order without requiring pointer hover.
+- [x] THE graph summary SHALL explain the declared start, the first alternatives, and the declared results; it SHALL NOT use rule and action counts as a substitute for business meaning.
+- [x] WHILE Overview is active THE SYSTEM SHALL state that it is a topology map and that selecting a node returns to readable inspection.
+- [x] THE graph preview SHALL dedicate more vertical space to the explanation workspace by removing duplicate summary content above the canvas.
 
 ## Regression Risk Analysis
 

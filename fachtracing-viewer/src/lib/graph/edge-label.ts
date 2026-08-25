@@ -13,8 +13,7 @@ export function displayedEdgeLabel(outcome: string, sourceOutDegree: number, bra
   const normalized = branch.toLowerCase();
   if (normalized === 'true' || normalized === 'yes') return 'Yes';
   if (normalized === 'false' || normalized === 'no') return 'No';
-  if ((normalized === '' || normalized === 'next') && sourceOutDegree === 1) return null;
-  if (normalized === '') return `Path ${branchIndex + 1}`;
+  if (normalized === '' || normalized === 'next') return null;
   return conciseEdgeLabel(branch);
 }
 

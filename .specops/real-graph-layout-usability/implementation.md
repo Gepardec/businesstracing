@@ -54,7 +54,9 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 | 17 | Give Explore an independent local layout. | Complete-graph coordinates made directly connected nodes look far apart and created line walls in a local task. | Task 11 | 2026-08-25T17:40:00Z |
 | 18 | Show the first material split in the opening context. | A two-node entry view did not explain the first business choice or how to continue. | Task 11 | 2026-08-25T19:08:00Z |
 | 19 | Try compact local spacing before safe standard spacing. | Compact spacing improves label size. Some cyclic neighborhoods need the wider route clearances of the standard profile. | Task 11 | 2026-08-25T19:14:00Z |
-| 20 | Use `Path N` for an unlabeled alternative. | The shorter generic label is clear and removes the remaining route-label collision without inventing a business outcome. | Tasks 7 and 11 | 2026-08-25T19:25:00Z |
+| 20 | Use `Path N` for an unlabeled alternative. | This interim choice removed a collision, but user review showed that it invented meaning. Session 6 removes it. | Tasks 7 and 11 | 2026-08-25T19:25:00Z |
+| 21 | Use target business labels for unlabeled continuations and keep unlabeled edges unlabeled. | The source graph owns business meaning. The interface must not add a synthetic outcome. | Task 12 | 2026-08-25T19:31:00Z |
+| 22 | Pair Explore with a persistent explanation panel. | A local graph alone does not explain grouped steps or all immediate continuations. | Task 12 | 2026-08-25T19:31:00Z |
 
 ## Deviations from Design
 
@@ -129,9 +131,22 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 - Shortened unlabeled alternative labels from `Branch N` to `Path N`; all three complete real-file reviews now have zero label collisions.
 - Readable reductions are 45 to 22 nodes and 77 to 29 connections, 55 to 39 nodes and 89 to 63 connections, and 19 to 15 nodes and 29 to 20 connections.
 
+### Session 6 — Explanation workspace (2026-08-25)
+
+- Reopened the completed geometry result after direct user review showed that it was not an acceptable explanation.
+- Removed invented `Path N` labels. Unlabelled edges remain unlabelled, and the panel names each continuation with its supplied target business label.
+- Added a pure explanation model and a persistent guide for the current step, type, complete sequence members, incoming context, and all immediate continuations.
+- Made continuation rows navigate to the selected target and rebuild its local Explore graph.
+- Replaced the count-based summary with three source-derived sentences for the declared start, first material alternatives, and possible results.
+- Removed the duplicate summary above the canvas. Explore now uses the graph and explanation panel as one workspace.
+- Defined Overview as a topology map. Hover shows the full node label, and selecting a node returns to Explore.
+- Found a 41-pixel narrow-screen overlap during browser review. Reserved a bottom safe area and allowed a 0.5 local-context fit in constrained viewports.
+- Kept run views unchanged by enabling the guide only for the static `/graphs` preview.
+- Changed no Java code and no graph JSON contract.
+
 ## Phase 3 Completion Summary
 
-- Completed eleven tasks across metrics, presentation state, viewport policy, placement, routing, static selection, readable presentation, graph explanation, independent Explore layout, and acceptance review.
+- Completed twelve tasks across metrics, presentation state, viewport policy, placement, routing, static selection, readable presentation, graph explanation, independent Explore layout, the explanation workspace, and acceptance review.
 - Added no dependency and changed no graph contract, SQL, HTTP, storage, or CI file.
 - Kept all graph positions, routes, groups, and focus state derived from the supplied topology.
 - Used local optional evidence by file path and hash only. No supplied graph ID, node ID, label, coordinate, route, or diagram entered production or test fixtures.
@@ -158,11 +173,22 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 - Full-resolution visual review approves the opening, selected, Overview, light, and dark states for all three supplied files.
 - No Java or JSON contract change was necessary. The current JSON includes sufficient topology and supplied business labels for the generic summary and reversible presentation.
 
+## Phase 6 Verification Summary
+
+- `npm test`: pass; 17 files and 76 tests.
+- `npm run check`: pass; 0 errors and 0 warnings.
+- `npm run build`: pass; only existing third-party XYFlow unused-import and D3 circular-dependency warnings.
+- `npm run review:graphs -- <three supplied files>`: pass for all files. Results are 368 milliseconds, 3,037 milliseconds, and 84 milliseconds, with zero hard layout defects.
+- Playwright production suite: 11 applicable journeys pass and 5 external PostgreSQL or generated-dogfood journeys skip.
+- Real-file browser review covers initial Explore, selected continuation, Full detail, Overview, light, dark, and narrow states.
+- The narrow browser assertion proves that the bottom explanation sheet does not overlap graph nodes.
+- No supplied graph ID, node ID, business label, coordinate, route, or diagram is hardcoded in frontend source or tests.
+
 ## Documentation Review
 
 | File | Status | Review result |
 | --- | --- | --- |
-| `fachtracing-viewer/README.md` | Updated | Documents Readable, Full detail, independent Explore layout, Overview, the three-sentence summary, selection, the review command, and the local POC timing boundary. |
+| `fachtracing-viewer/README.md` | Updated | Documents Readable, Full detail, independent Explore layout, the explanation panel, Overview, selection, the review command, and the local POC timing boundary. |
 | `README.md` | Up to date | Root build, API, and storage behavior did not change. |
 | `docs/` | Up to date | No public graph, SQL, HTTP, Java, or persistence contract changed. |
 | `AGENTS.md` | Up to date | The change keeps single responsibilities and contains no hard-coded diagram. |

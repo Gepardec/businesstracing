@@ -403,7 +403,8 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
     if (await switchToLight.count()) await switchToLight.click();
     await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
     await waitForGraphLayout(page);
-    await expect(page.getByText('Business logic at a glance')).toBeVisible();
+    const guide = page.getByLabel('Graph explanation');
+    await expect(guide.getByText('Decision summary')).toBeVisible();
     const readableButton = page.getByRole('button', { name: 'Readable' });
     if (await readableButton.count()) await expect(readableButton).toHaveAttribute('aria-pressed', 'true');
     const localGeometry = await canvasGeometry(page);
@@ -415,11 +416,34 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
       const box = node.getBoundingClientRect();
       return box.width >= 160 && box.height >= 60;
     }))).toBe(true);
-    await expect(page.getByText(/nearby nodes · Select a node to continue/)).toBeVisible();
+    await expect(page.getByText(/nearby nodes · Select a step to continue/)).toBeVisible();
+    await expect(page.locator('.business-edge-label', { hasText: /^Path \d+$/ })).toHaveCount(0);
     const stem = basename(graphPath, '.json');
     await page.screenshot({ path: `test-results/real-graphs/${stem}-readable-light.png`, fullPage: true });
+    const firstContinuation = guide.locator('.next-connections button').first();
+    if (await firstContinuation.count()) {
+      const targetLabel = (await firstContinuation.locator('strong').innerText()).trim();
+      await firstContinuation.click();
+      await expect(guide.getByText('Selected step')).toBeVisible();
+      await expect(guide.locator('.current-step h2')).toHaveText(targetLabel);
+      await page.screenshot({ path: `test-results/real-graphs/${stem}-guided-step.png`, fullPage: true });
+    }
+    if (index === 0) {
+      await page.setViewportSize({ width: 860, height: 900 });
+      await expect.poll(() => page.evaluate(() => {
+        const panel = document.querySelector<HTMLElement>('.graph-guide')?.getBoundingClientRect();
+        const canvas = document.querySelector<HTMLElement>('.flow-panel')?.getBoundingClientRect();
+        const nodes = [...document.querySelectorAll<HTMLElement>('.business-node')].map((node) => node.getBoundingClientRect());
+        const wide = Boolean(panel && canvas && panel.width > canvas.width * 0.8);
+        const clear = Boolean(panel && nodes.every((node) => node.bottom + 8 <= panel.top));
+        return `${wide}:${clear}:${Math.round(panel?.top ?? 0)}:${Math.round(Math.max(0, ...nodes.map((node) => node.bottom)))}`;
+      })).toMatch(/^true:true:/);
+      await page.screenshot({ path: `test-results/real-graphs/${stem}-guided-narrow.png`, fullPage: true });
+      await page.setViewportSize({ width: 1_440, height: 1_000 });
+    }
     await page.getByRole('button', { name: 'Overview' }).click();
     await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(guide.getByText('Topology map')).toBeVisible();
     await page.screenshot({ path: `test-results/real-graphs/${stem}-readable-overview-light.png`, fullPage: true });
     await page.getByRole('button', { name: 'Explore' }).click();
 

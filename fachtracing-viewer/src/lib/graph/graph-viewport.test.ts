@@ -11,6 +11,19 @@ describe('graph viewport', () => {
     ])).toEqual({ x: 16, y: 66, width: 968, height: 568 });
   });
 
+  it('reserves a persistent explanation panel on the right', () => {
+    expect(safeCanvasRect(1_200, 800, [
+      { x: 14, y: 14, width: 220, height: 36 },
+      { x: 860, y: 14, width: 326, height: 772 }
+    ])).toEqual({ x: 16, y: 66, width: 828, height: 718 });
+  });
+
+  it('reserves a wide explanation panel as a bottom band', () => {
+    expect(safeCanvasRect(800, 800, [
+      { x: 14, y: 450, width: 772, height: 336 }
+    ])).toEqual({ x: 16, y: 16, width: 768, height: 418 });
+  });
+
   it('keeps Reading view at its readable zoom floor', () => {
     const viewport = viewportForBounds({ x: 100, y: 200, width: 2_000, height: 2_000 }, { x: 16, y: 66, width: 968, height: 568 }, READING_MINIMUM_ZOOM, 1.2);
     expect(viewport.zoom).toBeGreaterThanOrEqual(READING_MINIMUM_ZOOM);
@@ -58,6 +71,15 @@ describe('graph viewport', () => {
     expect(viewport.x + neighborhood.x * viewport.zoom).toBeGreaterThanOrEqual(safeRect.x);
     expect(viewport.y + neighborhood.y * viewport.zoom).toBeGreaterThanOrEqual(safeRect.y);
     expect(viewport.x + (neighborhood.x + neighborhood.width) * viewport.zoom).toBeLessThanOrEqual(safeRect.x + safeRect.width);
+    expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
+  });
+
+  it('fits the complete local context beside a narrow bottom explanation sheet', () => {
+    const safeRect = { x: 16, y: 66, width: 760, height: 380 };
+    const neighborhood = { x: 0, y: 0, width: 620, height: 650 };
+    const focus = { x: 194, y: 279, width: 232, height: 92 };
+    const viewport = readingViewport(neighborhood, focus, safeRect);
+    expect(viewport.zoom).toBeCloseTo(380 / 650);
     expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
   });
 

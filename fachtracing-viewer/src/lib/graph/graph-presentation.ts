@@ -220,21 +220,16 @@ export function explainGraph(graph: GraphModel): GraphNarrative {
   const start = graph.entryNodeIds.length === 1
     ? `This decision starts with ${quotedList(entryLabels)}`
     : `This decision has ${graph.entryNodeIds.length} entry points: ${quotedList(entryLabels)}`;
-  const opening = graph.entryNodeIds.length === 1 && branchLabels.length > 1
-    ? `${start} and first branches to ${quotedList(branchLabels)}.`
-    : `${start}.`;
-  const workParts = [
-    ruleCount > 0 ? `evaluates ${ruleCount} ${ruleCount === 1 ? 'rule' : 'rules'}` : '',
-    actionCount > 0 ? `performs ${actionCount} ${actionCount === 1 ? 'action' : 'actions'}` : ''
-  ].filter(Boolean);
-  const work = workParts.length > 0
-    ? `It ${workParts.join(' and ')}${cycleCount > 0 ? ', while some paths can return to an earlier check' : ''}.`
-    : cycleCount > 0 ? 'Some paths can return to an earlier check.' : '';
+  const opening = `${start}.`;
+  const alternatives = branchLabels.length > 1
+    ? `The first alternatives continue to ${quotedList(branchLabels)}.`
+    : branchLabels.length === 1 ? `The flow first continues to ${quotedList(branchLabels)}.` : '';
+  const repeat = cycleCount > 0 ? ', and some paths can return to an earlier check' : '';
   const result = outcomeLabels.length > 0
-    ? `It can finish with ${quotedList(outcomeLabels)}.`
-    : `It has no explicit terminal result${graph.completeness === 'INCOMPLETE' ? ' because the graph is incomplete' : ''}.`;
+    ? `Possible results are ${quotedList(outcomeLabels)}${repeat}.`
+    : `No explicit terminal result is declared${graph.completeness === 'INCOMPLETE' ? ' because the graph is incomplete' : ''}${repeat}.`;
   return {
-    sentences: [opening, work, result].filter(Boolean),
+    sentences: [opening, alternatives, result].filter(Boolean),
     ruleCount,
     actionCount,
     outcomeCount: outcomeLabels.length,

@@ -241,7 +241,8 @@ Generated topology fixtures cover the same generic shapes in normal automated te
 | `BusinessNode.svelte` | Node level of detail and static selected appearance |
 | `scripts/review-graphs.ts` | Generic file-driven local acceptance report |
 | `graph-presentation.ts` | Reversible action-sequence grouping, parallel-connection grouping, original-ID mappings, and generic business summary |
-| `GraphNarrative.svelte` | Short graph explanation and readable-map reduction statement |
+| `graph-guide.ts` | Pure focused-step, incoming-context, and continuation model |
+| `GraphGuide.svelte` | Persistent decision summary, sequence details, and source-derived navigation |
 
 ## Readable Business Map
 
@@ -249,7 +250,15 @@ The source graph remains immutable. A pure presentation transform runs before la
 
 A presentation node and edge contain the ordered original IDs that they represent. Search resolves original IDs and labels to their presentation node. Run state marks a presentation item when any mapped original ID is active or belongs to the recorded path. Full detail bypasses the transform and restores the original graph without reparsing the file.
 
-The business summary uses only graph topology and supplied labels. It states the entry and first material branch in one sentence, the number of rules and actions plus possible return paths in one sentence, and the distinct terminal results in one sentence. It does not infer domain facts that are absent from the JSON.
+The business summary uses only graph topology and supplied labels. It states the declared entry, the first material alternatives, and the distinct terminal results in no more than three sentences. It can mention a return path, but it does not replace business meaning with rule or action counts and does not infer domain facts that are absent from the JSON.
+
+## Business Explanation Workspace
+
+Static graph preview places a persistent explanation panel on the right side of the canvas. The safe viewport rectangle ends before this panel, so graph nodes and routes cannot appear below it. The panel uses the current presentation node, but it retains the ordered original labels for every grouped sequence.
+
+The panel always shows the decision summary. In Explore it also shows the focused step, its type, all sequence members, immediate continuations, and optional incoming context. A continuation uses a supplied edge outcome when one exists. If the outcome is empty or `next`, the graph draws no invented route label and the panel identifies the continuation by its target business label. Selecting a continuation reuses the existing node-selection path and creates a new local Explore layout.
+
+In Overview the panel labels the canvas as a topology map. Pointer hover shows the full node kind and label in the panel, and node selection returns to Explore. The graph-upload page does not repeat the decision explanation above the canvas. Run pages do not enable this panel because they already provide recorded-step evidence beside the graph.
 
 ## Failure Behavior
 
@@ -295,6 +304,7 @@ None approved. Do not add GSAP, another graph engine, a routing package, or a sc
 | RB-07 | Contract tests, source scan, and generic review command |
 | RB-08 | Local worker timing and main-thread responsiveness checks |
 | RB-09 | Presentation-transform tests, opening-context tests, exact Full detail counts, summary tests, and real-file screenshots |
+| RB-10 | Guide-model tests, panel navigation tests, absence of invented labels, responsive safe-area tests, and real-file screenshots |
 
 ## Rollout
 

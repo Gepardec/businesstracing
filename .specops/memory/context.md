@@ -520,15 +520,16 @@ final user design approval remain deferred environment or review gates.
 
 ### real-graph-layout-usability (bugfix) — 2026-08-25
 
-Completed all six tasks. The Svelte viewer now exposes arranging, Reading, and Overview states;
+Completed all twelve tasks. The Svelte viewer now exposes arranging, Explore, and Overview states;
 keeps direct static topology readable; marks exact search selection; protects focus from fixed
-controls; and compares route-aware deterministic ELK placement profiles. The topology spine uses a
-memoized longest-forward-path calculation, and the router reports candidate-relative detour,
-crossing density, corridor density, branch containment, collision, and backtracking quality.
+controls; and compares route-aware deterministic ELK placement profiles. Explore has a persistent
+explanation panel for the current step, complete grouped sequence, incoming context, and all
+immediate continuations. Unlabelled edges stay unlabelled; navigation uses supplied target labels.
 
 All three supplied 19-to-55-node business graphs pass the generic review in 49 to 371 milliseconds
 with zero overlaps, intrusions, label collisions, avoidable crossings, branch violations, corridor
 violations, and avoidable detours. Svelte diagnostics, 58 unit tests, the production build, 11
-applicable production browser journeys, and focused light/dark real-file review pass. Five external
+applicable production browser journeys, and desktop, Overview, dark, and narrow real-file review
+pass. Five external
 PostgreSQL or generated-dogfood journeys skip because those fixtures are absent. Graph, SQL, HTTP,
 storage, dependency, and CI contracts did not change.

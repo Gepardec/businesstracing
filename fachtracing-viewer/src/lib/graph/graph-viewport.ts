@@ -23,20 +23,25 @@ export const READING_MINIMUM_ZOOM = 0.86;
 export const NEIGHBORHOOD_MINIMUM_ZOOM = 0.62;
 
 export function safeCanvasRect(width: number, height: number, overlays: readonly CanvasRect[], gutter = 16): CanvasRect {
+  let left = gutter;
+  let right = width - gutter;
   let top = gutter;
   let bottom = height - gutter;
   for (const overlay of overlays) {
-    if (overlay.y <= gutter * 2) top = Math.max(top, overlay.y + overlay.height + gutter);
-    if (overlay.y + overlay.height >= height - gutter * 2) bottom = Math.min(bottom, overlay.y - gutter);
+    const sidePanel = overlay.height >= height * 0.4 && overlay.width <= width * 0.5;
+    if (!sidePanel && overlay.y <= gutter * 2) top = Math.max(top, overlay.y + overlay.height + gutter);
+    if (!sidePanel && overlay.y + overlay.height >= height - gutter * 2) bottom = Math.min(bottom, overlay.y - gutter);
+    if (sidePanel && overlay.x <= gutter * 2) left = Math.max(left, overlay.x + overlay.width + gutter);
+    if (sidePanel && overlay.x + overlay.width >= width - gutter * 2) right = Math.min(right, overlay.x - gutter);
   }
   if (bottom - top < 160) {
     top = gutter;
     bottom = height - gutter;
   }
   return {
-    x: gutter,
+    x: left,
     y: top,
-    width: Math.max(1, width - gutter * 2),
+    width: Math.max(1, right - left),
     height: Math.max(1, bottom - top)
   };
 }
@@ -61,8 +66,9 @@ export function readingViewport(
   maximumZoom = 1.2
 ): GraphViewport {
   const neighborhoodFit = Math.min(safeRect.width / Math.max(1, neighborhood.width), safeRect.height / Math.max(1, neighborhood.height));
-  if (neighborhoodFit >= NEIGHBORHOOD_MINIMUM_ZOOM) {
-    return viewportForBounds(neighborhood, safeRect, NEIGHBORHOOD_MINIMUM_ZOOM, maximumZoom);
+  const contextMinimumZoom = safeRect.height < 420 ? 0.5 : NEIGHBORHOOD_MINIMUM_ZOOM;
+  if (neighborhoodFit >= contextMinimumZoom) {
+    return viewportForBounds(neighborhood, safeRect, contextMinimumZoom, maximumZoom);
   }
   return viewportForBounds(focus, safeRect, minimumZoom, minimumZoom);
 }

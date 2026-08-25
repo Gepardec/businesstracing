@@ -256,6 +256,8 @@ fachtracing/
   - generic file-driven layout acceptance metrics
 - `src/lib/graph/FlowCanvas.svelte`
   - shared read-only Svelte Flow canvas
+- `src/lib/graph/GraphGuide.svelte` and `src/lib/graph/graph-guide.ts`
+  - static-preview explanation panel and pure source-derived navigation model
 - `src/lib/graph/GraphLayoutStatus.svelte`
   - accessible arranging state
 - `src/lib/graph/BusinessNode.svelte`, `BusinessEdge.svelte`, and `GraphJunctions.svelte`

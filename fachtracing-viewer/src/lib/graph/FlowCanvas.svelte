@@ -14,14 +14,16 @@
   import FitGraph from './FitGraph.svelte';
   import FocusCurrent from './FocusCurrent.svelte';
   import GraphJunctions from './GraphJunctions.svelte';
+  import GraphGuide from './GraphGuide.svelte';
   import GraphLayoutStatus from './GraphLayoutStatus.svelte';
+  import { graphGuideContext } from './graph-guide';
   import { createGraphPresentation, type GraphDetailMode, type GraphPresentation } from './graph-presentation';
   import { directNeighborhood, focusedNodeBounds, openingNeighborhood, safeCanvasRect, type CanvasRect } from './graph-viewport';
   import type { BusinessFlowEdge, BusinessFlowNode } from './flow-types';
   import type { LayoutResult } from './layout-definition';
 
-  let { graph, highlight, fullPath = true, onNodeSelect }: {
-    graph: GraphModel; highlight: RunHighlight | null; fullPath?: boolean; onNodeSelect?: (nodeId: string) => void
+  let { graph, highlight, fullPath = true, showGuide = false, onNodeSelect }: {
+    graph: GraphModel; highlight: RunHighlight | null; fullPath?: boolean; showGuide?: boolean; onNodeSelect?: (nodeId: string) => void
   } = $props();
   let layoutNodes = $state<BusinessFlowNode[]>([]);
   let layoutEdges = $state<BusinessFlowEdge[]>([]);
@@ -54,6 +56,7 @@
   let readablePresentation = $derived(createGraphPresentation(graph, 'readable'));
   let presentation = $derived(detailMode === 'full' ? createGraphPresentation(graph, 'full') : readablePresentation);
   let displayGraph = $derived(presentation.graph);
+  let guideContext = $derived(graphGuideContext(presentation, viewMode === 'overview' ? hoveredNodeId ?? focusNodeId : focusNodeId));
 
   function presentationNodeId(originalNodeId: string | null): string | null {
     return originalNodeId ? presentation.presentationNodeIdByOriginalNodeId.get(originalNodeId) ?? null : null;
@@ -273,7 +276,7 @@
   function measureSafeArea(): void {
     if (!flowPanel) return;
     const panel = flowPanel.getBoundingClientRect();
-    const overlays = [...flowPanel.querySelectorAll<HTMLElement>('.canvas-toolbar, .svelte-flow__controls, .business-minimap, .large-graph-guide, .svelte-flow__attribution')]
+    const overlays = [...flowPanel.querySelectorAll<HTMLElement>('.canvas-toolbar, .svelte-flow__controls, .business-minimap, .large-graph-guide, .graph-guide, .svelte-flow__attribution')]
       .filter((element) => element.offsetWidth > 0 && element.offsetHeight > 0)
       .map((element) => {
         const rect = element.getBoundingClientRect();
@@ -356,7 +359,7 @@
   }
 </script>
 
-<section bind:this={flowPanel} class="flow-panel" class:dense-graph={layoutEdges.length / Math.max(1, layoutNodes.length) > 2.5} aria-label={`Business graph: ${graph.label}`}
+<section bind:this={flowPanel} class="flow-panel" class:with-guide={showGuide} class:dense-graph={layoutEdges.length / Math.max(1, layoutNodes.length) > 2.5} aria-label={`Business graph: ${graph.label}`}
   aria-busy={layoutStatus === 'arranging'} onfocusin={inspectFocusedEdge} onfocusout={clearFocusedEdge}>
   <div class="canvas-toolbar">
     <label><span class="sr-only">Find a node</span><Search size={15} /><input bind:value={search} onkeydown={(event) => event.key === 'Enter' && selectSearchResult()} placeholder="Find a node" /></label>
@@ -371,13 +374,17 @@
       </div>
       <span class="reduction-count">
         {#if viewMode === 'explore'}
-          {layoutNodes.length} nearby nodes · Select a node to continue
+          {layoutNodes.length} nearby nodes · Select a step to continue
         {:else}
-          {displayGraph.nodes.length} of {graph.nodes.length} nodes
+          Topology map · Select a node to inspect
         {/if}
       </span>
     {/if}
   </div>
+  {#if showGuide}
+    <GraphGuide narrative={readablePresentation.narrative} context={guideContext} selected={selectedNodeId !== null}
+      overview={viewMode === 'overview'} onSelect={selectNode} />
+  {/if}
   {#if layoutError}
     <div class="layout-error" role="alert"><TriangleAlert size={20} /><div><strong>Graph layout unavailable</strong><p>{layoutError}</p></div></div>
   {:else}
@@ -403,7 +410,7 @@
         />
       </ViewportPortal>
       <Controls showLock={false} showFitView={false} />
-      {#if displayGraph.nodes.length > 8 && displayGraph.nodes.length <= 100}
+      {#if !showGuide && displayGraph.nodes.length > 8 && displayGraph.nodes.length <= 100}
         <MiniMap class="business-minimap" width={152} height={112} pannable zoomable nodeColor="var(--muted-foreground)" maskColor="color-mix(in oklch, var(--graph-canvas), transparent 55%)" maskStrokeColor="var(--primary)" maskStrokeWidth={1} />
       {:else if displayGraph.nodes.length > 100}
         <div class="large-graph-guide" aria-label={`${displayGraph.nodes.length}-node graph navigation`}>
@@ -417,7 +424,7 @@
         <FocusCurrent bounds={readingBounds} focusBounds={readingFocusBounds} {focusNodeId} {safeRect} requestToken={focusRequest + fitRevision} />
       {/if}
     </SvelteFlow>
-    {#if zoomedNode}
+      {#if zoomedNode && !showGuide}
       <div class="zoomed-node-readout" role="status" aria-label="Zoomed node label">
         <span>{(hoveredPresentationNode?.memberNodeIds.length ?? 0) > 1 ? `${hoveredPresentationNode!.memberNodeIds.length} ${zoomedNode.kind === 'PREDICATE' ? 'rule' : 'action'} sequence` : zoomedNode.kind.replace('_', ' ')}</span>
         <strong>{zoomedNode.label}</strong>
@@ -447,6 +454,7 @@
   :global(.svelte-flow) { background: var(--graph-canvas); }
   .dense-graph :global(.svelte-flow__background) { opacity: .6; }
   .canvas-toolbar { position: absolute; top: 14px; left: 14px; right: 180px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .with-guide .canvas-toolbar { right: 360px; }
   label { height: 36px; width: 220px; display: flex; align-items: center; gap: 7px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; box-shadow: var(--shadow); }
   input { width: 100%; border: 0; outline: 0; color: var(--foreground); background: transparent; font-size: 13px; }
   .view-modes { height: 36px; display: flex; align-items: center; padding: 3px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); box-shadow: var(--shadow); }
@@ -476,6 +484,7 @@
   .zoomed-node-readout li + li { margin-top: 3px; }
   @media (max-width: 640px) {
     .canvas-toolbar { right: 14px; align-items: stretch; flex-direction: column; flex-wrap: nowrap; }
+    .with-guide .canvas-toolbar { right: 14px; }
     label { width: auto; }
     .view-modes { align-self: flex-start; }
   }

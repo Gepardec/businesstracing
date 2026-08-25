@@ -143,7 +143,7 @@ describe('readable graph presentation', () => {
     expect([...presentation.presentationEdgeIdByOriginalEdgeId]).toEqual(graph.edges.map((edge) => [edge.id, edge.id]));
   });
 
-  it('explains starts, work, results, and cycles in at most three sentences', () => {
+  it('explains starts, first alternatives, results, and cycles in at most three sentences', () => {
     const cycle = explainGraph(cycleFixture());
     expect(cycle.sentences).toHaveLength(3);
     expect(cycle.sentences.every((sentence) => (sentence.match(/[.!?](?:\s|$)/g) ?? []).length === 1)).toBe(true);

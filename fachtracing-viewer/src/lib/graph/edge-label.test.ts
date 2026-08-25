@@ -19,9 +19,9 @@ describe('canvas edge labels', () => {
     expect(accessibleEdgeLabel('false', 'No')).toBe('No (false)');
   });
 
-  it('hides only a single continuation and names unlabeled branches', () => {
+  it('does not invent labels for unlabeled continuations', () => {
     expect(displayedEdgeLabel('next', 1, 0)).toBeNull();
     expect(displayedEdgeLabel('', 1, 0)).toBeNull();
-    expect(displayedEdgeLabel('', 2, 1)).toBe('Path 2');
+    expect(displayedEdgeLabel('', 2, 1)).toBeNull();
   });
 });

@@ -486,6 +486,47 @@ Stop complete-graph coordinates from separating local neighbors. Build and lay o
 - [x] Pending-Overview browser regression tests
 - [x] Light and dark screenshots for the three supplied files
 
+---
+
+### Task 12: Replace empty-canvas Explore with an explanation workspace
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Tasks 9, 10, and 11
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Correct the rejected visual result. Keep the topology-derived graph, but pair it with a persistent business explanation panel. Remove invented path labels and make every compressed sequence inspectable.
+
+**Implementation Steps:**
+
+1. Remove synthetic labels for connections with no supplied outcome.
+2. Add a generic explanation model for the focused presentation node and its immediate connections.
+3. Add a right-side explanation panel with full sequence contents and navigable continuations.
+4. Move the graph summary into the explanation workspace and remove duplicate content above the canvas.
+5. Reserve a safe graph rectangle beside the explanation panel and clarify the purpose of Overview.
+6. Render all three supplied graphs in light, dark, initial, selected, and Overview states and revise until the composition is acceptable.
+
+**Acceptance Criteria:**
+
+- [x] No supplied graph displays `Path N` or another invented outcome.
+- [x] Initial Explore identifies the start and every immediate first alternative in visible text.
+- [x] Every grouped sequence exposes all of its source labels in the explanation panel.
+- [x] Panel continuation buttons navigate to the correct source-derived node.
+- [x] The local graph and explanation panel form one balanced desktop workspace in light and dark themes.
+- [x] Overview clearly presents itself as a topology map instead of a readable explanation.
+- [x] Existing run views, graph contracts, search, selection, and Full detail remain compatible.
+
+**Tests Required:**
+
+- [x] Explanation-model unit tests
+- [x] Edge-label regression tests
+- [x] Panel navigation browser tests
+- [x] Real-file light and dark screenshots
+- [x] Existing unit, Svelte, build, and browser checks
+
 ## Requirement Coverage
 
 | Requirement | Tasks |
@@ -499,6 +540,7 @@ Stop complete-graph coordinates from separating local neighbors. Build and lay o
 | RB-07 | 1, 6 |
 | RB-08 | 2, 3, 4, 6 |
 | RB-09 | 9, 10, 11 |
+| RB-10 | 12 |
 | Rejected route evidence | 7 |
 | Rejected focus and zoom evidence | 8 |
 
@@ -508,8 +550,8 @@ None. The required `static-graph-layout-quality` dependency is completed.
 
 ## Progress Tracking
 
-- Total Tasks: 11
-- Completed: 11
+- Total Tasks: 12
+- Completed: 12
 - In Progress: 0
 - Blocked: 0
 - Pending: 0
