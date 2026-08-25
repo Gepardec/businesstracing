@@ -41,4 +41,13 @@ describe('static graph topology analysis', () => {
     expect(duplicates.get('first-check')).toEqual({ index: 1, total: 2 });
     expect(duplicates.get('second-check')).toEqual({ index: 2, total: 2 });
   });
+
+  it('derives one deterministic forward parent per node and leaves cross-links secondary', () => {
+    const graph = longShortcutFixture();
+    const topology = analyzeTopology(graph);
+    expect(topology.primaryEdgeIds).toEqual(new Set([
+      'edge-000', 'edge-001', 'edge-002', 'edge-003', 'edge-004'
+    ]));
+    expect(topology.primaryEdgeIds.has('edge-005')).toBe(false);
+  });
 });

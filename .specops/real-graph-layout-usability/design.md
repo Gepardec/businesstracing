@@ -305,6 +305,13 @@ None approved. Do not add GSAP, another graph engine, a routing package, or a sc
 | RB-08 | Local worker timing and main-thread responsiveness checks |
 | RB-09 | Presentation-transform tests, opening-context tests, exact Full detail counts, summary tests, and real-file screenshots |
 | RB-10 | Guide-model tests, panel navigation tests, absence of invented labels, responsive safe-area tests, and real-file screenshots |
+| RB-11 | Primary-skeleton tests, composition metrics, route-priority tests, and full-resolution Overview screenshots for all three supplied graphs |
+
+## Complete-map composition
+
+Overview uses a topology-derived primary skeleton to establish reading order. Starting at each declared entry, the first forward incoming connection that reaches a node becomes its primary parent. Cycle returns, later incoming links, and long cross-branch links are secondary. This classification changes presentation priority only; it never removes source topology.
+
+ELK remains the placement engine. Candidate selection also measures the distribution of node centers, primary connection span, and empty internal bands. The selected map must keep related branches near their parent and avoid a large unused center between occupied regions. The route planner prefers direct south-to-north flow for primary forward links. Secondary links can use outer corridors and render with lower contrast until inspection.
 
 ## Rollout
 

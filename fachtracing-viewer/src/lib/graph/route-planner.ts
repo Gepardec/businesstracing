@@ -832,6 +832,10 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
       const perimeterCandidates = validCandidates.filter((candidate) => candidate.usesOuterCorridor);
       if (perimeterCandidates.length > 0) validCandidates = perimeterCandidates;
     }
+    if (topology.primaryEdgeIds.has(edge.id) && target.y >= source.y + source.height) {
+      const directFlowCandidates = validCandidates.filter((candidate) => candidate.sourcePort.side === 'south' && candidate.targetPort.side === 'north');
+      if (directFlowCandidates.length > 0) validCandidates = directFlowCandidates;
+    }
     const minimumWrongWayExcursion = Math.min(...validCandidates.map((candidate) => candidate.wrongWayExcursion));
     validCandidates = validCandidates.filter((candidate) => candidate.wrongWayExcursion === minimumWrongWayExcursion);
     const shortestValidLength = Math.min(...validCandidates.map((candidate) => candidate.length));
@@ -863,7 +867,7 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
       shortestCandidateLength,
       bends: selected.bends,
       long: topology.longEdgeIds.has(edge.id) || fallbackOuterCorridor,
-      secondary: cycleLoopback || selected.usesOuterCorridor || target.y + target.height <= source.y,
+      secondary: !topology.primaryEdgeIds.has(edge.id) || cycleLoopback || selected.usesOuterCorridor || target.y + target.height <= source.y,
       corridor: cycleLoopback && selected.usesOuterCorridor ? 'cycle' : selected.usesOuterCorridor ? 'outer' : 'normal'
     };
   }

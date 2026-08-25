@@ -469,8 +469,12 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
       const outgoing = outgoingBySource.get(edge.from)!;
       return displayedEdgeLabel(edge.outcome, outgoing.length, outgoing.findIndex((candidate) => candidate.id === edge.id)) !== null;
     }).map((edge) => edge.id);
-    await expect(page.locator('.business-edge-label')).toHaveCount(expectedLabelEdgeIds.length);
-    for (const edgeId of expectedLabelEdgeIds) await expect(page.locator(`[data-edge-label="${edgeId}"]`)).toBeAttached();
+    const primaryLabelEdgeIds = await page.locator('path[data-route-edge][data-secondary="false"]').evaluateAll((paths, labelledIds) => {
+      const expected = new Set(labelledIds as string[]);
+      return paths.map((path) => (path as SVGPathElement).dataset.routeEdge!).filter((id) => expected.has(id));
+    }, expectedLabelEdgeIds);
+    await expect(page.locator('.business-edge-label')).toHaveCount(primaryLabelEdgeIds.length);
+    for (const edgeId of primaryLabelEdgeIds) await expect(page.locator(`[data-edge-label="${edgeId}"]`)).toBeAttached();
     await page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"]`).hover();
     await expect(page.getByLabel('Zoomed node label')).toContainText(entryNode!.label);
     await page.screenshot({ path: `test-results/real-graphs/${stem}-full-overview.png`, fullPage: true });

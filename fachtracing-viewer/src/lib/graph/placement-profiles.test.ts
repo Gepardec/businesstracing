@@ -40,9 +40,29 @@ describe('placement profiles', () => {
     const compact = candidate('compact', 300, 600, positions);
     const clear = candidate('clear', 600, 1_200, positions);
     const routeScores = new Map([
-      ['compact', { unrelatedNodeIntrusions: 0, branchRegionViolations: 0, avoidableCrossings: 1, crossingDensity: 0.5, maximumDetourRatio: 1, totalDetour: 0 }],
-      ['clear', { unrelatedNodeIntrusions: 0, branchRegionViolations: 0, avoidableCrossings: 0, crossingDensity: 0, maximumDetourRatio: 1, totalDetour: 0 }]
+      ['compact', { unrelatedNodeIntrusions: 0, labelCollisions: 0, parallelCorridorDensity: 0, branchRegionViolations: 0, avoidableCrossings: 1, crossingDensity: 0.5, maximumDetourRatio: 1, totalDetour: 0 }],
+      ['clear', { unrelatedNodeIntrusions: 0, labelCollisions: 0, parallelCorridorDensity: 0, branchRegionViolations: 0, avoidableCrossings: 0, crossingDensity: 0, maximumDetourRatio: 1, totalDetour: 0 }]
     ]);
     expect(selectPlacement(graph, topology, [compact, clear], 232, 92, routeScores).profileId).toBe('clear');
+  });
+
+  it('prefers a composed map without a dominant empty internal band', () => {
+    const graph = wideBranchFixture(6);
+    const topology = analyzeTopology(graph);
+    const nodeIds = graph.nodes.map((node) => node.id);
+    const split = candidate('split', 2_600, 900, nodeIds.map((id, index) => ({
+      id,
+      x: index < 4 ? index * 260 : 1_800 + (index - 4) * 260,
+      y: index === 0 ? 0 : index === nodeIds.length - 1 ? 600 : 260
+    })));
+    const composed = candidate('composed', 1_700, 900, nodeIds.map((id, index) => ({
+      id,
+      x: index * 200,
+      y: index === 0 ? 0 : index === nodeIds.length - 1 ? 600 : 260
+    })));
+    expect(scorePlacement(graph, topology, split, 120, 80).largestInternalGap).toBeGreaterThan(
+      scorePlacement(graph, topology, composed, 120, 80).largestInternalGap
+    );
+    expect(selectPlacement(graph, topology, [split, composed], 120, 80).profileId).toBe('composed');
   });
 });

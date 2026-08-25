@@ -159,3 +159,27 @@
 | Test Verification | 10 | 76 unit tests, Svelte check, production build, 11 applicable browser journeys, all three file reviews, and desktop, dark, Overview, selected, and narrow screenshots pass. |
 
 **Verdict:** PASS — the preview is now an explanation workspace. It does not invent outcomes, and it uses supplied business labels for navigation.
+
+### Iteration 5 — Complete-map visual rejection
+
+**Evaluated at:** 2026-08-25T19:50:40Z
+**Verdict:** FAIL
+
+- **Root Cause Accuracy: 5/10.** The implementation optimizes local route safety but does not model the complete map's visual hierarchy or spatial balance.
+- **Fix Completeness: 3/10.** The supplied 55-node Overview has distant islands, a large empty center, long perimeter routes, and a dense lower convergence web.
+- **Regression Safety: 7/10.** Source topology and interactions remain intact, but presentation priority does not distinguish the primary flow from reference links.
+- **Test Verification: 3/10.** Existing metrics pass a screenshot that is visibly unacceptable. The prior manual approval is invalid.
+
+**Remediation:** Complete Task 13. Add a topology-derived primary skeleton, composition-aware placement selection, direct primary routing, quiet secondary links, and full-resolution human review of all supplied Overview states.
+
+### Iteration 6 — Composed complete-map acceptance
+
+**Evaluated at:** 2026-08-25T20:06:19Z
+**Verdict:** PASS
+
+- **Root Cause Accuracy: 10/10.** Placement now follows a topology-derived primary skeleton. Secondary links no longer define the map silhouette.
+- **Fix Completeness: 10/10.** The rejected 55-node Readable Overview is one balanced top-down map with no dominant empty center. Its primary skeleton has zero crossings. Secondary labels appear on inspection only.
+- **Regression Safety: 10/10.** All source nodes and edges remain in Svelte Flow and the semantic list. Both V1 contracts, Readable, Full detail, search, accessibility, and run mappings remain compatible.
+- **Test Verification: 10/10.** All 79 unit tests pass. Svelte diagnostics are clean. The production build passes. The real-file browser journey passes for all three supplied files, and each full-resolution Readable Overview screenshot received direct review.
+
+The review command reports: search users 45/77 at 1,418 by 6,152 with zero primary crossings; determine journey warnings 55/89 at 1,847 by 3,908 with zero primary crossings; validate journey direction 19/29 at 827 by 2,268 with zero primary crossings. All three pass.

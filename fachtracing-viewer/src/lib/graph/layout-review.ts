@@ -68,7 +68,7 @@ function fixed(value: number, digits = 2): string {
 }
 
 export function formatGraphReviewTable(results: readonly GraphReviewResult[]): string {
-  const headers = ['Graph', 'Nodes', 'Edges', 'Time', 'Size', 'Cross', 'Density', 'Detour', 'Failures'];
+  const headers = ['Graph', 'Nodes', 'Edges', 'Time', 'Size', 'Cross', 'Primary', 'All', 'Detour', 'Failures'];
   const rows = results.map((result) => [
     result.label,
     String(result.nodeCount),
@@ -76,6 +76,7 @@ export function formatGraphReviewTable(results: readonly GraphReviewResult[]): s
     `${Math.round(result.durationMs)} ms`,
     `${Math.round(result.width)}x${Math.round(result.height)}`,
     String(result.metrics.unavoidableCrossings),
+    fixed(result.metrics.primaryCrossingDensity ?? result.metrics.crossingDensity),
     fixed(result.metrics.crossingDensity),
     fixed(Math.max(result.metrics.maximumNormalDetourRatio, result.metrics.maximumLongDetourRatio)),
     result.failures.length === 0 ? 'PASS' : result.failures.map((failure) => failure.metric).join(', ')

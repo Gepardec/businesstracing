@@ -1,5 +1,13 @@
 [
   {
+    "id": "real-graph-layout-usability",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-25T20:06:19Z"
+  },
+  {
     "id": "static-graph-layout-quality",
     "type": "bugfix",
     "status": "completed",

@@ -4,6 +4,7 @@ import type { TopologyAnalysis } from './topology-analysis';
 
 export interface PlacementProfile {
   id: string;
+  edgeScope: 'all' | 'primary';
   options: Readonly<Record<string, string>>;
 }
 
@@ -18,12 +19,16 @@ export interface PlacementScore {
   nodeOverlaps: number;
   forwardOrderViolations: number;
   unrelatedNodeIntrusions: number;
+  labelCollisions: number;
+  parallelCorridorDensity: number;
   branchRegionViolations: number;
   avoidableCrossings: number;
   crossingDensity: number;
   maximumDetourRatio: number;
   totalDetour: number;
   aspectRatioPenalty: number;
+  largestInternalGap: number;
+  primaryEdgeSpan: number;
   totalEdgeSpan: number;
   area: number;
   profileId: string;
@@ -31,6 +36,8 @@ export interface PlacementScore {
 
 export interface PlacementRouteScore {
   unrelatedNodeIntrusions: number;
+  labelCollisions: number;
+  parallelCorridorDensity: number;
   branchRegionViolations: number;
   avoidableCrossings: number;
   crossingDensity: number;
@@ -40,6 +47,8 @@ export interface PlacementRouteScore {
 
 const EMPTY_ROUTE_SCORE: PlacementRouteScore = {
   unrelatedNodeIntrusions: 0,
+  labelCollisions: 0,
+  parallelCorridorDensity: 0,
   branchRegionViolations: 0,
   avoidableCrossings: 0,
   crossingDensity: 0,
@@ -50,7 +59,6 @@ const EMPTY_ROUTE_SCORE: PlacementRouteScore = {
 const COMMON_OPTIONS: Readonly<Record<string, string>> = Object.freeze({
   'elk.algorithm': 'layered',
   'elk.direction': 'DOWN',
-  'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
   'elk.layered.cycleBreaking.strategy': 'GREEDY',
   'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
   'elk.separateConnectedComponents': 'true'
@@ -60,9 +68,23 @@ export function placementProfiles(nodeCount: number): PlacementProfile[] {
   const squareLayerBound = Math.max(3, Math.ceil(Math.sqrt(nodeCount)));
   return [
     {
-      id: 'network-simplex-balanced',
+      id: 'network-simplex-composed',
+      edgeScope: 'primary',
       options: {
         ...COMMON_OPTIONS,
+        'elk.layered.nodePlacement.favorStraightEdges': 'true',
+        'elk.layered.compaction.connectedComponents': 'true',
+        'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+        'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+        'elk.layered.compaction.postCompaction.strategy': 'LEFT_RIGHT_CONSTRAINT_LOCKING'
+      }
+    },
+    {
+      id: 'network-simplex-model-order',
+      edgeScope: 'all',
+      options: {
+        ...COMMON_OPTIONS,
+        'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
         'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
         'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
         'elk.layered.compaction.postCompaction.strategy': 'LEFT_RIGHT_CONSTRAINT_LOCKING'
@@ -70,8 +92,10 @@ export function placementProfiles(nodeCount: number): PlacementProfile[] {
     },
     {
       id: 'coffman-graham-wide',
+      edgeScope: 'all',
       options: {
         ...COMMON_OPTIONS,
+        'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
         'elk.layered.layering.strategy': 'COFFMAN_GRAHAM',
         'elk.layered.layering.coffmanGraham.layerBound': String(Math.ceil(squareLayerBound * 1.5)),
         'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
@@ -128,13 +152,17 @@ export function scorePlacement(
   }
   let forwardOrderViolations = 0;
   let totalEdgeSpan = 0;
+  let primaryEdgeSpan = 0;
   for (const edge of graph.edges) {
     const source = positionById.get(edge.from)!;
     const target = positionById.get(edge.to)!;
     totalEdgeSpan += Math.abs(target.x - source.x) + Math.abs(target.y - source.y);
+    if (topology.primaryEdgeIds.has(edge.id)) primaryEdgeSpan += Math.abs(target.x - source.x) + Math.abs(target.y - source.y);
     if (!topology.longEdgeIds.has(edge.id) && target.y <= source.y) forwardOrderViolations += 1;
   }
   const aspectRatio = candidate.width / Math.max(1, candidate.height);
+  const centers = candidate.positions.map((position) => position.x + nodeWidth / 2).sort((first, second) => first - second);
+  const largestInternalGap = centers.slice(1).reduce((largest, center, index) => Math.max(largest, center - centers[index]), 0);
   const aspectRatioPenalty = graph.nodes.length < 16 || graph.nodes.length > 100 || structuralChain(graph, topology)
     ? 0
     : aspectRatio < 0.25 ? 0.25 - aspectRatio : aspectRatio > 2.25 ? aspectRatio - 2.25 : 0;
@@ -143,6 +171,8 @@ export function scorePlacement(
     forwardOrderViolations,
     ...routeScore,
     aspectRatioPenalty,
+    largestInternalGap,
+    primaryEdgeSpan,
     totalEdgeSpan,
     area: candidate.width * candidate.height,
     profileId: candidate.profileId
@@ -166,12 +196,16 @@ export function selectPlacement(
     first.score.nodeOverlaps - second.score.nodeOverlaps ||
     first.score.forwardOrderViolations - second.score.forwardOrderViolations ||
     first.score.unrelatedNodeIntrusions - second.score.unrelatedNodeIntrusions ||
+    first.score.labelCollisions - second.score.labelCollisions ||
+    first.score.parallelCorridorDensity - second.score.parallelCorridorDensity ||
     first.score.branchRegionViolations - second.score.branchRegionViolations ||
     first.score.avoidableCrossings - second.score.avoidableCrossings ||
     first.score.crossingDensity - second.score.crossingDensity ||
     first.score.maximumDetourRatio - second.score.maximumDetourRatio ||
     first.score.totalDetour - second.score.totalDetour ||
     first.score.aspectRatioPenalty - second.score.aspectRatioPenalty ||
+    first.score.largestInternalGap - second.score.largestInternalGap ||
+    first.score.primaryEdgeSpan - second.score.primaryEdgeSpan ||
     (graph.nodes.length < 16 ? profileOrder.get(first.score.profileId)! - profileOrder.get(second.score.profileId)! : 0) ||
     first.score.totalEdgeSpan - second.score.totalEdgeSpan ||
     first.score.area - second.score.area ||

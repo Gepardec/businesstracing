@@ -541,6 +541,7 @@ Correct the rejected visual result. Keep the topology-derived graph, but pair it
 | RB-08 | 2, 3, 4, 6 |
 | RB-09 | 9, 10, 11 |
 | RB-10 | 12 |
+| RB-11 | 13 |
 | Rejected route evidence | 7 |
 | Rejected focus and zoom evidence | 8 |
 
@@ -550,8 +551,46 @@ None. The required `static-graph-layout-quality` dependency is completed.
 
 ## Progress Tracking
 
-- Total Tasks: 12
-- Completed: 12
+- Total Tasks: 13
+- Completed: 13
 - In Progress: 0
 - Blocked: 0
 - Pending: 0
+
+---
+
+### Task 13: Compose the complete Overview as a readable topology map
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Tasks 7, 9, and 12
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Correct the rejected 55-node Overview. Add a topology-derived visual hierarchy, select placement by composition as well as collision safety, and stop secondary routes from defining the map silhouette.
+
+**Implementation Steps:**
+
+1. Derive a deterministic primary forward skeleton from declared entries.
+2. Add pure composition metrics for primary span, node distribution, and empty internal bands.
+3. Add Overview placement profiles that do not force source-file model order when it creates distant islands.
+4. Route primary forward connections through the nearest safe south and north ports.
+5. Keep secondary links visible but quiet until inspection.
+6. Render the three supplied graphs in Readable and Full detail Overview and inspect the screenshots at full resolution.
+
+**Acceptance Criteria:**
+
+- [x] RB-11 passes without graph-specific production or test data.
+- [x] The rejected 55-node map has one clear top-down primary skeleton and no dominant empty center.
+- [x] Primary connections are easier to follow than secondary cross-links at complete-fit scale.
+- [x] Every source node and connection remains present and accessible.
+- [x] The three supplied graphs pass objective review and full-resolution visual review.
+
+**Tests Required:**
+
+- [x] Primary-skeleton unit tests
+- [x] Composition-metric and placement-selection tests
+- [x] Route-side and route-priority tests
+- [x] Real-file Overview screenshots and geometry evidence

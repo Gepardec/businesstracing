@@ -211,6 +211,17 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 - [x] WHILE Overview is active THE SYSTEM SHALL state that it is a topology map and that selecting a node returns to readable inspection.
 - [x] THE graph preview SHALL dedicate more vertical space to the explanation workspace by removing duplicate summary content above the canvas.
 
+### RB-11 — Composed complete-graph Overview
+
+- [x] WHILE Overview is active THE SYSTEM SHALL arrange the complete readable graph as one balanced top-down map instead of distant visual islands.
+- [x] THE SYSTEM SHALL derive a primary forward skeleton from declared entries and graph topology. It SHALL NOT use graph-specific IDs, labels, coordinates, or diagrams.
+- [x] Primary connections SHALL have higher visual priority than feedback, cross-branch, duplicate, and long-range reference connections.
+- [x] Secondary connections SHALL remain present, accessible, and inspectable, but SHALL use a quiet style until hover, keyboard focus, or selection.
+- [x] A primary connection SHALL use the nearest safe source and target sides. It SHALL NOT leave through a remote side only to return to a directly reachable child.
+- [x] The selected complete layout SHALL include composition quality in candidate selection: occupied map balance, primary-edge span, and long empty internal corridors.
+- [x] The 55-node supplied graph SHALL receive human full-resolution review at desktop Overview scale before acceptance. Passing collision and crossing metrics alone is not sufficient.
+- [x] THE SYSTEM SHALL preserve every source node and connection, both V1 contracts, Readable and Full detail, search, accessibility, and run-highlight mappings.
+
 ## Regression Risk Analysis
 
 ### Blast radius

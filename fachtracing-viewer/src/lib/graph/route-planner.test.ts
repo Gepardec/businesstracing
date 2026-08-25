@@ -42,9 +42,17 @@ describe('static graph route planning', () => {
     expect(longRoutes.length).toBeGreaterThan(0);
     expect(longRoutes.every((route) => route.points.every((point) => point.x >= 0 && point.x <= layout.width && point.y >= 0 && point.y <= layout.height)), longRoutes.map((route) => route.id).join(', ')).toBe(true);
     expect(longRoutes.every((route) => route.corridor === 'normal')).toBe(true);
-    expect(longRoutes.every((route) => !route.secondary)).toBe(true);
+    expect(longRoutes.every((route) => route.secondary)).toBe(true);
     expect(longRoutes.every((route) => route.length === route.shortestCandidateLength)).toBe(true);
     expect(layout.metrics.longEdgeCorridorViolations).toBe(0);
+  });
+
+  it('keeps the primary forward skeleton direct and marks later links as secondary', async () => {
+    const layout = await computeLayout(longShortcutFixture());
+    const primary = layout.edges.filter((edge) => !edge.secondary);
+    expect(primary).toHaveLength(5);
+    expect(primary.every((edge) => edge.corridor === 'normal' && edge.length === edge.shortestCandidateLength)).toBe(true);
+    expect(layout.edges.find((edge) => edge.id === 'edge-005')?.secondary).toBe(true);
   });
 
   it('keeps every branch label attached to its route', async () => {

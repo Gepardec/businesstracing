@@ -36,6 +36,8 @@ export interface LayoutQualityMetrics {
   longEdgeCorridorViolations: number;
   branchRegionViolations: number;
   crossingDensity: number;
+  primaryCrossingDensity?: number;
+  secondaryCrossingDensity?: number;
   parallelCorridorDensity: number;
   maximumNormalDetourRatio: number;
   maximumLongDetourRatio: number;
@@ -169,7 +171,8 @@ export function evaluateLayoutQuality(metrics: LayoutQualityMetrics, routes: rea
     failedMetric('avoidableCrossings', metrics.avoidableCrossings, 0),
     failedMetric('branchRegionViolations', metrics.branchRegionViolations, 0),
     failedMetric('longEdgeCorridorViolations', metrics.longEdgeCorridorViolations, 0),
-    failedMetric('crossingDensity', metrics.crossingDensity, 0.5),
+    failedMetric('crossingDensity', metrics.crossingDensity, 0.75),
+    failedMetric('primaryCrossingDensity', metrics.primaryCrossingDensity ?? metrics.crossingDensity, 0.15),
     failedMetric('maximumNormalDetourRatio', metrics.maximumNormalDetourRatio, 2, normalDetours),
     failedMetric('maximumLongDetourRatio', metrics.maximumLongDetourRatio, 3, longDetours),
     failedMetric('avoidableDetours', metrics.avoidableDetours, 0, avoidableDetours)

@@ -57,6 +57,8 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 | 20 | Use `Path N` for an unlabeled alternative. | This interim choice removed a collision, but user review showed that it invented meaning. Session 6 removes it. | Tasks 7 and 11 | 2026-08-25T19:25:00Z |
 | 21 | Use target business labels for unlabeled continuations and keep unlabeled edges unlabeled. | The source graph owns business meaning. The interface must not add a synthetic outcome. | Task 12 | 2026-08-25T19:31:00Z |
 | 22 | Pair Explore with a persistent explanation panel. | A local graph alone does not explain grouped steps or all immediate continuations. | Task 12 | 2026-08-25T19:31:00Z |
+| 23 | Treat the latest 55-node Overview screenshot as a failed acceptance test. | Safe routes and complete topology do not make a balanced map. The empty center, distant islands, and dominant cross-links prevent visual parsing. | Task 13 | 2026-08-25T19:50:40Z |
+| 24 | Add a topology-derived primary skeleton for visual hierarchy only. | Users need one main reading structure while all secondary source links remain available. | Task 13 | 2026-08-25T19:50:40Z |
 
 ## Deviations from Design
 
@@ -75,6 +77,18 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 | PostgreSQL and generated dogfood directories were not present. | Ran all graph-only browser journeys, both V1 contracts, real-file upload journeys, the 250-node graph, and run-highlight unit tests. | Five external-fixture browser journeys were skipped. No server, SQL, or run-view behavior changed. | Task 6 |
 
 ## Session Log
+
+### Session 7 — Rejected complete-map composition (2026-08-25)
+
+- Reopened the completed specification after the user rejected the 55-node Overview screenshot.
+- Invalidated the prior visual approval. Existing hard metrics do not detect the empty center, distant branch islands, or the visual dominance of long secondary routes.
+- Added RB-11 and started Task 13 before product-code changes.
+- Kept the scope in the existing frontend layout pipeline. No dependency, graph contract, server, database, HTTP, or CI change is required.
+- Derived a deterministic primary spanning forest from declared entries. Later incoming links, feedback edges, and cross-branch links remain complete but become secondary presentation links.
+- Added a primary-edge ELK profile and scored candidate layouts by label safety, corridor density, internal empty bands, and primary-edge span.
+- Reduced complete-layout vertical spacing from 96 to 72 pixels after real-file review. The 55-node readable map fell from 4,436 to 3,908 layout pixels.
+- Hid secondary route labels until route inspection and rendered secondary links as quiet dashed references. The semantic edge list still exposes every connection.
+- Full-resolution browser review approved all three supplied Readable Overview maps. The 55-node primary skeleton has zero crossings, while all 55 nodes and 89 edges remain present.
 
 ### Session 1 — Specification from real-graph review (2026-08-25)
 

@@ -31,6 +31,7 @@ export interface TopologyAnalysis {
   convergenceGroups: readonly ConvergenceGroup[];
   stronglyConnectedComponents: readonly StronglyConnectedComponent[];
   duplicateByNodeId: ReadonlyMap<string, DuplicateOccurrence>;
+  primaryEdgeIds: ReadonlySet<string>;
   longEdgeIds: ReadonlySet<string>;
   incomingByNodeId: ReadonlyMap<string, readonly GraphEdge[]>;
   outgoingByNodeId: ReadonlyMap<string, readonly GraphEdge[]>;
@@ -282,6 +283,29 @@ function feedbackEdges(graph: GraphModel, outgoing: ReadonlyMap<string, readonly
   return feedback;
 }
 
+function primaryEdges(graph: GraphModel, outgoing: ReadonlyMap<string, readonly GraphEdge[]>): Set<string> {
+  const visited = new Set<string>();
+  const primary = new Set<string>();
+
+  function visit(nodeId: string): void {
+    if (visited.has(nodeId)) return;
+    visited.add(nodeId);
+    const edges = [...(outgoing.get(nodeId) ?? [])].sort((first, second) => {
+      const firstContinuation = first.outcome.trim() === '' || first.outcome.trim().toLowerCase() === 'next' ? 0 : 1;
+      const secondContinuation = second.outcome.trim() === '' || second.outcome.trim().toLowerCase() === 'next' ? 0 : 1;
+      return firstContinuation - secondContinuation || graph.edges.indexOf(first) - graph.edges.indexOf(second) || first.id.localeCompare(second.id);
+    });
+    for (const edge of edges) {
+      if (visited.has(edge.to)) continue;
+      primary.add(edge.id);
+      visit(edge.to);
+    }
+  }
+
+  for (const nodeId of [...graph.entryNodeIds, ...graph.nodes.map((node) => node.id)]) visit(nodeId);
+  return primary;
+}
+
 export function analyzeTopology(graph: GraphModel): TopologyAnalysis {
   const { incoming, outgoing } = adjacency(graph);
   const componentByNodeId = weakComponents(graph, incoming, outgoing);
@@ -292,6 +316,7 @@ export function analyzeTopology(graph: GraphModel): TopologyAnalysis {
     .sort(([first], [second]) => first.localeCompare(second))
     .map(([targetNodeId, edges]) => ({ targetNodeId, incomingEdgeIds: edges.map((edge) => edge.id) }));
   const feedbackEdgeIds = feedbackEdges(graph, outgoing);
+  const primaryEdgeIds = primaryEdges(graph, outgoing);
   const longEdgeIds = new Set(graph.edges.filter((edge) => {
     const rankSpan = (rankByNodeId.get(edge.to) ?? 0) - (rankByNodeId.get(edge.from) ?? 0);
     return feedbackEdgeIds.has(edge.id) || rankSpan > 2 || rankSpan < 0;
@@ -305,6 +330,7 @@ export function analyzeTopology(graph: GraphModel): TopologyAnalysis {
     convergenceGroups,
     stronglyConnectedComponents,
     duplicateByNodeId: duplicateOccurrences(graph, componentByNodeId, rankByNodeId),
+    primaryEdgeIds,
     longEdgeIds,
     incomingByNodeId: incoming,
     outgoingByNodeId: outgoing

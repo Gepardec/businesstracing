@@ -95,7 +95,7 @@ describe('layout quality metrics', () => {
     ], routes);
     expect(metrics.crossingDensity).toBe(0.5);
     expect(metrics.maximumNormalDetourRatio).toBeCloseTo(4 / 3);
-    const failures = evaluateLayoutQuality({ ...metrics, crossingDensity: 0.75 }, routes);
+    const failures = evaluateLayoutQuality({ ...metrics, crossingDensity: 0.8 }, routes);
     expect(failures.map((failure) => failure.metric)).toContain('crossingDensity');
     expect(failures.find((failure) => failure.metric === 'avoidableDetours')?.evidence).toContain('edge-b');
   });
