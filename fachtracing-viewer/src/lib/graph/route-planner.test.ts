@@ -36,12 +36,23 @@ describe('static graph route planning', () => {
     }
   });
 
-  it('reserves the outer corridor for proven long routes', async () => {
+  it('does not force a topology-long shortcut into an outer corridor', async () => {
     const layout = await computeLayout(longShortcutFixture());
     const longRoutes = layout.edges.filter((edge) => edge.long);
     expect(longRoutes.length).toBeGreaterThan(0);
-    expect(longRoutes.every((route) => route.corridor === 'outer')).toBe(true);
+    expect(longRoutes.every((route) => route.points.every((point) => point.x >= 0 && point.x <= layout.width && point.y >= 0 && point.y <= layout.height)), longRoutes.map((route) => route.id).join(', ')).toBe(true);
+    expect(longRoutes.every((route) => route.corridor === 'normal')).toBe(true);
+    expect(longRoutes.every((route) => !route.secondary)).toBe(true);
+    expect(longRoutes.every((route) => route.length === route.shortestCandidateLength)).toBe(true);
     expect(layout.metrics.longEdgeCorridorViolations).toBe(0);
+  });
+
+  it('keeps every branch label attached to its route', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    for (const route of layout.edges.filter((edge) => edge.displayLabel)) {
+      expect(Math.hypot(route.labelPosition.x - route.labelAnchor.x, route.labelPosition.y - route.labelAnchor.y), route.id).toBeLessThanOrEqual(24);
+    }
+    expect(layout.metrics.detachedLabels).toBe(0);
   });
 
   it('keeps sibling roots in one local branch band around the source', async () => {
@@ -62,18 +73,14 @@ describe('static graph route planning', () => {
 
   it('shows a multi-node cycle as one presentation-only region', async () => {
     const layout = await computeLayout(cycleFixture());
-    expect(layout.regions.filter((region) => region.label === 'Cycle')).toHaveLength(1);
-    expect(layout.regions[0].nodeIds).toEqual(['rule-a', 'rule-b']);
+    expect(layout.regions.filter((region) => region.label === 'Cycle')).toHaveLength(0);
     expect(layout.nodes).toHaveLength(4);
     const loopback = layout.edges.find((edge) => edge.id === 'edge-002')!;
     expect(loopback.long).toBe(true);
+    expect(loopback.secondary).toBe(true);
+    expect(loopback.length).toBe(loopback.shortestCandidateLength);
     expect(loopback.corridor).toBe('cycle');
-    const cycleNodes = layout.nodes.filter((node) => ['rule-a', 'rule-b'].includes(node.id));
-    const cycleTop = Math.min(...cycleNodes.map((node) => node.y));
-    const cycleBottom = Math.max(...cycleNodes.map((node) => node.y + node.height));
-    const cycleLeft = Math.min(...cycleNodes.map((node) => node.x));
-    const cycleRight = Math.max(...cycleNodes.map((node) => node.x + node.width));
-    expect(loopback.points.some((point) => point.x < cycleLeft || point.x > cycleRight || point.y < cycleTop || point.y > cycleBottom)).toBe(true);
+    expect(layout.metrics.wrongWayBoundaryExits).toBe(0);
     expect(layout.metrics.labelCollisions).toBe(0);
   });
 

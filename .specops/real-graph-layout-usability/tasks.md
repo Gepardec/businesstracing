@@ -286,19 +286,230 @@ Run objective and human review for the three supplied graphs, both graph contrac
 - [x] Real-file review command
 - [x] Manual screenshot approval
 
+---
+
+### Task 7: Correct route direction, detour proof, and label attachment
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 4
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Replace the false route-quality proof with a candidate baseline that cannot hide shorter routes. Keep outer corridors as fallbacks and keep branch labels attached to their edges.
+
+**Implementation Steps:**
+
+1. Add route-direction and full-candidate detour metrics.
+2. Make route length and directional progress rank before crossing avoidance for collision-free candidates.
+3. Stop topology rank span from forcing an outer corridor.
+4. Keep label placement on the route or within 24 layout pixels and remove detached leaders.
+5. Re-run the supplied direction graph and inspect the three branches from its first choice node.
+
+**Acceptance Criteria:**
+
+- [x] The rejected 665-pixel outer loop uses a bounded in-layout route.
+- [x] The review report fails wrong-way boundary exits and uses the full valid candidate baseline.
+- [x] No visible edge label uses a detached leader.
+- [x] Existing node-intrusion, endpoint, cycle, crossing, and edge-identity behavior stays correct.
+
+**Files to Modify:**
+
+- `fachtracing-viewer/src/lib/graph/route-planner.ts`
+- `fachtracing-viewer/src/lib/graph/route-quality.ts`
+- `fachtracing-viewer/src/lib/graph/route-planner.test.ts`
+- `fachtracing-viewer/src/lib/graph/route-quality.test.ts`
+- `fachtracing-viewer/src/lib/graph/BusinessEdge.svelte`
+- `fachtracing-viewer/src/lib/graph/layout-review.ts`
+
+**Tests Required:**
+
+- [x] Directional-route unit tests
+- [x] Honest detour-baseline unit tests
+- [x] Generic graph-route regression tests
+- [x] Supplied direction-graph route inspection
+
+---
+
+### Task 8: Remove destructive focus and empty zoom states
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 7
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Keep navigation useful without fading the graph or hiding node text. Remove the focus-summary badge and validate Explore plus Overview on all supplied graphs.
+
+**Implementation Steps:**
+
+1. Rename Reading to Explore and keep the existing readable viewport anchor.
+2. Remove static context opacity from nodes, edges, junctions, crossings, and regions.
+3. Remove the focus-summary badge.
+4. Keep node kind and business-label text present at every supported zoom.
+5. Keep route labels present and show a fixed-size node readout below normal reading zoom.
+6. Use a secondary quiet solid style for long return or reference routes and a solid tinted boundary for cycle regions.
+7. Update browser checks and inspect complete screenshots at normal, selected, and overview states.
+
+**Acceptance Criteria:**
+
+- [x] Selecting or searching does not fade unrelated static topology.
+- [x] Zooming out does not create empty node boxes or remove route labels.
+- [x] A node at small zoom exposes its complete label in a fixed-size hover readout.
+- [x] The canvas toolbar has no focus-summary badge.
+- [x] Long routes are secondary until inspection and cycle boundaries do not look like routes.
+- [x] Explore opens at a readable anchor and Overview still fits the complete topology.
+- [x] All three supplied graphs pass direct full-resolution visual review.
+
+**Files to Modify:**
+
+- `fachtracing-viewer/src/lib/graph/FlowCanvas.svelte`
+- `fachtracing-viewer/src/lib/graph/BusinessNode.svelte`
+- `fachtracing-viewer/src/lib/graph/BusinessEdge.svelte`
+- `fachtracing-viewer/src/lib/graph/GraphJunctions.svelte`
+- `fachtracing-viewer/src/lib/graph/flow-types.ts`
+- `fachtracing-viewer/e2e/decision-explorer.spec.ts`
+- `fachtracing-viewer/README.md`
+
+**Tests Required:**
+
+- [x] Svelte diagnostics
+- [x] Browser zoom-text and hover-readout check
+- [x] Browser no-static-dimming check
+- [x] Long-route secondary-style check
+- [x] Supplied graph screenshots at Explore and Overview scales
+
+---
+
+### Task 9: Derive a reversible readable business map
+
+**Status:** Completed
+**Estimated Effort:** L
+**Dependencies:** Task 8
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Reduce visual noise without changing the JSON contract. Group straight action sequences and parallel connections for the default map. Preserve original IDs and provide Full detail.
+
+**Implementation Steps:**
+
+1. Add a pure graph-presentation transform with forward and reverse ID mappings.
+2. Group safe unlabelled computation chains, convergent rule chains, and shared-exit guard chains.
+3. Group parallel presentation edges and combine their displayed outcomes.
+4. Map search, selection, accessibility, and run highlights through the presentation.
+5. Add Readable and Full detail controls and state the reduction.
+6. Verify the transform on fixtures and the three supplied graphs.
+
+**Acceptance Criteria:**
+
+- [x] The readable map has no more nodes or connections than the source graph.
+- [x] Full detail restores exact source node and edge counts.
+- [x] No material predicate, choice, outcome, entry, labelled transition, branch, or merge is hidden in a sequence.
+- [x] Search and run highlights resolve every original ID.
+- [x] The transform is deterministic and has no graph-specific data.
+
+**Tests Required:**
+
+- [x] Pure presentation-transform tests
+- [x] Search and highlight mapping tests
+- [x] Browser Readable and Full detail tests
+- [x] Supplied graph reduction report and screenshots
+
+---
+
+### Task 10: Explain each graph in three sentences
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Task 9
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Add a generic short explanation that helps a user identify the start, main paths, work, and possible results before reading the map.
+
+**Acceptance Criteria:**
+
+- [x] The explanation has at most three actual sentences.
+- [x] It names supplied entry, branch, and outcome labels when they exist.
+- [x] It does not invent a domain fact.
+- [x] It remains useful for multiple entries, chains, branches, cycles, and incomplete graphs.
+- [x] The graph preview displays the explanation before the canvas.
+
+**Tests Required:**
+
+- [x] Summary unit tests for all topology fixtures
+- [x] Browser summary semantics and responsive layout checks
+- [x] Human review on the three supplied graphs
+
+---
+
+### Task 11: Lay out Explore as an independent local graph
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Tasks 8 and 9
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Stop complete-graph coordinates from separating local neighbors. Build and lay out a bounded local graph for Explore while keeping the complete layout ready for Overview.
+
+**Implementation Steps:**
+
+1. Derive an opening context that follows a bounded straight path to the first material split.
+2. Derive direct predecessor-and-successor context after selection.
+3. Run the local graph through compact ELK spacing and retry with standard spacing when compact routing is not safe.
+4. Fit all local nodes inside the safe canvas and state how the user continues.
+5. Preserve a pending Overview request when the complete worker result arrives.
+
+**Acceptance Criteria:**
+
+- [x] Complete-graph coordinates do not create empty corridors inside Explore.
+- [x] The initial Explore view shows the first material split when it is within the bounded opening path.
+- [x] A selected node shows its direct local topology.
+- [x] Every supplied default local view has zero node intrusions and label collisions, and each visible card is at least 160 by 60 CSS pixels at the tested desktop size.
+- [x] Selecting Overview during layout cannot leave the canvas empty.
+
+**Tests Required:**
+
+- [x] Opening-context and bounded-chain unit tests
+- [x] Real-file local geometry checks
+- [x] Pending-Overview browser regression tests
+- [x] Light and dark screenshots for the three supplied files
+
 ## Requirement Coverage
 
 | Requirement | Tasks |
 | --- | --- |
 | RB-01 | 2, 6 |
-| RB-02 | 2, 6 |
+| RB-02 | 2, 6, 11 |
 | RB-03 | 3, 6 |
 | RB-04 | 1, 4, 6 |
 | RB-05 | 5, 6 |
 | RB-06 | 2, 5, 6 |
 | RB-07 | 1, 6 |
 | RB-08 | 2, 3, 4, 6 |
+| RB-09 | 9, 10, 11 |
+| Rejected route evidence | 7 |
+| Rejected focus and zoom evidence | 8 |
 
 ## Cross-Spec Blockers
 
 None. The required `static-graph-layout-quality` dependency is completed.
+
+## Progress Tracking
+
+- Total Tasks: 11
+- Completed: 11
+- In Progress: 0
+- Blocked: 0
+- Pending: 0

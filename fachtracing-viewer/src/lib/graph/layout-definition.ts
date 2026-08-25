@@ -11,6 +11,24 @@ const HORIZONTAL_GAP = 64;
 const VERTICAL_GAP = 96;
 const PADDING = 32;
 
+export interface LayoutSpacing {
+  readonly horizontalGap: number;
+  readonly verticalGap: number;
+  readonly padding: number;
+}
+
+export const DEFAULT_LAYOUT_SPACING: LayoutSpacing = Object.freeze({
+  horizontalGap: HORIZONTAL_GAP,
+  verticalGap: VERTICAL_GAP,
+  padding: PADDING
+});
+
+export const LOCAL_LAYOUT_SPACING: LayoutSpacing = Object.freeze({
+  horizontalGap: 48,
+  verticalGap: 64,
+  padding: 24
+});
+
 export interface PositionedNode {
   id: string;
   x: number;
@@ -46,14 +64,14 @@ export interface LayoutResult {
   placementProfileId: string;
 }
 
-function placementGraph(graph: GraphModel, profile: PlacementProfile): ElkNode {
+function placementGraph(graph: GraphModel, profile: PlacementProfile, spacing: LayoutSpacing): ElkNode {
   return {
     id: 'root',
     layoutOptions: {
       ...profile.options,
-      'elk.spacing.nodeNode': String(HORIZONTAL_GAP),
-      'elk.layered.spacing.nodeNodeBetweenLayers': String(VERTICAL_GAP),
-      'elk.padding': `[top=${PADDING},left=${PADDING},bottom=${PADDING},right=${PADDING}]`
+      'elk.spacing.nodeNode': String(spacing.horizontalGap),
+      'elk.layered.spacing.nodeNodeBetweenLayers': String(spacing.verticalGap),
+      'elk.padding': `[top=${spacing.padding},left=${spacing.padding},bottom=${spacing.padding},right=${spacing.padding}]`
     },
     children: [...graph.nodes]
       .sort((first, second) => first.id.localeCompare(second.id))
@@ -86,18 +104,29 @@ function positionedRegions(graph: GraphModel, topology: TopologyAnalysis, positi
     const right = Math.max(...members.map((position) => position.x + NODE_WIDTH)) + 18;
     const bottom = Math.max(...members.map((position) => position.y + NODE_HEIGHT)) + 18;
     return { ...region, x: left, y: top, width: right - left, height: bottom - top };
-  });
+  }).filter((region) => region.label !== 'Cycle' || !positions.some((position) => {
+    if (region.nodeIds.includes(position.id)) return false;
+    return position.x < region.x + region.width && position.x + NODE_WIDTH > region.x &&
+      position.y < region.y + region.height && position.y + NODE_HEIGHT > region.y;
+  }));
 }
 
-export async function computeLayoutWith(elk: Pick<ELK, 'layout'>, graph: GraphModel): Promise<LayoutResult> {
+export async function computeLayoutWith(elk: Pick<ELK, 'layout'>, graph: GraphModel, spacing: LayoutSpacing = DEFAULT_LAYOUT_SPACING): Promise<LayoutResult> {
   const topology = analyzeTopology(graph);
   const candidates = [];
   const plansByProfileId = new Map<string, ReturnType<typeof planRoutes>>();
   const routeScores = new Map<string, PlacementRouteScore>();
+  const rejectedProfiles: string[] = [];
   for (const profile of placementProfiles(graph.nodes.length)) {
-    const elkResult = await elk.layout(placementGraph(graph, profile)) as ElkNode;
-    const candidate = normalizePlacement(elkResult, profile.id, NODE_WIDTH, NODE_HEIGHT, PADDING);
-    const plan = planRoutes(graph, candidate.positions, topology, candidate.width, candidate.height, NODE_WIDTH, NODE_HEIGHT);
+    const elkResult = await elk.layout(placementGraph(graph, profile, spacing)) as ElkNode;
+    const candidate = normalizePlacement(elkResult, profile.id, NODE_WIDTH, NODE_HEIGHT, spacing.padding);
+    let plan: ReturnType<typeof planRoutes>;
+    try {
+      plan = planRoutes(graph, candidate.positions, topology, candidate.width, candidate.height, NODE_WIDTH, NODE_HEIGHT);
+    } catch (error) {
+      rejectedProfiles.push(`${profile.id}: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
     const qualityNodes = candidate.positions.map((position) => ({ ...position, width: NODE_WIDTH, height: NODE_HEIGHT }));
     const routeMetrics = measureLayoutQuality(graph, qualityNodes, plan.routes);
     const detours = measureRouteDetours(plan.routes);
@@ -111,6 +140,9 @@ export async function computeLayoutWith(elk: Pick<ELK, 'layout'>, graph: GraphMo
       maximumDetourRatio: Math.max(1, ...detours.map((route) => route.ratio)),
       totalDetour: detours.reduce((total, route) => total + Math.max(0, route.ratio - 1), 0)
     });
+  }
+  if (candidates.length === 0) {
+    throw new Error(`No placement profile produced a safe graph layout. ${rejectedProfiles.join(' ')}`);
   }
   const compacted = selectPlacement(graph, topology, candidates, NODE_WIDTH, NODE_HEIGHT, routeScores);
   const plan = plansByProfileId.get(compacted.profileId)!;

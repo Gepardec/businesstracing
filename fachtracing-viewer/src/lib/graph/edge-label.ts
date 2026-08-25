@@ -14,7 +14,7 @@ export function displayedEdgeLabel(outcome: string, sourceOutDegree: number, bra
   if (normalized === 'true' || normalized === 'yes') return 'Yes';
   if (normalized === 'false' || normalized === 'no') return 'No';
   if ((normalized === '' || normalized === 'next') && sourceOutDegree === 1) return null;
-  if (normalized === '') return `Branch ${branchIndex + 1}`;
+  if (normalized === '') return `Path ${branchIndex + 1}`;
   return conciseEdgeLabel(branch);
 }
 

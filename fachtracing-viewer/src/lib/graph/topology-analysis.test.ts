@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeTopology } from './topology-analysis';
-import { chainFixture, cycleFixture, duplicateLabelFixture, fanInFixture, longShortcutFixture } from './graph-fixtures';
+import { chainFixture, cycleFixture, duplicateLabelFixture, fanInFixture, graphFixture, longShortcutFixture } from './graph-fixtures';
 
 describe('static graph topology analysis', () => {
   it('assigns stable directed ranks from entry to outcome', () => {
@@ -20,6 +20,18 @@ describe('static graph topology analysis', () => {
     expect(cycle?.nodeIds).toEqual(['rule-a', 'rule-b']);
     expect(topology.longEdgeIds).toContain(graph.edges.find((edge) => edge.outcome === 'retry')!.id);
     expect(topology.rankByNodeId.get('outcome')).toBeGreaterThan(topology.rankByNodeId.get('rule-a')!);
+  });
+
+  it('finds a feedback edge from graph direction instead of node ID order', () => {
+    const graph = graphFixture('ordered-cycle', ['entry', 'z-forward', 'a-return', 'outcome'], [
+      { id: 'enter', from: 'entry', to: 'z-forward' },
+      { id: 'continue', from: 'z-forward', to: 'a-return' },
+      { id: 'retry', from: 'a-return', to: 'z-forward' },
+      { id: 'finish', from: 'a-return', to: 'outcome' }
+    ]);
+    const topology = analyzeTopology(graph);
+    expect(topology.longEdgeIds).toContain('retry');
+    expect(topology.longEdgeIds).not.toContain('continue');
   });
 
   it('finds convergence, long edges, and stable duplicate occurrences', () => {

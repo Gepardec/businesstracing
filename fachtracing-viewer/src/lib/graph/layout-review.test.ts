@@ -20,6 +20,8 @@ function result(failures: GraphReviewResult['failures']): GraphReviewResult {
       nodeOverlaps: 0,
       unrelatedNodeIntrusions: 0,
       labelCollisions: 0,
+      detachedLabels: 0,
+      wrongWayBoundaryExits: 0,
       avoidableCrossings: 0,
       unavoidableCrossings: 0,
       totalManhattanLength: 96,

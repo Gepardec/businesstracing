@@ -93,3 +93,55 @@
 | Test Verification | 9 | 7 | Pass |
 
 **Verdict:** PASS — the implementation meets the specification and the real-graph usability acceptance slice.
+
+### Iteration 2 — User rejection
+
+**Evaluated at:** 2026-08-25T11:20:33Z
+**Verdict:** FAIL
+
+- **Root Cause Accuracy: 4/10.** The router treats topology-long edges as outer-corridor routes and filters the detour baseline by the selected crossing score. This permits a visibly wrong route to report a 1.0 detour.
+- **Fix Completeness: 3/10.** RG-MEGA-DIRECTION still has a 665-pixel wrong-way loop and a detached branch label.
+- **Regression Safety: 5/10.** Static focus hides most unrelated topology, and Overview removes node text at low zoom.
+- **Test Verification: 4/10.** Tests prove internal metrics but do not reject the supplied screenshot defects. The earlier manual approval was incorrect.
+
+**Remediation:** Complete Tasks 7 and 8. Use full valid-candidate detour evidence, reject wrong-way boundary exits, remove detached label leaders, remove static context dimming, and keep node text present at all supported zoom levels.
+
+### Iteration 3 — Final direct graph review
+
+**Evaluated at:** 2026-08-25T19:30:00Z
+**Threshold:** 7/10
+
+### Root Cause Accuracy
+
+**Evidence:** The final correction treats the problem as two separate user tasks. Explore uses a new local layout and cannot inherit remote corridors from the complete graph. Overview retains the complete topology. A reversible presentation transform removes safe repetition before either layout. Directed entry traversal identifies real feedback edges without using node-ID order.
+
+**Score:** 10/10 — Pass
+
+### Fix Completeness
+
+**Evidence:** RB-01 through RB-09 are checked. The default view reaches the first material split, shows a clear continuation instruction, and keeps selected-node context local. Readable groups safe action, rule, guard, and parallel structures. Full detail restores exact source counts. The generic explanation uses no more than three actual sentences. The three supplied files have verified Explore, selected, Overview, light, and dark states.
+
+**Score:** 10/10 — Pass
+
+### Regression Safety
+
+**Evidence:** The complete layout remains cached for Overview. A pending Overview request is not lost when the worker returns. Compact local layout retries with standard spacing when route constraints reject it. Original IDs remain in search, accessibility, and run-highlight mappings. No graph contract, Java, SQL, HTTP, persistence, dependency, lockfile, or CI file changed.
+
+**Score:** 10/10 — Pass
+
+### Test Verification
+
+**Evidence:** 71 unit tests pass across 16 files. Svelte diagnostics report no errors or warnings. The production build passes. Eleven applicable Playwright journeys pass and five external-fixture journeys skip. All three complete graph-review reports pass with zero hard defects. Browser geometry checks find zero node intrusion and label collisions in each default real-file Explore view and require every visible card to be at least 160 by 60 CSS pixels.
+
+**Finding:** The skipped journeys require PostgreSQL or a generated dogfood directory. They are not configured in this local verification environment.
+
+**Score:** 10/10 — Pass
+
+| Dimension | Score | Threshold | Result |
+| --- | ---: | ---: | --- |
+| Root Cause Accuracy | 10 | 7 | Pass |
+| Fix Completeness | 10 | 7 | Pass |
+| Regression Safety | 10 | 7 | Pass |
+| Test Verification | 10 | 7 | Pass |
+
+**Verdict:** PASS — the static graph preview now has a readable local task, a complete overview task, reversible source detail, and objective plus visual evidence on all supplied graphs.

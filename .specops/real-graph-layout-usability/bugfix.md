@@ -36,6 +36,12 @@ Measurements use the current browser preview at 1,800 by 1,200 CSS pixels. They 
 
 RG-MEGA-WARNINGS also reports three avoidable crossings, six branch-region violations, one label collision, and two routes with detour ratios of 7.5 and 9.1. The two routes leave `a matching project entry exists` and go to the warning-type rules.
 
+### Rejected implementation evidence
+
+The first implementation passed its own metrics but failed direct visual review on RG-MEGA-DIRECTION. The edge from `choose by current direction` to `operation failed` uses a 665-pixel outer route although both nodes are close. The route leaves through the west side, moves above the complete layout, and then returns to a lower target. Its reported detour ratio is 1.0 because the baseline excludes shorter candidates with a different crossing score. `Branch 2` also moves 72 pixels away from its route and uses a detached leader.
+
+The viewport adds a focus summary and reduces unrelated graph content to 10 to 12 percent opacity. This makes the complete graph hard to understand and makes navigation feel destructive. Overview also removes the node header and business label below a fixed zoom threshold, which leaves empty node boxes.
+
 ## Root Cause Analysis
 
 ### 1. Complete fit is also the default reading policy
@@ -96,15 +102,21 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 - [x] IF a newer graph replaces a graph with pending layout THEN THE SYSTEM SHALL ignore the stale layout result.
 - [x] IF layout fails THEN THE SYSTEM SHALL show the existing layout error without leaving a permanent busy state.
 
-### RB-02 — Reading view and overview are separate
+### RB-02 — Explore and Overview are separate
 
-- [x] WHEN a graph becomes ready THE SYSTEM SHALL open in `Reading view` at the first declared entry or the stable first entry when multiple entries exist.
-- [x] THE SYSTEM SHALL keep business-label text at an effective size of at least 12 CSS pixels in Reading view.
-- [x] THE SYSTEM SHALL include the focused node, its direct predecessors, its direct successors, and at least 64 CSS pixels of free context where those nodes fit in the canvas.
+- [x] WHEN a graph becomes ready THE SYSTEM SHALL open in `Explore` at the first declared entry or the stable first entry when multiple entries exist.
+- [x] THE SYSTEM SHALL keep business-label text at an effective size of at least 12 CSS pixels in Explore where the local context fits.
+- [x] THE SYSTEM SHALL create an independent compact layout for Explore so complete-graph coordinates cannot separate local neighbors.
+- [x] AT the initial entry THE SYSTEM SHALL follow a bounded straight setup path to the first material split and include its immediate alternatives.
+- [x] AFTER node selection THE SYSTEM SHALL include the focused node, its direct predecessors, its direct successors, and free context where those nodes fit in the canvas.
+- [x] THE SYSTEM SHALL state that a user can select a visible node to continue through the graph.
 - [x] WHEN the user selects `Overview` THE SYSTEM SHALL fit the complete graph and expose `Overview` as the active mode.
-- [x] WHILE Overview zoom is below the readable label floor THE SYSTEM SHALL use topology-level detail instead of rendering illegible text as if it were readable.
-- [x] WHEN the user selects a node from Overview THE SYSTEM SHALL return to Reading view and focus that node.
-- [x] THE SYSTEM SHALL never remove nodes or edges from the underlying Svelte Flow model to create either viewport mode.
+- [x] WHILE the user zooms out THE SYSTEM SHALL keep each node kind and business label present; it SHALL NOT render an empty node box because of zoom.
+- [x] WHILE the zoom is below normal reading size THE SYSTEM SHALL show a full-size node kind and business label when the pointer is over that node.
+- [x] WHILE the user zooms out THE SYSTEM SHALL keep every non-empty route label present in the graph model and rendered canvas.
+- [x] WHEN the user selects a node from Overview THE SYSTEM SHALL return to Explore and focus that node.
+- [x] THE SYSTEM SHALL retain the complete current presentation for Overview while Explore renders only its derived local subgraph.
+- [x] IF the user selects Overview while the complete layout is pending THEN THE SYSTEM SHALL show that complete layout when it becomes ready.
 
 ### RB-03 — Balanced top-to-bottom placement
 
@@ -119,7 +131,15 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 ### RB-04 — Route simplicity
 
 - [x] THE SYSTEM SHALL report candidate-relative route detour, route-crossing density, parallel-corridor density, label collision, branch-region violation, and route backtracking metrics.
-- [x] THE SYSTEM SHALL reject a route when another valid candidate is at least 48 pixels or 15 percent shorter without increasing node intrusion, label collision, branch violation, or crossing count.
+- [x] THE SYSTEM SHALL measure route detour against the shortest collision-free candidate before it filters by crossing or corridor class.
+- [x] THE SYSTEM SHALL reject a route when another collision-free candidate is at least 48 pixels or 15 percent shorter unless the shorter route has a node intrusion or terminal reversal.
+- [x] THE SYSTEM SHALL NOT force an edge into an outer corridor only because its topology rank span marks it as long.
+- [x] WHEN a target is below a source THE SYSTEM SHALL reject a route that travels above the source layout boundary when a collision-free route through the south, east, or west source side exists.
+- [x] THE SYSTEM SHALL keep each visible branch label on its route or within 24 layout pixels of its route anchor; it SHALL NOT draw a detached label leader.
+- [x] THE SYSTEM SHALL select the shortest collision-free route before it uses port-orientation, crossing, congestion, or corridor preferences.
+- [x] WHEN two collision-free candidates have the same length THE SYSTEM SHALL prefer a source and target port that agrees with the top-to-bottom flow.
+- [x] THE SYSTEM SHALL show long return or reference connections as secondary quiet routes until the user inspects them.
+- [x] THE SYSTEM SHALL route a cycle return through the shortest safe perimeter corridor of its cycle.
 - [x] THE SYSTEM SHALL keep avoidable crossings, branch-region violations, node intrusions, and label collisions at zero for accepted layouts.
 - [x] THE SYSTEM SHALL keep visible crossing bridges at or below one crossing per two graph edges for the supplied evidence set.
 - [x] THE SYSTEM SHALL keep each normal route at no more than 2.0 times its shortest valid orthogonal candidate and each outer or cycle route at no more than 3.0 times its shortest valid candidate.
@@ -131,13 +151,15 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 
 - [x] WHEN search matches a node by exact ID or label THE SYSTEM SHALL persistently mark that node as selected until another node is selected or another graph is loaded.
 - [x] THE SYSTEM SHALL distinguish static selection from node kind, keyboard focus, run path, current run step, success, failure, and coverage state.
-- [x] WHEN a selected node is focused THE SYSTEM SHALL frame its local predecessor-and-successor neighborhood in Reading view.
+- [x] WHEN a selected node is focused THE SYSTEM SHALL create and frame its local predecessor-and-successor neighborhood in Explore.
 - [x] IF a label matches multiple nodes THEN THE SYSTEM SHALL select the stable first match and state the occurrence count; exact ID SHALL always select the exact node.
 - [x] IF search has no match THEN THE SYSTEM SHALL preserve the current viewport and selected node.
+- [x] WHILE no run highlight is active THE SYSTEM SHALL keep unrelated static nodes, edges, junctions, crossings, and regions at normal contrast, except for the topology-based secondary style of a long route.
+- [x] THE SYSTEM SHALL NOT add a focus-summary badge that repeats the selected node or graph count inside the canvas toolbar.
 
 ### RB-06 — Canvas safe areas
 
-- [x] THE SYSTEM SHALL calculate Reading and Overview viewports inside bounds that exclude the search toolbar, zoom controls, minimap, and attribution.
+- [x] THE SYSTEM SHALL calculate Explore and Overview viewports inside bounds that exclude the search toolbar, zoom controls, minimap, and attribution.
 - [x] THE SYSTEM SHALL keep the selected node outside every fixed-control rectangle with at least 16 CSS pixels of clearance.
 - [x] THE SYSTEM SHALL preserve the same selected node and viewport mode after a theme change or canvas resize.
 
@@ -156,6 +178,20 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 - [x] THE SYSTEM SHALL keep layout work outside the main UI thread.
 - [x] THE SYSTEM SHALL complete each supplied 19-to-55-node evidence layout within four seconds in the existing local acceptance environment.
 - [x] THE SYSTEM SHALL label this timing as a POC responsiveness gate, not a production benchmark.
+
+### RB-09 — Readable business map
+
+- [x] WHEN a graph contains a straight sequence of two or more computation nodes with no branch or labelled transition THEN THE SYSTEM SHALL show that sequence as one presentation node by default.
+- [x] WHEN predicates form a safe straight rule sequence or a guard sequence with one shared exit THEN THE SYSTEM SHALL show that sequence as one presentation node by default.
+- [x] WHEN two or more semantic edges connect the same presentation nodes THEN THE SYSTEM SHALL show one connection with a combined outcome by default.
+- [x] THE SYSTEM SHALL preserve every original node ID and edge ID in the presentation mapping, accessible graph list, search, and run highlight mapping.
+- [x] THE SYSTEM SHALL provide a Full detail control that restores every original node and edge.
+- [x] THE SYSTEM SHALL show how many original steps a sequence node contains and expose their ordered labels.
+- [x] THE SYSTEM SHALL derive a generic explanation of no more than three actual sentences from the entry, first material branch, node kinds, outcomes, cycles, and terminal results.
+- [x] THE SYSTEM SHALL NOT use graph-specific IDs, labels, coordinates, summaries, or diagrams.
+- [x] THE SYSTEM SHALL use the readable map by default only when it removes at least one redundant node or connection.
+- [x] THE SYSTEM SHALL keep current-run highlighting correct when a recorded node or edge belongs to a grouped presentation item.
+- [x] THE SYSTEM SHALL calculate cycle feedback edges from directed entry traversal and SHALL NOT use lexical node-ID order to decide edge direction.
 
 ## Regression Risk Analysis
 
@@ -208,7 +244,7 @@ No scope escalation is required. The defect can be corrected in the existing fro
 
 ## Proposed Fix
 
-Introduce an explicit graph presentation state machine, separate Reading and Overview viewports, preserve ELK-derived placement coordinates, compare deterministic placement candidates, strengthen route-quality scoring, bundle dense convergence corridors, persist static selection, and reserve canvas safe areas. Keep Svelte 5, SvelteKit, Svelte Flow, ELK, Tailwind CSS v4, and repository-owned shadcn-svelte components. Do not add GSAP or another graph library.
+Keep the explicit presentation state, deterministic ELK placement, static selection, and safe areas. Select normal routes from the full collision-free candidate set and use route length before port orientation, crossings, congestion, or corridor preference. Treat outer corridors as fallbacks, not as the default for every long edge. Route a cycle return through the shortest safe cycle perimeter. Keep branch labels attached to their routes. Show long return or reference routes with a secondary quiet solid style. Remove static focus dimming and the focus-summary badge. Keep node and route text present at every supported zoom, and show a full-size node readout on hover at small zoom. Do not add a dependency.
 
 ## Unchanged Behavior
 
@@ -232,11 +268,11 @@ Introduce an explicit graph presentation state machine, separate Reading and Ove
 ### Expected behavior
 
 - Verify layout state transitions: idle, arranging, ready, replaced, and failed.
-- Verify Reading view, Overview, node selection, local-neighborhood framing, and safe-area exclusion.
+- Verify Explore view, Overview, node selection, local-neighborhood framing, low-zoom node readout, and safe-area exclusion.
 - Verify generic placement profiles for deep, wide, cyclic, fan-in, duplicate-label, and multi-entry graphs.
 - Verify all route-quality limits from RB-04.
 - Run the local graph-review command on all available hashed evidence files.
-- Inspect Reading and Overview screenshots for all three graphs in light and dark themes.
+- Inspect Explore, selected Explore, and Overview screenshots for all three graphs in light and dark themes.
 
 ### Unchanged behavior
 
@@ -250,7 +286,7 @@ Introduce an explicit graph presentation state machine, separate Reading and Ove
 
 The bugfix is acceptable only when all objective criteria pass and a human can use each supplied graph to do these tasks without inspecting source JSON:
 
-1. Identify the entry and the immediate choices in Reading view.
+1. Identify the entry and the immediate choices in Explore view.
 2. Open Overview and recognize the main shape of the complete topology.
 3. Search an exact node ID and identify the selected node without guessing.
 4. Follow the selected node's incoming and outgoing routes without crossing an unrelated node or losing the route in a corridor wall.

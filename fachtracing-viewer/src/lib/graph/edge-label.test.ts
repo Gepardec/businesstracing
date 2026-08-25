@@ -22,6 +22,6 @@ describe('canvas edge labels', () => {
   it('hides only a single continuation and names unlabeled branches', () => {
     expect(displayedEdgeLabel('next', 1, 0)).toBeNull();
     expect(displayedEdgeLabel('', 1, 0)).toBeNull();
-    expect(displayedEdgeLabel('', 2, 1)).toBe('Branch 2');
+    expect(displayedEdgeLabel('', 2, 1)).toBe('Path 2');
   });
 });

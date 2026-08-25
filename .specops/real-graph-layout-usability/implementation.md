@@ -2,7 +2,7 @@
 
 ## Summary
 
-All six tasks are complete. Static graph preview now has an explicit arranging state, separate Reading and Overview modes, route-aware deterministic ELK placement, bounded route-set refinement, persistent static node selection, safe control-aware focus, and a generic file-driven review command. Reading mode keeps the focus and its direct topology at full contrast and fades unrelated presentation geometry without removing graph data. A compact canvas summary identifies the current focus, run step, or whole-graph overview. Both V1 graph formats, all three supplied real graphs, the generated 250-node safety graph, and the graph-only browser suite pass.
+The first implementation was rejected during direct user review. Tasks 7 and 8 reopen route selection and viewport presentation. The prior completion claim and visual approval are invalid until the rejected screenshot cases pass.
 
 ## Phase 1 Context Summary
 
@@ -46,6 +46,15 @@ All six tasks are complete. Static graph preview now has an explicit arranging s
 | 9 | Replace exhaustive spine-path enumeration with memoized longest-forward-path analysis. | The real 45-node graph contains many valid paths. Enumerating all paths made layout exponential and caused the five-second delay. | Task 3 | 2026-08-25T10:20:00Z |
 | 10 | Use the direct focus neighborhood as the Reading context and fade unrelated static topology. | Medium graphs stay complete, but unrelated corridor walls must not compete with the local explanation task. | Task 5 | 2026-08-25T10:44:15Z |
 | 11 | Fall back to focus-centered 0.86 zoom when a full direct neighborhood cannot fit. | The selected node must stay visible and readable even when direct routes or neighbors extend beyond the canvas. | Task 5 | 2026-08-25T10:37:18Z |
+| 12 | Reopen the completed spec after user visual rejection. | The existing metrics certified a visibly wrong route, and the prior review did not prove usability. | Tasks 7 and 8 | 2026-08-25T11:20:33Z |
+| 13 | Remove static focus dimming and keep node text present at every zoom. | Navigation must not make the rest of a static graph disappear or turn nodes into empty boxes. | Task 8 | 2026-08-25T11:20:33Z |
+| 14 | Rank wrong-way excursion and route length before crossings and outer-corridor preference. | Crossings remain visible and traceable; a hidden long detour makes the edge itself untraceable. | Task 7 | 2026-08-25T11:28:36Z |
+| 15 | Keep label search on the route and cap label offset at 24 layout pixels. | A label leader creates a second ambiguous line. Route-relative positions remain attached to the edge. | Task 7 | 2026-08-25T11:28:36Z |
+| 16 | Use a reversible readable presentation before layout. | Safe action, rule, guard, and parallel-edge grouping reduces noise while Full detail preserves exact source topology. | Task 9 | 2026-08-25T16:15:00Z |
+| 17 | Give Explore an independent local layout. | Complete-graph coordinates made directly connected nodes look far apart and created line walls in a local task. | Task 11 | 2026-08-25T17:40:00Z |
+| 18 | Show the first material split in the opening context. | A two-node entry view did not explain the first business choice or how to continue. | Task 11 | 2026-08-25T19:08:00Z |
+| 19 | Try compact local spacing before safe standard spacing. | Compact spacing improves label size. Some cyclic neighborhoods need the wider route clearances of the standard profile. | Task 11 | 2026-08-25T19:14:00Z |
+| 20 | Use `Path N` for an unlabeled alternative. | The shorter generic label is clear and removes the remaining route-label collision without inventing a business outcome. | Tasks 7 and 11 | 2026-08-25T19:25:00Z |
 
 ## Deviations from Design
 
@@ -53,6 +62,8 @@ All six tasks are complete. Static graph preview now has an explicit arranging s
 | --- | --- | --- | --- |
 | Keep request cancellation in `layout-client.ts`. | `layout-client.ts` keeps the worker boundary; `FlowCanvas.svelte` owns monotonic presentation request IDs and rejects stale results. | The component owns graph replacement and the visible layout phase. The worker client remains stateless apart from its reusable ELK worker. | Task 2 |
 | Reading view shows the local neighborhood over the complete graph at normal contrast. | Reading view keeps the focus and direct neighborhood at full contrast and fades unrelated static nodes, routes, junctions, crossings, and regions. | Real-file screenshot review showed that offscreen routes still formed line walls across the local view. Fading preserves the full model and makes the local explanation legible. | Task 5 |
+| Reading view fades unrelated static topology and Overview hides node text below 0.72 zoom. | Explore moves the viewport without static dimming, and node text remains present at all supported zoom levels. | Direct user review found the fade and empty boxes more harmful than useful. | Task 8 |
+| Explore reuses complete-graph coordinates and only changes the viewport. | Explore derives and lays out a bounded local graph. Overview uses the cached complete layout. | Reusing global coordinates kept local neighbors far apart and preserved irrelevant route corridors. | Task 11 |
 
 ## Blockers Encountered
 
@@ -95,13 +106,36 @@ All six tasks are complete. Static graph preview now has an explicit arranging s
 - Corrected the summary to use plain visible text so it does not duplicate the existing screen-reader status channel.
 - Rebuilt the production application and reran the complete browser suite. Eleven applicable journeys pass, and five unavailable external-fixture journeys skip.
 
+### Session 4 — Rejected visual result and remediation (2026-08-25)
+
+- Reopened the spec after the user rejected the supplied direction-graph screenshot and the focus interaction.
+- Confirmed that the `operation failed` edge uses a 665-pixel outer loop, leaves above the layout, and reports a false 1.0 detour ratio.
+- Confirmed that `Branch 2` is 72 layout pixels from its route anchor and uses a detached dashed leader.
+- Confirmed that static focus reduces unrelated topology to 10 to 12 percent opacity and Overview removes node text below 0.72 zoom.
+- Task 7 scope: correct the detour baseline, make outer corridors fallback-only, rank bounded route length before crossings, and keep labels attached. Acceptance requires the supplied direction graph to lose its wrong-way loop without regressing safe endpoint geometry.
+- Completed Task 7. The direction graph branch no longer leaves the layout, all three supplied graphs report a 1.0 maximum detour, and all report zero detached labels, wrong-way boundary exits, node intrusions, and label collisions.
+- Task 8 scope: remove static focus opacity and the focus summary, rename Reading to Explore, keep node text present while zooming, and validate the three supplied graphs at Explore and Overview scales.
+
+### Session 5 — Readable presentation and independent Explore layout (2026-08-25)
+
+- Added a reversible presentation transform. It groups safe action chains, convergent rule chains, shared-exit guard chains, and parallel presentation connections.
+- Added Readable and Full detail modes. Full detail restores each source node and edge. Search, accessibility, and run-highlight mappings retain original IDs.
+- Added a generic summary with no more than three actual sentences. It uses supplied entry, branch, work, cycle, and outcome data only.
+- Fixed feedback-edge detection to use directed depth-first traversal from entries instead of lexical node-ID order.
+- Replaced the global-coordinate Explore viewport with an independently laid-out local graph.
+- Added an opening context that follows a bounded setup path to the first material split. Selected nodes use direct predecessor-and-successor context.
+- Added compact local spacing with a safe standard-spacing retry for cyclic or dense local neighborhoods.
+- Fixed a race where Overview selected during pending layout could produce an empty canvas.
+- Shortened unlabeled alternative labels from `Branch N` to `Path N`; all three complete real-file reviews now have zero label collisions.
+- Readable reductions are 45 to 22 nodes and 77 to 29 connections, 55 to 39 nodes and 89 to 63 connections, and 19 to 15 nodes and 29 to 20 connections.
+
 ## Phase 3 Completion Summary
 
-- Completed six tasks across metrics, presentation state, viewport policy, placement, routing, static selection, and acceptance review.
+- Completed eleven tasks across metrics, presentation state, viewport policy, placement, routing, static selection, readable presentation, graph explanation, independent Explore layout, and acceptance review.
 - Added no dependency and changed no graph contract, SQL, HTTP, storage, or CI file.
 - Kept all graph positions, routes, groups, and focus state derived from the supplied topology.
 - Used local optional evidence by file path and hash only. No supplied graph ID, node ID, label, coordinate, route, or diagram entered production or test fixtures.
-- Verified 58 unit tests, zero Svelte diagnostics, the production build, and 11 applicable full-suite browser journeys, including both optional-evidence journeys.
+- Verified 71 unit tests, zero Svelte diagnostics, the production build, and 11 applicable full-suite browser journeys, including all three optional-evidence graphs.
 
 ## Phase 4 Verification Summary
 
@@ -113,11 +147,22 @@ All six tasks are complete. Static graph preview now has an explicit arranging s
 - Manual visual review: approved Reading, selected Reading, and Overview for all three files in light and dark themes. Reading now isolates direct topology; Overview preserves the full shape.
 - Source scan: no supplied graph IDs, business labels, absolute evidence paths, fixed positions, fixed routes, or hard-coded diagrams exist in frontend source, scripts, or browser tests.
 
+## Phase 5 Verification Summary
+
+- `npm test`: pass; 16 files and 71 tests.
+- `npm run check`: pass; 0 errors and 0 warnings.
+- `npm run build`: pass; only existing third-party XYFlow and D3 warnings.
+- `npm run review:graphs -- <three supplied files>`: pass for all files. Complete layouts have zero overlaps, node intrusions, label collisions, detached labels, wrong-way exits, avoidable crossings, branch violations, and avoidable detours.
+- Playwright production build with real evidence: 11 applicable journeys pass and 5 external PostgreSQL or generated-dogfood journeys skip.
+- Browser geometry checks on every default real-file Explore view find zero node intrusions, node-label collisions, label-label collisions, and route-label collisions. Every visible card is at least 160 by 60 CSS pixels in the tested desktop viewport.
+- Full-resolution visual review approves the opening, selected, Overview, light, and dark states for all three supplied files.
+- No Java or JSON contract change was necessary. The current JSON includes sufficient topology and supplied business labels for the generic summary and reversible presentation.
+
 ## Documentation Review
 
 | File | Status | Review result |
 | --- | --- | --- |
-| `fachtracing-viewer/README.md` | Updated | Documents Reading, Overview, selection, topology level of detail, the generic review command, and the local POC timing boundary. |
+| `fachtracing-viewer/README.md` | Updated | Documents Readable, Full detail, independent Explore layout, Overview, the three-sentence summary, selection, the review command, and the local POC timing boundary. |
 | `README.md` | Up to date | Root build, API, and storage behavior did not change. |
 | `docs/` | Up to date | No public graph, SQL, HTTP, Java, or persistence contract changed. |
 | `AGENTS.md` | Up to date | The change keeps single responsibilities and contains no hard-coded diagram. |

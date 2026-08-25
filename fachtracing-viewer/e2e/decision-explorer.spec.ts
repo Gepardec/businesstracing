@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { basename, delimiter, join, resolve } from 'node:path';
+import { displayedEdgeLabel } from '../src/lib/graph/edge-label';
 import { crossingGraphFile, cycleGraphFile, duplicateGraphFile, fanInGraphFile, generatedBranchingGraphFile, longShortcutGraphFile } from './visual-fixtures';
 
 async function canvasGeometry(page: import('@playwright/test').Page) {
@@ -70,6 +71,28 @@ async function openGeneratedFachtracingRun(page: import('@playwright/test').Page
   await expect(page.getByRole('link', { name: 'Explain' }).first()).toBeVisible();
   await page.getByRole('link', { name: 'Explain' }).first().click();
   await expect(page.locator('.svelte-flow__node').first()).toBeVisible({ timeout: 15_000 });
+}
+
+async function showFullDetail(page: import('@playwright/test').Page): Promise<void> {
+  const button = page.getByRole('button', { name: 'Full detail' });
+  if (await button.count() === 0) return;
+  await button.click();
+  await expect(button).toHaveAttribute('aria-pressed', 'true');
+}
+
+async function showOverview(page: import('@playwright/test').Page): Promise<void> {
+  const button = page.getByRole('button', { name: 'Overview' });
+  if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
+  await expect(button).toHaveAttribute('aria-pressed', 'true');
+}
+
+async function waitForGraphLayout(page: import('@playwright/test').Page): Promise<void> {
+  await expect(page.locator('.svelte-flow__node').first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText('Arranging', { exact: false })).toHaveCount(0, { timeout: 15_000 });
+}
+
+function graphSearchStatus(page: import('@playwright/test').Page) {
+  return page.locator('.flow-panel + .sr-only[role="status"]');
 }
 
 const generatedNodeKinds = ['PREDICATE', 'CHOICE', 'COMPUTATION', 'DISPATCH', 'COVERAGE_GAP'] as const;
@@ -200,6 +223,7 @@ test('previews a generated developer graph JSON file without storage', async ({ 
   await expect(page.getByText(`${document.graph.nodes.length} nodes`, { exact: true })).toBeVisible();
   await expect(page.getByText(`${document.graph.edges.length} edges`, { exact: true })).toBeVisible();
   await expect(page.locator('.svelte-flow__node')).toHaveCount(document.graph.nodes.length, { timeout: 15_000 });
+  await showOverview(page);
   const geometry = await canvasGeometry(page);
   expect(geometry.routeCount).toBe(document.graph.edges.length);
   expect(geometry.intrusions).toEqual([]);
@@ -308,6 +332,7 @@ test('renders the complete generated node grammar in both themes', async ({ page
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedNodeGrammarFile());
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(7, { timeout: 15_000 });
   for (const kind of ['entry', 'predicate', 'choice', 'computation', 'dispatch', 'outcome', 'coverage_gap']) {
     await expect(page.locator(`.business-node--${kind}`)).toBeVisible();
@@ -343,12 +368,13 @@ test('keeps a generated 250-node graph navigable', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedGraphFile(250));
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(250, { timeout: 15_000 });
   await expect(page.locator('.business-minimap')).toHaveCount(0);
   await expect(page.getByLabel('250-node graph navigation')).toContainText('Search to jump');
   await page.getByPlaceholder('Find a node').fill('node-249');
   await page.getByPlaceholder('Find a node').press('Enter');
-  await expect(page.getByRole('status')).toContainText('Selected generated outcome 249');
+  await expect(graphSearchStatus(page)).toContainText('Selected generated outcome 249');
   await expect.poll(async () => page.evaluate(() => {
     const canvas = document.querySelector<HTMLElement>('.preview-canvas')?.getBoundingClientRect();
     const node = document.querySelector<HTMLElement>('.svelte-flow__node[data-id="node-249"]')?.getBoundingClientRect();
@@ -357,7 +383,7 @@ test('keeps a generated 250-node graph navigable', async ({ page }) => {
   await page.screenshot({ path: 'test-results/visual/graph-250-focused.png', fullPage: true });
 });
 
-test('keeps optional real graphs readable in Reading and Overview modes', async ({ page }) => {
+test('keeps optional real graphs readable in Explore and Overview modes', async ({ page }) => {
   const graphPaths = (process.env.FACHTRACING_REAL_GRAPH_FILES ?? '').split(delimiter).filter(Boolean);
   test.skip(graphPaths.length === 0, 'Optional real graph files are required');
   await mkdir('test-results/real-graphs', { recursive: true });
@@ -366,6 +392,7 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
   for (const [index, graphPath] of graphPaths.entries()) {
     const document = JSON.parse(await readFile(graphPath, 'utf8')) as {
       nodes: Array<{ id: string; label: string }>;
+      edges: Array<{ id: string; from: string; outcome: string }>;
       decision: string;
       entryNodeIds: string[];
     };
@@ -375,29 +402,65 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
     const switchToLight = page.getByRole('button', { name: 'Use light theme' });
     if (await switchToLight.count()) await switchToLight.click();
     await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
-    if (index === 0) await expect(page.getByText(`Arranging ${document.nodes.length} nodes`, { exact: false })).toBeVisible({ timeout: 1_000 });
-    await expect(page.locator('.svelte-flow__node')).toHaveCount(document.nodes.length, { timeout: 15_000 });
-    await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.view-summary')).toContainText('connected');
-    const entry = page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"] .business-node`);
-    await expect(entry).toBeVisible();
-    expect((await entry.boundingBox())!.width).toBeGreaterThanOrEqual(199);
+    await waitForGraphLayout(page);
+    await expect(page.getByText('Business logic at a glance')).toBeVisible();
+    const readableButton = page.getByRole('button', { name: 'Readable' });
+    if (await readableButton.count()) await expect(readableButton).toHaveAttribute('aria-pressed', 'true');
+    const localGeometry = await canvasGeometry(page);
+    expect(localGeometry.intrusions).toEqual([]);
+    expect(localGeometry.labelNodeCollisions).toEqual([]);
+    expect(localGeometry.labelCollisions).toEqual([]);
+    expect(localGeometry.routeLabelCollisions).toEqual([]);
+    expect(await page.locator('.business-node').evaluateAll((nodes) => nodes.every((node) => {
+      const box = node.getBoundingClientRect();
+      return box.width >= 160 && box.height >= 60;
+    }))).toBe(true);
+    await expect(page.getByText(/nearby nodes · Select a node to continue/)).toBeVisible();
     const stem = basename(graphPath, '.json');
-    await page.screenshot({ path: `test-results/real-graphs/${stem}-reading.png`, fullPage: true });
-
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-readable-light.png`, fullPage: true });
     await page.getByRole('button', { name: 'Overview' }).click();
     await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.view-summary')).toHaveText(`Whole graph · ${document.nodes.length} nodes · select or search to inspect`);
-    await expect(page.locator('.node-overview').first()).toBeAttached();
-    await page.screenshot({ path: `test-results/real-graphs/${stem}-overview.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-readable-overview-light.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Explore' }).click();
 
-    const selected = document.nodes[Math.floor(document.nodes.length / 2)];
+    await showFullDetail(page);
+    await waitForGraphLayout(page);
+    await expect(page.getByRole('button', { name: 'Explore' })).toHaveAttribute('aria-pressed', 'true');
+    const entry = page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"] .business-node`);
+    await expect(entry).toBeVisible();
+    expect((await entry.boundingBox())!.width).toBeGreaterThanOrEqual(140);
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-full-explore.png`, fullPage: true });
+    await showOverview(page);
+    await expect(page.locator('.svelte-flow__node')).toHaveCount(document.nodes.length, { timeout: 15_000 });
+    await expect(page.locator('.view-summary')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.business-node p')).toHaveCount(document.nodes.length);
+    expect(await page.locator('.business-node p').evaluateAll((labels) => labels.filter((label) => {
+      const style = getComputedStyle(label);
+      return style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
+    }).length)).toBe(0);
+    const outgoingBySource = new Map<string, typeof document.edges>();
+    for (const edge of document.edges) outgoingBySource.set(edge.from, [...(outgoingBySource.get(edge.from) ?? []), edge]);
+    const expectedLabelEdgeIds = document.edges.filter((edge) => {
+      const outgoing = outgoingBySource.get(edge.from)!;
+      return displayedEdgeLabel(edge.outcome, outgoing.length, outgoing.findIndex((candidate) => candidate.id === edge.id)) !== null;
+    }).map((edge) => edge.id);
+    await expect(page.locator('.business-edge-label')).toHaveCount(expectedLabelEdgeIds.length);
+    for (const edgeId of expectedLabelEdgeIds) await expect(page.locator(`[data-edge-label="${edgeId}"]`)).toBeAttached();
+    await page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"]`).hover();
+    await expect(page.getByLabel('Zoomed node label')).toContainText(entryNode!.label);
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-full-overview.png`, fullPage: true });
+
+    const selected = [...document.nodes].sort((first, second) =>
+      (outgoingBySource.get(second.id)?.length ?? 0) - (outgoingBySource.get(first.id)?.length ?? 0) || first.id.localeCompare(second.id)
+    )[0];
     await page.getByPlaceholder('Find a node').fill(selected.id);
     await page.getByPlaceholder('Find a node').press('Enter');
     await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
-    await expect(page.getByRole('status')).toContainText(`Selected ${selected.label}`);
-    await expect(page.locator('.view-summary')).toContainText(selected.label);
-    await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(graphSearchStatus(page)).toContainText(`Selected ${selected.label}`);
+    await expect(page.getByRole('button', { name: 'Explore' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.node-context-dimmed, .context-dimmed')).toHaveCount(0);
+    expect(await page.locator('.business-node').evaluateAll((items) => items.every((item) => getComputedStyle(item).opacity === '1'))).toBe(true);
     const selectedGeometry = () => page.evaluate((nodeId) => {
       const selectedNode = document.querySelector<HTMLElement>(`.svelte-flow__node[data-id="${CSS.escape(nodeId)}"]`)?.getBoundingClientRect();
       const canvas = document.querySelector<HTMLElement>('.flow-panel')?.getBoundingClientRect();
@@ -420,7 +483,7 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
     const transformBeforeMissingSearch = await viewport.getAttribute('style');
     await page.getByPlaceholder('Find a node').fill('__node_that_does_not_exist__');
     await page.getByPlaceholder('Find a node').press('Enter');
-    await expect(page.getByRole('status')).toContainText('No matching node was found');
+    await expect(graphSearchStatus(page)).toContainText('No matching node was found');
     await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
     await expect(viewport).toHaveAttribute('style', transformBeforeMissingSearch!);
     await page.getByPlaceholder('Find a node').fill(selected.id);
@@ -431,7 +494,7 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
         const duplicates = document.nodes.filter((node) => node.label.toLowerCase().includes(duplicate.label.toLowerCase())).sort((first, second) => first.id.localeCompare(second.id));
         await page.getByPlaceholder('Find a node').fill(duplicate.label);
         await page.getByPlaceholder('Find a node').press('Enter');
-        await expect(page.getByRole('status')).toContainText(`Match 1 of ${duplicates.length}`);
+        await expect(graphSearchStatus(page)).toContainText(`Match 1 of ${duplicates.length}`);
         await expect(page.locator(`.svelte-flow__node.selected[data-id="${duplicates[0].id}"]`)).toBeVisible();
         await page.getByPlaceholder('Find a node').fill(selected.id);
         await page.getByPlaceholder('Find a node').press('Enter');
@@ -439,7 +502,7 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
     }
 
     await page.getByRole('button', { name: 'Use dark theme' }).click();
-    await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Explore' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
     await page.setViewportSize({ width: 1_200, height: 900 });
     await expect.poll(async () => {
@@ -451,12 +514,19 @@ test('keeps optional real graphs readable in Reading and Overview modes', async 
       const geometry = await selectedGeometry();
       return { insideCanvas: geometry.insideCanvas, overlayClear: geometry.overlayClear };
     }).toEqual({ insideCanvas: true, overlayClear: true });
-    await page.screenshot({ path: `test-results/real-graphs/${stem}-reading-dark.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-full-explore-dark.png`, fullPage: true });
     await page.getByRole('button', { name: 'Overview' }).click();
     await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.node-overview').first()).toBeAttached();
+    await expect(page.locator('.business-node p')).toHaveCount(document.nodes.length);
     await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
-    await page.screenshot({ path: `test-results/real-graphs/${stem}-overview-dark.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-full-overview-dark.png`, fullPage: true });
+
+    if (await readableButton.count()) {
+      await readableButton.click();
+      await expect(readableButton).toHaveAttribute('aria-pressed', 'true');
+      await waitForGraphLayout(page);
+      await page.screenshot({ path: `test-results/real-graphs/${stem}-readable-dark.png`, fullPage: true });
+    }
   }
 });
 
@@ -471,6 +541,8 @@ test('ignores an older real-graph layout after file replacement', async ({ page 
   await input.setInputFiles(graphPaths[0]);
   await input.setInputFiles(replacementPath);
   await expect(page.getByRole('heading', { name: replacement.decision })).toBeVisible();
+  await showFullDetail(page);
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(replacement.nodes.length, { timeout: 15_000 });
   await expect(page.locator('path[data-route-edge]')).toHaveCount(replacement.edges.length);
   await expect(page.getByRole('alert')).toHaveCount(0);
@@ -483,6 +555,8 @@ test('previews the stable business graph V1 contract from the repository', async
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
   await expect(page.getByRole('heading', { name: document.decision })).toBeVisible();
+  await showFullDetail(page);
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(document.nodes.length, { timeout: 15_000 });
   await expect(page.locator('path[data-route-edge]')).toHaveCount(document.edges.length);
   await expect(page.getByRole('alert')).toHaveCount(0);
@@ -503,6 +577,8 @@ test('renders branching and parallel routes without overlap in both themes', asy
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedBranchingGraphFile());
+  await showFullDetail(page);
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
   await expect(page.locator('path[data-route-edge]')).toHaveCount(5);
   const geometry = await canvasGeometry(page);
@@ -524,6 +600,7 @@ test('renders a twelve-source convergence as one inspectable junction', async ({
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(fanInGraphFile());
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(14, { timeout: 15_000 });
   await expect(page.locator('.svelte-flow__edge')).toHaveCount(24);
   const junction = page.locator('[data-junction]');
@@ -546,7 +623,7 @@ test('renders a twelve-source convergence as one inspectable junction', async ({
   await page.screenshot({ path: 'test-results/visual/fan-in-1440-dark.png', fullPage: true });
   await page.getByPlaceholder('Find a node').fill('combined result');
   await page.getByPlaceholder('Find a node').press('Enter');
-  await expect(page.getByRole('status')).toContainText('Selected combined result');
+  await expect(graphSearchStatus(page)).toContainText('Selected combined result');
   await page.screenshot({ path: 'test-results/visual/fan-in-focused-1440-dark.png', fullPage: true });
 });
 
@@ -556,9 +633,10 @@ test('renders duplicate context and a cycle without changing semantic node count
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(duplicateGraphFile());
   await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
+  await showOverview(page);
   await expect(page.getByText('1 of 2')).toBeVisible();
   await expect(page.getByText('2 of 2')).toBeVisible();
-  await expect(page.locator('.svelte-flow__node[data-id="first-check"]')).toHaveAttribute('aria-label', /Node first-check/);
+  await expect(page.locator('.svelte-flow__node[data-id="first-check"]')).toHaveAttribute('aria-label', /PREDICATE: email exists.*Occurrence 1 of 2/);
   await page.screenshot({ path: 'test-results/visual/duplicates-1440-light.png', fullPage: true });
   await page.getByRole('button', { name: 'Use dark theme' }).click();
   await page.screenshot({ path: 'test-results/visual/duplicates-1440-dark.png', fullPage: true });
@@ -566,8 +644,16 @@ test('renders duplicate context and a cycle without changing semantic node count
   await page.getByRole('button', { name: 'Choose another file' }).click();
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(cycleGraphFile());
   await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
-  await expect(page.locator('.structural-region')).toHaveCount(1);
-  await expect(page.locator('.structural-region text')).toHaveText('Cycle');
+  await showOverview(page);
+  await expect(page.locator('.structural-region')).toHaveCount(0);
+  const secondaryRoute = page.locator('path.secondary-route').first();
+  await expect(secondaryRoute).toBeAttached();
+  expect(await secondaryRoute.evaluate((route) => getComputedStyle(route).strokeDasharray)).toBe('none');
+  expect(Number(await secondaryRoute.evaluate((route) => getComputedStyle(route).opacity))).toBeLessThan(0.5);
+  const secondaryRouteId = await secondaryRoute.getAttribute('id');
+  await page.locator(`.svelte-flow__edge[data-id="${secondaryRouteId}"]`).focus();
+  await expect.poll(() => secondaryRoute.evaluate((route) => getComputedStyle(route).strokeDasharray)).toBe('none');
+  await expect.poll(() => secondaryRoute.evaluate((route) => getComputedStyle(route).opacity)).toBe('1');
   await expect(page.locator('.semantic-node-list summary')).toHaveText('Accessible graph list (4 nodes, 4 edges)');
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
@@ -579,13 +665,18 @@ test('renders duplicate context and a cycle without changing semantic node count
   await page.screenshot({ path: 'test-results/visual/cycle-1440-light.png', fullPage: true });
 });
 
-test('keeps a proven long route in a separate continuation corridor', async ({ page }) => {
+test('keeps a long forward shortcut solid and inside the normal flow', async ({ page }) => {
   await mkdir('test-results/visual', { recursive: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(longShortcutGraphFile());
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(6, { timeout: 15_000 });
-  await expect(page.locator('path.long-route')).toHaveCount(1);
+  const longRoute = page.locator('path.long-route');
+  await expect(longRoute).toHaveCount(1);
+  await expect(page.locator('path.secondary-route')).toHaveCount(0);
+  expect(await longRoute.evaluate((route) => getComputedStyle(route).strokeDasharray)).toBe('none');
+  expect(await longRoute.evaluate((route) => getComputedStyle(route).opacity)).toBe('1');
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
@@ -599,6 +690,7 @@ test('renders crossings as bridges without adding graph nodes', async ({ page })
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/graphs');
   await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(crossingGraphFile());
+  await showOverview(page);
   await expect(page.locator('.svelte-flow__node')).toHaveCount(7, { timeout: 15_000 });
   await expect(page.locator('.svelte-flow__edge')).toHaveCount(12);
   await expect(page.locator('[data-route-crossing]').first()).toBeAttached();

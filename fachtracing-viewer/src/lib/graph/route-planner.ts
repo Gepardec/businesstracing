@@ -62,6 +62,7 @@ export interface RenderedRoute {
   shortestCandidateLength: number;
   bends: number;
   long: boolean;
+  secondary: boolean;
   corridor: 'normal' | 'outer' | 'cycle';
 }
 
@@ -86,6 +87,8 @@ interface CandidateRoute {
   terminalReversals: number;
   corridorMismatch: number;
   shortSegments: number;
+  wrongWayExcursion: number;
+  flowPortMismatch: number;
   crossings: number;
   congestion: number;
   length: number;
@@ -106,16 +109,10 @@ const PORT_LEAD = 28;
 const OUTER_CORRIDOR_GAP = 40;
 const PORT_SLOT_GAP = 12;
 
-const LABEL_OFFSETS: readonly LayoutPoint[] = [
-  { x: 0, y: 0 },
-  { x: -12, y: 0 }, { x: 12, y: 0 }, { x: 0, y: -12 }, { x: 0, y: 12 },
-  { x: -24, y: 0 }, { x: 24, y: 0 }
-].concat(
-  [-72, -36, 0, 36, 72]
-    .flatMap((x) => [-72, -36, 0, 36, 72].map((y) => ({ x, y })))
-    .filter(({ x, y }) => x !== 0 || y !== 0)
-    .sort((first, second) => Math.abs(first.x) + Math.abs(first.y) - Math.abs(second.x) - Math.abs(second.y) || first.y - second.y || first.x - second.x)
-);
+const LABEL_OFFSETS: readonly LayoutPoint[] = [-24, -16, -8, 0, 8, 16, 24]
+  .flatMap((x) => [-24, -16, -8, 0, 8, 16, 24].map((y) => ({ x, y })))
+  .filter(({ x, y }) => Math.hypot(x, y) <= 24)
+  .sort((first, second) => Math.hypot(first.x, first.y) - Math.hypot(second.x, second.y) || first.y - second.y || first.x - second.x);
 
 function pointEqual(first: LayoutPoint, second: LayoutPoint): boolean {
   return first.x === second.x && first.y === second.y;
@@ -209,6 +206,100 @@ function orthogonalCore(
   for (const x of laneXs) candidates.push([start, { x, y: start.y }, { x, y: end.y }, end]);
   for (const y of laneYs) candidates.push([start, { x: start.x, y }, { x: end.x, y }, end]);
   return candidates.map(simplify);
+}
+
+type GridDirection = 'horizontal' | 'vertical' | 'start';
+
+interface GridState {
+  readonly xIndex: number;
+  readonly yIndex: number;
+  readonly direction: GridDirection;
+  readonly cost: number;
+  readonly estimate: number;
+  readonly previous: string | null;
+}
+
+function gridStateKey(xIndex: number, yIndex: number, direction: GridDirection): string {
+  return `${xIndex}:${yIndex}:${direction}`;
+}
+
+function insideExpandedBox(point: LayoutPoint, box: NodeBox): boolean {
+  return point.x > box.x - NODE_CLEARANCE && point.x < box.x + box.width + NODE_CLEARANCE &&
+    point.y > box.y - NODE_CLEARANCE && point.y < box.y + box.height + NODE_CLEARANCE;
+}
+
+function obstacleAvoidingCore(
+  start: LayoutPoint,
+  end: LayoutPoint,
+  boxes: readonly NodeBox[],
+  bounds: { left: number; right: number; top: number; bottom: number },
+  lane: number
+): LayoutPoint[] | null {
+  const outerGap = OUTER_CORRIDOR_GAP + lane * PORT_SLOT_GAP;
+  const xs = [...new Set([
+    start.x, end.x, bounds.left - outerGap, bounds.right + outerGap,
+    ...boxes.flatMap((box) => [box.x - NODE_CLEARANCE, box.x + box.width + NODE_CLEARANCE])
+  ])].sort((first, second) => first - second);
+  const ys = [...new Set([
+    start.y, end.y, bounds.top - outerGap, bounds.bottom + outerGap,
+    ...boxes.flatMap((box) => [box.y - NODE_CLEARANCE, box.y + box.height + NODE_CLEARANCE])
+  ])].sort((first, second) => first - second);
+  const startX = xs.indexOf(start.x);
+  const startY = ys.indexOf(start.y);
+  const endX = xs.indexOf(end.x);
+  const endY = ys.indexOf(end.y);
+  const queue: GridState[] = [{
+    xIndex: startX,
+    yIndex: startY,
+    direction: 'start',
+    cost: 0,
+    estimate: Math.abs(start.x - end.x) + Math.abs(start.y - end.y),
+    previous: null
+  }];
+  const bestCost = new Map<string, number>([[gridStateKey(startX, startY, 'start'), 0]]);
+  const states = new Map<string, GridState>();
+
+  while (queue.length > 0) {
+    queue.sort((first, second) => first.estimate - second.estimate || first.cost - second.cost);
+    const current = queue.shift()!;
+    const currentKey = gridStateKey(current.xIndex, current.yIndex, current.direction);
+    if (current.cost !== bestCost.get(currentKey)) continue;
+    states.set(currentKey, current);
+    if (current.xIndex === endX && current.yIndex === endY) {
+      const path: LayoutPoint[] = [];
+      let state: GridState | undefined = current;
+      while (state) {
+        path.push({ x: xs[state.xIndex], y: ys[state.yIndex] });
+        state = state.previous ? states.get(state.previous) : undefined;
+      }
+      return simplify(path.reverse());
+    }
+
+    const neighbours = [
+      { xIndex: current.xIndex - 1, yIndex: current.yIndex, direction: 'horizontal' as const },
+      { xIndex: current.xIndex + 1, yIndex: current.yIndex, direction: 'horizontal' as const },
+      { xIndex: current.xIndex, yIndex: current.yIndex - 1, direction: 'vertical' as const },
+      { xIndex: current.xIndex, yIndex: current.yIndex + 1, direction: 'vertical' as const }
+    ].filter(({ xIndex, yIndex }) => xIndex >= 0 && xIndex < xs.length && yIndex >= 0 && yIndex < ys.length);
+    const currentPoint = { x: xs[current.xIndex], y: ys[current.yIndex] };
+    for (const neighbour of neighbours) {
+      const point = { x: xs[neighbour.xIndex], y: ys[neighbour.yIndex] };
+      if (boxes.some((box) => insideExpandedBox(point, box) || segmentIntersectsBox(currentPoint, point, box))) continue;
+      const distance = Math.abs(point.x - currentPoint.x) + Math.abs(point.y - currentPoint.y);
+      const bendPenalty = current.direction === 'start' || current.direction === neighbour.direction ? 0 : 8;
+      const cost = current.cost + distance + bendPenalty;
+      const key = gridStateKey(neighbour.xIndex, neighbour.yIndex, neighbour.direction);
+      if (cost >= (bestCost.get(key) ?? Number.POSITIVE_INFINITY)) continue;
+      bestCost.set(key, cost);
+      queue.push({
+        ...neighbour,
+        cost,
+        estimate: cost + Math.abs(point.x - end.x) + Math.abs(point.y - end.y),
+        previous: currentKey
+      });
+    }
+  }
+  return null;
 }
 
 function internalLaneCoordinates(
@@ -320,6 +411,29 @@ function backtracking(points: readonly LayoutPoint[], targetBelow: boolean): num
   return distance;
 }
 
+function wrongWayExcursion(points: readonly LayoutPoint[], source: NodeBox, target: NodeBox): number {
+  const sourceCenterY = source.y + source.height / 2;
+  const targetCenterY = target.y + target.height / 2;
+  if (targetCenterY > sourceCenterY) return Math.max(0, source.y - Math.min(...points.map((point) => point.y)));
+  if (targetCenterY < sourceCenterY) return Math.max(0, Math.max(...points.map((point) => point.y)) - (source.y + source.height));
+  return 0;
+}
+
+function flowPortMismatch(sourceSide: PortSide, targetSide: PortSide, source: NodeBox, target: NodeBox): number {
+  const forwardGap = target.y - (source.y + source.height);
+  const returnGap = source.y - (target.y + target.height);
+  if (forwardGap >= PORT_LEAD) {
+    return (sourceSide === 'south' ? 0 : 1) + (targetSide === 'north' ? 0 : 1);
+  }
+  if (returnGap >= PORT_LEAD) {
+    return (sourceSide === 'east' || sourceSide === 'west' ? 0 : 1) +
+      (targetSide === 'east' || targetSide === 'west' ? 0 : 1);
+  }
+  const targetIsRight = target.x + target.width / 2 >= source.x + source.width / 2;
+  return (sourceSide === (targetIsRight ? 'east' : 'west') ? 0 : 1) +
+    (targetSide === (targetIsRight ? 'west' : 'east') ? 0 : 1);
+}
+
 function shortSegmentCount(points: readonly LayoutPoint[]): number {
   let count = 0;
   for (let index = 2; index < points.length - 1; index += 1) {
@@ -345,12 +459,14 @@ function terminalReversalCount(points: readonly LayoutPoint[]): number {
 function compareCandidates(first: CandidateRoute, second: CandidateRoute): number {
   return first.intrusions - second.intrusions ||
     first.terminalReversals - second.terminalReversals ||
-    first.corridorMismatch - second.corridorMismatch ||
     first.shortSegments - second.shortSegments ||
-    first.crossings - second.crossings ||
+    first.wrongWayExcursion - second.wrongWayExcursion ||
     first.length - second.length ||
+    first.flowPortMismatch - second.flowPortMismatch ||
     first.backtracking - second.backtracking ||
     first.bends - second.bends ||
+    first.corridorMismatch - second.corridorMismatch ||
+    first.crossings - second.crossings ||
     first.congestion - second.congestion ||
     first.sourcePort.side.localeCompare(second.sourcePort.side) ||
     first.targetPort.side.localeCompare(second.targetPort.side);
@@ -360,15 +476,18 @@ function compareCandidateGeometry(first: CandidateRoute, second: CandidateRoute)
   return first.intrusions - second.intrusions ||
     first.terminalReversals - second.terminalReversals ||
     first.shortSegments - second.shortSegments ||
+    first.wrongWayExcursion - second.wrongWayExcursion ||
     first.length - second.length ||
+    first.flowPortMismatch - second.flowPortMismatch ||
     first.backtracking - second.backtracking ||
     first.bends - second.bends ||
+    first.corridorMismatch - second.corridorMismatch ||
     first.sourcePort.side.localeCompare(second.sourcePort.side) ||
     first.targetPort.side.localeCompare(second.targetPort.side);
 }
 
 function labelBox(position: LayoutPoint, label: string): LabelBox {
-  const width = Math.min(148, Math.max(30, 20 + label.length * 7));
+  const width = Math.min(148, Math.max(30, 14 + label.length * 6));
   const height = 22;
   return {
     left: position.x - width / 2,
@@ -404,7 +523,7 @@ function safeLabelPosition(
   allRoutes: readonly RenderedRoute[],
   routeId: string
 ): { position: LayoutPoint; anchor: LayoutPoint } {
-  const fractions = [preferredFraction, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32, 0.36, 0.4, 0.5, 0.6, 0.7, 0.8]
+  const fractions = [preferredFraction, ...Array.from({ length: 23 }, (_, index) => 0.08 + index * 0.04)]
     .filter((fraction) => fraction <= maximumFraction)
     .filter((fraction, index, values) => values.indexOf(fraction) === index);
   const occupiedLabels = placedLabels
@@ -446,7 +565,8 @@ function candidateRoutes(
   routed: readonly RenderedRoute[],
   bounds: { left: number; right: number; top: number; bottom: number },
   lane: number,
-  requiresOuterCorridor: boolean,
+  includeOuterCorridors: boolean,
+  requireOuterCorridor: boolean,
   useAllSides = false
 ): CandidateRoute[] {
   const candidates: CandidateRoute[] = [];
@@ -468,7 +588,7 @@ function candidateRoutes(
       const targetPort = createPort(target, edge, 'target', targetSide, targetIndex, targetCount);
       const sourceLead = lead(sourcePort.point, sourceSide);
       const targetLead = targetEndpoint ?? lead(targetPort.point, targetSide);
-      for (const core of orthogonalCore(sourceLead, targetLead, bounds, lane, laneXs, laneYs, requiresOuterCorridor || useAllSides)) {
+      for (const core of orthogonalCore(sourceLead, targetLead, bounds, lane, laneXs, laneYs, includeOuterCorridors || useAllSides)) {
         const points = simplify([sourcePort.point, ...core, ...(targetEndpoint ? [] : [targetPort.point])]);
         const usesOuterCorridor = points.some((point) =>
           point.x < bounds.left || point.x > bounds.right || point.y < bounds.top || point.y > bounds.bottom
@@ -489,8 +609,10 @@ function candidateRoutes(
           points,
           intrusions,
           terminalReversals: terminalReversalCount(points),
-          corridorMismatch: requiresOuterCorridor ? (usesOuterCorridor ? 0 : 1) : (usesOuterCorridor ? 1 : 0),
+          corridorMismatch: requireOuterCorridor ? (usesOuterCorridor ? 0 : 1) : (usesOuterCorridor ? 1 : 0),
           shortSegments: shortSegmentCount(points),
+          wrongWayExcursion: wrongWayExcursion(points, source, target),
+          flowPortMismatch: flowPortMismatch(sourceSide, targetSide, source, target),
           crossings: 0,
           congestion: 0,
           length: manhattanLength(points),
@@ -501,11 +623,81 @@ function candidateRoutes(
       }
     }
   }
+  return candidates.sort(compareCandidateGeometry);
+}
+
+function obstacleAvoidingCandidates(
+  edge: GraphEdge,
+  source: NodeBox,
+  target: NodeBox,
+  sourceIndex: number,
+  sourceCount: number,
+  targetIndex: number,
+  targetCount: number,
+  targetEndpoint: LayoutPoint | null,
+  boxes: readonly NodeBox[],
+  routed: readonly RenderedRoute[],
+  bounds: { left: number; right: number; top: number; bottom: number },
+  lane: number,
+  requireOuterCorridor: boolean
+): CandidateRoute[] {
+  const blockers = boxes.filter((box) => box.id !== source.id && box.id !== target.id);
+  const candidates: CandidateRoute[] = [];
+  for (const sourceSide of ['south', 'east', 'west', 'north'] as const) {
+    if (sourceCount > portCapacity(sourceSide, source)) continue;
+    for (const targetSide of (targetEndpoint ? ['north'] : ['north', 'east', 'west', 'south']) as readonly PortSide[]) {
+      if (targetCount > portCapacity(targetSide, target)) continue;
+      const sourcePort = createPort(source, edge, 'source', sourceSide, sourceIndex, sourceCount);
+      const targetPort = createPort(target, edge, 'target', targetSide, targetIndex, targetCount);
+      const sourceLead = lead(sourcePort.point, sourceSide);
+      const targetLead = targetEndpoint ?? lead(targetPort.point, targetSide);
+      const core = obstacleAvoidingCore(sourceLead, targetLead, blockers, bounds, lane);
+      if (!core) continue;
+      const points = simplify([sourcePort.point, ...core, ...(targetEndpoint ? [] : [targetPort.point])]);
+      const usesOuterCorridor = points.some((point) =>
+        point.x < bounds.left || point.x > bounds.right || point.y < bounds.top || point.y > bounds.bottom
+      );
+      const intrusions = points.slice(1).reduce((count, point, index) => count + blockers.filter((box) =>
+        segmentIntersectsBox(points[index], point, box)
+      ).length, 0);
+      const sharedTargetPort: LayoutPort = {
+        ...targetPort,
+        id: `${target.id}::target::shared::north`,
+        side: 'north',
+        slot: 0,
+        point: { x: target.x + target.width / 2, y: target.y }
+      };
+      candidates.push({
+        sourcePort,
+        targetPort: targetEndpoint ? sharedTargetPort : targetPort,
+        points,
+        intrusions,
+        terminalReversals: terminalReversalCount(points),
+        corridorMismatch: requireOuterCorridor ? (usesOuterCorridor ? 0 : 1) : (usesOuterCorridor ? 1 : 0),
+        shortSegments: shortSegmentCount(points),
+        wrongWayExcursion: wrongWayExcursion(points, source, target),
+        flowPortMismatch: flowPortMismatch(sourceSide, targetSide, source, target),
+        crossings: crossingCount(points, routed),
+        congestion: congestion(points, routed),
+        length: manhattanLength(points),
+        bends: bendCount(points),
+        backtracking: backtracking(points, target.y >= source.y),
+        usesOuterCorridor
+      });
+    }
+  }
+  return candidates.sort(compareCandidates);
+}
+
+function rankedCandidates(candidates: readonly CandidateRoute[], routed: readonly RenderedRoute[]): CandidateRoute[] {
   const shortlist = [0, 1].flatMap((corridorMismatch) => candidates
     .filter((candidate) => candidate.corridorMismatch === corridorMismatch)
     .sort(compareCandidateGeometry)
-    .slice(0, 4));
-  for (const candidate of shortlist) candidate.crossings = crossingCount(candidate.points, routed);
+    .slice(0, 6));
+  for (const candidate of shortlist) {
+    candidate.crossings = crossingCount(candidate.points, routed);
+    candidate.congestion = congestion(candidate.points, routed);
+  }
   return shortlist.sort(compareCandidates);
 }
 
@@ -614,41 +806,43 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
         bottom: Math.max(...members.map((member) => member.y + member.height))
       };
     })() : bounds;
+    const includeOuterCorridors = topology.longEdgeIds.has(edge.id) || cycleLoopback;
     let candidates = candidateRoutes(
       edge, source, target, sourceIndex, sourceEdges.length, targetIndex, targetEdges.length,
-      junction ? junctionSlotByEdgeId.get(edge.id)! : null, boxes, routed, routeBounds, orderIndex % 8, topology.longEdgeIds.has(edge.id)
+      junction ? junctionSlotByEdgeId.get(edge.id)! : null, boxes, routed, routeBounds, orderIndex % 8, includeOuterCorridors, cycleLoopback
     );
     const valid = (candidate: CandidateRoute) => candidate.intrusions === 0 && candidate.terminalReversals === 0 && candidate.shortSegments === 0;
     let validCandidates = candidates.filter(valid);
     if (validCandidates.length === 0) {
       candidates = candidateRoutes(
         edge, source, target, sourceIndex, sourceEdges.length, targetIndex, targetEdges.length,
-        junction ? junctionSlotByEdgeId.get(edge.id)! : null, boxes, routed, routeBounds, orderIndex % 8, topology.longEdgeIds.has(edge.id), true
+        junction ? junctionSlotByEdgeId.get(edge.id)! : null, boxes, routed, routeBounds, orderIndex % 8, includeOuterCorridors, cycleLoopback, true
       );
       validCandidates = candidates.filter(valid);
     }
+    if (validCandidates.length === 0 || (!includeOuterCorridors && validCandidates.every((candidate) => candidate.usesOuterCorridor))) {
+      const obstacleAvoiding = obstacleAvoidingCandidates(
+        edge, source, target, sourceIndex, sourceEdges.length, targetIndex, targetEdges.length,
+        junction ? junctionSlotByEdgeId.get(edge.id)! : null, boxes, routed, routeBounds, orderIndex % 8, cycleLoopback
+      );
+      candidates = validCandidates.length === 0 ? obstacleAvoiding : [...candidates, ...obstacleAvoiding].sort(compareCandidates);
+      validCandidates = candidates.filter(valid);
+    }
+    if (cycleLoopback) {
+      const perimeterCandidates = validCandidates.filter((candidate) => candidate.usesOuterCorridor);
+      if (perimeterCandidates.length > 0) validCandidates = perimeterCandidates;
+    }
+    const minimumWrongWayExcursion = Math.min(...validCandidates.map((candidate) => candidate.wrongWayExcursion));
+    validCandidates = validCandidates.filter((candidate) => candidate.wrongWayExcursion === minimumWrongWayExcursion);
     const shortestValidLength = Math.min(...validCandidates.map((candidate) => candidate.length));
-    const preferredCandidates = validCandidates.filter((candidate) => candidate.corridorMismatch === 0);
-    const detourLimit = cycleLoopback || topology.longEdgeIds.has(edge.id) ? 3 : 2;
-    const selected = preferredCandidates[0]?.length <= shortestValidLength * detourLimit
-      ? preferredCandidates[0]
-      : validCandidates.sort((first, second) =>
-          first.crossings - second.crossings ||
-          first.length - second.length ||
-          first.backtracking - second.backtracking ||
-          first.bends - second.bends ||
-          first.congestion - second.congestion ||
-          first.sourcePort.side.localeCompare(second.sourcePort.side) ||
-          first.targetPort.side.localeCompare(second.targetPort.side)
-        )[0];
+    const ranked = rankedCandidates(validCandidates, routed);
+    const selected = ranked[0];
     if (!selected) {
       const best = candidates[0];
       throw new Error(`No collision-free route exists for edge ${edge.id}. Best candidate has ${best.intrusions} intrusions, ${best.terminalReversals} terminal reversals, and ${best.shortSegments} short segments.`);
     }
     const fallbackOuterCorridor = !topology.longEdgeIds.has(edge.id) && selected.usesOuterCorridor;
-    const shortestCandidateLength = Math.min(...validCandidates
-      .filter((candidate) => candidate.crossings <= selected.crossings && candidate.corridorMismatch <= selected.corridorMismatch)
-      .map((candidate) => candidate.length));
+    const shortestCandidateLength = shortestValidLength;
     const displayLabel = displayedEdgeLabel(edge.outcome, sourceEdges.length, sourceIndex);
     const sharedSegment = junction ? sharedByJunctionId.get(junction.id)! : null;
     const preferredLabelFraction = sourceEdges.length > 1 ? Math.min(0.42, 70 / Math.max(1, selected.length)) : 0.5;
@@ -669,6 +863,7 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
       shortestCandidateLength,
       bends: selected.bends,
       long: topology.longEdgeIds.has(edge.id) || fallbackOuterCorridor,
+      secondary: cycleLoopback || selected.usesOuterCorridor || target.y + target.height <= source.y,
       corridor: cycleLoopback && selected.usesOuterCorridor ? 'cycle' : selected.usesOuterCorridor ? 'outer' : 'normal'
     };
   }
@@ -688,17 +883,17 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
         const otherRoutes = routes.filter((route) => route.id !== edge.id);
         const proposal = routeEdge(edge, otherRoutes, index);
         const currentScore = [
-          crossingCount(current.points, otherRoutes),
           current.length,
           backtracking(current.points, boxById.get(current.targetPort.nodeId)!.y >= boxById.get(current.sourcePort.nodeId)!.y),
           current.bends,
+          crossingCount(current.points, otherRoutes),
           congestion(current.points, otherRoutes)
         ];
         const proposalScore = [
-          crossingCount(proposal.points, otherRoutes),
           proposal.length,
           backtracking(proposal.points, boxById.get(proposal.targetPort.nodeId)!.y >= boxById.get(proposal.sourcePort.nodeId)!.y),
           proposal.bends,
+          crossingCount(proposal.points, otherRoutes),
           congestion(proposal.points, otherRoutes)
         ];
         const improves = proposalScore.some((value, scoreIndex) =>
@@ -739,7 +934,7 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
       route.points,
       route.displayLabel,
       preferredLabelFraction,
-      sourceEdges.length > 1 ? 0.4 : 0.8,
+      0.96,
       source.x + source.width / 2,
       boxes,
       placedLabels,

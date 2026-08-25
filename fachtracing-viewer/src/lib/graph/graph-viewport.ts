@@ -1,6 +1,5 @@
 import type { GraphModel } from '$contracts/graph-contract';
 import type { PositionedNode } from './layout-definition';
-import type { RenderedRoute } from './route-planner';
 
 export interface CanvasRect {
   x: number;
@@ -21,7 +20,7 @@ export interface GraphNeighborhood {
 }
 
 export const READING_MINIMUM_ZOOM = 0.86;
-export const OVERVIEW_DETAIL_ZOOM = 0.72;
+export const NEIGHBORHOOD_MINIMUM_ZOOM = 0.62;
 
 export function safeCanvasRect(width: number, height: number, overlays: readonly CanvasRect[], gutter = 16): CanvasRect {
   let top = gutter;
@@ -62,7 +61,9 @@ export function readingViewport(
   maximumZoom = 1.2
 ): GraphViewport {
   const neighborhoodFit = Math.min(safeRect.width / Math.max(1, neighborhood.width), safeRect.height / Math.max(1, neighborhood.height));
-  if (neighborhoodFit >= minimumZoom) return viewportForBounds(neighborhood, safeRect, minimumZoom, maximumZoom);
+  if (neighborhoodFit >= NEIGHBORHOOD_MINIMUM_ZOOM) {
+    return viewportForBounds(neighborhood, safeRect, NEIGHBORHOOD_MINIMUM_ZOOM, maximumZoom);
+  }
   return viewportForBounds(focus, safeRect, minimumZoom, minimumZoom);
 }
 
@@ -75,6 +76,36 @@ export function directNeighborhood(graph: GraphModel, focusNodeId: string): Grap
     nodeIds.add(edge.to);
     edgeIds.add(edge.id);
   }
+  return { nodeIds, edgeIds };
+}
+
+export function openingNeighborhood(graph: GraphModel, entryNodeId: string, maximumLinearNodes = 4): GraphNeighborhood {
+  const nodeIds = new Set([entryNodeId]);
+  const edgeIds = new Set<string>();
+  const visited = new Set<string>();
+  let currentNodeId = entryNodeId;
+
+  while (!visited.has(currentNodeId)) {
+    visited.add(currentNodeId);
+    const outgoing = graph.edges.filter((edge) => edge.from === currentNodeId);
+    const successorIds = [...new Set(outgoing.map((edge) => edge.to))];
+    if (successorIds.length === 0) break;
+
+    if (successorIds.length > 1) {
+      for (const edge of outgoing) {
+        nodeIds.add(edge.to);
+        edgeIds.add(edge.id);
+      }
+      break;
+    }
+
+    const successorId = successorIds[0];
+    for (const edge of outgoing.filter((item) => item.to === successorId)) edgeIds.add(edge.id);
+    nodeIds.add(successorId);
+    if (nodeIds.size >= maximumLinearNodes) break;
+    currentNodeId = successorId;
+  }
+
   return { nodeIds, edgeIds };
 }
 
@@ -107,24 +138,19 @@ function extendBounds(bounds: CanvasRect | null, point: { x: number; y: number }
 export function neighborhoodBounds(
   graph: GraphModel,
   nodes: readonly PositionedNode[],
-  routes: readonly RenderedRoute[],
   focusNodeId: string,
   contextPixels = 64,
   minimumZoom = READING_MINIMUM_ZOOM
 ): CanvasRect | null {
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   if (!nodeById.has(focusNodeId)) return null;
-  const { nodeIds, edgeIds } = directNeighborhood(graph, focusNodeId);
+  const { nodeIds } = directNeighborhood(graph, focusNodeId);
   let bounds: CanvasRect | null = null;
   for (const nodeId of nodeIds) {
     const node = nodeById.get(nodeId);
     if (!node) continue;
     bounds = extendBounds(bounds, { x: node.x, y: node.y });
     bounds = extendBounds(bounds, { x: node.x + node.width, y: node.y + node.height });
-  }
-  for (const route of routes) {
-    if (!edgeIds.has(route.id)) continue;
-    for (const point of route.points) bounds = extendBounds(bounds, point);
   }
   if (!bounds) return null;
   const margin = contextPixels / minimumZoom;

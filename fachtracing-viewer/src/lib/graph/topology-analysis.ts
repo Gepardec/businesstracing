@@ -257,6 +257,31 @@ function duplicateOccurrences(graph: GraphModel, componentByNodeId: ReadonlyMap<
   return result;
 }
 
+function feedbackEdges(graph: GraphModel, outgoing: ReadonlyMap<string, readonly GraphEdge[]>): Set<string> {
+  const state = new Map<string, 'visiting' | 'visited'>();
+  const feedback = new Set<string>();
+
+  function visit(nodeId: string): void {
+    state.set(nodeId, 'visiting');
+    for (const edge of outgoing.get(nodeId) ?? []) {
+      const targetState = state.get(edge.to);
+      if (targetState === 'visiting') {
+        feedback.add(edge.id);
+      } else if (!targetState) {
+        visit(edge.to);
+      }
+    }
+    state.set(nodeId, 'visited');
+  }
+
+  const starts = [...graph.entryNodeIds, ...graph.nodes.map((node) => node.id)]
+    .filter((nodeId, index, values) => values.indexOf(nodeId) === index);
+  for (const nodeId of starts) {
+    if (!state.has(nodeId)) visit(nodeId);
+  }
+  return feedback;
+}
+
 export function analyzeTopology(graph: GraphModel): TopologyAnalysis {
   const { incoming, outgoing } = adjacency(graph);
   const componentByNodeId = weakComponents(graph, incoming, outgoing);
@@ -266,15 +291,10 @@ export function analyzeTopology(graph: GraphModel): TopologyAnalysis {
     .filter(([, edges]) => edges.length >= 4)
     .sort(([first], [second]) => first.localeCompare(second))
     .map(([targetNodeId, edges]) => ({ targetNodeId, incomingEdgeIds: edges.map((edge) => edge.id) }));
-  const cyclicOrderByNodeId = new Map(stronglyConnectedComponents
-    .filter((component) => component.cyclic)
-    .flatMap((component) => component.nodeIds.map((nodeId, index) => [nodeId, { componentId: component.id, index }] as const)));
+  const feedbackEdgeIds = feedbackEdges(graph, outgoing);
   const longEdgeIds = new Set(graph.edges.filter((edge) => {
-    const cycleSource = cyclicOrderByNodeId.get(edge.from);
-    const cycleTarget = cyclicOrderByNodeId.get(edge.to);
-    const cycleLoopback = Boolean(cycleSource && cycleTarget && cycleSource.componentId === cycleTarget.componentId && cycleTarget.index <= cycleSource.index);
     const rankSpan = (rankByNodeId.get(edge.to) ?? 0) - (rankByNodeId.get(edge.from) ?? 0);
-    return cycleLoopback || rankSpan > 2 || rankSpan < 0;
+    return feedbackEdgeIds.has(edge.id) || rankSpan > 2 || rankSpan < 0;
   }).map((edge) => edge.id));
 
   return {

@@ -15,6 +15,7 @@ export interface QualityRoute {
   targetNodeId?: string;
   points: readonly LayoutPoint[];
   labelPosition?: LayoutPoint;
+  labelAnchor?: LayoutPoint;
   displayLabel?: string | null;
   long?: boolean;
   corridor?: 'normal' | 'outer' | 'cycle';
@@ -25,6 +26,8 @@ export interface LayoutQualityMetrics {
   nodeOverlaps: number;
   unrelatedNodeIntrusions: number;
   labelCollisions: number;
+  detachedLabels: number;
+  wrongWayBoundaryExits: number;
   avoidableCrossings: number;
   unavoidableCrossings: number;
   totalManhattanLength: number;
@@ -61,6 +64,8 @@ export interface QualityBranchRegion {
   memberNodeIds: readonly string[];
   convergenceNodeId: string | null;
 }
+
+const DIRECTION_EXIT_TOLERANCE = 32;
 
 export function manhattanLength(points: readonly LayoutPoint[]): number {
   return points.slice(1).reduce((total, point, index) => total + Math.abs(point.x - points[index].x) + Math.abs(point.y - points[index].y), 0);
@@ -159,6 +164,8 @@ export function evaluateLayoutQuality(metrics: LayoutQualityMetrics, routes: rea
     failedMetric('nodeOverlaps', metrics.nodeOverlaps, 0),
     failedMetric('unrelatedNodeIntrusions', metrics.unrelatedNodeIntrusions, 0),
     failedMetric('labelCollisions', metrics.labelCollisions, 0),
+    failedMetric('detachedLabels', metrics.detachedLabels, 0),
+    failedMetric('wrongWayBoundaryExits', metrics.wrongWayBoundaryExits, 0),
     failedMetric('avoidableCrossings', metrics.avoidableCrossings, 0),
     failedMetric('branchRegionViolations', metrics.branchRegionViolations, 0),
     failedMetric('longEdgeCorridorViolations', metrics.longEdgeCorridorViolations, 0),
@@ -226,7 +233,7 @@ function nodeOverlap(first: QualityNode, second: QualityNode): boolean {
 
 function estimatedLabelBox(route: QualityRoute): QualityNode | null {
   if (!route.labelPosition || !route.displayLabel) return null;
-  const width = Math.min(148, Math.max(30, 20 + route.displayLabel.length * 7));
+  const width = Math.min(148, Math.max(30, 14 + route.displayLabel.length * 6));
   const height = 22;
   return {
     id: route.id,
@@ -259,6 +266,8 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
   let totalBends = 0;
   let backtrackingDistance = 0;
   let labelCollisions = 0;
+  let detachedLabels = 0;
+  let wrongWayBoundaryExits = 0;
   let longEdgeCorridorViolations = 0;
   const routeDetours = measureRouteDetours(routes);
   const normalDetours = routeDetours.filter((route) => route.corridor === 'normal');
@@ -282,6 +291,12 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
     }
     const source = nodeById.get(edge.from);
     const target = nodeById.get(edge.to);
+    if (source && target && route.corridor !== 'cycle') {
+      const sourceCenterY = source.y + source.height / 2;
+      const targetCenterY = target.y + target.height / 2;
+      if (targetCenterY > sourceCenterY && source.y - Math.min(...route.points.map((point) => point.y)) > DIRECTION_EXIT_TOLERANCE) wrongWayBoundaryExits += 1;
+      if (targetCenterY < sourceCenterY && Math.max(...route.points.map((point) => point.y)) - (source.y + source.height) > DIRECTION_EXIT_TOLERANCE) wrongWayBoundaryExits += 1;
+    }
     if (source && target && target.y >= source.y) {
       for (let index = 1; index < route.points.length; index += 1) {
         if (route.points[index].y < route.points[index - 1].y) backtrackingDistance += route.points[index - 1].y - route.points[index].y;
@@ -297,6 +312,10 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
 
 
   const labels = routes.map(estimatedLabelBox).filter((label): label is QualityNode => label !== null);
+  for (const route of routes) {
+    if (!route.displayLabel || !route.labelPosition || !route.labelAnchor) continue;
+    if (Math.hypot(route.labelPosition.x - route.labelAnchor.x, route.labelPosition.y - route.labelAnchor.y) > 24.01) detachedLabels += 1;
+  }
   for (let first = 0; first < labels.length; first += 1) {
     if (nodes.some((node) => nodeOverlap(labels[first], node))) labelCollisions += 1;
     for (const route of routes) {
@@ -322,6 +341,8 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
     nodeOverlaps,
     unrelatedNodeIntrusions,
     labelCollisions,
+    detachedLabels,
+    wrongWayBoundaryExits,
     avoidableCrossings: crossings,
     unavoidableCrossings: 0,
     totalManhattanLength,

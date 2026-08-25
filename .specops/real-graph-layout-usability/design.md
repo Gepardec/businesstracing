@@ -6,12 +6,12 @@ The graph preview will open as a readable inspection tool. It will show progress
 
 ## Governing Decisions
 
-1. Reading and Overview are separate viewport modes.
-2. Complete topology stays loaded in both modes.
+1. Explore and Overview are separate viewport modes.
+2. Explore renders a separately laid-out local subgraph. Overview keeps the complete current presentation.
 3. Top-to-bottom flow remains the default direction.
 4. ELK supplies candidate placement coordinates; Fachtracing evaluates and selects placement and routes.
 5. Route acceptance uses set-level quality, not only local collision safety.
-6. Static selection is separate from run state and status colors.
+6. Static selection is separate from run state and status colors; selection never fades unrelated static topology.
 7. Fixed controls define safe rectangles that viewport calculations must exclude.
 8. Real graph files are review inputs, not production configuration or hard-coded diagrams.
 
@@ -19,6 +19,8 @@ The graph preview will open as a readable inspection tool. It will show progress
 
 ```text
 GraphModel
+  -> reversible readable presentation
+  -> three-sentence business summary
   -> topology analysis
   -> deterministic placement profiles
   -> placement normalization and scoring
@@ -26,8 +28,8 @@ GraphModel
   -> layout-quality report
   -> GraphPresentationState
   -> Svelte Flow
-       -> Reading viewport
-       -> Overview viewport
+       -> compact Explore layout
+       -> complete Overview layout
        -> selected-node focus
 ```
 
@@ -42,11 +44,13 @@ type LayoutPhase =
   | { kind: 'ready'; requestId: number; layout: LayoutResult }
   | { kind: 'failed'; requestId: number; message: string };
 
-type ViewMode = 'reading' | 'overview';
+type ViewMode = 'explore' | 'overview';
+type DetailMode = 'readable' | 'full';
 
 interface GraphPresentationState {
   phase: LayoutPhase;
   viewMode: ViewMode;
+  detailMode: DetailMode;
   selectedNodeId: string | null;
   focusRevision: number;
 }
@@ -62,30 +66,23 @@ The worker remains the only place that runs ELK and route planning. No progress 
 
 ## Viewport Modes
 
-### Reading view
+### Explore view
 
-Reading view is the default after layout. It selects the stable first entry as the focus anchor but does not mark it as a search selection. It calculates bounds from:
+Explore is the default after layout. It does not reuse complete-graph coordinates. It derives a local subgraph and runs the same deterministic placement and routing pipeline again with compact spacing. Compact spacing is accepted only when it produces a safe route set. If it fails, Explore retries with the standard spacing. It enters Overview only when both local attempts fail.
 
-- The focus node
-- Direct predecessor nodes
-- Direct successor nodes
-- Routes between those nodes
-- A 64-pixel context margin
+For the initial entry, the local subgraph follows a bounded straight setup path. It stops after four linear presentation nodes or at the first node with more than one distinct successor. When it finds a split, it includes all immediate alternatives. This makes the first material decision visible without opening the complete topology.
 
-The viewport uses the largest zoom that fits these bounds and never uses a zoom that makes the 14-pixel business label smaller than 12 CSS pixels. The current base node label therefore needs a minimum zoom of `12 / 14`, rounded up to `0.86`.
+After selection or search, the local subgraph contains the selected node, its direct predecessors, and its direct successors. The toolbar states the visible node count and tells the user to select a node to continue. Selecting a visible node creates a new local layout. It does not fade any visible node or connection.
 
-If the local neighborhood cannot fit at 0.86, the viewport centers the focus node at 0.86 and lets adjacent context extend outside the viewport. It does not reduce below the reading floor.
+Explore fits the local layout inside the safe canvas rectangle. When that context cannot fit at the normal context zoom, the viewport keeps the focused node at zoom `0.86`. This keeps the 14-pixel business label at approximately 12 CSS pixels. Complete-graph corridors cannot move local neighbors apart because they are not part of the local layout.
 
 ### Overview
 
-Overview fits the complete layout inside the safe canvas rectangle. It can use any supported zoom. When zoom is below 0.72, nodes use topology-level detail:
+Overview fits the complete layout inside the safe canvas rectangle. It can use any supported zoom. Node kind, business-label text, and non-empty route labels remain rendered at every supported zoom. Natural canvas scaling can make the text small, but the renderer never replaces a node with an empty box. Below zoom `0.72`, pointer hover shows a fixed-size readout with the complete node kind and business label.
 
-- Keep silhouette, kind accent, selected state, and accessible name.
-- Hide business label and occurrence text that cannot be read.
-- Keep branch labels only when their rendered text meets the same readable floor.
-- Show a clear `Overview` mode indicator.
+Selecting a node changes to Explore view and frames that node's neighborhood.
 
-Selecting a node changes to Reading view and frames that node's neighborhood.
+The complete layout starts before the local layout. The component caches it for Overview. If the user requests Overview while layout is pending, the completed global result is applied directly instead of starting or discarding a local layout.
 
 ### Safe canvas rectangle
 
@@ -148,7 +145,15 @@ For each edge, the planner retains the shortest valid orthogonal candidate disco
 selected route length / shortest valid candidate length
 ```
 
-The ratio uses valid obstacle-aware candidates, not straight-line distance. A candidate is valid only when it preserves endpoint port semantics and all required clearances.
+The ratio uses every collision-free, terminal-safe, obstacle-aware candidate before crossing or corridor preferences are applied. A crossing cannot remove a shorter candidate from the detour baseline. A topology rank span or cycle loopback can allow an outer candidate, but neither can make that candidate preferred over a shorter collision-free route.
+
+### Direction and label attachment
+
+Route scoring uses this order: node intrusion, terminal reversal, short internal segment, wrong-way boundary excursion, route length, flow-port tie-break, backtracking, bends, corridor fallback, crossings, and congestion. The flow-port score only resolves candidates with the same safe route length. It prefers south-to-north ports for forward top-to-bottom flow, horizontal ports for return flow, and facing ports for same-rank flow. For a target below a source, a candidate that leaves above the complete layout loses to a collision-free in-bounds candidate. The same rule applies in reverse for a target above a source.
+
+The label planner first tests positions along the route. It does not move a label more than 24 layout pixels from its route anchor and does not render a detached leader. A label can move to another clear fraction of the same route when its first position collides with a node or another label.
+
+Normal decision routes use a solid 1.5-pixel stroke. A long return or reference route uses a lighter 1.1-pixel solid stroke. Pointer or keyboard inspection restores the primary route style. A cycle return uses the shortest collision-free route outside its cycle bounds. A cycle region uses a tinted solid boundary only when its rectangle does not contain an unrelated node.
 
 ### Route-set refinement
 
@@ -200,7 +205,7 @@ interface SearchMatch {
 
 `FlowCanvas` stores `selectedNodeId`. The corresponding Svelte Flow node receives `selected: true`. Search selection uses a neutral primary selection border. Keyboard focus remains an outer ring. No run-current badge, run-path color, success color, failure color, or coverage color is used.
 
-The focus coordinator calculates the selected node's local neighborhood and changes to Reading view. A no-match result changes only the status message.
+The focus coordinator calculates the selected node's local neighborhood and changes to Explore. A no-match result changes only the status message.
 
 ## Generic Review Harness
 
@@ -229,19 +234,29 @@ Generated topology fixtures cover the same generic shapes in normal automated te
 | `placement-profiles.ts` | Bounded ELK profile definitions and candidate scoring |
 | `route-planner.ts` | Ports, valid orthogonal candidates, shared corridors, and set-level refinement |
 | `route-quality.ts` | Pure metric calculations and gate diagnostics |
-| `layout-client.ts` | Worker lifecycle and request cancellation |
-| `graph-viewport.ts` | Reading, Overview, neighborhood bounds, and safe rectangle calculations |
+| `layout-client.ts` | Worker lifecycle and complete or compact spacing selection |
+| `graph-viewport.ts` | Opening context, direct context, viewport bounds, and safe rectangle calculations |
 | `FlowCanvas.svelte` | Presentation state and Svelte Flow composition |
 | `GraphLayoutStatus.svelte` | Busy and failure presentation |
 | `BusinessNode.svelte` | Node level of detail and static selected appearance |
 | `scripts/review-graphs.ts` | Generic file-driven local acceptance report |
+| `graph-presentation.ts` | Reversible action-sequence grouping, parallel-connection grouping, original-ID mappings, and generic business summary |
+| `GraphNarrative.svelte` | Short graph explanation and readable-map reduction statement |
+
+## Readable Business Map
+
+The source graph remains immutable. A pure presentation transform runs before layout. It can group a maximal computation chain only when each internal connection is unlabelled, each internal node has one presentation predecessor and one presentation successor, and no internal node is an entry. It can also group a safe predicate sequence when Boolean results converge on the same next rule, or when consecutive guards have one shared exit and one continuation. It can group parallel edges only when their presentation endpoints are equal. Internal sequence edges remain in the mapping but do not need separate geometry.
+
+A presentation node and edge contain the ordered original IDs that they represent. Search resolves original IDs and labels to their presentation node. Run state marks a presentation item when any mapped original ID is active or belongs to the recorded path. Full detail bypasses the transform and restores the original graph without reparsing the file.
+
+The business summary uses only graph topology and supplied labels. It states the entry and first material branch in one sentence, the number of rules and actions plus possible return paths in one sentence, and the distinct terminal results in one sentence. It does not infer domain facts that are absent from the JSON.
 
 ## Failure Behavior
 
 - A layout failure displays the existing error and clears busy state.
 - A stale worker result has no effect.
 - If no placement meets all quality gates, select the best valid topology-preserving candidate, display the graph, and include failed metrics in a development diagnostic. Do not drop graph items.
-- If a graph is too dense for readable full fit, Overview uses topology-level detail. Reading view remains readable.
+- If a graph is too dense for readable full fit, Overview uses topology-level detail. Explore remains readable.
 - A missing optional evidence file does not fail normal graph tests.
 
 ## Accessibility
@@ -272,15 +287,15 @@ None approved. Do not add GSAP, another graph engine, a routing package, or a sc
 | Requirement | Primary verification |
 | --- | --- |
 | RB-01 | Component tests and delayed-worker browser test |
-| RB-02 | Viewport unit tests and Reading/Overview screenshots |
+| RB-02 | Viewport unit tests and Explore/Overview screenshots |
 | RB-03 | Generated placement profiles and real-file review metrics |
 | RB-04 | Pure route metrics, generated dense topologies, and real-file review |
 | RB-05 | Search component and browser interaction tests |
 | RB-06 | Safe-rectangle unit tests and responsive browser geometry checks |
 | RB-07 | Contract tests, source scan, and generic review command |
 | RB-08 | Local worker timing and main-thread responsiveness checks |
+| RB-09 | Presentation-transform tests, opening-context tests, exact Full detail counts, summary tests, and real-file screenshots |
 
 ## Rollout
 
 This is a local POC frontend change. Replace the current fit policy and placement acceptance in one branch. Keep the old complete-fit action as Overview. Do not add a feature flag, database migration, API version, or compatibility mode.
-

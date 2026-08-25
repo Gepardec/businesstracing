@@ -27,7 +27,7 @@
 {#each data.ports as port (port.id)}
   <Handle id={port.id} type={port.role} position={handlePosition(port.side)} class="business-handle" style={handleStyle(port.side, port.point)} role="presentation" aria-hidden="true" />
 {/each}
-<article class:node-path={data.onPath} class:node-current={data.current} class:node-dimmed={data.dimmed} class:node-context-dimmed={data.contextDimmed} class:node-overview={!data.showDetails}
+<article class:node-path={data.onPath} class:node-current={data.current} class:node-dimmed={data.dimmed}
   class="business-node business-node--{data.node.kind.toLowerCase()}" data-run-state={data.current ? 'current' : data.onPath ? 'path' : data.dimmed ? 'dimmed' : 'default'}
   aria-label={`${data.node.kind}: ${data.node.label}. Node ${data.node.id}. ${data.incomingCount} incoming and ${data.outgoingCount} outgoing edges${data.occurrence ? `. Occurrence ${data.occurrence.index} of ${data.occurrence.total}` : ''}.`}>
   <header>
@@ -40,11 +40,12 @@
       {:else if data.node.kind === 'OUTCOME'}<CircleCheck size={15} />
       {:else}<TriangleAlert size={15} />{/if}
     </span>
-    <span class="node-kind">{data.node.kind.replace('_', ' ')}</span>
+    <span class="node-kind">{data.memberNodeIds.length > 1 ? data.node.kind === 'PREDICATE' ? 'RULE SEQUENCE' : 'ACTION SEQUENCE' : data.node.kind.replace('_', ' ')}</span>
+    {#if data.memberNodeIds.length > 1}<span class="node-count">{data.memberNodeIds.length} {data.node.kind === 'PREDICATE' ? 'rules' : 'actions'}</span>{/if}
     {#if data.occurrence}<span class="node-occurrence" title={`Node ${data.node.id}`}>{data.occurrence.index} of {data.occurrence.total}</span>{/if}
     {#if data.stepNumber !== null}<span class="node-step" aria-label={`Step ${data.stepNumber}`}>{data.stepNumber}</span>{/if}
   </header>
-  {#if data.showDetails}<p title={data.node.label}>{data.node.label}</p>{/if}
+  <p title={data.memberLabels.join(' → ')}>{data.node.label}</p>
 </article>
 
 <style>
@@ -53,6 +54,7 @@
   .node-icon { display: grid; place-items: center; }
   .node-kind { font-size: 10px; font-weight: 800; letter-spacing: .09em; }
   .node-occurrence { margin-left: auto; color: var(--muted-foreground); font-size: 9px; font-weight: 750; letter-spacing: .02em; }
+  .node-count { margin-left: auto; color: var(--muted-foreground); font-size: 9px; font-weight: 750; }
   .node-occurrence + .node-step { margin-left: 0; }
   .node-step { margin-left: auto; width: 21px; height: 21px; display: grid; place-items: center; border-radius: 999px; background: var(--run-current); color: white; font-size: 10px; font-weight: 800; box-shadow: 0 0 0 2px color-mix(in oklch, var(--card), transparent 8%); }
   p { margin: 0; padding: 4px 14px 12px; font-size: 14px; line-height: 1.3; font-weight: 650; display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -66,9 +68,6 @@
   .node-path:not(.node-current) { border: 2px solid var(--run-path); box-shadow: 0 5px 20px color-mix(in oklch, var(--run-path), transparent 84%); }
   .node-current { border: 3px solid var(--run-current); box-shadow: 0 0 0 4px color-mix(in oklch, var(--run-current), transparent 88%), 0 8px 24px color-mix(in oklch, var(--run-current), transparent 78%); }
   .node-dimmed { opacity: .68; }
-  .node-context-dimmed { opacity: .12; box-shadow: none; }
-  .node-overview header { visibility: hidden; }
-  .node-overview { box-shadow: none; }
   :global(.svelte-flow__node:focus-visible .business-node) { outline: 2px solid var(--ring); outline-offset: 3px; }
   :global(.svelte-flow__node.selected .business-node:not(.node-current):not(.node-path)) { border: 3px solid var(--primary); box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary), transparent 82%), 0 8px 22px color-mix(in oklch, var(--foreground), transparent 84%); }
   :global(.business-handle) { width: 1px; height: 1px; opacity: 0; border: 0; background: transparent; pointer-events: none; }

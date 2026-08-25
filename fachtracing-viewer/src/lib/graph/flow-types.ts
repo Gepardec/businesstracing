@@ -6,6 +6,8 @@ import type { LayoutPort } from './route-planner';
 
 export interface BusinessNodeData extends Record<string, unknown> {
   node: GraphNode;
+  memberNodeIds: readonly string[];
+  memberLabels: readonly string[];
   onPath: boolean;
   current: boolean;
   dimmed: boolean;
@@ -15,23 +17,20 @@ export interface BusinessNodeData extends Record<string, unknown> {
   occurrence: DuplicateOccurrence | null;
   incomingCount: number;
   outgoingCount: number;
-  showDetails: boolean;
-  contextDimmed: boolean;
 }
 
 export interface BusinessEdgeData extends Record<string, unknown> {
+  memberEdgeIds: readonly string[];
   route: readonly LayoutPoint[];
   labelPosition: LayoutPoint;
   labelAnchor: LayoutPoint;
   onPath: boolean;
   current: boolean;
   inspected: boolean;
-  showLabel: boolean;
-  alwaysShowLabel: boolean;
   rawOutcome: string;
   long: boolean;
+  secondary: boolean;
   sharedSegmentIds: readonly string[];
-  contextDimmed: boolean;
 }
 
 export type BusinessFlowNode = Node<BusinessNodeData, 'business'>;

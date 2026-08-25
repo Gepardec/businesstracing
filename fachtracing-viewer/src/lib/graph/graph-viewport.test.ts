@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { directNeighborhood, focusedNodeBounds, neighborhoodBounds, readingViewport, READING_MINIMUM_ZOOM, safeCanvasRect, viewportForBounds } from './graph-viewport';
+import { directNeighborhood, focusedNodeBounds, neighborhoodBounds, openingNeighborhood, readingViewport, READING_MINIMUM_ZOOM, safeCanvasRect, viewportForBounds } from './graph-viewport';
 import { graphFixture } from './graph-fixtures';
 
 describe('graph viewport', () => {
@@ -17,7 +17,7 @@ describe('graph viewport', () => {
     expect(viewport.x + 100 * viewport.zoom).toBeLessThan(16);
   });
 
-  it('frames a selected node with its direct topology and routes', () => {
+  it('frames a selected node with its direct topology without remote route corridors', () => {
     const graph = graphFixture('neighborhood', ['entry', 'selected', 'successor', 'other', 'outcome'], [
       { id: 'incoming', from: 'entry', to: 'selected' },
       { id: 'outgoing', from: 'selected', to: 'successor' },
@@ -27,17 +27,7 @@ describe('graph viewport', () => {
       { id: 'entry', x: 0, y: 0 }, { id: 'selected', x: 300, y: 200 }, { id: 'successor', x: 600, y: 400 },
       { id: 'other', x: 2_000, y: 0 }, { id: 'outcome', x: 2_000, y: 400 }
     ].map((node) => ({ ...node, width: 232, height: 92, ports: [], occurrence: null, incomingCount: 0, outgoingCount: 0 }));
-    const route = (id: string, points: Array<{ x: number; y: number }>) => ({
-      id, sourceNodeId: '', targetNodeId: '', points, labelPosition: points[0], labelAnchor: points[0], displayLabel: null,
-      sourcePort: { id: `${id}-source`, nodeId: '', edgeId: id, role: 'source' as const, side: 'south' as const, slot: 0, point: points[0] },
-      targetPort: { id: `${id}-target`, nodeId: '', edgeId: id, role: 'target' as const, side: 'north' as const, slot: 0, point: points.at(-1)! },
-      sharedSegmentIds: [], crossingIds: [], length: 1, shortestCandidateLength: 1, bends: 0, long: false, corridor: 'normal' as const
-    });
-    const bounds = neighborhoodBounds(graph, nodes, [
-      route('incoming', [{ x: 116, y: 92 }, { x: 416, y: 200 }]),
-      route('outgoing', [{ x: 416, y: 292 }, { x: 716, y: 400 }]),
-      route('unrelated', [{ x: 2_116, y: 92 }, { x: 2_116, y: 400 }])
-    ], 'selected')!;
+    const bounds = neighborhoodBounds(graph, nodes, 'selected')!;
     expect(bounds.x).toBeLessThan(0);
     expect(bounds.x + bounds.width).toBeLessThan(1_000);
   });
@@ -59,6 +49,18 @@ describe('graph viewport', () => {
     expect(visibleFocus.bottom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
   });
 
+  it('fits direct context at a bounded context zoom before it falls back to one node', () => {
+    const safeRect = { x: 16, y: 66, width: 968, height: 568 };
+    const neighborhood = { x: 1_000, y: 800, width: 1_200, height: 700 };
+    const focus = { x: 1_450, y: 1_050, width: 232, height: 92 };
+    const viewport = readingViewport(neighborhood, focus, safeRect);
+    expect(viewport.zoom).toBeCloseTo(568 / 700);
+    expect(viewport.x + neighborhood.x * viewport.zoom).toBeGreaterThanOrEqual(safeRect.x);
+    expect(viewport.y + neighborhood.y * viewport.zoom).toBeGreaterThanOrEqual(safeRect.y);
+    expect(viewport.x + (neighborhood.x + neighborhood.width) * viewport.zoom).toBeLessThanOrEqual(safeRect.x + safeRect.width);
+    expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
+  });
+
   it('builds focused-node bounds with reading context', () => {
     const bounds = focusedNodeBounds([{ id: 'selected', x: 100, y: 200, width: 232, height: 92, ports: [], occurrence: null, incomingCount: 0, outgoingCount: 0 }], 'selected')!;
     expect(bounds.x).toBeLessThan(100);
@@ -76,5 +78,30 @@ describe('graph viewport', () => {
     const context = directNeighborhood(graph, 'selected');
     expect([...context.nodeIds]).toEqual(['selected', 'entry', 'successor']);
     expect([...context.edgeIds]).toEqual(['incoming', 'outgoing']);
+  });
+
+  it('shows the first material split in the opening neighborhood', () => {
+    const graph = graphFixture('opening', ['entry', 'preparation', 'decision', 'yes', 'no', 'later'], [
+      { id: 'prepare', from: 'entry', to: 'preparation' },
+      { id: 'decide', from: 'preparation', to: 'decision' },
+      { id: 'yes', from: 'decision', to: 'yes' },
+      { id: 'no', from: 'decision', to: 'no' },
+      { id: 'later', from: 'yes', to: 'later' }
+    ]);
+    const context = openingNeighborhood(graph, 'entry');
+    expect([...context.nodeIds]).toEqual(['entry', 'preparation', 'decision', 'yes', 'no']);
+    expect([...context.edgeIds]).toEqual(['prepare', 'decide', 'yes', 'no']);
+  });
+
+  it('bounds a branch-free opening neighborhood', () => {
+    const graph = graphFixture('opening-chain', ['one', 'two', 'three', 'four', 'five'], [
+      { id: 'one-two', from: 'one', to: 'two' },
+      { id: 'two-three', from: 'two', to: 'three' },
+      { id: 'three-four', from: 'three', to: 'four' },
+      { id: 'four-five', from: 'four', to: 'five' }
+    ]);
+    const context = openingNeighborhood(graph, 'one');
+    expect([...context.nodeIds]).toEqual(['one', 'two', 'three', 'four']);
+    expect([...context.edgeIds]).toEqual(['one-two', 'two-three', 'three-four']);
   });
 });

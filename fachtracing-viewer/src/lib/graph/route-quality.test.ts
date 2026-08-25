@@ -36,6 +36,30 @@ describe('layout quality metrics', () => {
     expect(metrics.labelCollisions).toBe(1);
   });
 
+  it('reports detached labels and wrong-way outer exits', () => {
+    const graph = graphFixture('direction-quality-fixture', ['source', 'target'], [{ id: 'edge', from: 'source', to: 'target', outcome: 'branch' }]);
+    const metrics = measureLayoutQuality(graph, [
+      { id: 'source', x: 100, y: 100, width: 100, height: 40 },
+      { id: 'target', x: 0, y: 260, width: 100, height: 40 }
+    ], [{
+      id: 'edge',
+      sourceNodeId: 'source',
+      targetNodeId: 'target',
+      corridor: 'outer',
+      points: [{ x: 100, y: 120 }, { x: 80, y: 120 }, { x: 80, y: -40 }, { x: 50, y: -40 }, { x: 50, y: 260 }],
+      labelPosition: { x: 8, y: 120 },
+      labelAnchor: { x: 80, y: 120 },
+      displayLabel: 'Branch 1'
+    }]);
+
+    expect(metrics.wrongWayBoundaryExits).toBe(1);
+    expect(metrics.detachedLabels).toBe(1);
+    expect(evaluateLayoutQuality(metrics, []).map((failure) => failure.metric)).toEqual(expect.arrayContaining([
+      'wrongWayBoundaryExits',
+      'detachedLabels'
+    ]));
+  });
+
   it('identifies the exact routes that violate parallel clearance', () => {
     const routes = [
       { id: 'edge-a', points: [{ x: 10, y: 0 }, { x: 10, y: 80 }] },

@@ -5,7 +5,9 @@
   import Card from '$components/ui/Card.svelte';
   import type { GraphModel } from '$contracts/graph-contract';
   import FlowCanvas from '$graph/FlowCanvas.svelte';
+  import GraphNarrative from '$graph/GraphNarrative.svelte';
   import GraphUpload from '$graph/GraphUpload.svelte';
+  import { createGraphPresentation } from '$graph/graph-presentation';
   import { formatFileSize, parseGraphFile } from '$graph/graph-file';
 
   let graph = $state<GraphModel | null>(null);
@@ -13,6 +15,7 @@
   let fileSize = $state(0);
   let error = $state('');
   let busy = $state(false);
+  let readablePresentation = $derived(graph ? createGraphPresentation(graph, 'readable') : null);
 
   async function selectFile(file: File) {
     busy = true;
@@ -48,6 +51,11 @@
       <div class="graph-identity"><div><span class="eyebrow">Graph</span><h2>{graph.label}</h2></div><div class="badges"><Badge>{graph.nodes.length} nodes</Badge><Badge>{graph.edges.length} edges</Badge><Badge tone={graph.completeness === 'COMPLETE' ? 'success' : 'warning'}>{graph.completeness.toLowerCase()}</Badge></div></div>
       {#if graph.nodes.length > 250}<p class="profile-note">This graph is larger than the tested 250-node safety profile. The complete graph is still available.</p>{/if}
       <GraphUpload compact {busy} onFile={selectFile} />
+      {#if readablePresentation}
+        <GraphNarrative narrative={readablePresentation.narrative}
+          sourceNodeCount={graph.nodes.length} sourceEdgeCount={graph.edges.length}
+          visibleNodeCount={readablePresentation.graph.nodes.length} visibleEdgeCount={readablePresentation.graph.edges.length} />
+      {/if}
     </Card>
     <div class="preview-canvas"><FlowCanvas {graph} highlight={null} fullPath={false} /></div>
   {:else}
