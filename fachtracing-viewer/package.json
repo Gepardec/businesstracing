@@ -12,6 +12,7 @@
     "test:browser": "playwright test",
     "import-graphs": "tsx src/cli/import-graphs.ts",
     "import-runs": "tsx src/cli/import-runs.ts",
+    "review:graphs": "tsx scripts/review-graphs.ts",
     "audit": "npm audit --audit-level=high"
   },
   "dependencies": {

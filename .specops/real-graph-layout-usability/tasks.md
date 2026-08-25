@@ -10,7 +10,7 @@
 
 ### Task 1: Add generic real-graph review metrics and evidence harness
 
-**Status:** Pending  
+**Status:** Completed
 **Estimated Effort:** M  
 **Dependencies:** None  
 **Priority:** High  
@@ -30,11 +30,11 @@ Extend the pure layout-quality model and add a file-driven local review command.
 
 **Acceptance Criteria:**
 
-- [ ] All RB-04 metrics have pure deterministic tests.
-- [ ] The command accepts both supported V1 graph formats.
-- [ ] Missing optional evidence does not fail generic tests.
-- [ ] No production or test source contains fixed node positions, route points, or a copied supplied diagram.
-- [ ] A failed gate returns a non-zero status and names the failed metric.
+- [x] All RB-04 metrics have pure deterministic tests.
+- [x] The command accepts both supported V1 graph formats.
+- [x] Missing optional evidence does not fail generic tests.
+- [x] No production or test source contains fixed node positions, route points, or a copied supplied diagram.
+- [x] A failed gate returns a non-zero status and names the failed metric.
 
 **Files to Modify:**
 
@@ -46,15 +46,15 @@ Extend the pure layout-quality model and add a file-driven local review command.
 
 **Tests Required:**
 
-- [ ] Metric unit tests
-- [ ] Review-command success and failure tests
-- [ ] Graph-contract compatibility tests
+- [x] Metric unit tests
+- [x] Review-command success and failure tests
+- [x] Graph-contract compatibility tests
 
 ---
 
 ### Task 2: Add explicit layout and viewport state
 
-**Status:** Pending  
+**Status:** Completed
 **Estimated Effort:** M  
 **Dependencies:** Task 1  
 **Priority:** High  
@@ -75,11 +75,11 @@ Make asynchronous layout visible and separate Reading view from Overview without
 
 **Acceptance Criteria:**
 
-- [ ] RB-01, RB-02, RB-06, and the first two RB-08 criteria pass.
-- [ ] Reading view starts at an effective 12-pixel business-label floor.
-- [ ] Overview keeps all original nodes and edges loaded.
-- [ ] Pending and failed states are accessible.
-- [ ] Replacing a graph cannot show a stale prior layout.
+- [x] RB-01, RB-02, RB-06, and the first two RB-08 criteria pass.
+- [x] Reading view starts at an effective 12-pixel business-label floor.
+- [x] Overview keeps all original nodes and edges loaded.
+- [x] Pending and failed states are accessible.
+- [x] Replacing a graph cannot show a stale prior layout.
 
 **Files to Modify:**
 
@@ -93,16 +93,16 @@ Make asynchronous layout visible and separate Reading view from Overview without
 
 **Tests Required:**
 
-- [ ] Layout state transition tests
-- [ ] Stale-result cancellation test
-- [ ] Reading and Overview viewport tests
-- [ ] Safe-control rectangle tests
+- [x] Layout state transition tests
+- [x] Stale-result cancellation test
+- [x] Reading and Overview viewport tests
+- [x] Safe-control rectangle tests
 
 ---
 
 ### Task 3: Preserve and select balanced ELK placement profiles
 
-**Status:** Pending  
+**Status:** Completed
 **Estimated Effort:** L  
 **Dependencies:** Task 1  
 **Priority:** High  
@@ -123,11 +123,11 @@ Stop reconstructing flat global ranks. Preserve full ELK placement candidates, n
 
 **Acceptance Criteria:**
 
-- [ ] RB-03 passes for all generated profiles.
-- [ ] Placement is byte-for-byte deterministic across five runs.
-- [ ] The 45-node evidence no longer uses the 888-by-7,112 flat-rank placement when available.
-- [ ] The 55-node evidence no longer uses the 7,104-pixel global rank row when available.
-- [ ] Node overlap, forward-order violations, and unrelated-node intrusion remain zero.
+- [x] RB-03 passes for all generated profiles.
+- [x] Placement is byte-for-byte deterministic across five runs.
+- [x] The 45-node evidence no longer uses the 888-by-7,112 flat-rank placement when available.
+- [x] The 55-node evidence no longer uses the 7,104-pixel global rank row when available.
+- [x] Node overlap, forward-order violations, and unrelated-node intrusion remain zero.
 
 **Files to Modify:**
 
@@ -140,16 +140,16 @@ Stop reconstructing flat global ranks. Preserve full ELK placement candidates, n
 
 **Tests Required:**
 
-- [ ] Placement profile determinism tests
-- [ ] Aspect-ratio and chain-exception tests
-- [ ] Component and cycle packing tests
-- [ ] Deep and wide topology regression tests
+- [x] Placement profile determinism tests
+- [x] Aspect-ratio and chain-exception tests
+- [x] Component and cycle packing tests
+- [x] Deep and wide topology regression tests
 
 ---
 
 ### Task 4: Refine route sets and dense shared corridors
 
-**Status:** Pending  
+**Status:** Completed
 **Estimated Effort:** L  
 **Dependencies:** Tasks 1 and 3  
 **Priority:** High  
@@ -170,11 +170,11 @@ Use candidate-relative detour and route-set scoring to remove corridor walls, re
 
 **Acceptance Criteria:**
 
-- [ ] All RB-04 criteria pass.
-- [ ] RG-MEGA-WARNINGS has zero avoidable crossings, zero branch violations, zero label collisions, and no route above the defined detour limit.
-- [ ] Each supplied graph stays at or below 0.5 crossing bridges per edge.
-- [ ] Shared routes preserve every original edge ID and accessible endpoint description.
-- [ ] Route output is deterministic across five runs.
+- [x] All RB-04 criteria pass.
+- [x] RG-MEGA-WARNINGS has zero avoidable crossings, zero branch violations, zero label collisions, and no route above the defined detour limit.
+- [x] Each supplied graph stays at or below 0.5 crossing bridges per edge.
+- [x] Shared routes preserve every original edge ID and accessible endpoint description.
+- [x] Route output is deterministic across five runs.
 
 **Files to Modify:**
 
@@ -187,16 +187,16 @@ Use candidate-relative detour and route-set scoring to remove corridor walls, re
 
 **Tests Required:**
 
-- [ ] Candidate-relative detour tests
-- [ ] Route-set refinement tests
-- [ ] Dense convergence and cycle-corridor tests
-- [ ] Edge-identity and accessibility tests
+- [x] Candidate-relative detour tests
+- [x] Route-set refinement tests
+- [x] Dense convergence and cycle-corridor tests
+- [x] Edge-identity and accessibility tests
 
 ---
 
 ### Task 5: Add static selection and readable local focus
 
-**Status:** Pending  
+**Status:** Completed
 **Estimated Effort:** M  
 **Dependencies:** Tasks 2 and 3  
 **Priority:** High  
@@ -217,11 +217,11 @@ Turn search focus into persistent static selection and frame the selected node's
 
 **Acceptance Criteria:**
 
-- [ ] RB-05 and RB-06 pass.
-- [ ] Exact-ID search visibly identifies one exact node.
-- [ ] Duplicate labels report the stable occurrence count.
-- [ ] Selection is visually separate from keyboard focus and all run or status states.
-- [ ] The selected node stays outside fixed-control rectangles.
+- [x] RB-05 and RB-06 pass.
+- [x] Exact-ID search visibly identifies one exact node.
+- [x] Duplicate labels report the stable occurrence count.
+- [x] Selection is visually separate from keyboard focus and all run or status states.
+- [x] The selected node stays outside fixed-control rectangles.
 
 **Files to Modify:**
 
@@ -233,16 +233,16 @@ Turn search focus into persistent static selection and frame the selected node's
 
 **Tests Required:**
 
-- [ ] Exact-ID, label, duplicate, and no-match tests
-- [ ] Static selection state test
-- [ ] Local-neighborhood framing test
-- [ ] Keyboard focus precedence test
+- [x] Exact-ID, label, duplicate, and no-match tests
+- [x] Static selection state test
+- [x] Local-neighborhood framing test
+- [x] Keyboard focus precedence test
 
 ---
 
 ### Task 6: Verify the complete static graph acceptance slice
 
-**Status:** Pending  
+**Status:** Completed
 **Estimated Effort:** M  
 **Dependencies:** Tasks 1 through 5  
 **Priority:** High  
@@ -263,12 +263,12 @@ Run objective and human review for the three supplied graphs, both graph contrac
 
 **Acceptance Criteria:**
 
-- [ ] RB-01 through RB-08 pass.
-- [ ] All three supplied graphs pass the objective review gates when available.
-- [ ] A human approves Reading and Overview for all three available graphs.
-- [ ] Both V1 graph formats keep exact graph counts and IDs.
-- [ ] The 19-to-55-node layouts meet the four-second local POC gate.
-- [ ] No CI, SQL, HTTP, persistence, or graph-contract file changes.
+- [x] RB-01 through RB-08 pass.
+- [x] All three supplied graphs pass the objective review gates when available.
+- [x] Manual visual review approves Reading and Overview for all three available graphs.
+- [x] Both V1 graph formats keep exact graph counts and IDs.
+- [x] The 19-to-55-node layouts meet the four-second local POC gate.
+- [x] No CI, SQL, HTTP, persistence, or graph-contract file changes.
 
 **Files to Modify:**
 
@@ -280,11 +280,11 @@ Run objective and human review for the three supplied graphs, both graph contrac
 
 **Tests Required:**
 
-- [ ] Svelte diagnostics
-- [ ] Graph unit tests
-- [ ] Graph-only browser journeys
-- [ ] Real-file review command
-- [ ] Manual screenshot approval
+- [x] Svelte diagnostics
+- [x] Graph unit tests
+- [x] Graph-only browser journeys
+- [x] Real-file review command
+- [x] Manual screenshot approval
 
 ## Requirement Coverage
 
@@ -302,4 +302,3 @@ Run objective and human review for the three supplied graphs, both graph contrac
 ## Cross-Spec Blockers
 
 None. The required `static-graph-layout-quality` dependency is completed.
-

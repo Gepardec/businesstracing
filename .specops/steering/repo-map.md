@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-25T09:12:18Z"
-_sourceHash: "14b8c25cfb0ddad1281e1f0e7dfdac6deecd7d448eafed85d54fa990c9948c03"
+_generatedAt: "2026-08-25T10:53:52Z"
+_sourceHash: "fe450239862f10656ae5241270e52919fb93315c26a7c88020e78cd05671d5b8"
 ---
 
 ## Project Structure Map
@@ -237,19 +237,27 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-viewer/ (83 files)
+#### fachtracing-viewer/ (91 files)
 
 - `src/lib/contracts/` — stable graph, run, and query adapters
 - `src/lib/graph/topology-analysis.ts`
   - `export function analyzeTopology`
 - `src/lib/graph/layout-engine.ts`
-  - ranked ELK node placement and immutable layout coordination
+  - deterministic route-aware ELK placement and immutable layout coordination
+- `src/lib/graph/placement-profiles.ts`
+  - bounded ELK profiles and lexicographic placement scoring
 - `src/lib/graph/route-planner.ts`
   - `export function planRoutes`
 - `src/lib/graph/route-quality.ts`
   - deterministic geometry and route-quality metrics
+- `src/lib/graph/graph-viewport.ts`
+  - Reading, Overview, focus-neighborhood, and safe-control viewport calculations
+- `src/lib/graph/layout-review.ts` and `scripts/review-graphs.ts`
+  - generic file-driven layout acceptance metrics
 - `src/lib/graph/FlowCanvas.svelte`
   - shared read-only Svelte Flow canvas
+- `src/lib/graph/GraphLayoutStatus.svelte`
+  - accessible arranging state
 - `src/lib/graph/BusinessNode.svelte`, `BusinessEdge.svelte`, and `GraphJunctions.svelte`
   - static node, edge, junction, trunk, crossing, and region presentation
 - `src/lib/graph/graph-fixtures.ts` and `e2e/visual-fixtures.ts`

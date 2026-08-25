@@ -27,7 +27,7 @@
 {#each data.ports as port (port.id)}
   <Handle id={port.id} type={port.role} position={handlePosition(port.side)} class="business-handle" style={handleStyle(port.side, port.point)} role="presentation" aria-hidden="true" />
 {/each}
-<article class:node-path={data.onPath} class:node-current={data.current} class:node-dimmed={data.dimmed}
+<article class:node-path={data.onPath} class:node-current={data.current} class:node-dimmed={data.dimmed} class:node-context-dimmed={data.contextDimmed} class:node-overview={!data.showDetails}
   class="business-node business-node--{data.node.kind.toLowerCase()}" data-run-state={data.current ? 'current' : data.onPath ? 'path' : data.dimmed ? 'dimmed' : 'default'}
   aria-label={`${data.node.kind}: ${data.node.label}. Node ${data.node.id}. ${data.incomingCount} incoming and ${data.outgoingCount} outgoing edges${data.occurrence ? `. Occurrence ${data.occurrence.index} of ${data.occurrence.total}` : ''}.`}>
   <header>
@@ -44,7 +44,7 @@
     {#if data.occurrence}<span class="node-occurrence" title={`Node ${data.node.id}`}>{data.occurrence.index} of {data.occurrence.total}</span>{/if}
     {#if data.stepNumber !== null}<span class="node-step" aria-label={`Step ${data.stepNumber}`}>{data.stepNumber}</span>{/if}
   </header>
-  <p title={data.node.label}>{data.node.label}</p>
+  {#if data.showDetails}<p title={data.node.label}>{data.node.label}</p>{/if}
 </article>
 
 <style>
@@ -66,7 +66,10 @@
   .node-path:not(.node-current) { border: 2px solid var(--run-path); box-shadow: 0 5px 20px color-mix(in oklch, var(--run-path), transparent 84%); }
   .node-current { border: 3px solid var(--run-current); box-shadow: 0 0 0 4px color-mix(in oklch, var(--run-current), transparent 88%), 0 8px 24px color-mix(in oklch, var(--run-current), transparent 78%); }
   .node-dimmed { opacity: .68; }
+  .node-context-dimmed { opacity: .12; box-shadow: none; }
+  .node-overview header { visibility: hidden; }
+  .node-overview { box-shadow: none; }
   :global(.svelte-flow__node:focus-visible .business-node) { outline: 2px solid var(--ring); outline-offset: 3px; }
-  :global(.svelte-flow__node.selected .business-node:not(.node-current):not(.node-path)) { border-color: color-mix(in oklch, var(--foreground), transparent 22%); box-shadow: 0 6px 20px color-mix(in oklch, var(--foreground), transparent 87%); }
+  :global(.svelte-flow__node.selected .business-node:not(.node-current):not(.node-path)) { border: 3px solid var(--primary); box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary), transparent 82%), 0 8px 22px color-mix(in oklch, var(--foreground), transparent 84%); }
   :global(.business-handle) { width: 1px; height: 1px; opacity: 0; border: 0; background: transparent; pointer-events: none; }
 </style>

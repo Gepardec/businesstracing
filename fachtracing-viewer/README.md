@@ -40,7 +40,15 @@ Every predicate branch shows its outcome near the source. Boolean values display
 
 Four or more routes that enter one node use one presentation-only junction and shared trunk. Each supplied edge stays a separate keyboard focus target. Pointer or keyboard inspection highlights its feeder and the shared trunk. Route crossings use a bridge, not a graph node. Cycles and disconnected components can use neutral structural outlines. These presentation items do not change the supplied node or edge count.
 
-The canvas is read-only. Use node search to jump to an exact ID or matching label. Use the fit control for an overview and zoom in to inspect a dense graph. Graphs with more than 100 nodes use search guidance instead of a minimap.
+The canvas is read-only. It opens in **Reading** mode at the first declared entry and keeps the local neighborhood readable. Use **Overview** to see the complete topology. Overview reduces node detail when text would be too small to read. Select a node or search for an exact ID or label to return to Reading mode and keep that node visibly selected. Graphs with more than 100 nodes use search guidance instead of a minimap.
+
+To review one or more graph files with the production layout engine, run:
+
+```sh
+npm run review:graphs -- /absolute/path/to/graph-a.json /absolute/path/to/graph-b.json
+```
+
+The command accepts both V1 graph formats. It prints layout time, dimensions, crossing density, detour, and named quality failures. It returns a non-zero status when a graph fails an objective layout gate. The four-second timing check is a local POC responsiveness gate for graphs with 19 to 55 nodes. It is not a production benchmark.
 
 ## Correlation lookup
 

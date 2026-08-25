@@ -15,6 +15,8 @@ export interface BusinessNodeData extends Record<string, unknown> {
   occurrence: DuplicateOccurrence | null;
   incomingCount: number;
   outgoingCount: number;
+  showDetails: boolean;
+  contextDimmed: boolean;
 }
 
 export interface BusinessEdgeData extends Record<string, unknown> {
@@ -29,6 +31,7 @@ export interface BusinessEdgeData extends Record<string, unknown> {
   rawOutcome: string;
   long: boolean;
   sharedSegmentIds: readonly string[];
+  contextDimmed: boolean;
 }
 
 export type BusinessFlowNode = Node<BusinessNodeData, 'business'>;

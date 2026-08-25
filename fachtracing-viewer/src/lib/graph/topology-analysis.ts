@@ -216,22 +216,24 @@ function branchRegions(outgoing: ReadonlyMap<string, readonly GraphEdge[]>, rank
 }
 
 function spine(graph: GraphModel, outgoing: ReadonlyMap<string, readonly GraphEdge[]>, rankByNodeId: ReadonlyMap<string, number>): string[] {
-  const candidates: string[][] = [];
-  function walk(nodeId: string, path: string[], visited: ReadonlySet<string>): void {
+  const bestFromNode = new Map<string, string[]>();
+  function bestFrom(nodeId: string): string[] {
+    const cached = bestFromNode.get(nodeId);
+    if (cached) return cached;
     const nextEdges = (outgoing.get(nodeId) ?? [])
-      .filter((edge) => !visited.has(edge.to) && (rankByNodeId.get(edge.to) ?? 0) > (rankByNodeId.get(nodeId) ?? 0))
+      .filter((edge) => (rankByNodeId.get(edge.to) ?? 0) > (rankByNodeId.get(nodeId) ?? 0))
       .sort((first, second) => {
         const firstSequential = first.outcome === '' || first.outcome.toLowerCase() === 'next' ? 0 : 1;
         const secondSequential = second.outcome === '' || second.outcome.toLowerCase() === 'next' ? 0 : 1;
         return firstSequential - secondSequential || first.id.localeCompare(second.id);
       });
-    if (nextEdges.length === 0) {
-      candidates.push(path);
-      return;
-    }
-    for (const edge of nextEdges) walk(edge.to, [...path, edge.to], new Set([...visited, edge.to]));
+    const candidates = nextEdges.map((edge) => [nodeId, ...bestFrom(edge.to)]);
+    candidates.sort((first, second) => second.length - first.length || first.join('\u0000').localeCompare(second.join('\u0000')));
+    const best = candidates[0] ?? [nodeId];
+    bestFromNode.set(nodeId, best);
+    return best;
   }
-  for (const entryNodeId of graph.entryNodeIds) walk(entryNodeId, [entryNodeId], new Set([entryNodeId]));
+  const candidates = graph.entryNodeIds.map(bestFrom);
   candidates.sort((first, second) => second.length - first.length || first.join('\u0000').localeCompare(second.join('\u0000')));
   return candidates[0] ?? [];
 }

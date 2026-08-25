@@ -1,14 +1,22 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
-  import { NODE_HEIGHT, NODE_WIDTH } from './layout-definition';
-  let { nodeId, requestToken = 0, minimumZoom = 0 }: { nodeId: string | null; requestToken?: number; minimumZoom?: number } = $props();
-  const { getNode, getZoom, setCenter } = useSvelteFlow();
+  import { readingViewport, READING_MINIMUM_ZOOM, type CanvasRect } from './graph-viewport';
+  let { bounds, focusBounds, focusNodeId, safeRect, requestToken = 0, minimumZoom = READING_MINIMUM_ZOOM }: {
+    bounds: CanvasRect | null; focusBounds: CanvasRect | null; focusNodeId: string | null; safeRect: CanvasRect; requestToken?: number; minimumZoom?: number
+  } = $props();
+  const { setViewport } = useSvelteFlow();
   let previous = '';
   $effect(() => {
-    const request = `${nodeId ?? ''}:${requestToken}`;
-    if (!nodeId || request === previous) return;
+    const request = [
+      focusNodeId,
+      bounds?.x, bounds?.y, bounds?.width, bounds?.height,
+      focusBounds?.x, focusBounds?.y, focusBounds?.width, focusBounds?.height,
+      safeRect.x, safeRect.y, safeRect.width, safeRect.height,
+      requestToken
+    ].join(':');
+    if (!bounds || !focusBounds || request === previous) return;
     previous = request;
-    const node = getNode(nodeId);
-    if (node) void setCenter(node.position.x + NODE_WIDTH / 2, node.position.y + NODE_HEIGHT / 2, { zoom: Math.max(getZoom(), minimumZoom), duration: 0 });
+    const frame = requestAnimationFrame(() => void setViewport(readingViewport(bounds, focusBounds, safeRect, minimumZoom, 1.2), { duration: 0 }));
+    return () => cancelAnimationFrame(frame);
   });
 </script>

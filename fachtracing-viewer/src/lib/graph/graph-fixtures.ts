@@ -134,3 +134,36 @@ export function crossingFixture(): GraphModel {
 export function generatedSafetyFixture(count = 250): GraphModel {
   return chainFixture(count);
 }
+
+export function deepBranchFixture(depth = 14): GraphModel {
+  const spine = Array.from({ length: depth }, (_, index) => `spine-${String(index).padStart(2, '0')}`);
+  const exits = Array.from({ length: depth }, (_, index) => `exit-${String(index).padStart(2, '0')}`);
+  return graphFixture('deep-branch-fixture', ['entry', ...spine, ...exits, 'outcome'], [
+    { from: 'entry', to: spine[0] },
+    ...spine.flatMap((nodeId, index) => [
+      { from: nodeId, to: exits[index], outcome: 'stop' },
+      { from: nodeId, to: index === spine.length - 1 ? 'outcome' : spine[index + 1], outcome: 'continue' }
+    ]),
+    ...exits.map((nodeId) => ({ from: nodeId, to: 'outcome' }))
+  ]);
+}
+
+export function wideBranchFixture(branchCount = 18): GraphModel {
+  const branches = Array.from({ length: branchCount }, (_, index) => `branch-${String(index).padStart(2, '0')}`);
+  return graphFixture('wide-branch-fixture', ['entry', ...branches, 'outcome'], [
+    ...branches.map((nodeId, index) => ({ from: 'entry', to: nodeId, outcome: `branch ${index + 1}` })),
+    ...branches.map((nodeId) => ({ from: nodeId, to: 'outcome' }))
+  ]);
+}
+
+export function denseConvergenceFixture(width = 8): GraphModel {
+  const firstLayer = Array.from({ length: width }, (_, index) => `source-${String(index).padStart(2, '0')}`);
+  const secondLayer = Array.from({ length: Math.max(3, Math.ceil(width / 2)) }, (_, index) => `check-${String(index).padStart(2, '0')}`);
+  return graphFixture('dense-convergence-fixture', ['entry', ...firstLayer, ...secondLayer, 'outcome'], [
+    ...firstLayer.map((nodeId, index) => ({ from: 'entry', to: nodeId, outcome: `source ${index + 1}` })),
+    ...firstLayer.flatMap((sourceId, sourceIndex) => secondLayer
+      .filter((_, targetIndex) => (sourceIndex + targetIndex) % 2 === 0)
+      .map((targetId) => ({ from: sourceId, to: targetId }))),
+    ...secondLayer.map((nodeId) => ({ from: nodeId, to: 'outcome' }))
+  ]);
+}

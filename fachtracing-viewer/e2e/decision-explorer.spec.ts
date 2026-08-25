@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { basename, delimiter, join, resolve } from 'node:path';
 import { crossingGraphFile, cycleGraphFile, duplicateGraphFile, fanInGraphFile, generatedBranchingGraphFile, longShortcutGraphFile } from './visual-fixtures';
 
 async function canvasGeometry(page: import('@playwright/test').Page) {
@@ -348,13 +348,129 @@ test('keeps a generated 250-node graph navigable', async ({ page }) => {
   await expect(page.getByLabel('250-node graph navigation')).toContainText('Search to jump');
   await page.getByPlaceholder('Find a node').fill('node-249');
   await page.getByPlaceholder('Find a node').press('Enter');
-  await expect(page.getByRole('status')).toContainText('Focused generated outcome 249');
+  await expect(page.getByRole('status')).toContainText('Selected generated outcome 249');
   await expect.poll(async () => page.evaluate(() => {
     const canvas = document.querySelector<HTMLElement>('.preview-canvas')?.getBoundingClientRect();
     const node = document.querySelector<HTMLElement>('.svelte-flow__node[data-id="node-249"]')?.getBoundingClientRect();
     return Boolean(canvas && node && node.width > 100 && node.left >= canvas.left && node.right <= canvas.right && node.top >= canvas.top && node.bottom <= canvas.bottom);
   })).toBe(true);
   await page.screenshot({ path: 'test-results/visual/graph-250-focused.png', fullPage: true });
+});
+
+test('keeps optional real graphs readable in Reading and Overview modes', async ({ page }) => {
+  const graphPaths = (process.env.FACHTRACING_REAL_GRAPH_FILES ?? '').split(delimiter).filter(Boolean);
+  test.skip(graphPaths.length === 0, 'Optional real graph files are required');
+  await mkdir('test-results/real-graphs', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1_000 });
+
+  for (const [index, graphPath] of graphPaths.entries()) {
+    const document = JSON.parse(await readFile(graphPath, 'utf8')) as {
+      nodes: Array<{ id: string; label: string }>;
+      decision: string;
+      entryNodeIds: string[];
+    };
+    const entryNode = document.nodes.find((node) => node.id === document.entryNodeIds[0]);
+    expect(entryNode, `${basename(graphPath)} must declare a valid entry node`).toBeDefined();
+    await page.goto('/graphs');
+    const switchToLight = page.getByRole('button', { name: 'Use light theme' });
+    if (await switchToLight.count()) await switchToLight.click();
+    await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
+    if (index === 0) await expect(page.getByText(`Arranging ${document.nodes.length} nodes`, { exact: false })).toBeVisible({ timeout: 1_000 });
+    await expect(page.locator('.svelte-flow__node')).toHaveCount(document.nodes.length, { timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
+    const entry = page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"] .business-node`);
+    await expect(entry).toBeVisible();
+    expect((await entry.boundingBox())!.width).toBeGreaterThanOrEqual(199);
+    const stem = basename(graphPath, '.json');
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-reading.png`, fullPage: true });
+
+    await page.getByRole('button', { name: 'Overview' }).click();
+    await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.node-overview').first()).toBeAttached();
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-overview.png`, fullPage: true });
+
+    const selected = document.nodes[Math.floor(document.nodes.length / 2)];
+    await page.getByPlaceholder('Find a node').fill(selected.id);
+    await page.getByPlaceholder('Find a node').press('Enter');
+    await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
+    await expect(page.getByRole('status')).toContainText(`Selected ${selected.label}`);
+    await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
+    const selectedGeometry = () => page.evaluate((nodeId) => {
+      const selectedNode = document.querySelector<HTMLElement>(`.svelte-flow__node[data-id="${CSS.escape(nodeId)}"]`)?.getBoundingClientRect();
+      const canvas = document.querySelector<HTMLElement>('.flow-panel')?.getBoundingClientRect();
+      const overlays = [...document.querySelectorAll<HTMLElement>('.canvas-toolbar, .svelte-flow__controls, .business-minimap, .large-graph-guide, .svelte-flow__attribution')]
+        .map((element) => element.getBoundingClientRect());
+      if (!selectedNode || !canvas) return { insideCanvas: false, overlayClear: false, selectedNode: null, canvas: null, overlays: [] };
+      const insideCanvas = selectedNode.left >= canvas.left + 16 && selectedNode.right <= canvas.right - 16
+        && selectedNode.top >= canvas.top + 16 && selectedNode.bottom <= canvas.bottom - 16;
+      const overlayClear = overlays.every((overlay) => selectedNode.right + 16 <= overlay.left || selectedNode.left - 16 >= overlay.right || selectedNode.bottom + 16 <= overlay.top || selectedNode.top - 16 >= overlay.bottom);
+      const plainRect = (rect: DOMRect) => ({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height });
+      return { insideCanvas, overlayClear, selectedNode: plainRect(selectedNode), canvas: plainRect(canvas), overlays: overlays.map(plainRect) };
+    }, selected.id);
+    await expect.poll(async () => {
+      const geometry = await selectedGeometry();
+      return { insideCanvas: geometry.insideCanvas, overlayClear: geometry.overlayClear };
+    }).toEqual({ insideCanvas: true, overlayClear: true });
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-selected.png`, fullPage: true });
+
+    const viewport = page.locator('.svelte-flow__viewport');
+    const transformBeforeMissingSearch = await viewport.getAttribute('style');
+    await page.getByPlaceholder('Find a node').fill('__node_that_does_not_exist__');
+    await page.getByPlaceholder('Find a node').press('Enter');
+    await expect(page.getByRole('status')).toContainText('No matching node was found');
+    await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
+    await expect(viewport).toHaveAttribute('style', transformBeforeMissingSearch!);
+    await page.getByPlaceholder('Find a node').fill(selected.id);
+
+    if (index === 0) {
+      const duplicate = document.nodes.find((node) => document.nodes.filter((candidate) => candidate.label === node.label).length > 1);
+      if (duplicate) {
+        const duplicates = document.nodes.filter((node) => node.label.toLowerCase().includes(duplicate.label.toLowerCase())).sort((first, second) => first.id.localeCompare(second.id));
+        await page.getByPlaceholder('Find a node').fill(duplicate.label);
+        await page.getByPlaceholder('Find a node').press('Enter');
+        await expect(page.getByRole('status')).toContainText(`Match 1 of ${duplicates.length}`);
+        await expect(page.locator(`.svelte-flow__node.selected[data-id="${duplicates[0].id}"]`)).toBeVisible();
+        await page.getByPlaceholder('Find a node').fill(selected.id);
+        await page.getByPlaceholder('Find a node').press('Enter');
+      }
+    }
+
+    await page.getByRole('button', { name: 'Use dark theme' }).click();
+    await expect(page.getByRole('button', { name: 'Reading' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
+    await page.setViewportSize({ width: 1_200, height: 900 });
+    await expect.poll(async () => {
+      const geometry = await selectedGeometry();
+      return { insideCanvas: geometry.insideCanvas, overlayClear: geometry.overlayClear };
+    }).toEqual({ insideCanvas: true, overlayClear: true });
+    await page.setViewportSize({ width: 1_440, height: 1_000 });
+    await expect.poll(async () => {
+      const geometry = await selectedGeometry();
+      return { insideCanvas: geometry.insideCanvas, overlayClear: geometry.overlayClear };
+    }).toEqual({ insideCanvas: true, overlayClear: true });
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-reading-dark.png`, fullPage: true });
+    await page.getByRole('button', { name: 'Overview' }).click();
+    await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.node-overview').first()).toBeAttached();
+    await expect(page.locator(`.svelte-flow__node.selected[data-id="${selected.id}"]`)).toBeVisible();
+    await page.screenshot({ path: `test-results/real-graphs/${stem}-overview-dark.png`, fullPage: true });
+  }
+});
+
+test('ignores an older real-graph layout after file replacement', async ({ page }) => {
+  const graphPaths = (process.env.FACHTRACING_REAL_GRAPH_FILES ?? '').split(delimiter).filter(Boolean);
+  test.skip(graphPaths.length < 2, 'Two optional real graph files are required');
+  const replacementPath = graphPaths.at(-1)!;
+  const replacement = JSON.parse(await readFile(replacementPath, 'utf8')) as { decision: string; nodes: unknown[]; edges: unknown[] };
+
+  await page.goto('/graphs');
+  const input = page.getByLabel('Graph JSON', { exact: true });
+  await input.setInputFiles(graphPaths[0]);
+  await input.setInputFiles(replacementPath);
+  await expect(page.getByRole('heading', { name: replacement.decision })).toBeVisible();
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(replacement.nodes.length, { timeout: 15_000 });
+  await expect(page.locator('path[data-route-edge]')).toHaveCount(replacement.edges.length);
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('previews the stable business graph V1 contract from the repository', async ({ page }) => {
@@ -427,7 +543,7 @@ test('renders a twelve-source convergence as one inspectable junction', async ({
   await page.screenshot({ path: 'test-results/visual/fan-in-1440-dark.png', fullPage: true });
   await page.getByPlaceholder('Find a node').fill('combined result');
   await page.getByPlaceholder('Find a node').press('Enter');
-  await expect(page.getByRole('status')).toContainText('Focused combined result');
+  await expect(page.getByRole('status')).toContainText('Selected combined result');
   await page.screenshot({ path: 'test-results/visual/fan-in-focused-1440-dark.png', fullPage: true });
 });
 

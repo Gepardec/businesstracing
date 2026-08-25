@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeLayout } from './layout-engine';
+import { computeLayout, NODE_HEIGHT, NODE_WIDTH } from './layout-engine';
 import { balancedBranchFixture, chainFixture, crossingFixture, cycleFixture, diamondFixture, duplicateLabelFixture, fanInFixture, fixedPortDetourFixture, longShortcutFixture, multipleEntryFixture } from './graph-fixtures';
 import { parallelClearanceViolations } from './route-quality';
 
@@ -44,12 +44,12 @@ describe('static graph route planning', () => {
     expect(layout.metrics.longEdgeCorridorViolations).toBe(0);
   });
 
-  it('keeps sibling roots on one rank and centers them around the source', async () => {
+  it('keeps sibling roots in one local branch band around the source', async () => {
     const layout = await computeLayout(balancedBranchFixture());
     const nodeById = new Map(layout.nodes.map((node) => [node.id, node]));
-    expect(nodeById.get('yes-1')!.y).toBe(nodeById.get('no-1')!.y);
+    expect(Math.abs(nodeById.get('yes-1')!.y - nodeById.get('no-1')!.y)).toBeLessThanOrEqual(NODE_HEIGHT);
     const siblingCenter = (nodeById.get('yes-1')!.x + nodeById.get('no-1')!.x + nodeById.get('yes-1')!.width) / 2;
-    expect(siblingCenter).toBe(nodeById.get('root')!.x + nodeById.get('root')!.width / 2);
+    expect(Math.abs(siblingCenter - (nodeById.get('root')!.x + nodeById.get('root')!.width / 2))).toBeLessThanOrEqual(NODE_WIDTH / 2);
   });
 
   it('places multiple entries in the first rank and outcomes last', async () => {
@@ -71,7 +71,9 @@ describe('static graph route planning', () => {
     const cycleNodes = layout.nodes.filter((node) => ['rule-a', 'rule-b'].includes(node.id));
     const cycleTop = Math.min(...cycleNodes.map((node) => node.y));
     const cycleBottom = Math.max(...cycleNodes.map((node) => node.y + node.height));
-    expect(loopback.points.some((point) => point.y < cycleTop || point.y > cycleBottom)).toBe(true);
+    const cycleLeft = Math.min(...cycleNodes.map((node) => node.x));
+    const cycleRight = Math.max(...cycleNodes.map((node) => node.x + node.width));
+    expect(loopback.points.some((point) => point.x < cycleLeft || point.x > cycleRight || point.y < cycleTop || point.y > cycleBottom)).toBe(true);
     expect(layout.metrics.labelCollisions).toBe(0);
   });
 

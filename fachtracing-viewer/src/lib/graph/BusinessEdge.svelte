@@ -7,8 +7,8 @@
   let path = $derived(roundedOrthogonalPath(edgeData.route));
   let leaderLength = $derived(Math.hypot(edgeData.labelPosition.x - edgeData.labelAnchor.x, edgeData.labelPosition.y - edgeData.labelAnchor.y));
   let leaderPath = $derived(`M ${edgeData.labelAnchor.x} ${edgeData.labelAnchor.y} L ${edgeData.labelPosition.x} ${edgeData.labelPosition.y}`);
-  let edgeStyle = $derived(`stroke: ${edgeData.current ? 'var(--run-current)' : edgeData.onPath ? 'var(--run-path)' : edgeData.inspected ? 'var(--primary)' : 'var(--graph-edge)'}; stroke-width: ${edgeData.current ? 2.75 : edgeData.onPath || edgeData.inspected ? 2.1 : 1.5}; opacity: ${edgeData.long && !edgeData.current && !edgeData.onPath && !edgeData.inspected ? 0.72 : 1};`);
-  let visibleLabel = $derived(label && (edgeData.alwaysShowLabel || edgeData.current || edgeData.onPath || edgeData.showLabel) ? label : '');
+  let edgeStyle = $derived(`stroke: ${edgeData.current ? 'var(--run-current)' : edgeData.onPath ? 'var(--run-path)' : edgeData.inspected ? 'var(--primary)' : 'var(--graph-edge)'}; stroke-width: ${edgeData.current ? 2.75 : edgeData.onPath || edgeData.inspected ? 2.1 : 1.5}; opacity: ${edgeData.contextDimmed ? 0.1 : edgeData.long && !edgeData.current && !edgeData.onPath && !edgeData.inspected ? 0.72 : 1};`);
+  let visibleLabel = $derived(label && !edgeData.contextDimmed && (edgeData.alwaysShowLabel || edgeData.current || edgeData.onPath || edgeData.showLabel) ? label : '');
 </script>
 
 <BaseEdge {id} {path} markerEnd={edgeData.sharedSegmentIds.length > 0 ? undefined : markerEnd} {interactionWidth} style={edgeStyle} data-route-edge={id} class={edgeData.long ? 'long-route' : undefined} />

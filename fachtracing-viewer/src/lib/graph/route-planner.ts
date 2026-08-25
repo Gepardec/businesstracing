@@ -48,6 +48,8 @@ export interface RouteCrossing {
 
 export interface RenderedRoute {
   id: string;
+  sourceNodeId: string;
+  targetNodeId: string;
   points: LayoutPoint[];
   labelPosition: LayoutPoint;
   labelAnchor: LayoutPoint;
@@ -57,6 +59,7 @@ export interface RenderedRoute {
   sharedSegmentIds: readonly string[];
   crossingIds: readonly string[];
   length: number;
+  shortestCandidateLength: number;
   bends: number;
   long: boolean;
   corridor: 'normal' | 'outer' | 'cycle';
@@ -88,6 +91,7 @@ interface CandidateRoute {
   length: number;
   bends: number;
   backtracking: number;
+  usesOuterCorridor: boolean;
 }
 
 interface LabelBox {
@@ -107,8 +111,8 @@ const LABEL_OFFSETS: readonly LayoutPoint[] = [
   { x: -12, y: 0 }, { x: 12, y: 0 }, { x: 0, y: -12 }, { x: 0, y: 12 },
   { x: -24, y: 0 }, { x: 24, y: 0 }
 ].concat(
-  [-216, -180, -144, -108, -72, -36, 0, 36, 72, 108, 144, 180, 216]
-    .flatMap((x) => [-144, -108, -72, -36, 0, 36, 72, 108, 144].map((y) => ({ x, y })))
+  [-72, -36, 0, 36, 72]
+    .flatMap((x) => [-72, -36, 0, 36, 72].map((y) => ({ x, y })))
     .filter(({ x, y }) => x !== 0 || y !== 0)
     .sort((first, second) => Math.abs(first.x) + Math.abs(first.y) - Math.abs(second.x) - Math.abs(second.y) || first.y - second.y || first.x - second.x)
 );
@@ -179,7 +183,8 @@ function orthogonalCore(
   bounds: { left: number; right: number; top: number; bottom: number },
   lane: number,
   laneXs: readonly number[],
-  laneYs: readonly number[]
+  laneYs: readonly number[],
+  includeOuterCorridors: boolean
 ): LayoutPoint[][] {
   const middleX = (start.x + end.x) / 2;
   const middleY = (start.y + end.y) / 2;
@@ -193,7 +198,9 @@ function orthogonalCore(
     [start, { x: end.x, y: start.y }, end],
     [start, { x: start.x, y: end.y }, end],
     [start, { x: middleX, y: start.y }, { x: middleX, y: end.y }, end],
-    [start, { x: start.x, y: middleY }, { x: end.x, y: middleY }, end],
+    [start, { x: start.x, y: middleY }, { x: end.x, y: middleY }, end]
+  );
+  if (includeOuterCorridors) candidates.push(
     [start, { x: left, y: start.y }, { x: left, y: end.y }, end],
     [start, { x: right, y: start.y }, { x: right, y: end.y }, end],
     [start, { x: start.x, y: top }, { x: end.x, y: top }, end],
@@ -226,7 +233,7 @@ function internalLaneCoordinates(
   return [...new Set([...nodeCoordinates, ...routeCoordinates])]
     .filter((coordinate) => coordinate >= minimum && coordinate <= maximum)
     .sort((first, second) => Math.abs(first - center) - Math.abs(second - center) || first - second)
-    .slice(0, 12);
+    .slice(0, 2);
 }
 
 function overlapsRange(firstStart: number, firstEnd: number, secondStart: number, secondEnd: number, inclusive = false): boolean {
@@ -340,11 +347,22 @@ function compareCandidates(first: CandidateRoute, second: CandidateRoute): numbe
     first.terminalReversals - second.terminalReversals ||
     first.corridorMismatch - second.corridorMismatch ||
     first.shortSegments - second.shortSegments ||
-    first.congestion - second.congestion ||
     first.crossings - second.crossings ||
     first.length - second.length ||
-    first.bends - second.bends ||
     first.backtracking - second.backtracking ||
+    first.bends - second.bends ||
+    first.congestion - second.congestion ||
+    first.sourcePort.side.localeCompare(second.sourcePort.side) ||
+    first.targetPort.side.localeCompare(second.targetPort.side);
+}
+
+function compareCandidateGeometry(first: CandidateRoute, second: CandidateRoute): number {
+  return first.intrusions - second.intrusions ||
+    first.terminalReversals - second.terminalReversals ||
+    first.shortSegments - second.shortSegments ||
+    first.length - second.length ||
+    first.backtracking - second.backtracking ||
+    first.bends - second.bends ||
     first.sourcePort.side.localeCompare(second.sourcePort.side) ||
     first.targetPort.side.localeCompare(second.targetPort.side);
 }
@@ -428,22 +446,29 @@ function candidateRoutes(
   routed: readonly RenderedRoute[],
   bounds: { left: number; right: number; top: number; bottom: number },
   lane: number,
-  requiresOuterCorridor: boolean
+  requiresOuterCorridor: boolean,
+  useAllSides = false
 ): CandidateRoute[] {
   const candidates: CandidateRoute[] = [];
-  const sides: readonly PortSide[] = ['south', 'east', 'west', 'north'];
+  const targetBelow = target.y >= source.y;
+  const sourceSides: readonly PortSide[] = useAllSides
+    ? ['south', 'east', 'west', 'north']
+    : targetBelow ? ['south', 'east', 'west'] : ['north', 'east', 'west'];
+  const targetSides: readonly PortSide[] = targetEndpoint
+    ? ['north']
+    : useAllSides ? ['north', 'east', 'west', 'south'] : targetBelow ? ['north', 'east', 'west'] : ['south', 'east', 'west'];
   const useInternalLanes = sourceCount > 1 || targetCount > 1;
   const laneXs = useInternalLanes ? internalLaneCoordinates(boxes, routed, bounds, 'x', (source.x + target.x + source.width) / 2) : [];
   const laneYs = useInternalLanes ? internalLaneCoordinates(boxes, routed, bounds, 'y', (source.y + target.y + source.height) / 2) : [];
-  for (const sourceSide of sides) {
+  for (const sourceSide of sourceSides) {
     if (sourceCount > portCapacity(sourceSide, source)) continue;
-    for (const targetSide of sides) {
+    for (const targetSide of targetSides) {
       if (targetCount > portCapacity(targetSide, target)) continue;
       const sourcePort = createPort(source, edge, 'source', sourceSide, sourceIndex, sourceCount);
       const targetPort = createPort(target, edge, 'target', targetSide, targetIndex, targetCount);
       const sourceLead = lead(sourcePort.point, sourceSide);
       const targetLead = targetEndpoint ?? lead(targetPort.point, targetSide);
-      for (const core of orthogonalCore(sourceLead, targetLead, bounds, lane, laneXs, laneYs)) {
+      for (const core of orthogonalCore(sourceLead, targetLead, bounds, lane, laneXs, laneYs, requiresOuterCorridor || useAllSides)) {
         const points = simplify([sourcePort.point, ...core, ...(targetEndpoint ? [] : [targetPort.point])]);
         const usesOuterCorridor = points.some((point) =>
           point.x < bounds.left || point.x > bounds.right || point.y < bounds.top || point.y > bounds.bottom
@@ -466,16 +491,22 @@ function candidateRoutes(
           terminalReversals: terminalReversalCount(points),
           corridorMismatch: requiresOuterCorridor ? (usesOuterCorridor ? 0 : 1) : (usesOuterCorridor ? 1 : 0),
           shortSegments: shortSegmentCount(points),
-          crossings: crossingCount(points, routed),
-          congestion: congestion(points, routed),
+          crossings: 0,
+          congestion: 0,
           length: manhattanLength(points),
           bends: bendCount(points),
-          backtracking: backtracking(points, target.y >= source.y)
+          backtracking: backtracking(points, target.y >= source.y),
+          usesOuterCorridor
         });
       }
     }
   }
-  return candidates.sort(compareCandidates);
+  const shortlist = [0, 1].flatMap((corridorMismatch) => candidates
+    .filter((candidate) => candidate.corridorMismatch === corridorMismatch)
+    .sort(compareCandidateGeometry)
+    .slice(0, 4));
+  for (const candidate of shortlist) candidate.crossings = crossingCount(candidate.points, routed);
+  return shortlist.sort(compareCandidates);
 }
 
 function routeOrder(first: GraphEdge, second: GraphEdge, topology: TopologyAnalysis): number {
@@ -583,23 +614,49 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
         bottom: Math.max(...members.map((member) => member.y + member.height))
       };
     })() : bounds;
-    const candidates = candidateRoutes(
+    let candidates = candidateRoutes(
       edge, source, target, sourceIndex, sourceEdges.length, targetIndex, targetEdges.length,
       junction ? junctionSlotByEdgeId.get(edge.id)! : null, boxes, routed, routeBounds, orderIndex % 8, topology.longEdgeIds.has(edge.id)
     );
     const valid = (candidate: CandidateRoute) => candidate.intrusions === 0 && candidate.terminalReversals === 0 && candidate.shortSegments === 0;
-    const selected = candidates.find((candidate) => valid(candidate) && candidate.corridorMismatch === 0) ??
-      (!topology.longEdgeIds.has(edge.id) ? candidates.find((candidate) => valid(candidate) && candidate.corridorMismatch === 1) : undefined);
-    if (!selected) {
-      throw new Error(`No collision-free route exists for edge ${edge.id}.`);
+    let validCandidates = candidates.filter(valid);
+    if (validCandidates.length === 0) {
+      candidates = candidateRoutes(
+        edge, source, target, sourceIndex, sourceEdges.length, targetIndex, targetEdges.length,
+        junction ? junctionSlotByEdgeId.get(edge.id)! : null, boxes, routed, routeBounds, orderIndex % 8, topology.longEdgeIds.has(edge.id), true
+      );
+      validCandidates = candidates.filter(valid);
     }
-    const fallbackOuterCorridor = !topology.longEdgeIds.has(edge.id) && selected.corridorMismatch === 1;
+    const shortestValidLength = Math.min(...validCandidates.map((candidate) => candidate.length));
+    const preferredCandidates = validCandidates.filter((candidate) => candidate.corridorMismatch === 0);
+    const detourLimit = cycleLoopback || topology.longEdgeIds.has(edge.id) ? 3 : 2;
+    const selected = preferredCandidates[0]?.length <= shortestValidLength * detourLimit
+      ? preferredCandidates[0]
+      : validCandidates.sort((first, second) =>
+          first.crossings - second.crossings ||
+          first.length - second.length ||
+          first.backtracking - second.backtracking ||
+          first.bends - second.bends ||
+          first.congestion - second.congestion ||
+          first.sourcePort.side.localeCompare(second.sourcePort.side) ||
+          first.targetPort.side.localeCompare(second.targetPort.side)
+        )[0];
+    if (!selected) {
+      const best = candidates[0];
+      throw new Error(`No collision-free route exists for edge ${edge.id}. Best candidate has ${best.intrusions} intrusions, ${best.terminalReversals} terminal reversals, and ${best.shortSegments} short segments.`);
+    }
+    const fallbackOuterCorridor = !topology.longEdgeIds.has(edge.id) && selected.usesOuterCorridor;
+    const shortestCandidateLength = Math.min(...validCandidates
+      .filter((candidate) => candidate.crossings <= selected.crossings && candidate.corridorMismatch <= selected.corridorMismatch)
+      .map((candidate) => candidate.length));
     const displayLabel = displayedEdgeLabel(edge.outcome, sourceEdges.length, sourceIndex);
     const sharedSegment = junction ? sharedByJunctionId.get(junction.id)! : null;
     const preferredLabelFraction = sourceEdges.length > 1 ? Math.min(0.42, 70 / Math.max(1, selected.length)) : 0.5;
     const defaultLabelPosition = routeLabelPosition(selected.points, preferredLabelFraction, source.x + source.width / 2);
     return {
       id: edge.id,
+      sourceNodeId: edge.from,
+      targetNodeId: edge.to,
       points: selected.points,
       labelPosition: defaultLabelPosition,
       labelAnchor: defaultLabelPosition,
@@ -609,9 +666,10 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
       sharedSegmentIds: sharedSegment ? [sharedSegment.id] : [],
       crossingIds: [],
       length: selected.length,
+      shortestCandidateLength,
       bends: selected.bends,
       long: topology.longEdgeIds.has(edge.id) || fallbackOuterCorridor,
-      corridor: cycleLoopback ? 'cycle' : topology.longEdgeIds.has(edge.id) || fallbackOuterCorridor ? 'outer' : 'normal'
+      corridor: cycleLoopback && selected.usesOuterCorridor ? 'cycle' : selected.usesOuterCorridor ? 'outer' : 'normal'
     };
   }
 
@@ -619,29 +677,55 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
 
   let avoidableCrossings = 0;
   if (detectCrossings(routes, topology).length > 0) {
-    for (let pass = 0; pass < 2; pass += 1) {
+    let converged = false;
+    for (let pass = 0; pass < 3; pass += 1) {
       let improved = false;
-      for (let index = 0; index < edgeOrder.length; index += 1) {
-        const edge = edgeOrder[index];
+      const crossingEdgeIds = new Set(detectCrossings(routes, topology).flatMap((crossing) => [crossing.overEdgeId, crossing.underEdgeId]));
+      for (const edge of edgeOrder.filter((candidate) => crossingEdgeIds.has(candidate.id))) {
+        const index = edgeOrder.findIndex((candidate) => candidate.id === edge.id);
         const routeIndex = routes.findIndex((route) => route.id === edge.id);
         const current = routes[routeIndex];
         const otherRoutes = routes.filter((route) => route.id !== edge.id);
         const proposal = routeEdge(edge, otherRoutes, index);
-        if (crossingCount(proposal.points, otherRoutes) < crossingCount(current.points, otherRoutes)) {
+        const currentScore = [
+          crossingCount(current.points, otherRoutes),
+          current.length,
+          backtracking(current.points, boxById.get(current.targetPort.nodeId)!.y >= boxById.get(current.sourcePort.nodeId)!.y),
+          current.bends,
+          congestion(current.points, otherRoutes)
+        ];
+        const proposalScore = [
+          crossingCount(proposal.points, otherRoutes),
+          proposal.length,
+          backtracking(proposal.points, boxById.get(proposal.targetPort.nodeId)!.y >= boxById.get(proposal.sourcePort.nodeId)!.y),
+          proposal.bends,
+          congestion(proposal.points, otherRoutes)
+        ];
+        const improves = proposalScore.some((value, scoreIndex) =>
+          value < currentScore[scoreIndex] && proposalScore.slice(0, scoreIndex).every((prior, priorIndex) => prior === currentScore[priorIndex])
+        );
+        if (improves) {
           routes[routeIndex] = proposal;
           improved = true;
         }
       }
-      if (!improved) break;
+      if (!improved) {
+        converged = true;
+        break;
+      }
     }
 
-    avoidableCrossings = edgeOrder.reduce((count, edge, index) => {
-      const current = routes.find((route) => route.id === edge.id)!;
-      const otherRoutes = routes.filter((route) => route.id !== edge.id);
-      const proposal = routeEdge(edge, otherRoutes, index);
-      const improvement = crossingCount(current.points, otherRoutes) - crossingCount(proposal.points, otherRoutes);
-      return count + Math.max(0, improvement);
-    }, 0);
+    if (!converged) {
+      const crossingEdgeIds = new Set(detectCrossings(routes, topology).flatMap((crossing) => [crossing.overEdgeId, crossing.underEdgeId]));
+      avoidableCrossings = edgeOrder.filter((edge) => crossingEdgeIds.has(edge.id)).reduce((count, edge) => {
+        const index = edgeOrder.findIndex((candidate) => candidate.id === edge.id);
+        const current = routes.find((route) => route.id === edge.id)!;
+        const otherRoutes = routes.filter((route) => route.id !== edge.id);
+        const proposal = routeEdge(edge, otherRoutes, index);
+        const improvement = crossingCount(current.points, otherRoutes) - crossingCount(proposal.points, otherRoutes);
+        return count + Math.max(0, improvement);
+      }, 0);
+    }
   }
 
   routes.sort((first, second) => first.id.localeCompare(second.id));

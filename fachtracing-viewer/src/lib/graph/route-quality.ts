@@ -11,11 +11,14 @@ export interface QualityNode {
 
 export interface QualityRoute {
   id: string;
+  sourceNodeId?: string;
+  targetNodeId?: string;
   points: readonly LayoutPoint[];
   labelPosition?: LayoutPoint;
   displayLabel?: string | null;
   long?: boolean;
   corridor?: 'normal' | 'outer' | 'cycle';
+  shortestCandidateLength?: number;
 }
 
 export interface LayoutQualityMetrics {
@@ -29,6 +32,28 @@ export interface LayoutQualityMetrics {
   backtrackingDistance: number;
   longEdgeCorridorViolations: number;
   branchRegionViolations: number;
+  crossingDensity: number;
+  parallelCorridorDensity: number;
+  maximumNormalDetourRatio: number;
+  maximumLongDetourRatio: number;
+  avoidableDetours: number;
+}
+
+export interface RouteDetour {
+  routeId: string;
+  corridor: 'normal' | 'outer' | 'cycle';
+  length: number;
+  shortestCandidateLength: number;
+  ratio: number;
+  avoidable: boolean;
+}
+
+export interface LayoutQualityFailure {
+  metric: keyof LayoutQualityMetrics;
+  actual: number;
+  maximum: number;
+  evidence: readonly string[];
+  message: string;
 }
 
 export interface QualityBranchRegion {
@@ -53,9 +78,17 @@ export function bendCount(points: readonly LayoutPoint[]): number {
 }
 
 export function parallelClearanceViolations(routes: readonly QualityRoute[], clearance = 12): string[] {
-  const violations: string[] = [];
+  return parallelClearancePairs(routes, clearance).map(([first, second]) => `${first} is too close to ${second}`);
+}
+
+export function parallelClearancePairs(routes: readonly QualityRoute[], clearance = 12): Array<readonly [string, string]> {
+  const violations: Array<readonly [string, string]> = [];
   for (let first = 0; first < routes.length; first += 1) {
     for (let second = first + 1; second < routes.length; second += 1) {
+      if (routes[first].sourceNodeId && routes[first].sourceNodeId === routes[second].sourceNodeId) continue;
+      if (routes[first].targetNodeId && routes[first].targetNodeId === routes[second].targetNodeId) continue;
+      if (routes[first].sourceNodeId && routes[first].sourceNodeId === routes[second].targetNodeId) continue;
+      if (routes[first].targetNodeId && routes[first].targetNodeId === routes[second].sourceNodeId) continue;
       let violates = false;
       for (let firstSegment = 1; firstSegment < routes[first].points.length && !violates; firstSegment += 1) {
         const firstStart = routes[first].points[firstSegment - 1];
@@ -77,10 +110,63 @@ export function parallelClearanceViolations(routes: readonly QualityRoute[], cle
           }
         }
       }
-      if (violates) violations.push(`${routes[first].id} is too close to ${routes[second].id}`);
+      if (violates) violations.push([routes[first].id, routes[second].id]);
     }
   }
   return violations;
+}
+
+export function measureRouteDetours(routes: readonly QualityRoute[]): RouteDetour[] {
+  return routes.map((route) => {
+    const length = manhattanLength(route.points);
+    const shortestCandidateLength = Math.max(1, route.shortestCandidateLength ?? length);
+    const improvement = length - shortestCandidateLength;
+    const ratio = length / shortestCandidateLength;
+    return {
+      routeId: route.id,
+      corridor: route.corridor ?? 'normal',
+      length,
+      shortestCandidateLength,
+      ratio,
+      avoidable: improvement >= 48 || ratio >= 1.15
+    };
+  });
+}
+
+function failedMetric(
+  metric: keyof LayoutQualityMetrics,
+  actual: number,
+  maximum: number,
+  evidence: readonly string[] = []
+): LayoutQualityFailure | null {
+  if (actual <= maximum) return null;
+  const evidenceText = evidence.length > 0 ? ` (${evidence.join(', ')})` : '';
+  return {
+    metric,
+    actual,
+    maximum,
+    evidence,
+    message: `${metric} is ${actual.toFixed(3)}; maximum is ${maximum.toFixed(3)}${evidenceText}`
+  };
+}
+
+export function evaluateLayoutQuality(metrics: LayoutQualityMetrics, routes: readonly QualityRoute[]): LayoutQualityFailure[] {
+  const detours = measureRouteDetours(routes);
+  const normalDetours = detours.filter((route) => route.corridor === 'normal' && route.ratio > 2).map((route) => route.routeId);
+  const longDetours = detours.filter((route) => route.corridor !== 'normal' && route.ratio > 3).map((route) => route.routeId);
+  const avoidableDetours = detours.filter((route) => route.avoidable).map((route) => route.routeId);
+  return [
+    failedMetric('nodeOverlaps', metrics.nodeOverlaps, 0),
+    failedMetric('unrelatedNodeIntrusions', metrics.unrelatedNodeIntrusions, 0),
+    failedMetric('labelCollisions', metrics.labelCollisions, 0),
+    failedMetric('avoidableCrossings', metrics.avoidableCrossings, 0),
+    failedMetric('branchRegionViolations', metrics.branchRegionViolations, 0),
+    failedMetric('longEdgeCorridorViolations', metrics.longEdgeCorridorViolations, 0),
+    failedMetric('crossingDensity', metrics.crossingDensity, 0.5),
+    failedMetric('maximumNormalDetourRatio', metrics.maximumNormalDetourRatio, 2, normalDetours),
+    failedMetric('maximumLongDetourRatio', metrics.maximumLongDetourRatio, 3, longDetours),
+    failedMetric('avoidableDetours', metrics.avoidableDetours, 0, avoidableDetours)
+  ].filter((failure): failure is LayoutQualityFailure => failure !== null);
 }
 
 export function measureBranchRegionViolations(
@@ -90,6 +176,16 @@ export function measureBranchRegionViolations(
   regions: readonly QualityBranchRegion[],
   longEdgeIds: ReadonlySet<string>
 ): number {
+  return branchRegionViolationEdgeIds(graph, nodes, routes, regions, longEdgeIds).length;
+}
+
+export function branchRegionViolationEdgeIds(
+  graph: GraphModel,
+  nodes: readonly QualityNode[],
+  routes: readonly QualityRoute[],
+  regions: readonly QualityBranchRegion[],
+  longEdgeIds: ReadonlySet<string>
+): string[] {
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   const routeById = new Map(routes.map((route) => [route.id, route]));
   const violatingEdgeIds = new Set<string>();
@@ -97,17 +193,17 @@ export function measureBranchRegionViolations(
     const memberIds = new Set([region.sourceNodeId, ...region.memberNodeIds, ...(region.convergenceNodeId ? [region.convergenceNodeId] : [])]);
     const members = [...memberIds].map((nodeId) => nodeById.get(nodeId)).filter((node): node is QualityNode => Boolean(node));
     if (members.length === 0) continue;
-    const left = Math.min(...members.map((node) => node.x)) - 48;
-    const right = Math.max(...members.map((node) => node.x + node.width)) + 48;
-    const top = Math.min(...members.map((node) => node.y)) - 48;
-    const bottom = Math.max(...members.map((node) => node.y + node.height)) + 48;
+    const left = Math.min(...members.map((node) => node.x)) - 96;
+    const right = Math.max(...members.map((node) => node.x + node.width)) + 96;
+    const top = Math.min(...members.map((node) => node.y)) - 96;
+    const bottom = Math.max(...members.map((node) => node.y + node.height)) + 96;
     for (const edge of graph.edges) {
-      if (longEdgeIds.has(edge.id) || !memberIds.has(edge.from) || !memberIds.has(edge.to)) continue;
       const route = routeById.get(edge.id);
+      if (longEdgeIds.has(edge.id) || route?.long || route?.corridor !== 'normal' || !memberIds.has(edge.from) || !memberIds.has(edge.to)) continue;
       if (route?.points.some((point) => point.x < left || point.x > right || point.y < top || point.y > bottom)) violatingEdgeIds.add(edge.id);
     }
   }
-  return violatingEdgeIds.size;
+  return [...violatingEdgeIds].sort();
 }
 
 function rangesOverlap(firstStart: number, firstEnd: number, secondStart: number, secondEnd: number): boolean {
@@ -164,6 +260,9 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
   let backtrackingDistance = 0;
   let labelCollisions = 0;
   let longEdgeCorridorViolations = 0;
+  const routeDetours = measureRouteDetours(routes);
+  const normalDetours = routeDetours.filter((route) => route.corridor === 'normal');
+  const longDetours = routeDetours.filter((route) => route.corridor !== 'normal');
   const maximumX = Math.max(...nodes.map((node) => node.x + node.width));
   const maximumY = Math.max(...nodes.map((node) => node.y + node.height));
 
@@ -178,7 +277,7 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
     totalBends += bendCount(route.points);
     const edge = graphEdgeById.get(route.id);
     if (!edge) continue;
-    if (route.long && route.corridor !== 'cycle' && route.points.every((point) => point.x >= 0 && point.x <= maximumX && point.y >= 0 && point.y <= maximumY)) {
+    if (route.corridor === 'outer' && route.points.every((point) => point.x >= 0 && point.x <= maximumX && point.y >= 0 && point.y <= maximumY)) {
       longEdgeCorridorViolations += 1;
     }
     const source = nodeById.get(edge.from);
@@ -229,6 +328,11 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
     totalBends,
     backtrackingDistance,
     longEdgeCorridorViolations,
-    branchRegionViolations: 0
+    branchRegionViolations: 0,
+    crossingDensity: crossings / Math.max(1, graph.edges.length),
+    parallelCorridorDensity: parallelClearancePairs(routes).length / Math.max(1, graph.edges.length),
+    maximumNormalDetourRatio: Math.max(1, ...normalDetours.map((route) => route.ratio)),
+    maximumLongDetourRatio: Math.max(1, ...longDetours.map((route) => route.ratio)),
+    avoidableDetours: routeDetours.filter((route) => route.avoidable).length
   };
 }

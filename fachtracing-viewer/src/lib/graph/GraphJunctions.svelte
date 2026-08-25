@@ -3,7 +3,7 @@
   import { roundedOrthogonalPath } from './edge-route';
   import type { LayoutJunction, RouteCrossing, SharedRouteSegment } from './route-planner';
 
-  let { junctions, sharedSegments, crossings, regions, width, height, activeEdgeId, pathEdgeIds, inspectedEdgeId }: {
+  let { junctions, sharedSegments, crossings, regions, width, height, activeEdgeId, pathEdgeIds, inspectedEdgeId, contextEdgeIds }: {
     junctions: readonly LayoutJunction[];
     sharedSegments: readonly SharedRouteSegment[];
     crossings: readonly RouteCrossing[];
@@ -13,6 +13,7 @@
     activeEdgeId: string | null;
     pathEdgeIds: ReadonlySet<string>;
     inspectedEdgeId: string | null;
+    contextEdgeIds: ReadonlySet<string> | null;
   } = $props();
 
   function state(edgeIds: readonly string[]): 'current' | 'path' | 'inspect' | 'default' {
@@ -25,30 +26,34 @@
   function crossingState(crossing: RouteCrossing): 'current' | 'path' | 'inspect' | 'default' {
     return state([crossing.overEdgeId]);
   }
+
+  function contextDimmed(edgeIds: readonly string[]): boolean {
+    return Boolean(contextEdgeIds && !edgeIds.some((edgeId) => contextEdgeIds.has(edgeId)));
+  }
 </script>
 
 <svg class="graph-decorations" {width} {height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
   {#each regions as region (region.id)}
-    <g class="structural-region">
+    <g class="structural-region" class:context-dimmed={contextEdgeIds !== null}>
       <rect x={region.x} y={region.y} width={region.width} height={region.height} rx="16" />
       <text x={region.x + 12} y={region.y + 17}>{region.label}</text>
     </g>
   {/each}
   {#each sharedSegments as segment (segment.id)}
-    <g class="shared-segment shared-segment--{state(segment.incomingEdgeIds)}" data-shared-segment={segment.id} data-member-count={segment.incomingEdgeIds.length}>
+    <g class="shared-segment shared-segment--{state(segment.incomingEdgeIds)}" class:context-dimmed={contextDimmed(segment.incomingEdgeIds)} data-shared-segment={segment.id} data-member-count={segment.incomingEdgeIds.length}>
       <path d={roundedOrthogonalPath(segment.lanePoints, 6)} />
       <path d={roundedOrthogonalPath(segment.points, 6)} />
       <polygon points={`${segment.points.at(-1)!.x},${segment.points.at(-1)!.y} ${segment.points.at(-1)!.x - 5},${segment.points.at(-1)!.y - 9} ${segment.points.at(-1)!.x + 5},${segment.points.at(-1)!.y - 9}`} />
     </g>
   {/each}
   {#each junctions as junction (junction.id)}
-    <g class="junction junction--{state(junction.incomingEdgeIds)}" data-junction={junction.id} data-member-count={junction.incomingEdgeIds.length}>
+    <g class="junction junction--{state(junction.incomingEdgeIds)}" class:context-dimmed={contextDimmed(junction.incomingEdgeIds)} data-junction={junction.id} data-member-count={junction.incomingEdgeIds.length}>
       <circle cx={junction.point.x} cy={junction.point.y} r="5" />
       <title>{junction.incomingEdgeIds.length} routes converge before this node</title>
     </g>
   {/each}
   {#each crossings as crossing (crossing.id)}
-    <g class="route-crossing route-crossing--{crossingState(crossing)}" data-route-crossing={crossing.id}>
+    <g class="route-crossing route-crossing--{crossingState(crossing)}" class:context-dimmed={contextDimmed([crossing.overEdgeId, crossing.underEdgeId])} data-route-crossing={crossing.id}>
       <circle cx={crossing.point.x} cy={crossing.point.y} r={crossing.radius + 2} />
       {#if crossing.overAxis === 'horizontal'}
         <line x1={crossing.point.x - crossing.radius - 2} x2={crossing.point.x + crossing.radius + 2} y1={crossing.point.y} y2={crossing.point.y} />
@@ -61,6 +66,7 @@
 
 <style>
   .graph-decorations { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+  .context-dimmed { opacity: .1; }
   .structural-region rect { fill: none; stroke: color-mix(in oklch, var(--muted-foreground), transparent 58%); stroke-width: 1; stroke-dasharray: 6 6; }
   .structural-region text { fill: var(--muted-foreground); font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
   .shared-segment path { fill: none; stroke: var(--graph-edge); stroke-width: 1.5; }

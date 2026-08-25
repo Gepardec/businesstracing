@@ -90,72 +90,72 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 
 ### RB-01 — Explicit layout state
 
-- [ ] WHEN a valid graph file has been parsed and layout has not completed THE SYSTEM SHALL show `Arranging <node count> nodes and <edge count> connections` inside the canvas.
-- [ ] WHILE layout is pending THE SYSTEM SHALL keep the file summary and replace-file action available.
-- [ ] WHILE layout is pending THE SYSTEM SHALL expose an accessible busy state and status message.
-- [ ] IF a newer graph replaces a graph with pending layout THEN THE SYSTEM SHALL ignore the stale layout result.
-- [ ] IF layout fails THEN THE SYSTEM SHALL show the existing layout error without leaving a permanent busy state.
+- [x] WHEN a valid graph file has been parsed and layout has not completed THE SYSTEM SHALL show `Arranging <node count> nodes and <edge count> connections` inside the canvas.
+- [x] WHILE layout is pending THE SYSTEM SHALL keep the file summary and replace-file action available.
+- [x] WHILE layout is pending THE SYSTEM SHALL expose an accessible busy state and status message.
+- [x] IF a newer graph replaces a graph with pending layout THEN THE SYSTEM SHALL ignore the stale layout result.
+- [x] IF layout fails THEN THE SYSTEM SHALL show the existing layout error without leaving a permanent busy state.
 
 ### RB-02 — Reading view and overview are separate
 
-- [ ] WHEN a graph becomes ready THE SYSTEM SHALL open in `Reading view` at the first declared entry or the stable first entry when multiple entries exist.
-- [ ] THE SYSTEM SHALL keep business-label text at an effective size of at least 12 CSS pixels in Reading view.
-- [ ] THE SYSTEM SHALL include the focused node, its direct predecessors, its direct successors, and at least 64 CSS pixels of free context where those nodes fit in the canvas.
-- [ ] WHEN the user selects `Overview` THE SYSTEM SHALL fit the complete graph and expose `Overview` as the active mode.
-- [ ] WHILE Overview zoom is below the readable label floor THE SYSTEM SHALL use topology-level detail instead of rendering illegible text as if it were readable.
-- [ ] WHEN the user selects a node from Overview THE SYSTEM SHALL return to Reading view and focus that node.
-- [ ] THE SYSTEM SHALL never remove nodes or edges from the underlying Svelte Flow model to create either viewport mode.
+- [x] WHEN a graph becomes ready THE SYSTEM SHALL open in `Reading view` at the first declared entry or the stable first entry when multiple entries exist.
+- [x] THE SYSTEM SHALL keep business-label text at an effective size of at least 12 CSS pixels in Reading view.
+- [x] THE SYSTEM SHALL include the focused node, its direct predecessors, its direct successors, and at least 64 CSS pixels of free context where those nodes fit in the canvas.
+- [x] WHEN the user selects `Overview` THE SYSTEM SHALL fit the complete graph and expose `Overview` as the active mode.
+- [x] WHILE Overview zoom is below the readable label floor THE SYSTEM SHALL use topology-level detail instead of rendering illegible text as if it were readable.
+- [x] WHEN the user selects a node from Overview THE SYSTEM SHALL return to Reading view and focus that node.
+- [x] THE SYSTEM SHALL never remove nodes or edges from the underlying Svelte Flow model to create either viewport mode.
 
 ### RB-03 — Balanced top-to-bottom placement
 
-- [ ] THE SYSTEM SHALL preserve top-to-bottom direction for normal forward flow.
-- [ ] THE SYSTEM SHALL use ELK placement coordinates or another topology-derived candidate; it SHALL NOT rebuild all nodes into one flat row solely from a global rank number.
-- [ ] THE SYSTEM SHALL compare deterministic placement candidates with one shared quality score before route planning is accepted.
-- [ ] FOR a 16-to-100-node graph that is not a single structural chain THE SYSTEM SHALL reject a placement with width-to-height ratio below 0.25 or above 2.25 when a valid candidate inside that range exists.
-- [ ] THE SYSTEM SHALL keep node overlap and unrelated-node route intrusion at zero.
-- [ ] THE SYSTEM SHALL keep entry nodes before their forward descendants and reachable outcomes after their forward predecessors.
-- [ ] THE SYSTEM SHALL keep each multi-node strongly connected component in one compact `Cycle` region.
+- [x] THE SYSTEM SHALL preserve top-to-bottom direction for normal forward flow.
+- [x] THE SYSTEM SHALL use ELK placement coordinates or another topology-derived candidate; it SHALL NOT rebuild all nodes into one flat row solely from a global rank number.
+- [x] THE SYSTEM SHALL compare deterministic placement candidates with one shared quality score before route planning is accepted.
+- [x] FOR a 16-to-100-node graph that is not a single structural chain THE SYSTEM SHALL reject a placement with width-to-height ratio below 0.25 or above 2.25 when a valid candidate inside that range exists.
+- [x] THE SYSTEM SHALL keep node overlap and unrelated-node route intrusion at zero.
+- [x] THE SYSTEM SHALL keep entry nodes before their forward descendants and reachable outcomes after their forward predecessors.
+- [x] THE SYSTEM SHALL keep each multi-node strongly connected component in one compact `Cycle` region.
 
 ### RB-04 — Route simplicity
 
-- [ ] THE SYSTEM SHALL report candidate-relative route detour, route-crossing density, parallel-corridor density, label collision, branch-region violation, and route backtracking metrics.
-- [ ] THE SYSTEM SHALL reject a route when another valid candidate is at least 48 pixels or 15 percent shorter without increasing node intrusion, label collision, branch violation, or crossing count.
-- [ ] THE SYSTEM SHALL keep avoidable crossings, branch-region violations, node intrusions, and label collisions at zero for accepted layouts.
-- [ ] THE SYSTEM SHALL keep visible crossing bridges at or below one crossing per two graph edges for the supplied evidence set.
-- [ ] THE SYSTEM SHALL keep each normal route at no more than 2.0 times its shortest valid orthogonal candidate and each outer or cycle route at no more than 3.0 times its shortest valid candidate.
-- [ ] WHEN three or more routes share a target corridor THE SYSTEM SHALL evaluate a presentation-only shared trunk before it accepts separate parallel corridors.
-- [ ] WHEN a cycle edge leaves and returns to the same cycle region THE SYSTEM SHALL keep its corridor adjacent to that region unless obstacle or crossing metrics prove an outer corridor is better.
-- [ ] THE SYSTEM SHALL keep original edge identity, focusability, accessible labels, and endpoint semantics when routes share presentation geometry.
+- [x] THE SYSTEM SHALL report candidate-relative route detour, route-crossing density, parallel-corridor density, label collision, branch-region violation, and route backtracking metrics.
+- [x] THE SYSTEM SHALL reject a route when another valid candidate is at least 48 pixels or 15 percent shorter without increasing node intrusion, label collision, branch violation, or crossing count.
+- [x] THE SYSTEM SHALL keep avoidable crossings, branch-region violations, node intrusions, and label collisions at zero for accepted layouts.
+- [x] THE SYSTEM SHALL keep visible crossing bridges at or below one crossing per two graph edges for the supplied evidence set.
+- [x] THE SYSTEM SHALL keep each normal route at no more than 2.0 times its shortest valid orthogonal candidate and each outer or cycle route at no more than 3.0 times its shortest valid candidate.
+- [x] WHEN three or more routes share a target corridor THE SYSTEM SHALL evaluate a presentation-only shared trunk before it accepts separate parallel corridors.
+- [x] WHEN a cycle edge leaves and returns to the same cycle region THE SYSTEM SHALL keep its corridor adjacent to that region unless obstacle or crossing metrics prove an outer corridor is better.
+- [x] THE SYSTEM SHALL keep original edge identity, focusability, accessible labels, and endpoint semantics when routes share presentation geometry.
 
 ### RB-05 — Search and selection
 
-- [ ] WHEN search matches a node by exact ID or label THE SYSTEM SHALL persistently mark that node as selected until another node is selected or another graph is loaded.
-- [ ] THE SYSTEM SHALL distinguish static selection from node kind, keyboard focus, run path, current run step, success, failure, and coverage state.
-- [ ] WHEN a selected node is focused THE SYSTEM SHALL frame its local predecessor-and-successor neighborhood in Reading view.
-- [ ] IF a label matches multiple nodes THEN THE SYSTEM SHALL select the stable first match and state the occurrence count; exact ID SHALL always select the exact node.
-- [ ] IF search has no match THEN THE SYSTEM SHALL preserve the current viewport and selected node.
+- [x] WHEN search matches a node by exact ID or label THE SYSTEM SHALL persistently mark that node as selected until another node is selected or another graph is loaded.
+- [x] THE SYSTEM SHALL distinguish static selection from node kind, keyboard focus, run path, current run step, success, failure, and coverage state.
+- [x] WHEN a selected node is focused THE SYSTEM SHALL frame its local predecessor-and-successor neighborhood in Reading view.
+- [x] IF a label matches multiple nodes THEN THE SYSTEM SHALL select the stable first match and state the occurrence count; exact ID SHALL always select the exact node.
+- [x] IF search has no match THEN THE SYSTEM SHALL preserve the current viewport and selected node.
 
 ### RB-06 — Canvas safe areas
 
-- [ ] THE SYSTEM SHALL calculate Reading and Overview viewports inside bounds that exclude the search toolbar, zoom controls, minimap, and attribution.
-- [ ] THE SYSTEM SHALL keep the selected node outside every fixed-control rectangle with at least 16 CSS pixels of clearance.
-- [ ] THE SYSTEM SHALL preserve the same selected node and viewport mode after a theme change or canvas resize.
+- [x] THE SYSTEM SHALL calculate Reading and Overview viewports inside bounds that exclude the search toolbar, zoom controls, minimap, and attribution.
+- [x] THE SYSTEM SHALL keep the selected node outside every fixed-control rectangle with at least 16 CSS pixels of clearance.
+- [x] THE SYSTEM SHALL preserve the same selected node and viewport mode after a theme change or canvas resize.
 
 ### RB-07 — Generic evidence and compatibility
 
-- [ ] THE SYSTEM SHALL CONTINUE TO accept `fachtracing-business-graph/v1` and `fachtracing-developer-graph/v1` without contract changes.
-- [ ] THE SYSTEM SHALL derive all node positions, routes, groups, and viewport focus from the supplied graph.
-- [ ] THE SYSTEM SHALL NOT contain graph IDs, node IDs, product labels, fixed node coordinates, fixed routes, or hard-coded diagrams in production code.
-- [ ] THE SYSTEM SHALL provide a local graph-review command that accepts arbitrary JSON file paths and emits the same layout metrics used by acceptance tests.
-- [ ] THE SYSTEM SHALL verify the three supplied evidence files by content hash during local acceptance when those files are available.
-- [ ] IF an evidence file is absent THEN THE SYSTEM SHALL still verify topology-equivalent generated fixtures and report that the optional real-file review was not run.
+- [x] THE SYSTEM SHALL CONTINUE TO accept `fachtracing-business-graph/v1` and `fachtracing-developer-graph/v1` without contract changes.
+- [x] THE SYSTEM SHALL derive all node positions, routes, groups, and viewport focus from the supplied graph.
+- [x] THE SYSTEM SHALL NOT contain graph IDs, node IDs, product labels, fixed node coordinates, fixed routes, or hard-coded diagrams in production code.
+- [x] THE SYSTEM SHALL provide a local graph-review command that accepts arbitrary JSON file paths and emits the same layout metrics used by acceptance tests.
+- [x] THE SYSTEM SHALL verify the three supplied evidence files by content hash during local acceptance when those files are available.
+- [x] IF an evidence file is absent THEN THE SYSTEM SHALL still verify topology-equivalent generated fixtures and report that the optional real-file review was not run.
 
 ### RB-08 — POC responsiveness
 
-- [ ] THE SYSTEM SHALL show the layout busy state within one rendered frame after parsing completes.
-- [ ] THE SYSTEM SHALL keep layout work outside the main UI thread.
-- [ ] THE SYSTEM SHALL complete each supplied 19-to-55-node evidence layout within four seconds in the existing local acceptance environment.
-- [ ] THE SYSTEM SHALL label this timing as a POC responsiveness gate, not a production benchmark.
+- [x] THE SYSTEM SHALL show the layout busy state within one rendered frame after parsing completes.
+- [x] THE SYSTEM SHALL keep layout work outside the main UI thread.
+- [x] THE SYSTEM SHALL complete each supplied 19-to-55-node evidence layout within four seconds in the existing local acceptance environment.
+- [x] THE SYSTEM SHALL label this timing as a POC responsiveness gate, not a production benchmark.
 
 ## Regression Risk Analysis
 
@@ -256,4 +256,3 @@ The bugfix is acceptable only when all objective criteria pass and a human can u
 4. Follow the selected node's incoming and outgoing routes without crossing an unrelated node or losing the route in a corridor wall.
 
 Passing unit tests alone is not design approval.
-

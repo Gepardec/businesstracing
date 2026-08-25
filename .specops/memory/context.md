@@ -517,3 +517,18 @@ The JSON, SQL, HTTP, storage, node-ID, and edge-ID contracts did not change. Sve
 tests, the production build, 10 browser journeys, the generated 250-node gate, both graph V1
 formats, and generated Fachtracing dogfood pass. Four PostgreSQL-backed run-detail journeys and
 final user design approval remain deferred environment or review gates.
+
+### real-graph-layout-usability (bugfix) — 2026-08-25
+
+Completed all six tasks. The Svelte viewer now exposes arranging, Reading, and Overview states;
+keeps direct static topology readable; marks exact search selection; protects focus from fixed
+controls; and compares route-aware deterministic ELK placement profiles. The topology spine uses a
+memoized longest-forward-path calculation, and the router reports candidate-relative detour,
+crossing density, corridor density, branch containment, collision, and backtracking quality.
+
+All three supplied 19-to-55-node business graphs pass the generic review in 49 to 371 milliseconds
+with zero overlaps, intrusions, label collisions, avoidable crossings, branch violations, corridor
+violations, and avoidable detours. Svelte diagnostics, 58 unit tests, the production build, 11
+applicable production browser journeys, and focused light/dark real-file review pass. Five external
+PostgreSQL or generated-dogfood journeys skip because those fixtures are absent. Graph, SQL, HTTP,
+storage, dependency, and CI contracts did not change.
