@@ -1,0 +1,46 @@
+{
+  "id": "ci-business-projection-regression",
+  "type": "bugfix",
+  "status": "implementing",
+  "version": 1,
+  "created": "2026-08-26T19:26:15Z",
+  "updated": "2026-08-26T19:45:30Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "compact-graph-reading-and-business-phrasing",
+      "reason": "The regression changes the completed aggregate label contract.",
+      "required": true
+    },
+    {
+      "specId": "business-graph-semantic-explanation",
+      "reason": "The regression changes the completed business projection contract.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "business-graph-terminal-semantics",
+    "self-explainable-runtime-dogfood"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 9,
+        "taskCoverage": 8
+      },
+      "evaluatedAt": "2026-08-26T19:26:15Z"
+    }
+  }
+}

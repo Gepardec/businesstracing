@@ -116,11 +116,11 @@ public final class StaticDecisionAnalyzerTest {
 
     private static void rendersAggregateRolesWithoutLanguageFillers() {
         assert AggregateBusinessLabelRenderer.render(
-                "person", "employments", "covers (reference date)")
-                .equals("person — employments: covers (reference date)");
+                "person", "employments", "covers", "reference date")
+                .equals("person — employments: covers — reference date");
         assert AggregateBusinessLabelRenderer.render(
-                "", "employments", "covers (reference date)")
-                .equals("employments: covers (reference date)");
+                "", "employments", "covers", "")
+                .equals("employments: covers");
     }
 
     private static void usesContextForLocalAndGenericSetterLabels() {
@@ -2439,7 +2439,7 @@ public final class StaticDecisionAnalyzerTest {
         BusinessLogicGraph business = new BusinessGraphProjector().project(analysis);
         assert business.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
                 .map(BusinessLogicGraph.Node::label).toList()
-                .equals(List.of("employments: covers (reference date)"))
+                .equals(List.of("employments: covers — reference date"))
                 : business.nodes();
         assert business.nodes().stream().noneMatch(node -> node.label().matches(
                 "(?i).*(?:stream|adapter|repository|converter|callback|iterator).*")) : business.nodes();

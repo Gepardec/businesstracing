@@ -22,10 +22,13 @@ final class BusinessSemanticReducer {
 
     Reduction reduce(BusinessDecisionGraph.DecisionNode node) {
         String label = BusinessLanguageNormalizer.normalize(node.businessLabel());
+        boolean languageRewritten = !label.equals(node.businessLabel().strip().replaceAll("\\s+", " "));
         Map<String, String> attributes = node.attributes();
-        if (infrastructureOwner(attributes) || architectureImplementation(attributes)
-                || selector(node.kind(), label)) {
+        if (selector(node.kind(), label)) {
             return new Reduction(label, true, false, false);
+        }
+        if (node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE) {
+            return predicate(label, attributes, languageRewritten);
         }
         if (node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION) {
             if (materialStatementCall(attributes)) {
@@ -35,18 +38,20 @@ final class BusinessSemanticReducer {
                 return new Reduction(withSourceValue(attributes, namedPredicate(attributes, label)),
                         false, false, true);
             }
-            if (attributes.containsKey(BusinessSemanticAttributes.OWNER_TYPE)
+            if (infrastructureOwner(attributes) || architectureImplementation(attributes)
+                    || attributes.containsKey(BusinessSemanticAttributes.OWNER_TYPE)
                     || implementationWrapper(attributes)) {
                 return new Reduction(label, true, false, false);
             }
         }
-        if (node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE) {
-            return predicate(label, attributes);
+        if (architectureImplementation(attributes) || infrastructureOwner(attributes)) {
+            return new Reduction(label, true, false, false);
         }
         return new Reduction(label, false, false, false);
     }
 
-    private static Reduction predicate(String label, Map<String, String> attributes) {
+    private static Reduction predicate(
+            String label, Map<String, String> attributes, boolean languageRewritten) {
         String method = attributes.getOrDefault(BusinessSemanticAttributes.CALL_METHOD, "");
         String receiver = businessSubject(attributes.getOrDefault(BusinessSemanticAttributes.RECEIVER, ""));
         String context = businessSubject(attributes.getOrDefault(
@@ -59,9 +64,16 @@ final class BusinessSemanticReducer {
         if (BusinessSemanticAttributes.AGGREGATE.equals(attributes.get(BusinessSemanticAttributes.ROLE))) {
             return new Reduction(label, false, false, false);
         }
+        if (method.isBlank() && attributes.getOrDefault(
+                BusinessSemanticAttributes.TREE_KIND, "").equals("LOGICAL_COMPLEMENT")) {
+            return new Reduction(label, true, false, false);
+        }
         if (method.equals("anyMatch") && label.contains(" that ")
                 && (label.contains(" has ") || label.contains(" contains "))) {
             return new Reduction(label, false, false, false);
+        }
+        if (languageRewritten) {
+            return new Reduction(withSourceValue(attributes, label), false, false, false);
         }
 
         if (method.equals("isEmpty") || method.equals("isBlank")) {
@@ -86,7 +98,8 @@ final class BusinessSemanticReducer {
                     attributes, namedPredicate(attributes, label.substring(4).strip()));
             return new Reduction(positive, false, true, false);
         }
-        return new Reduction(withSourceValue(attributes, namedPredicate(attributes, label)),
+        String predicate = needsSemanticLabel(label) ? namedPredicate(attributes, label) : label;
+        return new Reduction(withSourceValue(attributes, predicate),
                 false, false, false);
     }
 
@@ -194,6 +207,7 @@ final class BusinessSemanticReducer {
     }
 
     private static String actionLabel(Map<String, String> attributes, String fallback) {
+        if (!needsSemanticLabel(fallback)) return fallback;
         String method = words(attributes.getOrDefault(BusinessSemanticAttributes.CALL_METHOD, ""));
         if (method.isBlank()) return fallback;
         String argumentTypes = attributes.getOrDefault(BusinessSemanticAttributes.ARGUMENT_TYPES, "");
@@ -211,9 +225,18 @@ final class BusinessSemanticReducer {
     }
 
     private static String subject(String receiver, String label, String suffix) {
-        if (!receiver.isBlank()) return receiver;
         String lower = label.toLowerCase(Locale.ROOT);
-        return lower.endsWith(suffix) ? label.substring(0, label.length() - suffix.length()).strip() : label;
+        if (lower.endsWith(suffix)) {
+            return label.substring(0, label.length() - suffix.length()).strip();
+        }
+        return receiver.isBlank() ? label : receiver;
+    }
+
+    private static boolean needsSemanticLabel(String label) {
+        String lower = label.toLowerCase(Locale.ROOT);
+        return lower.startsWith("evaluate ") || lower.startsWith("derive ")
+                || lower.startsWith("initialize ") || lower.startsWith("use ")
+                || lower.equals("condition") || lower.equals("business condition");
     }
 
     private static String withContext(String context, String label) {

@@ -95,8 +95,6 @@ public final class BusinessGraphProjector {
             BusinessDecisionGraph.DecisionEdge edge = exact.edges().get(index);
             BusinessDecisionGraph.DecisionNode target = exactNodes.get(edge.toNodeId());
             if (target == null || target.kind() != BusinessDecisionGraph.NodeKind.OUTCOME) continue;
-            BusinessDecisionGraph.DecisionNode terminalSource = exactNodes.get(edge.fromNodeId());
-            if (technicalInfrastructureFailure(edge, terminalSource)) continue;
             String id = opaqueId("result", businessGraphId, "terminal:" + index);
             nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT,
                     resultLabel(exact, edge, exactNodes, incoming)));
@@ -238,16 +236,6 @@ public final class BusinessGraphProjector {
 
     private static String terminalLabel(BusinessDecisionGraph.DecisionEdge edge) {
         return edge.outcome().isBlank() ? "terminal result" : edge.outcome();
-    }
-
-    private static boolean technicalInfrastructureFailure(
-            BusinessDecisionGraph.DecisionEdge edge,
-            BusinessDecisionGraph.DecisionNode source) {
-        if (source == null || !edge.outcome().toLowerCase(Locale.ROOT).contains("fails")) return false;
-        String owner = source.attributes().getOrDefault(
-                at.gepardec.fachtracing.model.BusinessSemanticAttributes.OWNER_TYPE, "");
-        String simple = owner.substring(Math.max(owner.lastIndexOf('.'), owner.lastIndexOf('$')) + 1);
-        return simple.matches("(?i).*(?:adapter|repository|mapper|converter|controller|client|dao|persistence)$");
     }
 
     private static void walkBackward(
@@ -449,12 +437,18 @@ public final class BusinessGraphProjector {
             return node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
                     && label.contains("duplicate") && label.endsWith(" violation ex");
         });
+        Set<String> positiveLabels = exact.nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
+                .map(node -> cleanLabel(node.businessLabel()).toLowerCase(Locale.ROOT))
+                .filter(label -> !label.startsWith("not "))
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
         return exact.nodes().stream().filter(node -> {
             if (node.kind() != BusinessDecisionGraph.NodeKind.PREDICATE) return false;
-            String label = node.businessLabel().toLowerCase(Locale.ROOT);
+            String label = cleanLabel(node.businessLabel()).toLowerCase(Locale.ROOT);
             return (hasNamedNewRule && label.equals("value is absent"))
                     || (hasDuplicateFailureRule && (label.equals("message exists")
-                    || label.contains(" to lower case contains ")));
+                    || label.contains(" to lower case contains ")))
+                    || (label.startsWith("not ") && positiveLabels.contains(label.substring(4).strip()));
         }).map(BusinessDecisionGraph.DecisionNode::nodeId)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
     }

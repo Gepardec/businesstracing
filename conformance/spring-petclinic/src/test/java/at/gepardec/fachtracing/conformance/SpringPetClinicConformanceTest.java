@@ -205,7 +205,8 @@ public final class SpringPetClinicConformanceTest {
                     "no matching records", "one matching record", "multiple matching records");
             case "visit booking" -> Set.of("correction required", "visit booking completed");
             case "pet registration" -> Set.of(
-                    "correction required", "operation failed", "pet registration completed");
+                    "correction required", "pet registration could not be completed",
+                    "pet registration completed");
             default -> throw new IllegalArgumentException("unexpected decision " + decision);
         };
         assert results.equals(expected) : decision + " results: " + results;

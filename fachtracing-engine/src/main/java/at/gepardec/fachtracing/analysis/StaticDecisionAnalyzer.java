@@ -2732,10 +2732,11 @@ public final class StaticDecisionAnalyzer {
                         || !(executable.getEnclosingElement() instanceof TypeElement owner)
                         || !owner.getQualifiedName().contentEquals("java.util.stream.Stream")) return null;
                 String collection = aggregateCollection(matchSelect.getExpression());
-                String condition = aggregateCondition(match.getArguments().getFirst());
-                if (collection.isBlank() || condition == null || condition.isBlank()) return null;
+                AggregateCondition condition = aggregateCondition(match.getArguments().getFirst());
+                if (collection.isBlank() || condition == null || condition.rule().isBlank()) return null;
                 String subject = businessSubjects.isEmpty() ? "" : words(businessSubjects.getLast());
-                return AggregateBusinessLabelRenderer.render(subject, collection, condition);
+                return AggregateBusinessLabelRenderer.render(
+                        subject, collection, condition.rule(), condition.qualifier());
             }
 
             private String aggregateCollection(Tree pipeline) {
@@ -2755,7 +2756,7 @@ public final class StaticDecisionAnalyzer {
                 return "items";
             }
 
-            private String aggregateCondition(Tree callback) {
+            private AggregateCondition aggregateCondition(Tree callback) {
                 if (!(callback instanceof LambdaExpressionTree lambda)) return null;
                 Tree body = unwrapParentheses(lambda.getBody());
                 if (!(body instanceof MethodInvocationTree invocation)) return null;
@@ -2785,10 +2786,10 @@ public final class StaticDecisionAnalyzer {
                     if (java.util.Arrays.stream(receiver.split(" "))
                             .anyMatch(word -> word.length() > 3 && predicate.contains(word))) {
                         String relation = predicate.contains(" ") ? predicate : "has " + predicate;
-                        return relation + qualifier;
+                        return new AggregateCondition(relation, qualifier);
                     }
                 }
-                return predicate + qualifier;
+                return new AggregateCondition(predicate, qualifier);
             }
 
             private String aggregateQualifier(
@@ -2799,9 +2800,10 @@ public final class StaticDecisionAnalyzer {
                         .filter(argument -> !(argument instanceof IdentifierTree identifier)
                                 || !parameters.contains(identifier.getName().toString()))
                         .map(argument -> expression(argument))
-                        .collect(Collectors.collectingAndThen(Collectors.joining(", "),
-                                value -> value.isBlank() ? "" : " (" + value + ")"));
+                        .collect(Collectors.joining(", "));
             }
+
+            private record AggregateCondition(String rule, String qualifier) { }
 
             @Override public Void visitThrow(ThrowTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitThrow(node, unused);

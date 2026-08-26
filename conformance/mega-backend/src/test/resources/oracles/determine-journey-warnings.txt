@@ -52,59 +52,60 @@ node 49: COMPUTATION | evaluate is task
 node 50: COMPUTATION | evaluate is journey
 node 51: PREDICATE | task equals reisen
 node 52: PREDICATE | is not journey task
-node 53: PREDICATE | does not have journey entries sorted project entries
-node 54: COMPUTATION | derive working location as main
-node 55: CHOICE | for each project entry in sorted project entries
-node 56: COMPUTATION | evaluate is journey
-node 57: PREDICATE | task equals reisen
-node 58: PREDICATE | task is journey project entry task
-node 59: COMPUTATION | derive journey direction
-node 60: PREDICATE | journey direction equals back
-node 61: COMPUTATION | set working location to main
-node 62: PREDICATE | journey direction equals to
-node 63: PREDICATE | journey direction equals further
-node 64: COMPUTATION | set working location to project entry working location
-node 65: PREDICATE | project entry working location does not equal working location
-node 66: COMPUTATION | create journey warning
-node 67: COMPUTATION | journey warning
-node 68: COMPUTATION | set journey warning date
-node 69: COMPUTATION | add warning to new journey warning warning types
-node 70: COMPUTATION | add create journey warning with project entry and invalid working location to warnings
-node 71: COMPUTATION | location relevant set journey rule
-node 72: COMPUTATION | warnings
-node 73: CHOICE | for each project entry in project entries
-node 74: PREDICATE | project entry work location is project relevant
-node 75: PREDICATE | none of warnings match item date equals project entry date
-node 76: COMPUTATION | create journey warning
-node 77: COMPUTATION | journey warning
-node 78: COMPUTATION | set journey warning date
-node 79: COMPUTATION | add location relevant set to new journey warning warning types
-node 80: COMPUTATION | add create journey warning project entry to warnings
-node 81: COMPUTATION | derive calculated warnings
-node 82: COMPUTATION | evaluate add to journey warnings
-node 83: COMPUTATION | evaluate text for warning type
-node 84: COMPUTATION | evaluate message template
-node 85: DISPATCH | select applicable decision rule
-node 86: COMPUTATION | journey warning type rule
-node 87: COMPUTATION | time warning type rule
-node 88: DISPATCH | select applicable decision rule
-node 89: COMPUTATION | journey warning type rule
-node 90: COMPUTATION | time warning type rule
-node 91: COMPUTATION | add text for warning type warning type to new journey warning warnings
-node 92: COMPUTATION | derive journey warning
-node 93: PREDICATE | journey warning is present
-node 94: COMPUTATION | add all new journey warning warnings to journey warning entry warnings
-node 95: COMPUTATION | add all new journey warning warning types to journey warning entry warning types
-node 96: COMPUTATION | add new journey warning to warnings
-node 97: COMPUTATION | sort warnings with comparator
-node 98: OUTCOME | Stop
+node 53: PREDICATE | project time list — project entries: is task — entry task
+node 54: PREDICATE | does not have journey entries sorted project entries
+node 55: COMPUTATION | derive working location as main
+node 56: CHOICE | for each project entry in sorted project entries
+node 57: COMPUTATION | evaluate is journey
+node 58: PREDICATE | task equals reisen
+node 59: PREDICATE | task is journey project entry task
+node 60: COMPUTATION | derive journey direction
+node 61: PREDICATE | journey direction equals back
+node 62: COMPUTATION | set working location to main
+node 63: PREDICATE | journey direction equals to
+node 64: PREDICATE | journey direction equals further
+node 65: COMPUTATION | set working location to project entry working location
+node 66: PREDICATE | project entry working location does not equal working location
+node 67: COMPUTATION | create journey warning
+node 68: COMPUTATION | journey warning
+node 69: COMPUTATION | set journey warning date
+node 70: COMPUTATION | add warning to new journey warning warning types
+node 71: COMPUTATION | add create journey warning with project entry and invalid working location to warnings
+node 72: COMPUTATION | location relevant set journey rule
+node 73: COMPUTATION | warnings
+node 74: CHOICE | for each project entry in project entries
+node 75: PREDICATE | project entry work location is project relevant
+node 76: PREDICATE | none of warnings match item date equals project entry date
+node 77: COMPUTATION | create journey warning
+node 78: COMPUTATION | journey warning
+node 79: COMPUTATION | set journey warning date
+node 80: COMPUTATION | add location relevant set to new journey warning warning types
+node 81: COMPUTATION | add create journey warning project entry to warnings
+node 82: COMPUTATION | derive calculated warnings
+node 83: COMPUTATION | evaluate add to journey warnings
+node 84: COMPUTATION | evaluate text for warning type
+node 85: COMPUTATION | evaluate message template
+node 86: DISPATCH | select applicable decision rule
+node 87: COMPUTATION | journey warning type rule
+node 88: COMPUTATION | time warning type rule
+node 89: DISPATCH | select applicable decision rule
+node 90: COMPUTATION | journey warning type rule
+node 91: COMPUTATION | time warning type rule
+node 92: COMPUTATION | add text for warning type warning type to new journey warning warnings
+node 93: COMPUTATION | derive journey warning
+node 94: PREDICATE | journey warning is present
+node 95: COMPUTATION | add all new journey warning warnings to journey warning entry warnings
+node 96: COMPUTATION | add all new journey warning warning types to journey warning entry warning types
+node 97: COMPUTATION | add new journey warning to warnings
+node 98: COMPUTATION | sort warnings with comparator
+node 99: OUTCOME | Stop
 edge 1 -> 2 | next
 edge 2 -> 3 | next
 edge 3 -> 4 | selected rule
 edge 4 -> 5 | next
 edge 5 -> 6 | next
-edge 6 -> 7 | true
-edge 6 -> 7 | false
+edge 6 -> 7 | true; returns whether task equals reisen
+edge 6 -> 7 | false; returns whether task equals reisen
 edge 7 -> 8 | next
 edge 8 -> 9 | next
 edge 9 -> 10 | next
@@ -112,8 +113,8 @@ edge 10 -> 11 | yes
 edge 11 -> 12 | next
 edge 12 -> 13 | true
 edge 12 -> 14 | false
-edge 13 -> 15 | result
-edge 14 -> 15 | result
+edge 13 -> 15 | returns idx + 1 < journey time entries size ? journey time entries get idx + 1 get journey direction : absent
+edge 14 -> 15 | returns idx + 1 < journey time entries size ? journey time entries get idx + 1 get journey direction : absent
 edge 15 -> 16 | next
 edge 16 -> 17 | next
 edge 17 -> 18 | next
@@ -136,25 +137,25 @@ edge 27 -> 29 | next
 edge 26 -> 29 | false
 edge 30 -> 31 | true
 edge 29 -> 30 | next
-edge 31 -> 32 | true
-edge 30 -> 32 | false
-edge 31 -> 32 | false
+edge 31 -> 32 | true; returns whether former direction exists and former direction equals back
+edge 30 -> 32 | false; returns whether former direction exists and former direction equals back
+edge 31 -> 32 | false; returns whether former direction exists and former direction equals back
 edge 33 -> 34 | true
 edge 35 -> 36 | false
 edge 34 -> 35 | true
-edge 32 -> 33 | result
+edge 32 -> 33 | returns to equals direction
 edge 35 -> 37 | true
 edge 36 -> 37 | true
-edge 37 -> 38 | result
-edge 33 -> 38 | false
-edge 34 -> 38 | false
-edge 36 -> 38 | false
+edge 37 -> 38 | returns back missing
+edge 33 -> 38 | false; returns warning
+edge 34 -> 38 | false; returns warning
+edge 36 -> 38 | false; returns warning
 edge 38 -> 39 | next
 edge 39 -> 40 | true
 edge 40 -> 41 | next
 edge 41 -> 42 | next
 edge 42 -> 43 | next
-edge 43 -> 44 | result
+edge 43 -> 44 | returns new journey warning
 edge 44 -> 10 | next entry
 edge 39 -> 10 | next entry
 edge 3 -> 45 | selected rule
@@ -164,69 +165,71 @@ edge 47 -> 48 | next
 edge 48 -> 49 | next
 edge 49 -> 50 | next
 edge 50 -> 51 | next
-edge 51 -> 52 | true
-edge 51 -> 52 | false
-edge 52 -> 53 | true
-edge 52 -> 53 | false
-edge 53 -> 54 | false
-edge 54 -> 55 | next
-edge 55 -> 56 | item
-edge 56 -> 57 | next
-edge 57 -> 58 | true
-edge 57 -> 58 | false
-edge 58 -> 59 | true
-edge 59 -> 60 | next
-edge 60 -> 61 | true
-edge 62 -> 63 | false
-edge 61 -> 62 | next
-edge 60 -> 62 | false
-edge 62 -> 64 | true
-edge 63 -> 64 | true
-edge 64 -> 65 | next
-edge 63 -> 65 | false
-edge 58 -> 65 | false
-edge 65 -> 66 | true
-edge 66 -> 67 | next
+edge 51 -> 52 | true; returns whether task equals reisen
+edge 51 -> 52 | false; returns whether task equals reisen
+edge 52 -> 53 | true; returns whether is not journey task
+edge 52 -> 53 | false; returns whether is not journey task
+edge 53 -> 54 | true; returns any of project entries match task is task entry task
+edge 53 -> 54 | false; returns any of project entries match task is task entry task
+edge 54 -> 55 | false
+edge 55 -> 56 | next
+edge 56 -> 57 | item
+edge 57 -> 58 | next
+edge 58 -> 59 | true; returns whether task equals reisen
+edge 58 -> 59 | false; returns whether task equals reisen
+edge 59 -> 60 | true
+edge 60 -> 61 | next
+edge 61 -> 62 | true
+edge 63 -> 64 | false
+edge 62 -> 63 | next
+edge 61 -> 63 | false
+edge 63 -> 65 | true
+edge 64 -> 65 | true
+edge 65 -> 66 | next
+edge 64 -> 66 | false
+edge 59 -> 66 | false
+edge 66 -> 67 | true
 edge 67 -> 68 | next
 edge 68 -> 69 | next
-edge 69 -> 70 | result
-edge 70 -> 55 | next item
-edge 65 -> 55 | next item
-edge 3 -> 71 | selected rule
-edge 71 -> 72 | next
+edge 69 -> 70 | next
+edge 70 -> 71 | returns new journey warning
+edge 71 -> 56 | next item
+edge 66 -> 56 | next item
+edge 3 -> 72 | selected rule
 edge 72 -> 73 | next
-edge 74 -> 75 | true
-edge 73 -> 74 | item
+edge 73 -> 74 | next
 edge 75 -> 76 | true
-edge 76 -> 77 | next
+edge 74 -> 75 | item
+edge 76 -> 77 | true
 edge 77 -> 78 | next
 edge 78 -> 79 | next
-edge 79 -> 80 | result
-edge 80 -> 73 | next item
-edge 74 -> 73 | next item
-edge 75 -> 73 | next item
-edge 10 -> 81 | no
-edge 53 -> 81 | true
-edge 55 -> 81 | done
-edge 73 -> 81 | done
-edge 81 -> 82 | next
+edge 79 -> 80 | next
+edge 80 -> 81 | returns new journey warning
+edge 81 -> 74 | next item
+edge 75 -> 74 | next item
+edge 76 -> 74 | next item
+edge 10 -> 82 | no; returns warnings
+edge 54 -> 82 | true; returns warnings
+edge 56 -> 82 | done; returns warnings
+edge 74 -> 82 | done; returns warnings
 edge 82 -> 83 | next
 edge 83 -> 84 | next
 edge 84 -> 85 | next
-edge 85 -> 86 | selected rule
-edge 85 -> 87 | selected rule
-edge 86 -> 88 | result
-edge 87 -> 88 | result
-edge 88 -> 89 | selected rule
-edge 88 -> 90 | selected rule
-edge 89 -> 91 | result
-edge 90 -> 91 | result
-edge 91 -> 92 | next
+edge 85 -> 86 | next
+edge 86 -> 87 | selected rule
+edge 86 -> 88 | selected rule
+edge 87 -> 89 | returns journey
+edge 88 -> 89 | returns time
+edge 89 -> 90 | selected rule
+edge 89 -> 91 | selected rule
+edge 90 -> 92 | result; returns message template warning type plus warning type plus . plus name; returns messages string warning message template
+edge 91 -> 92 | result; returns message template warning type plus warning type plus . plus name; returns messages string warning message template
 edge 92 -> 93 | next
-edge 93 -> 94 | true
-edge 94 -> 95 | next
-edge 93 -> 96 | false
-edge 95 -> 97 | next
-edge 96 -> 97 | next
-edge 28 -> 98 | fails
-edge 97 -> 98 | returns warnings
+edge 93 -> 94 | next
+edge 94 -> 95 | true
+edge 95 -> 96 | next
+edge 94 -> 97 | false
+edge 96 -> 98 | next
+edge 97 -> 98 | next
+edge 28 -> 99 | fails
+edge 98 -> 99 | returns warnings

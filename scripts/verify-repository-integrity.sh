@@ -120,15 +120,15 @@ check_hash() {
   test "$actual" = "$expected" || fail "reviewed oracle hash changed: $file"
 }
 
-check_hash 192cd18116ed3522a7bd4ab07dc6cd4000cfbc4b42afaf830e4ed620ca3f3848 \
+check_hash 530467312f889f544526d2bd1ad8aad06db190551d30de074827cb09edc98319 \
   conformance/mega-backend/src/test/resources/oracles/authorize-clarification-resolution.txt
 check_hash cccbb57b3ac143b86565c50ffeefb536d17ed6d2671feb7cf1ff2d553ee54198 \
   conformance/mega-backend/src/test/resources/oracles/detect-overlapping-time-entries.txt
-check_hash d907cbcc27f9dcb115d1f82b0ecbddc0497ed5cc95e8fb6c22104e81227f29e7 \
+check_hash ca63251bdfb18b5ef1f0bb368ebbf9acd015e850acf2eb330ef5da0b135337f6 \
   conformance/mega-backend/src/test/resources/oracles/determine-journey-warnings.txt
 check_hash 0d4a30c9cc47e99913852f9546c7e3bc849b54c5b866490fda2cbfc3b1f11e38 \
   conformance/mega-backend/src/test/resources/oracles/determine-project-activity-in-month.txt
-check_hash 7a30ee2b6912fb8727ae1b6d686fcc8e1af3be4e78c4b26b9dc2c2f48b0f8148 \
+check_hash ae47cca416a4f3b3d2cd67d2616d87cd32af00aff5933bf61d6cd987a981045a \
   conformance/mega-backend/src/test/resources/oracles/validate-journey-direction.txt
 
 for oracle in \
@@ -139,9 +139,9 @@ do
   require_tracked "conformance/spring-petclinic/src/test/resources/oracles/$oracle-business.json"
 done
 
-check_hash 85ef2d1f851f0c9df88bfe0f980752efcccd81359a00b14ec3955b86796df9a7 \
+check_hash dcfb51795211da3c71538072ee4323ad85d9fbb522977f3d00d4a8376c7bf2ce \
   conformance/spring-petclinic/src/test/resources/oracles/owner-search-business.json
-check_hash 330c722131c8aebeeaa538483a5af5f799e133370fea5799b780cba001462d7b \
+check_hash 450a0df304fd18624fd453b6e3d9f076ecf0515415047a0f58aca8097fef689d \
   conformance/spring-petclinic/src/test/resources/oracles/pet-registration-business.json
 check_hash e0148a8cf3ec8f42210b0df765310c3e58d88cbf7bf6e428a5343822c2c587b3 \
   conformance/spring-petclinic/src/test/resources/oracles/visit-booking-business.json

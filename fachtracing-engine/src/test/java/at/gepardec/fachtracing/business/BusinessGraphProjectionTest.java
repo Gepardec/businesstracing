@@ -17,6 +17,7 @@ public final class BusinessGraphProjectionTest {
     public static void main(String[] args) {
         removesArchitectureAndSelectorMechanics();
         statesNegativeChecksAsPositiveBusinessRules();
+        prefersClearSourceLabelsOverCallMetadata();
         keepsOnlyMaterialCallerActions();
         foldsLoopMechanicsIntoOneRule();
         usesTheFoldedLoopResultForTheFollowingBusinessBranch();
@@ -74,11 +75,13 @@ public final class BusinessGraphProjectionTest {
                 List.of(
                         node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
                         semanticNode("empty", BusinessDecisionGraph.NodeKind.PREDICATE, "employment is empty", Map.of(
+                                BusinessSemanticAttributes.OWNER_TYPE, "example.SubmissionController",
                                 BusinessSemanticAttributes.CALL_METHOD, "isEmpty",
                                 BusinessSemanticAttributes.RECEIVER, "employment")),
                         semanticNode("date", BusinessDecisionGraph.NodeKind.PREDICATE,
                                 "not submitted at is after deadline", Map.of(
-                                        BusinessSemanticAttributes.CALL_METHOD, "isAfter",
+                                BusinessSemanticAttributes.OWNER_TYPE, "example.SubmissionController",
+                                BusinessSemanticAttributes.CALL_METHOD, "isAfter",
                                         BusinessSemanticAttributes.RECEIVER, "submitted at",
                                         BusinessSemanticAttributes.ARGUMENTS, "deadline",
                                         BusinessSemanticAttributes.NEGATED, "true")),
@@ -114,6 +117,8 @@ public final class BusinessGraphProjectionTest {
                                         BusinessSemanticAttributes.OWNER_TYPE, "example.NotificationRepository")),
                         semanticNode("save", BusinessDecisionGraph.NodeKind.COMPUTATION,
                                 "evaluate save", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE,
+                                        "example.NotificationController",
                                         BusinessSemanticAttributes.CALL_METHOD, "save",
                                         BusinessSemanticAttributes.RECEIVER, "notification port",
                                         BusinessSemanticAttributes.ARGUMENTS, "notification",
@@ -130,6 +135,50 @@ public final class BusinessGraphProjectionTest {
 
         assert projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList()
                 .equals(List.of("save notification", "saved")) : projected.nodes();
+    }
+
+    private static void prefersClearSourceLabelsOverCallMetadata() {
+        BusinessDecisionGraph exact = graph("registration", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        semanticNode("wrapper", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "not ignored", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE, "example.Person",
+                                        BusinessSemanticAttributes.TREE_KIND, "LOGICAL_COMPLEMENT")),
+                        semanticNode("text", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "text is present", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE, "example.RegistrationController",
+                                        BusinessSemanticAttributes.CALL_METHOD, "hasText",
+                                        BusinessSemanticAttributes.CALL_OWNER_TYPE, "example.TextChecks",
+                                        BusinessSemanticAttributes.CALL_RETURN_TYPE, "boolean",
+                                        BusinessSemanticAttributes.RECEIVER, "text checks")),
+                        semanticNode("errors", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "validation has errors", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE, "example.RegistrationController",
+                                        BusinessSemanticAttributes.CALL_METHOD, "hasErrors",
+                                        BusinessSemanticAttributes.CALL_OWNER_TYPE, "example.Validation",
+                                        BusinessSemanticAttributes.CALL_RETURN_TYPE, "boolean",
+                                        BusinessSemanticAttributes.RECEIVER, "result")),
+                        semanticNode("reject", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "record field validation error", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE, "example.RegistrationController",
+                                        BusinessSemanticAttributes.CALL_METHOD, "rejectValue",
+                                        BusinessSemanticAttributes.CALL_OWNER_TYPE, "example.Validation",
+                                        BusinessSemanticAttributes.STATEMENT_CALL, "true")),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "wrapper", "next"),
+                        edge("e2", "wrapper", "text", "true"),
+                        edge("e3", "text", "errors", "true"),
+                        edge("e4", "errors", "reject", "true"),
+                        edge("e5", "reject", "stop", "returns correction required")),
+                List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+
+        assert projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList()
+                .equals(List.of("text is present", "validation has errors",
+                        "record field validation error", "correction required")) : projected.nodes();
     }
 
     private static void foldsLoopMechanicsIntoOneRule() {
@@ -216,7 +265,10 @@ public final class BusinessGraphProjectionTest {
                         node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
                         node("errors", BusinessDecisionGraph.NodeKind.PREDICATE, "visit has validation errors"),
                         node("save", BusinessDecisionGraph.NodeKind.COMPUTATION, "save visit"),
-                        node("failure", BusinessDecisionGraph.NodeKind.COMPUTATION, "decision cannot continue"),
+                        semanticNode("failure", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "decision cannot continue", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE,
+                                        "example.VisitController")),
                         node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
                 List.of(
                         edge("e1", "start", "errors", "next"),
@@ -236,7 +288,9 @@ public final class BusinessGraphProjectionTest {
                 && node.label().equals("save visit")) : projected.nodes();
         assert projected.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RESULT)
                 .map(BusinessLogicGraph.Node::label).toList()
-                .containsAll(List.of("correction required", "booking confirmed", "operation failed"))
+                .containsAll(List.of(
+                        "correction required", "booking confirmed",
+                        "visit booking could not be completed"))
                 : projected.nodes();
     }
 

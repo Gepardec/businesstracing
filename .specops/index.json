@@ -1,5 +1,13 @@
 [
   {
+    "id": "ci-business-projection-regression",
+    "type": "bugfix",
+    "status": "implementing",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T19:26:15Z"
+  },
+  {
     "id": "compact-graph-reading-and-business-phrasing",
     "type": "bugfix",
     "status": "completed",
