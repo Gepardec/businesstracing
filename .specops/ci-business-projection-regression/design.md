@@ -45,6 +45,15 @@ projection audit for its removal reason.
 **Rationale:** Requiring the choice in the business graph contradicts semantic reduction. The two
 assertions prove both discovery and intentional removal without a hard-coded diagram.
 
+### Keep independent viewer work parallel
+
+**Decision:** Move standalone viewer verification from the PostgreSQL job to a sixth parallel job.
+Keep storage, dogfood generation, and the browser database journey together.
+
+**Rationale:** Remote step timing shows that the independent viewer gate consumes 50 seconds before
+the integrated journey starts. Moving it preserves all coverage and keeps the existing three-minute
+hard limit.
+
 ## Component Design
 
 ### AggregateBusinessLabelRenderer
@@ -71,6 +80,7 @@ use owner roles only as a fallback classification signal.
 - Run self-tracing twice to keep its determinism check.
 - Run Mega, PetClinic, viewer dogfood, and the full pull-request gate.
 - Push the commit and wait for all required pull-request checks.
+- Require all six parallel jobs to finish within three minutes.
 
 ## Risks and Mitigations
 

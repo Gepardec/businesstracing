@@ -2,16 +2,16 @@
 
 ## Overview
 
-The required CI does not give timely feedback. A pull-request gate has taken 3 minutes 49 seconds.
-The clean release gate was canceled after 90 minutes. All required CI jobs must now finish within a
-three-minute execution budget.
+The required CI does not give timely feedback. The PostgreSQL job was cancelled during its browser
+journey because it ran storage, standalone viewer verification, dogfood generation, and browser
+integration in one job. All required CI jobs must finish within a three-minute execution budget.
 
 ## Root Cause Analysis
 
-The pull-request job runs the core suite, Mega Backend conformance, and Spring PetClinic
-conformance in one serial job. The release job also creates a clean clone, uses an empty Maven
-repository, and runs a 60-second baseline plus a 600-second load test. This serial release command
-cannot finish in three minutes.
+The PostgreSQL job runs one independent viewer unit and build gate before its database and dogfood
+browser integration. The remote run reached the browser journey after 2 minutes 26 seconds and was
+cancelled before the journey completed. The viewer gate does not need PostgreSQL and can run in
+parallel.
 
 The timeout contract checked for a minimum timeout. It allowed slow jobs instead of rejecting them.
 
@@ -43,10 +43,10 @@ The timeout contract checked for a minimum timeout. It allowed slow jobs instead
 
 ## Proposed Fix
 
-Run the core suite, Mega Backend conformance, Spring PetClinic conformance, and PostgreSQL contract
-as independent parallel jobs for every workflow event. Give each job a three-minute timeout. Use the
-Maven and immutable source caches. Do not call the clean-clone release command from the required
-workflow. Keep it as an optional manual evidence command.
+Run the core suite, Mega Backend conformance, Spring PetClinic conformance, Jakarta EE conformance,
+viewer verification, and PostgreSQL integration as independent parallel jobs for every workflow
+event. Give each job a three-minute timeout. Keep dogfood and the database browser journey together
+in the PostgreSQL job, and move the independent viewer gate to its own job.
 
 ## Testing Plan
 
@@ -73,7 +73,8 @@ workflow. Keep it as an optional manual evidence command.
 
 - [ ] THE WORKFLOW SHALL give each required job a three-minute timeout.
 - [ ] THE BUDGET CONTRACT SHALL reject a required job timeout above three minutes.
-- [ ] THE WORKFLOW SHALL run core, Mega, PetClinic, and PostgreSQL checks in parallel.
+- [ ] THE WORKFLOW SHALL run core, Mega, PetClinic, Jakarta EE, viewer, and PostgreSQL checks in
+  parallel.
 - [ ] THE WORKFLOW SHALL run the same required jobs for pull requests and release events.
 - [ ] THE REQUIRED WORKFLOW SHALL NOT call the 600-second release gate.
 - [ ] THE OPTIONAL RELEASE COMMAND SHALL remain available for manual long evidence.

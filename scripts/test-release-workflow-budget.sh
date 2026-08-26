@@ -4,7 +4,7 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 WORKFLOW="$ROOT/.github/workflows/verify.yml"
 MAXIMUM_TIMEOUT_MINUTES=3
-REQUIRED_JOBS="pr-gate mega petclinic jakartaee-rest postgres"
+REQUIRED_JOBS="pr-gate mega petclinic jakartaee-rest viewer postgres"
 
 for required_job in $REQUIRED_JOBS
 do
@@ -38,8 +38,8 @@ job_count=$(awk '
   END { print count + 0 }
 ' "$WORKFLOW")
 
-if [ "$job_count" -ne 5 ]; then
-  echo "RELEASE_WORKFLOW_BUDGET_FAILURE: expected 5 required jobs, found $job_count" >&2
+if [ "$job_count" -ne 6 ]; then
+  echo "RELEASE_WORKFLOW_BUDGET_FAILURE: expected 6 required jobs, found $job_count" >&2
   exit 1
 fi
 

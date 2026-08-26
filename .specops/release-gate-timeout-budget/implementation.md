@@ -30,6 +30,7 @@ Implementation is pending.
 | 1 | Use a 90-minute bounded release budget. | Current runs reach 60 minutes; 90 preserves a bound and allows corpus growth and cold-run variance. | 1 | 2026-08-11T12:21:03Z |
 | 2 | Stream through a POSIX FIFO and preserve both process statuses. | The 90-minute run exposed no stage output, so another timeout increase would be guesswork. | 1 | 2026-08-11T14:22:09Z |
 | 3 | Replace the serial release job with four parallel three-minute jobs. | A 600-second test cannot fit in three minutes, and the user set a hard three-minute limit. | 1 | 2026-08-12T07:09:21Z |
+| 4 | Move standalone viewer verification to a sixth parallel job. | Remote evidence shows that the independent 50-second viewer gate leaves too little time for the PostgreSQL browser journey. | 1 | 2026-08-26T20:00:00Z |
 
 ## Verification
 
@@ -59,3 +60,7 @@ Implementation is pending.
 - Local PetClinic unit from a clean Fachtracing build: PASS in 15.91 seconds with three complete
   business graphs from 30 source files.
 - Hosted PR and final `main` timing proof: pending.
+- PR run `33007667194`: five jobs completed, but PostgreSQL was cancelled during the browser
+  journey after the independent viewer gate consumed 50 seconds.
+- Version 3 focused budget, workflow routing, and repository integrity contracts: PASS with six
+  parallel three-minute jobs.

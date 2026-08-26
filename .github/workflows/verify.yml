@@ -117,6 +117,19 @@ jobs:
           JAKARTAEE_REST_SAMPLE_DIR: ${{ runner.temp }}/fachtracing-jakartaee-rest-sample
         run: ./scripts/verify-jakartaee-rest.sh
 
+  viewer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: fachtracing-viewer/package-lock.json
+      - name: Run viewer verification
+        run: ./scripts/verify-viewer.sh
+
   postgres:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -152,8 +165,6 @@ jobs:
           FACHTRACING_POSTGRES_USER: fachtracing
           FACHTRACING_POSTGRES_PASSWORD: fachtracing
         run: ./scripts/verify-postgres.sh
-      - name: Run viewer verification
-        run: ./scripts/verify-viewer.sh
       - name: Generate Fachtracing viewer dogfood
         run: ./scripts/verify-viewer-dogfood.sh
       - name: Run viewer PostgreSQL journey

@@ -25,6 +25,9 @@ break the business-output contract and stop the release gate.
 - After the first Mega assertion is corrected, the corpus exposes three stale reviewed oracles.
   The branch intentionally adds source-visible aggregate checks and return evidence, but the
   normalized source-derived inventories still describe the older topology.
+- After all product gates pass, remote run `33007667194` cancels PostgreSQL during its browser
+  journey. The job runs an independent 50-second viewer gate before database integration and
+  exceeds the existing three-minute budget.
 
 **Affected components:**
 
@@ -48,8 +51,9 @@ break the business-output contract and stop the release gate.
 ## Dependencies and Blockers
 
 This fix extends the completed `compact-graph-reading-and-business-phrasing` and
-`business-graph-semantic-explanation` specifications. It has no external blocker and adds no
-dependency.
+`business-graph-semantic-explanation` specifications. It also supplies hosted evidence to the
+existing `release-gate-timeout-budget` specification. It has no external blocker and adds no
+software dependency.
 
 ## Reproduction Steps
 

@@ -28,6 +28,7 @@
 | 1 | Refresh three source-reviewed Mega inventories | The branch adds exact aggregate and return evidence that is present in the pinned source; keeping the older inventory rejects correct topology. | Task 1 | 2026-08-26T19:26:15Z |
 | 2 | Prefer direct node semantics to owner suffixes | A controller suffix is weak architecture evidence; explicit predicates, material actions, and terminal edges are stronger business evidence. | Task 2 | 2026-08-26T19:45:30Z |
 | 3 | Keep clear normalized labels before call metadata | Source labels such as `validation has errors` are clearer than reconstructed labels such as `result has errors`; metadata is a fallback for technical placeholders. | Task 2 | 2026-08-26T19:45:30Z |
+| 4 | Preserve the three-minute budget with a parallel viewer job | Remote step evidence shows that viewer verification is independent and consumes the time needed by the database browser journey. | Task 3 | 2026-08-26T20:00:00Z |
 
 ## Deviations from Design
 
@@ -58,3 +59,8 @@
   wrappers are removed, and the explicit registration failure is a result.
 - Task 3 scope: align self-tracing proof with the artifact boundary, run all release gates, push,
   and wait for remote CI.
+- Task 3 local evidence: self-tracing, viewer dogfood, complete PR verification, Mega, PetClinic,
+  and Jakarta EE pass. Remote run `33007667194` passed five product gates but cancelled PostgreSQL
+  during its final browser journey.
+- Task 3 follow-up: move standalone viewer verification to a sixth parallel job, keep the
+  three-minute hard limit, and rerun all hosted checks.

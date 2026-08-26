@@ -5,7 +5,7 @@
     "status": "implementing",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-26T19:26:15Z"
+    "updated": "2026-08-26T20:00:00Z"
   },
   {
     "id": "compact-graph-reading-and-business-phrasing",
@@ -76,7 +76,7 @@
     "id": "jakarta-ee-cdi-soap-semantics",
     "type": "feature",
     "status": "completed",
-    "version": 2,
+    "version": 3,
     "author": "lucostus",
     "updated": "2026-08-18T11:08:32Z"
   },
@@ -469,7 +469,7 @@
     "status": "implementing",
     "version": 2,
     "author": "lucostus",
-    "updated": "2026-08-12T07:09:21Z"
+    "updated": "2026-08-26T20:00:00Z"
   },
   {
     "id": "configured-endpoint-business-tracing",

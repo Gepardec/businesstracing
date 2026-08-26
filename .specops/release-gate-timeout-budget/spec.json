@@ -2,9 +2,9 @@
   "id": "release-gate-timeout-budget",
   "type": "bugfix",
   "status": "implementing",
-  "version": 2,
+  "version": 3,
   "created": "2026-08-11T12:21:03Z",
-  "updated": "2026-08-12T07:09:21Z",
+  "updated": "2026-08-26T20:00:00Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {

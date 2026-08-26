@@ -100,16 +100,20 @@ gates.
 2. Run self-tracing and viewer dogfood.
 3. Run the complete local pull-request gate.
 4. Commit, push, and wait for every required GitHub check.
+5. If a combined job exceeds the hard budget, move independent work to a parallel job and rerun.
 
 **Acceptance Criteria:**
 
-- [ ] Self-tracing proves discovery and intentional technical-choice removal.
-- [ ] Mega, PetClinic, viewer dogfood, and pull-request gates pass.
+- [x] Self-tracing proves discovery and intentional technical-choice removal.
+- [x] Mega, PetClinic, viewer dogfood, and pull-request gates pass.
 - [ ] All required GitHub checks pass on the pushed commit.
 
 **Files to Modify:**
 
 - `scripts/verify-self-tracing.sh`
+- `.github/workflows/verify.yml`
+- `scripts/test-release-workflow-budget.sh`
+- `scripts/test-fast-pr-workflow.sh`
 - `.specops/ci-business-projection-regression/*`
 - `.specops/index.json`
 - `.specops/memory/context.md`
@@ -118,9 +122,9 @@ gates.
 
 **Tests Required:**
 
-- [ ] Self-tracing verification.
-- [ ] Viewer dogfood verification.
-- [ ] Full pull-request verifier.
+- [x] Self-tracing verification.
+- [x] Viewer dogfood verification.
+- [x] Full pull-request verifier.
 - [ ] GitHub pull-request checks.
 
 ## Implementation Order
@@ -132,7 +136,7 @@ gates.
 ## Progress Tracking
 
 - Total Tasks: 3
-- Completed: 1
+- Completed: 2
 - In Progress: 1
 - Blocked: 0
-- Pending: 1
+- Pending: 0
