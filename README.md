@@ -87,6 +87,12 @@ behavior. Business JSON uses `fachtracing-business-graph/v1`; its generated JSON
 2020-12. The compatible `*-structure.*` files show the exact technical graph. Developer tools can
 also use the opt-in `fachtracing-developer-graph/v1` JSON data format with source data.
 
+The analyzer keeps source-owner, call, argument, effect, predicate-polarity, and aggregate-call
+evidence in the exact graph. The business projection uses this evidence to remove adapters,
+selectors, conversions, collection mechanics, and delegation wrappers. It keeps business checks,
+material state changes, and source-proven results. A collapsed aggregate check does not remove its
+callback details from the exact graph. Existing viewers do not need a new JSON format.
+
 The Maven plugin writes `fachtracing-developer-graph-v1.schema.json` when developer JSON is enabled.
 Give the frontend developer the `*-developer.json` file and this schema file. The one V1 contract
 supports one or more source origins. The schema uses JSON Schema Draft 2020-12, so a frontend build

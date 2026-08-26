@@ -1,7 +1,10 @@
 package at.gepardec.fachtracing.analysis;
 
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+import at.gepardec.fachtracing.business.BusinessGraphProjector;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
+import at.gepardec.fachtracing.model.BusinessLogicGraph;
+import at.gepardec.fachtracing.model.BusinessSemanticAttributes;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -80,6 +83,7 @@ public final class StaticDecisionAnalyzerTest {
         supportsCollectionFactsAndRecordEquality();
         followsStrategiesThatMutateReturnedCollectionsInsideLambdas();
         streamPredicatesStayBusinessFacing();
+        projectsAggregateBusinessChecksWithoutCallbackMechanics();
         usesOneBusinessStartAndStopWithExplicitReturns();
         removesIdentifierAndNullImplementationVocabulary();
         exportsDeveloperGraphWithRevisionPinnedSourceLinks();
@@ -613,6 +617,19 @@ public final class StaticDecisionAnalyzerTest {
         if (!predicateGap) {
             failures.add("mutating predicate reference remained false complete: "
                     + predicateReference.graph());
+        }
+
+        var predicateLambda = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "predicate lambda mutation");
+        String predicateLambdaLabels = predicateLambda.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        boolean lambdaExpanded = predicateLambda.graph().nodes().stream().noneMatch(node ->
+                BusinessSemanticAttributes.AGGREGATE.equals(
+                        node.attributes().get(BusinessSemanticAttributes.ROLE)))
+                && predicateLambdaLabels.contains("add candidate to accepted");
+        if (!lambdaExpanded) {
+            failures.add("mutating predicate lambda was collapsed as a read-only aggregate: "
+                    + predicateLambda.graph());
         }
 
         var implicitField = analyzeLabel(
@@ -2302,6 +2319,20 @@ public final class StaticDecisionAnalyzerTest {
             assert !label.contains("->") && !label.contains("::") && !label.contains(".stream")
                     && !label.contains("instanceof") : node;
         });
+    }
+
+    private static void projectsAggregateBusinessChecksWithoutCallbackMechanics() {
+        var analysis = analyze("employment/EmploymentEligibilityPolicy.java");
+        assert analysis.graph().nodes().stream().anyMatch(node -> node.businessLabel().contains("reference date")
+                && !BusinessSemanticAttributes.AGGREGATE.equals(
+                node.attributes().get(BusinessSemanticAttributes.ROLE))) : analysis.graph().nodes();
+        BusinessLogicGraph business = new BusinessGraphProjector().project(analysis);
+        assert business.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
+                .map(BusinessLogicGraph.Node::label).toList()
+                .equals(List.of("employments contains a value that covers on reference date"))
+                : business.nodes();
+        assert business.nodes().stream().noneMatch(node -> node.label().matches(
+                "(?i).*(?:stream|adapter|repository|converter|callback|iterator).*")) : business.nodes();
     }
 
     private static void usesOneBusinessStartAndStopWithExplicitReturns() {

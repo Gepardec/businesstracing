@@ -23,6 +23,9 @@ public final class BusinessLogicArtifactGuard {
             Pattern.compile("\\btemporary\\b|\\btemp(?:orary)? value\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bcomp(?:arison)? [a-z]", Pattern.CASE_INSENSITIVE),
             Pattern.compile("decision result path|alternative result|unresolved", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^choose by\\b", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\\b(?:adapter|repository|mapper|converter|controller|dao) rule\\b",
+                    Pattern.CASE_INSENSITIVE),
             Pattern.compile("redirect:|forward:|/owners/|/pets/|/visits/", Pattern.CASE_INSENSITIVE),
             Pattern.compile("(^|\\s)(true|false)($|\\s)", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\b[A-Za-z_$][A-Za-z0-9_$]*\\.java\\b"),
@@ -30,6 +33,7 @@ public final class BusinessLogicArtifactGuard {
             Pattern.compile("\\bnull\\b|\\bidentifiers?\\b", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\\bex\\b|to lower case", Pattern.CASE_INSENSITIVE),
             Pattern.compile("==|!=|&&|\\|\\||->|::|[{};]"));
+    private static final Pattern NEGATIVE_RULE = Pattern.compile("^not\\s", Pattern.CASE_INSENSITIVE);
 
     /** Returns all prohibited labels and outcomes. */
     public List<String> violations(BusinessLogicGraph graph) {
@@ -37,6 +41,10 @@ public final class BusinessLogicArtifactGuard {
         check("decision", graph.decisionLabel(), violations);
         for (BusinessLogicGraph.Node node : graph.nodes()) {
             check("node " + node.nodeId(), node.label(), violations);
+            if (node.kind() == BusinessLogicGraph.NodeKind.RULE
+                    && NEGATIVE_RULE.matcher(node.label()).find()) {
+                violations.add("node " + node.nodeId() + ": " + node.label());
+            }
         }
         for (BusinessLogicGraph.Edge edge : graph.edges()) {
             check("edge " + edge.edgeId(), edge.outcome(), violations);

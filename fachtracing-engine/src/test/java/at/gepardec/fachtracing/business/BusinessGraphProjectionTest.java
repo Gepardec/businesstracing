@@ -2,6 +2,7 @@ package at.gepardec.fachtracing.business;
 
 import at.gepardec.fachtracing.analysis.AnalysisManifest;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
+import at.gepardec.fachtracing.model.BusinessSemanticAttributes;
 import at.gepardec.fachtracing.model.BusinessLogicGraph;
 import at.gepardec.fachtracing.model.DecisionExecution;
 
@@ -14,6 +15,9 @@ public final class BusinessGraphProjectionTest {
     private BusinessGraphProjectionTest() { }
 
     public static void main(String[] args) {
+        removesArchitectureAndSelectorMechanics();
+        statesNegativeChecksAsPositiveBusinessRules();
+        keepsOnlyMaterialCallerActions();
         foldsLoopMechanicsIntoOneRule();
         usesTheFoldedLoopResultForTheFollowingBusinessBranch();
         preservesRulesActionsReturnsAndFailures();
@@ -33,6 +37,99 @@ public final class BusinessGraphProjectionTest {
         rejectsTechnicalVocabulary();
         producesStableBusinessIdsForEquivalentExactGraphs();
         exportsAllFormatsWithOneTopology();
+    }
+
+    private static void removesArchitectureAndSelectorMechanics() {
+        BusinessDecisionGraph exact = graph("generic eligibility", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        semanticNode("dispatch", BusinessDecisionGraph.NodeKind.DISPATCH,
+                                "select applicable decision rule", Map.of()),
+                        semanticNode("adapter", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "person adapter rule", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE, "example.PersonAdapter",
+                                        BusinessSemanticAttributes.ROLE, BusinessSemanticAttributes.IMPLEMENTATION)),
+                        semanticNode("choice", BusinessDecisionGraph.NodeKind.CHOICE, "choose by person number",
+                                Map.of(BusinessSemanticAttributes.OWNER_TYPE, "example.PersonAdapter")),
+                        semanticNode("rule", BusinessDecisionGraph.NodeKind.PREDICATE, "person exists", Map.of(
+                                BusinessSemanticAttributes.OWNER_TYPE, "example.Eligibility",
+                                BusinessSemanticAttributes.ENCLOSING_METHOD, "isEligible")),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "dispatch", "next"),
+                        edge("e2", "dispatch", "adapter", "selected rule"),
+                        edge("e3", "adapter", "choice", "next"),
+                        edge("e4", "choice", "rule", "selected"),
+                        edge("e5", "rule", "stop", "true; returns approved"),
+                        edge("e6", "rule", "stop", "false; returns declined")), List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+
+        assert projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList()
+                .equals(List.of("person exists", "approved", "declined")) : projected.nodes();
+    }
+
+    private static void statesNegativeChecksAsPositiveBusinessRules() {
+        BusinessDecisionGraph exact = graph("submission window", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        semanticNode("empty", BusinessDecisionGraph.NodeKind.PREDICATE, "employment is empty", Map.of(
+                                BusinessSemanticAttributes.CALL_METHOD, "isEmpty",
+                                BusinessSemanticAttributes.RECEIVER, "employment")),
+                        semanticNode("date", BusinessDecisionGraph.NodeKind.PREDICATE,
+                                "not submitted at is after deadline", Map.of(
+                                        BusinessSemanticAttributes.CALL_METHOD, "isAfter",
+                                        BusinessSemanticAttributes.RECEIVER, "submitted at",
+                                        BusinessSemanticAttributes.ARGUMENTS, "deadline",
+                                        BusinessSemanticAttributes.NEGATED, "true")),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "empty", "next"),
+                        edge("e2", "empty", "stop", "true; returns not eligible"),
+                        edge("e3", "empty", "date", "false"),
+                        edge("e4", "date", "stop", "true; returns eligible"),
+                        edge("e5", "date", "stop", "false; returns too late")), List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+
+        assert projected.nodes().stream().anyMatch(node -> node.label().equals("employment exists"))
+                : projected.nodes();
+        assert projected.nodes().stream().anyMatch(node -> node.label().equals(
+                "submitted at is on or before deadline")) : projected.nodes();
+        String employment = projected.nodes().stream().filter(node -> node.label().equals("employment exists"))
+                .map(BusinessLogicGraph.Node::nodeId).findFirst().orElseThrow();
+        assert projected.edges().stream().anyMatch(edge -> edge.fromNodeId().equals(employment)
+                && edge.outcome().equals("no")) : projected.edges();
+    }
+
+    private static void keepsOnlyMaterialCallerActions() {
+        BusinessDecisionGraph exact = graph("notification decision", BusinessDecisionGraph.Completeness.COMPLETE,
+                List.of(
+                        node("start", BusinessDecisionGraph.NodeKind.ENTRY, "Start"),
+                        semanticNode("unit", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "convert duration to seconds", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE, "example.DurationConverter")),
+                        semanticNode("query", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "execute hibernate query", Map.of(
+                                        BusinessSemanticAttributes.OWNER_TYPE, "example.NotificationRepository")),
+                        semanticNode("save", BusinessDecisionGraph.NodeKind.COMPUTATION,
+                                "evaluate save", Map.of(
+                                        BusinessSemanticAttributes.CALL_METHOD, "save",
+                                        BusinessSemanticAttributes.RECEIVER, "notification port",
+                                        BusinessSemanticAttributes.ARGUMENTS, "notification",
+                                        BusinessSemanticAttributes.ARGUMENT_TYPES, "example.Notification",
+                                        BusinessSemanticAttributes.STATEMENT_CALL, "true")),
+                        node("stop", BusinessDecisionGraph.NodeKind.OUTCOME, "Stop")),
+                List.of(
+                        edge("e1", "start", "unit", "next"),
+                        edge("e2", "unit", "query", "next"),
+                        edge("e3", "query", "save", "next"),
+                        edge("e4", "save", "stop", "returns saved")), List.of());
+
+        BusinessLogicGraph projected = new BusinessGraphProjector().project(analysis(exact));
+
+        assert projected.nodes().stream().map(BusinessLogicGraph.Node::label).toList()
+                .equals(List.of("save notification", "saved")) : projected.nodes();
     }
 
     private static void foldsLoopMechanicsIntoOneRule() {
@@ -176,6 +273,14 @@ public final class BusinessGraphProjectionTest {
             } catch (IllegalArgumentException expected) {
                 assert expected.getMessage().contains(prohibited) : expected.getMessage();
             }
+        }
+        for (String prohibited : List.of(
+                "choose by route id", "not submitted after deadline", "person adapter rule")) {
+            var graph = new BusinessLogicGraph("semantic-guard", 1, "guard", List.of("node"),
+                    List.of(new BusinessLogicGraph.Node(
+                            "node", BusinessLogicGraph.NodeKind.RULE, prohibited)),
+                    List.of(), BusinessLogicGraph.Completeness.COMPLETE);
+            assert !new BusinessLogicArtifactGuard().violations(graph).isEmpty() : prohibited;
         }
     }
 
@@ -688,6 +793,11 @@ public final class BusinessGraphProjectionTest {
     private static BusinessDecisionGraph.DecisionNode node(
             String id, BusinessDecisionGraph.NodeKind kind, String label) {
         return new BusinessDecisionGraph.DecisionNode(id, kind, label, Map.of());
+    }
+
+    private static BusinessDecisionGraph.DecisionNode semanticNode(
+            String id, BusinessDecisionGraph.NodeKind kind, String label, Map<String, String> attributes) {
+        return new BusinessDecisionGraph.DecisionNode(id, kind, label, attributes);
     }
 
     private static BusinessDecisionGraph.DecisionEdge edge(

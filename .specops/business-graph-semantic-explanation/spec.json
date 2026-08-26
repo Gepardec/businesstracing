@@ -1,10 +1,10 @@
 {
   "id": "business-graph-semantic-explanation",
   "type": "bugfix",
-  "status": "draft",
+  "status": "completed",
   "version": 1,
   "created": "2026-08-26T09:31:16Z",
-  "updated": "2026-08-26T09:39:35Z",
+  "updated": "2026-08-26T10:29:55Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -43,8 +43,13 @@
     }
   },
   "metrics": {
-    "tasksTotal": 11,
+    "tasksTotal": 7,
     "acceptanceCriteriaTotal": 10,
     "evidenceGraphs": 2
+  },
+  "implementation": {
+    "completedAt": "2026-08-26T10:29:55Z",
+    "exactGraphsReviewed": 2,
+    "genericDomainsCovered": 4
   }
 }

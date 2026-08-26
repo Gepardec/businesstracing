@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 public final class BusinessGraphProjector {
     private static final String GAP_LABEL = "analysis could not determine a required rule";
     private final BusinessGraphSummarizer summarizer = new BusinessGraphSummarizer();
+    private final BusinessSemanticReducer semanticReducer = new BusinessSemanticReducer();
 
     /** Projects one exact analysis result without changing that result. */
     public BusinessLogicGraph project(AnalysisManifest.AnalysisResult analysis) {
@@ -55,6 +56,10 @@ public final class BusinessGraphProjector {
         Map<String, List<BusinessDecisionGraph.DecisionEdge>> outgoing = outgoing(exact);
         Map<String, LoopProjection> loops = loops(exact, exactNodes, outgoing);
         Set<String> redundantPredicates = redundantPredicateIds(exact);
+        Set<String> duplicateExpandedCalls = duplicateExpandedCallIds(exact);
+        Set<String> passThroughCalls = passThroughCallIds(exact);
+        Set<String> expandedPredicateDetails = expandedPredicateDetailIds(exact);
+        Set<String> aggregateDetails = aggregateDetailIds(exact);
         Set<String> hiddenLoopNodes = loops.values().stream()
                 .flatMap(loop -> loop.hiddenNodeIds().stream())
                 .collect(java.util.stream.Collectors.toSet());
@@ -65,10 +70,16 @@ public final class BusinessGraphProjector {
             BusinessDecisionGraph.DecisionNode node = exact.nodes().get(index);
             NodeProjection projection = projectNode(
                     node, loops.get(node.nodeId()), hiddenLoopNodes, redundantPredicates,
+                    duplicateExpandedCalls, passThroughCalls,
+                    expandedPredicateDetails, aggregateDetails,
                     businessGraphId, index);
             projectionByExactId.put(node.nodeId(), projection);
             if (projection.node() != null) projectedByExactId.put(node.nodeId(), projection.node());
         }
+
+        Set<String> invertedBusinessNodeIds = projectionByExactId.values().stream()
+                .filter(NodeProjection::invertOutcome).map(NodeProjection::node).filter(Objects::nonNull)
+                .map(BusinessLogicGraph.Node::nodeId).collect(java.util.stream.Collectors.toUnmodifiableSet());
 
         var nodes = new ArrayList<>(projectedByExactId.values());
         var resultByExactEdgeId = new LinkedHashMap<String, String>();
@@ -84,6 +95,8 @@ public final class BusinessGraphProjector {
             BusinessDecisionGraph.DecisionEdge edge = exact.edges().get(index);
             BusinessDecisionGraph.DecisionNode target = exactNodes.get(edge.toNodeId());
             if (target == null || target.kind() != BusinessDecisionGraph.NodeKind.OUTCOME) continue;
+            BusinessDecisionGraph.DecisionNode terminalSource = exactNodes.get(edge.fromNodeId());
+            if (technicalInfrastructureFailure(edge, terminalSource)) continue;
             String id = opaqueId("result", businessGraphId, "terminal:" + index);
             nodes.add(new BusinessLogicGraph.Node(id, BusinessLogicGraph.NodeKind.RESULT,
                     resultLabel(exact, edge, exactNodes, incoming)));
@@ -108,6 +121,7 @@ public final class BusinessGraphProjector {
                                 ? List.of()
                                 : List.of(requireExactEdge(exact, target.exactEdgeId())),
                         projectedByExactId, projectedLoopNodeIds, incoming,
+                        invertedBusinessNodeIds,
                         entries, edges, edgeKeys, exactPathsByBusinessEdgeId, new HashSet<>());
             } else {
                 List<BusinessDecisionGraph.DecisionEdge> predecessors = incoming
@@ -119,11 +133,13 @@ public final class BusinessGraphProjector {
                     walkBackward(exact, businessGraphId, predecessor.fromNodeId(), target,
                             List.of(predecessor),
                             projectedByExactId, projectedLoopNodeIds, incoming,
+                            invertedBusinessNodeIds,
                             entries, edges, edgeKeys, exactPathsByBusinessEdgeId, new HashSet<>());
                 }
             }
         }
 
+        removeTransitiveOutcomeEdges(edges);
         removeUnreachableNodes(nodes, edges, entries);
         if (entries.isEmpty() && !nodes.isEmpty()) entries.add(nodes.getFirst().nodeId());
 
@@ -224,6 +240,16 @@ public final class BusinessGraphProjector {
         return edge.outcome().isBlank() ? "terminal result" : edge.outcome();
     }
 
+    private static boolean technicalInfrastructureFailure(
+            BusinessDecisionGraph.DecisionEdge edge,
+            BusinessDecisionGraph.DecisionNode source) {
+        if (source == null || !edge.outcome().toLowerCase(Locale.ROOT).contains("fails")) return false;
+        String owner = source.attributes().getOrDefault(
+                at.gepardec.fachtracing.model.BusinessSemanticAttributes.OWNER_TYPE, "");
+        String simple = owner.substring(Math.max(owner.lastIndexOf('.'), owner.lastIndexOf('$')) + 1);
+        return simple.matches("(?i).*(?:adapter|repository|mapper|converter|controller|client|dao|persistence)$");
+    }
+
     private static void walkBackward(
             BusinessDecisionGraph exact,
             String businessGraphId,
@@ -233,6 +259,7 @@ public final class BusinessGraphProjector {
             Map<String, BusinessLogicGraph.Node> projectedByExactId,
             Set<String> projectedLoopNodeIds,
             Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming,
+            Set<String> invertedBusinessNodeIds,
             Set<String> entries,
             List<BusinessLogicGraph.Edge> edges,
             Set<String> edgeKeys,
@@ -242,7 +269,8 @@ public final class BusinessGraphProjector {
         if (source != null) {
             if (!source.nodeId().equals(target.businessNodeId())) {
                 addEdge(businessGraphId, source, projectedLoopNodeIds.contains(source.nodeId()),
-                        target, exactPath, edges, edgeKeys, exactPathsByBusinessEdgeId);
+                        invertedBusinessNodeIds.contains(source.nodeId()), target, exactPath,
+                        edges, edgeKeys, exactPathsByBusinessEdgeId);
             }
             return;
         }
@@ -262,6 +290,7 @@ public final class BusinessGraphProjector {
             path.addAll(exactPath);
             walkBackward(exact, businessGraphId, predecessor.fromNodeId(), target, List.copyOf(path),
                     projectedByExactId, projectedLoopNodeIds, incoming,
+                    invertedBusinessNodeIds,
                     entries, edges, edgeKeys, exactPathsByBusinessEdgeId, new HashSet<>(visited));
         }
     }
@@ -270,6 +299,7 @@ public final class BusinessGraphProjector {
             String graphId,
             BusinessLogicGraph.Node source,
             boolean loopRule,
+            boolean invertOutcome,
             Target target,
             List<BusinessDecisionGraph.DecisionEdge> exactPath,
             List<BusinessLogicGraph.Edge> edges,
@@ -277,6 +307,7 @@ public final class BusinessGraphProjector {
             Map<String, List<List<String>>> exactPathsByBusinessEdgeId) {
         String outcome = businessOutcome(source.kind(), loopRule, exactPath.stream()
                 .map(BusinessDecisionGraph.DecisionEdge::outcome).toList());
+        if (invertOutcome) outcome = invert(outcome);
         String key = source.nodeId() + '\u0000' + target.businessNodeId() + '\u0000' + outcome;
         String edgeId = opaqueId("edge", graphId, key);
         if (edgeKeys.add(key)) {
@@ -289,22 +320,40 @@ public final class BusinessGraphProjector {
         if (!alternatives.contains(exactEdgeIds)) alternatives.add(exactEdgeIds);
     }
 
-    private static NodeProjection projectNode(
+    private NodeProjection projectNode(
             BusinessDecisionGraph.DecisionNode node,
             LoopProjection loop,
             Set<String> hiddenLoopNodes,
             Set<String> redundantPredicates,
+            Set<String> duplicateExpandedCalls,
+            Set<String> passThroughCalls,
+            Set<String> expandedPredicateDetails,
+            Set<String> aggregateDetails,
             String businessGraphId,
             int nodeIndex) {
-        boolean redundantRule = redundantPredicates.contains(node.nodeId());
+        boolean redundantRule = redundantPredicates.contains(node.nodeId())
+                || duplicateExpandedCalls.contains(node.nodeId())
+                || passThroughCalls.contains(node.nodeId())
+                || expandedPredicateDetails.contains(node.nodeId());
+        redundantRule = redundantRule || aggregateDetails.contains(node.nodeId());
         boolean loopMechanics = hiddenLoopNodes.contains(node.nodeId())
                 && !businessEffectInsideLoop(node);
         boolean loopRule = loop != null;
         String label = "";
         boolean technical = false;
         if (!redundantRule && !loopMechanics && !loopRule) {
-            label = cleanLabel(node.businessLabel());
-            technical = technical(node.kind(), label);
+            BusinessSemanticReducer.Reduction reduction = semanticReducer.reduce(node);
+            label = reduction.label();
+            technical = reduction.technical() || technical(node.kind(), label);
+            if (reduction.promoteRule()) {
+                return NodeProjection.kept(new BusinessLogicGraph.Node(
+                        opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                        BusinessLogicGraph.NodeKind.RULE, label),
+                        BusinessGraphProjection.Reason.BUSINESS_RULE);
+            }
+            if (reduction.invertOutcome()) {
+                return projectedNode(node, businessGraphId, nodeIndex, label, technical, true);
+            }
         }
         BusinessGraphProjection.Reason reason = classifyNode(
                 node.kind(), redundantRule, loopMechanics, loopRule, technical);
@@ -326,6 +375,24 @@ public final class BusinessGraphProjector {
                     TECHNICAL_CALCULATION -> NodeProjection.removed(reason);
             case TERMINAL_RESULT, COMPLETED_FALLBACK, UNREACHABLE ->
                     throw new IllegalStateException("node classifier returned " + reason);
+        };
+    }
+
+    private static NodeProjection projectedNode(
+            BusinessDecisionGraph.DecisionNode node,
+            String businessGraphId,
+            int nodeIndex,
+            String label,
+            boolean technical,
+            boolean invertOutcome) {
+        BusinessGraphProjection.Reason reason = classifyNode(
+                node.kind(), false, false, false, technical);
+        return switch (reason) {
+            case BUSINESS_RULE -> NodeProjection.kept(new BusinessLogicGraph.Node(
+                    opaqueId("rule", businessGraphId, "node:" + nodeIndex),
+                    BusinessLogicGraph.NodeKind.RULE, label), reason, invertOutcome);
+            case TECHNICAL_PREDICATE -> NodeProjection.removed(reason);
+            default -> throw new IllegalStateException("inverted semantic reduction requires a predicate");
         };
     }
 
@@ -390,6 +457,88 @@ public final class BusinessGraphProjector {
                     || label.contains(" to lower case contains ")));
         }).map(BusinessDecisionGraph.DecisionNode::nodeId)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    private static Set<String> expandedPredicateDetailIds(BusinessDecisionGraph exact) {
+        Set<String> representedMethods = exact.nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
+                        || booleanBusinessCall(node))
+                .map(BusinessGraphProjector::calledMethodKey).filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return exact.nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
+                .filter(node -> representedMethods.contains(enclosingMethodKey(node)))
+                .map(BusinessDecisionGraph.DecisionNode::nodeId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    private static Set<String> aggregateDetailIds(BusinessDecisionGraph exact) {
+        Set<String> aggregateScopes = exact.nodes().stream()
+                .filter(node -> at.gepardec.fachtracing.model.BusinessSemanticAttributes.AGGREGATE
+                        .equals(node.attributes().get(
+                                at.gepardec.fachtracing.model.BusinessSemanticAttributes.ROLE)))
+                .map(node -> node.attributes().getOrDefault(
+                        at.gepardec.fachtracing.model.BusinessSemanticAttributes.AGGREGATE_SCOPE, ""))
+                .filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return exact.nodes().stream()
+                .filter(node -> aggregateScopes.contains(node.attributes().getOrDefault(
+                                at.gepardec.fachtracing.model.BusinessSemanticAttributes.PARENT_AGGREGATE_SCOPE, ""))
+                        || (!at.gepardec.fachtracing.model.BusinessSemanticAttributes.AGGREGATE
+                                .equals(node.attributes().get(
+                                        at.gepardec.fachtracing.model.BusinessSemanticAttributes.ROLE))
+                        && aggregateScopes.contains(node.attributes().getOrDefault(
+                                at.gepardec.fachtracing.model.BusinessSemanticAttributes.AGGREGATE_SCOPE, ""))))
+                .map(BusinessDecisionGraph.DecisionNode::nodeId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    private static Set<String> duplicateExpandedCallIds(BusinessDecisionGraph exact) {
+        Set<String> predicateCalls = exact.nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE)
+                .map(BusinessGraphProjector::calledMethodKey).filter(value -> !value.isBlank())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return exact.nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION)
+                .filter(node -> predicateCalls.contains(calledMethodKey(node)))
+                .map(BusinessDecisionGraph.DecisionNode::nodeId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    private static Set<String> passThroughCallIds(BusinessDecisionGraph exact) {
+        return exact.nodes().stream()
+                .filter(node -> node.kind() == BusinessDecisionGraph.NodeKind.COMPUTATION)
+                .filter(node -> node.attributes().getOrDefault(
+                        at.gepardec.fachtracing.model.BusinessSemanticAttributes.CALL_METHOD, "")
+                        .equals(node.attributes().getOrDefault(
+                                at.gepardec.fachtracing.model.BusinessSemanticAttributes.ENCLOSING_METHOD, "_")))
+                .map(BusinessDecisionGraph.DecisionNode::nodeId)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+    private static boolean booleanBusinessCall(BusinessDecisionGraph.DecisionNode node) {
+        String returnType = node.attributes().getOrDefault(
+                at.gepardec.fachtracing.model.BusinessSemanticAttributes.CALL_RETURN_TYPE, "");
+        String owner = node.attributes().getOrDefault(
+                at.gepardec.fachtracing.model.BusinessSemanticAttributes.CALL_OWNER_TYPE, "");
+        return returnType.equals("boolean") && !owner.startsWith("java.")
+                && !owner.startsWith("javax.") && !owner.startsWith("jakarta.");
+    }
+
+    private static String calledMethodKey(BusinessDecisionGraph.DecisionNode node) {
+        String owner = node.attributes().getOrDefault(
+                at.gepardec.fachtracing.model.BusinessSemanticAttributes.CALL_OWNER_TYPE, "");
+        String method = node.attributes().getOrDefault(
+                at.gepardec.fachtracing.model.BusinessSemanticAttributes.CALL_METHOD, "");
+        return owner.isBlank() || method.isBlank() ? "" : owner + '#' + method;
+    }
+
+    private static String enclosingMethodKey(BusinessDecisionGraph.DecisionNode node) {
+        String owner = node.attributes().getOrDefault(
+                at.gepardec.fachtracing.model.BusinessSemanticAttributes.OWNER_TYPE, "");
+        String method = node.attributes().getOrDefault(
+                at.gepardec.fachtracing.model.BusinessSemanticAttributes.ENCLOSING_METHOD, "");
+        return owner.isBlank() || method.isBlank() ? "" : owner + '#' + method;
     }
 
     private static String businessGraphId(BusinessDecisionGraph exact) {
@@ -532,7 +681,9 @@ public final class BusinessGraphProjector {
             Map<String, List<BusinessDecisionGraph.DecisionEdge>> incoming) {
         String outcome = terminal.outcome();
         String lower = outcome.toLowerCase(Locale.ROOT).trim();
-        if (lower.contains("fails")) return "operation failed";
+        if (lower.contains("fails")) return hasSemanticEvidence(exact)
+                ? cleanLabel(exact.decisionLabel()) + " could not be completed"
+                : "operation failed";
         int returns = lower.indexOf("returns ");
         if (returns < 0) return "completed";
         String prefix = lower.substring(0, returns);
@@ -540,6 +691,8 @@ public final class BusinessGraphProjector {
                 .replaceAll("^[\\\"']|[\\\"']$", "");
         String normalized = value.toLowerCase(Locale.ROOT);
         List<PathContext> contexts = pathContexts(terminal, nodes, incoming);
+        String selectedTernary = selectedTernaryResult(value, prefix, contexts);
+        if (selectedTernary != null) return cleanLabel(selectedTernary);
         if (contexts.stream().anyMatch(context -> context.label().contains("page is empty")
                 && affirmative(context.outcome()))) {
             return "no matching records";
@@ -552,7 +705,8 @@ public final class BusinessGraphProjector {
                 && negative(context.outcome()))) {
             return "multiple matching records";
         }
-        if (normalized.startsWith("whether ") || normalized.equals("true") || normalized.equals("false")) {
+        if (normalized.startsWith("whether ") || normalized.startsWith("any of ")
+                || normalized.equals("true") || normalized.equals("false")) {
             return prefix.contains("false") ? "condition is not met" : "condition is met";
         }
         if (normalized.equals("absent") || normalized.equals("null") || normalized.equals("empty")) {
@@ -579,8 +733,31 @@ public final class BusinessGraphProjector {
         if (technicalResultExpression(normalized)) {
             return cleanLabel(exact.decisionLabel()) + " completed";
         }
+        if (normalized.matches(".*\\b(?:adapter|controller|port|repository|service)\\b.*")) {
+            return cleanLabel(exact.decisionLabel()) + " completed";
+        }
         if (normalized.isBlank()) return "completed";
         return cleanLabel(value);
+    }
+
+    private static boolean hasSemanticEvidence(BusinessDecisionGraph exact) {
+        return exact.nodes().stream().anyMatch(node -> node.attributes().keySet().stream()
+                .anyMatch(key -> key.startsWith("semantic.")));
+    }
+
+    private static String selectedTernaryResult(
+            String value, String outcomePrefix, List<PathContext> contexts) {
+        int question = value.indexOf('?');
+        int colon = question < 0 ? -1 : value.indexOf(':', question + 1);
+        if (question < 0 || colon < 0) return null;
+        String whenTrue = value.substring(question + 1, colon).strip();
+        String whenFalse = value.substring(colon + 1).strip();
+        if (whenTrue.isBlank() || whenFalse.isBlank()) return null;
+        String falsePathLabel = "use " + cleanLabel(whenFalse).toLowerCase(Locale.ROOT);
+        if (contexts.stream().anyMatch(context -> context.label().equals(falsePathLabel))) return whenFalse;
+        String truePathLabel = "use " + cleanLabel(whenTrue).toLowerCase(Locale.ROOT);
+        if (contexts.stream().anyMatch(context -> context.label().equals(truePathLabel))) return whenTrue;
+        return outcomePrefix.contains("false") ? whenFalse : whenTrue;
     }
 
     private static boolean technicalResultExpression(String value) {
@@ -646,6 +823,12 @@ public final class BusinessGraphProjector {
             if (first.equals("false") || first.equals("done") || first.equals("no match")) return "no";
         }
         return "";
+    }
+
+    private static String invert(String outcome) {
+        if (outcome.equals("yes")) return "no";
+        if (outcome.equals("no")) return "yes";
+        return outcome;
     }
 
     private static boolean technicalChoice(String label) {
@@ -739,6 +922,33 @@ public final class BusinessGraphProjector {
         edges.removeIf(edge -> !reachable.contains(edge.fromNodeId()) || !reachable.contains(edge.toNodeId()));
     }
 
+    private static void removeTransitiveOutcomeEdges(List<BusinessLogicGraph.Edge> edges) {
+        List<BusinessLogicGraph.Edge> snapshot = List.copyOf(edges);
+        edges.removeIf(direct -> snapshot.stream().anyMatch(first ->
+                !first.edgeId().equals(direct.edgeId())
+                        && first.fromNodeId().equals(direct.fromNodeId())
+                        && first.outcome().equals(direct.outcome())
+                        && reaches(first.toNodeId(), direct.toNodeId(), snapshot, Set.of(direct.edgeId()))));
+    }
+
+    private static boolean reaches(
+            String from, String target, List<BusinessLogicGraph.Edge> edges, Set<String> excluded) {
+        if (from.equals(target)) return true;
+        var pending = new ArrayDeque<String>();
+        var visited = new HashSet<String>();
+        pending.add(from);
+        while (!pending.isEmpty()) {
+            String cursor = pending.removeFirst();
+            if (!visited.add(cursor)) continue;
+            for (BusinessLogicGraph.Edge edge : edges) {
+                if (excluded.contains(edge.edgeId()) || !edge.fromNodeId().equals(cursor)) continue;
+                if (edge.toNodeId().equals(target)) return true;
+                pending.add(edge.toNodeId());
+            }
+        }
+        return false;
+    }
+
     private static String opaqueId(String kind, String graphId, String seed) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
@@ -752,7 +962,8 @@ public final class BusinessGraphProjector {
 
     private record NodeProjection(
             BusinessLogicGraph.Node node,
-            BusinessGraphProjection.Reason reason) {
+            BusinessGraphProjection.Reason reason,
+            boolean invertOutcome) {
         private NodeProjection {
             Objects.requireNonNull(reason, "reason");
         }
@@ -760,11 +971,18 @@ public final class BusinessGraphProjector {
         private static NodeProjection kept(
                 BusinessLogicGraph.Node node,
                 BusinessGraphProjection.Reason reason) {
-            return new NodeProjection(Objects.requireNonNull(node, "node"), reason);
+            return kept(node, reason, false);
+        }
+
+        private static NodeProjection kept(
+                BusinessLogicGraph.Node node,
+                BusinessGraphProjection.Reason reason,
+                boolean invertOutcome) {
+            return new NodeProjection(Objects.requireNonNull(node, "node"), reason, invertOutcome);
         }
 
         private static NodeProjection removed(BusinessGraphProjection.Reason reason) {
-            return new NodeProjection(null, reason);
+            return new NodeProjection(null, reason, false);
         }
     }
 

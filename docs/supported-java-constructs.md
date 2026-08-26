@@ -137,6 +137,9 @@ expression on their edge to Stop. Relevant throws in the entry or an expanded so
 - Redaction is mandatory at the value-codec boundary, before evidence enters a decision record.
 - Business graphs, explanations, PlantUML, and Mermaid contain opaque IDs and business labels only;
   source paths, Java owners, members, and fingerprints remain in the developer manifest.
+- Source-visible aggregate predicates keep their callback details in the exact graph. The business
+  graph can show one subject-aware aggregate check when the callback target is statically proved.
+  Polymorphic rule catalogs remain expanded. Material callback effects are not collapsed.
 - Runtime dispatch first uses an exact registered target, then one unique most-specific assignable
   target. Unknown and ambiguous targets create bounded, deduplicated developer diagnostics.
 - Dynamic invocation never guesses a candidate. A proxy delegate, service provider, or reflected

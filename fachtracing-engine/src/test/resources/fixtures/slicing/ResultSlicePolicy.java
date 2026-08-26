@@ -229,6 +229,12 @@ public final class ResultSlicePolicy {
         return candidates.stream().anyMatch(accepted::add);
     }
 
+    @FachTracing("predicate lambda mutation")
+    public boolean predicateLambdaMutation(List<String> candidates) {
+        List<String> accepted = new ArrayList<>();
+        return candidates.stream().anyMatch(candidate -> accepted.add(candidate));
+    }
+
     @FachTracing("local predicate callback mutation")
     public boolean localPredicateCallbackMutation(List<String> candidates) {
         List<String> accepted = new ArrayList<>();

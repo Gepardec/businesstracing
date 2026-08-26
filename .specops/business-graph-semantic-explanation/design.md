@@ -257,8 +257,10 @@ The final business graph must satisfy all invariants:
 - `BusinessDecisionGraph` stays the exact tracing graph.
 - `BusinessLogicGraph` stays the public business graph model.
 - `fachtracing-business-graph/v1` stays the exported JSON contract.
-- Developer JSON stays complete and unchanged.
-- Runtime activation and exact edge IDs stay unchanged.
+- Developer JSON keeps all source detail. The analyzer can add source-proven semantic nodes and
+  attributes, so regenerated exact node and edge IDs can change.
+- Runtime activation is regenerated from the new exact graph. Exact-to-business path mapping stays
+  authoritative.
 - Business graph IDs can change when semantic content changes. This is expected because the current
   ID already depends on node labels and topology.
 
