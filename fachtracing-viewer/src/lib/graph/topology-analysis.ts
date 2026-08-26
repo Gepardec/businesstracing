@@ -32,6 +32,7 @@ export interface TopologyAnalysis {
   stronglyConnectedComponents: readonly StronglyConnectedComponent[];
   duplicateByNodeId: ReadonlyMap<string, DuplicateOccurrence>;
   primaryEdgeIds: ReadonlySet<string>;
+  feedbackEdgeIds: ReadonlySet<string>;
   longEdgeIds: ReadonlySet<string>;
   incomingByNodeId: ReadonlyMap<string, readonly GraphEdge[]>;
   outgoingByNodeId: ReadonlyMap<string, readonly GraphEdge[]>;
@@ -331,6 +332,7 @@ export function analyzeTopology(graph: GraphModel): TopologyAnalysis {
     stronglyConnectedComponents,
     duplicateByNodeId: duplicateOccurrences(graph, componentByNodeId, rankByNodeId),
     primaryEdgeIds,
+    feedbackEdgeIds,
     longEdgeIds,
     incomingByNodeId: incoming,
     outgoingByNodeId: outgoing

@@ -32,6 +32,7 @@ describe('static graph topology analysis', () => {
     const topology = analyzeTopology(graph);
     expect(topology.longEdgeIds).toContain('retry');
     expect(topology.longEdgeIds).not.toContain('continue');
+    expect(topology.feedbackEdgeIds).toEqual(new Set(['retry']));
   });
 
   it('finds convergence, long edges, and stable duplicate occurrences', () => {

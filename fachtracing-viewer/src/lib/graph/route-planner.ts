@@ -32,6 +32,7 @@ export interface LayoutJunction {
 export interface SharedRouteSegment {
   id: string;
   junctionId: string;
+  targetNodeId: string;
   incomingEdgeIds: readonly string[];
   points: readonly LayoutPoint[];
   lanePoints: readonly LayoutPoint[];
@@ -63,6 +64,7 @@ export interface RenderedRoute {
   bends: number;
   long: boolean;
   secondary: boolean;
+  feedback: boolean;
   branch: boolean;
   corridor: 'normal' | 'outer' | 'cycle';
 }
@@ -109,6 +111,9 @@ const NODE_CLEARANCE = 16;
 const PORT_LEAD = 28;
 const OUTER_CORRIDOR_GAP = 40;
 const PORT_SLOT_GAP = 12;
+const HORIZONTAL_PORT_INSET = 36;
+const VERTICAL_PORT_INSET = 20;
+const PREFERRED_PORT_GAP = 56;
 
 const LABEL_OFFSETS: readonly LayoutPoint[] = [-24, -16, -8, 0, 8, 16, 24]
   .flatMap((x) => [-24, -16, -8, 0, 8, 16, 24].map((y) => ({ x, y })))
@@ -148,8 +153,11 @@ function portPoint(box: NodeBox, side: PortSide, edgeIndex: number, edgeCount: n
   const span = horizontal ? box.width : box.height;
   const count = Math.max(1, Math.min(edgeCount, portCapacity(side, box)));
   const slot = Math.min(edgeIndex, count - 1);
-  const used = (count - 1) * PORT_SLOT_GAP;
-  const offset = (span - used) / 2 + slot * PORT_SLOT_GAP;
+  const inset = horizontal ? HORIZONTAL_PORT_INSET : VERTICAL_PORT_INSET;
+  const available = Math.max(0, span - inset * 2);
+  const used = Math.min(available, (count - 1) * PREFERRED_PORT_GAP);
+  const step = count > 1 ? used / (count - 1) : 0;
+  const offset = (span - used) / 2 + slot * step;
   if (side === 'north') return { x: box.x + offset, y: box.y };
   if (side === 'south') return { x: box.x + offset, y: box.y + box.height };
   if (side === 'west') return { x: box.x, y: box.y + offset };
@@ -771,6 +779,7 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
     return {
       id: `shared-${junction.targetNodeId}`,
       junctionId: junction.id,
+      targetNodeId: junction.targetNodeId,
       incomingEdgeIds: junction.incomingEdgeIds,
       points: [junction.point, { x: target.x + target.width / 2, y: target.y }],
       lanePoints: [
@@ -869,6 +878,7 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
       bends: selected.bends,
       long: topology.longEdgeIds.has(edge.id) || fallbackOuterCorridor,
       secondary: !topology.primaryEdgeIds.has(edge.id) || cycleLoopback || selected.usesOuterCorridor || target.y + target.height <= source.y,
+      feedback: topology.feedbackEdgeIds.has(edge.id),
       branch: new Set(sourceEdges.map((candidate) => candidate.to)).size > 1,
       corridor: cycleLoopback && selected.usesOuterCorridor ? 'cycle' : selected.usesOuterCorridor ? 'outer' : 'normal'
     };

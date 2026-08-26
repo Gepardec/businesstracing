@@ -25,7 +25,18 @@ async function canvasGeometry(page: import('@playwright/test').Page) {
   return page.evaluate(() => {
     const nodeRects = new Map([...document.querySelectorAll<HTMLElement>('.svelte-flow__node[data-id]')].map((node) => [node.dataset.id!, node.getBoundingClientRect()]));
     const intrusions: string[] = [];
+    const endpointViolations: string[] = [];
     const routes: { id: string; source: string; target: string; path: string }[] = [];
+    const onBoundary = (point: DOMPoint, box: DOMRect): boolean => {
+      const tolerance = 4;
+      const withinX = point.x >= box.left - tolerance && point.x <= box.right + tolerance;
+      const withinY = point.y >= box.top - tolerance && point.y <= box.bottom + tolerance;
+      const boundaryDistance = Math.min(
+        Math.abs(point.x - box.left), Math.abs(point.x - box.right),
+        Math.abs(point.y - box.top), Math.abs(point.y - box.bottom)
+      );
+      return withinX && withinY && boundaryDistance <= tolerance;
+    };
     for (const edge of document.querySelectorAll<SVGGElement>('.svelte-flow__edge[data-source-node][data-target-node]')) {
       const path = edge.querySelector<SVGPathElement>('path[data-route-edge]');
       if (!path) continue;
@@ -36,6 +47,12 @@ async function canvasGeometry(page: import('@playwright/test').Page) {
       const matrix = path.getScreenCTM();
       if (!matrix) continue;
       const length = path.getTotalLength();
+      const startPoint = path.getPointAtLength(0);
+      const endPoint = path.getPointAtLength(length);
+      const start = new DOMPoint(startPoint.x, startPoint.y).matrixTransform(matrix);
+      const end = new DOMPoint(endPoint.x, endPoint.y).matrixTransform(matrix);
+      if (!onBoundary(start, nodeRects.get(source)!)) endpointViolations.push(`${id} does not start at ${source}`);
+      if (path.dataset.shared !== 'true' && !onBoundary(end, nodeRects.get(target)!)) endpointViolations.push(`${id} does not end at ${target}`);
       for (let offset = 0; offset <= length; offset += 3) {
         const point = path.getPointAtLength(offset);
         const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix);
@@ -76,7 +93,41 @@ async function canvasGeometry(page: import('@playwright/test').Page) {
       .filter((group) => group.length > 1)
       .map((group) => ({ ids: group.map((route) => route.id), distinctPaths: new Set(group.map((route) => route.path)).size }));
     const handleOpacity = [...document.querySelectorAll<HTMLElement>('.business-handle')].map((handle) => getComputedStyle(handle).opacity);
-    return { routeCount: routes.length, intrusions, labelNodeCollisions, labelCollisions, routeLabelCollisions, parallelRoutes, handleOpacity };
+    return { routeCount: routes.length, intrusions, endpointViolations, labelNodeCollisions, labelCollisions, routeLabelCollisions, parallelRoutes, handleOpacity };
+  });
+}
+
+async function canvasEndpointViolations(page: import('@playwright/test').Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const nodeRects = new Map([...document.querySelectorAll<HTMLElement>('.svelte-flow__node[data-id]')]
+      .map((node) => [node.dataset.id!, node.getBoundingClientRect()]));
+    const violations: string[] = [];
+    const onBoundary = (point: DOMPoint, box: DOMRect): boolean => {
+      const tolerance = 4;
+      const withinX = point.x >= box.left - tolerance && point.x <= box.right + tolerance;
+      const withinY = point.y >= box.top - tolerance && point.y <= box.bottom + tolerance;
+      const boundaryDistance = Math.min(
+        Math.abs(point.x - box.left), Math.abs(point.x - box.right),
+        Math.abs(point.y - box.top), Math.abs(point.y - box.bottom)
+      );
+      return withinX && withinY && boundaryDistance <= tolerance;
+    };
+
+    for (const edge of document.querySelectorAll<SVGGElement>('.svelte-flow__edge[data-source-node][data-target-node]')) {
+      const path = edge.querySelector<SVGPathElement>('path[data-route-edge]');
+      const source = nodeRects.get(edge.dataset.sourceNode!);
+      const target = nodeRects.get(edge.dataset.targetNode!);
+      const matrix = path?.getScreenCTM();
+      if (!path || !source || !target || !matrix) continue;
+      const length = path.getTotalLength();
+      const startPoint = path.getPointAtLength(0);
+      const endPoint = path.getPointAtLength(length);
+      const start = new DOMPoint(startPoint.x, startPoint.y).matrixTransform(matrix);
+      const end = new DOMPoint(endPoint.x, endPoint.y).matrixTransform(matrix);
+      if (!onBoundary(start, source)) violations.push(`${path.dataset.routeEdge} does not start at ${edge.dataset.sourceNode}`);
+      if (path.dataset.shared !== 'true' && !onBoundary(end, target)) violations.push(`${path.dataset.routeEdge} does not end at ${edge.dataset.targetNode}`);
+    }
+    return violations;
   });
 }
 
@@ -244,6 +295,7 @@ test('previews a generated developer graph JSON file without storage', async ({ 
   const geometry = await canvasGeometry(page);
   expect(geometry.routeCount).toBe(document.graph.edges.length);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.endpointViolations).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
   expect(geometry.labelCollisions).toEqual([]);
   expect(geometry.routeLabelCollisions).toEqual([]);
@@ -291,6 +343,7 @@ test('keeps the generated decision explanation clear at every supported width', 
   const dogfoodGeometry = await canvasGeometry(page);
   expect(dogfoodGeometry.routeCount).toBeGreaterThan(0);
   expect(dogfoodGeometry.intrusions).toEqual([]);
+  expect(dogfoodGeometry.endpointViolations).toEqual([]);
   expect(dogfoodGeometry.labelNodeCollisions).toEqual([]);
   expect(dogfoodGeometry.labelCollisions).toEqual([]);
   if (await page.locator('.svelte-flow__node').count() <= 8) await expect(page.locator('.business-minimap')).toHaveCount(0);
@@ -408,8 +461,8 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
 
   for (const [index, graphPath] of graphPaths.entries()) {
     const document = JSON.parse(await readFile(graphPath, 'utf8')) as {
-      nodes: Array<{ id: string; label: string }>;
-      edges: Array<{ id: string; from: string; outcome: string }>;
+      nodes: Array<{ id: string; kind: string; label: string }>;
+      edges: Array<{ id: string; from: string; to: string; outcome: string }>;
       decision: string;
       entryNodeIds: string[];
     };
@@ -426,6 +479,7 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
     if (await readableButton.count()) await expect(readableButton).toHaveAttribute('aria-pressed', 'true');
     const localGeometry = await canvasGeometry(page);
     expect(localGeometry.intrusions).toEqual([]);
+    expect(localGeometry.endpointViolations).toEqual([]);
     expect(localGeometry.labelNodeCollisions).toEqual([]);
     expect(localGeometry.labelCollisions).toEqual([]);
     expect(localGeometry.routeLabelCollisions).toEqual([]);
@@ -516,6 +570,7 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
       const style = getComputedStyle(label);
       return style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
     }).length)).toBe(0);
+    expect(await canvasEndpointViolations(page)).toEqual([]);
     const outgoingBySource = new Map<string, typeof document.edges>();
     for (const edge of document.edges) outgoingBySource.set(edge.from, [...(outgoingBySource.get(edge.from) ?? []), edge]);
     const expectedLabelEdgeIds = document.edges.filter((edge) => {
@@ -525,16 +580,25 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
     const alwaysVisibleLabelEdgeIds = await page.locator('path[data-route-edge]').evaluateAll((paths, labelledIds) => {
       const expected = new Set(labelledIds as string[]);
       return paths
-        .filter((path) => (path as SVGPathElement).dataset.branch === 'true' || (path as SVGPathElement).dataset.secondary === 'false')
+        .filter((path) => (path as SVGPathElement).dataset.feedback === 'false')
         .map((path) => (path as SVGPathElement).dataset.routeEdge!)
         .filter((id) => expected.has(id));
     }, expectedLabelEdgeIds);
     await expect(page.locator('.business-edge-label')).toHaveCount(alwaysVisibleLabelEdgeIds.length);
     for (const edgeId of alwaysVisibleLabelEdgeIds) await expect(page.locator(`[data-edge-label="${edgeId}"]`)).toBeAttached();
-    expect(await page.locator('path[data-route-edge][data-branch="true"]').evaluateAll((paths) => paths.every((path) => {
+    expect(await page.locator('path[data-route-edge][data-feedback="false"]').evaluateAll((paths) => paths.every((path) => {
       const style = getComputedStyle(path);
       return style.opacity === '1' && style.strokeDasharray === 'none';
     }))).toBe(true);
+    const outcomesWithIncoming = document.nodes
+      .filter((node) => node.kind === 'OUTCOME' && document.edges.some((edge) => edge.to === node.id))
+      .map((node) => node.id);
+    expect(await page.evaluate((outcomeIds) => outcomeIds.filter((nodeId) => {
+      const escaped = CSS.escape(nodeId);
+      const direct = document.querySelector<SVGPathElement>(`.svelte-flow__edge[data-target-node="${escaped}"] path[data-route-edge][data-shared="false"]`);
+      const sharedArrow = document.querySelector<SVGPolygonElement>(`.shared-segment[data-target-node="${escaped}"] polygon`);
+      return !(direct?.getAttribute('marker-end') || sharedArrow);
+    }), outcomesWithIncoming)).toEqual([]);
     await page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"]`).hover();
     await expect(page.getByLabel('Zoomed node label')).toContainText(entryNode!.label);
     await page.screenshot({ path: `test-results/real-graphs/${stem}-full-overview.png`, fullPage: true });
@@ -650,6 +714,7 @@ test('previews the stable business graph V1 contract from the repository', async
   await expect(page.getByRole('alert')).toHaveCount(0);
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.endpointViolations).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
   expect(geometry.labelCollisions).toEqual([]);
   expect(geometry.routeLabelCollisions).toEqual([]);
@@ -671,6 +736,7 @@ test('renders branching and parallel routes without overlap in both themes', asy
   await expect(page.locator('path[data-route-edge]')).toHaveCount(5);
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.endpointViolations).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
   expect(geometry.labelCollisions).toEqual([]);
   expect(geometry.routeLabelCollisions).toEqual([]);
@@ -703,6 +769,7 @@ test('renders a twelve-source convergence as one inspectable junction', async ({
   await expect(page.getByText('12 routes converge before combined result.')).toBeAttached();
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.endpointViolations).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
   expect(geometry.labelCollisions).toEqual([]);
   expect(geometry.routeLabelCollisions).toEqual([]);
@@ -734,17 +801,17 @@ test('renders duplicate context and a cycle without changing semantic node count
   await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
   await showOverview(page);
   await expect(page.locator('.structural-region')).toHaveCount(0);
-  const secondaryRoute = page.locator('path.secondary-route').first();
-  await expect(secondaryRoute).toBeAttached();
-  expect(await secondaryRoute.evaluate((route) => getComputedStyle(route).strokeDasharray)).toBe('none');
-  expect(Number(await secondaryRoute.evaluate((route) => getComputedStyle(route).opacity))).toBeLessThan(0.5);
-  const secondaryRouteId = await secondaryRoute.getAttribute('id');
-  await page.locator(`.svelte-flow__edge[data-id="${secondaryRouteId}"]`).focus();
-  await expect.poll(() => secondaryRoute.evaluate((route) => getComputedStyle(route).strokeDasharray)).toBe('none');
-  await expect.poll(() => secondaryRoute.evaluate((route) => getComputedStyle(route).opacity)).toBe('1');
+  const feedbackRoute = page.locator('path[data-feedback="true"]').first();
+  await expect(feedbackRoute).toBeAttached();
+  expect(await feedbackRoute.evaluate((route) => getComputedStyle(route).strokeDasharray)).toBe('none');
+  expect(await feedbackRoute.evaluate((route) => getComputedStyle(route).opacity)).toBe('1');
+  const feedbackRouteId = await feedbackRoute.getAttribute('data-route-edge');
+  await page.locator(`.svelte-flow__edge[data-id="${feedbackRouteId}"]`).focus();
+  await expect.poll(() => feedbackRoute.evaluate((route) => getComputedStyle(route).opacity)).toBe('1');
   await expect(page.locator('.semantic-node-list summary')).toHaveText('Accessible graph list (4 nodes, 4 edges)');
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.endpointViolations).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
   expect(geometry.labelCollisions).toEqual([]);
   expect(geometry.routeLabelCollisions).toEqual([]);
@@ -767,6 +834,7 @@ test('keeps a long forward shortcut solid and inside the normal flow', async ({ 
   expect(await longRoute.evaluate((route) => getComputedStyle(route).opacity)).toBe('1');
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.endpointViolations).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
   expect(geometry.labelCollisions).toEqual([]);
   expect(geometry.routeLabelCollisions).toEqual([]);
@@ -785,6 +853,7 @@ test('renders crossings as bridges without adding graph nodes', async ({ page })
   await expect(page.locator('.semantic-node-list summary')).toHaveText('Accessible graph list (7 nodes, 12 edges)');
   const geometry = await canvasGeometry(page);
   expect(geometry.intrusions).toEqual([]);
+  expect(geometry.endpointViolations).toEqual([]);
   await page.screenshot({ path: 'test-results/visual/crossings-1440-light.png', fullPage: true });
   await page.getByRole('button', { name: 'Use dark theme' }).click();
   await page.screenshot({ path: 'test-results/visual/crossings-1440-dark.png', fullPage: true });

@@ -213,3 +213,31 @@ The review command reports: search users 45/77 at 1,418 by 6,152 with zero prima
 | validate journey direction | Pass | Pass | Pass | Pass | Pass | 5/5 |
 
 Complete-fit Overview remains a topology map. The 5/5 score applies to the default Explore explanation at normal reading zoom, with Overview used for orientation and node selection.
+
+### Iteration 9 — Edge-integrity rejection
+
+**Evaluated at:** 2026-08-26T08:01:31Z
+**Verdict:** FAIL
+
+- **Root Cause Accuracy: 7/10.** Branch visibility was one defect, but the presentation still conflates non-primary forward continuations with feedback references and uses attachment spacing that is too small for rounded routes.
+- **Fix Completeness: 4/10.** A real continuation beside “search for users” appears as a floating dashed line. Close source and target ports produce double-loop shapes. Outcome termination is not visually proven.
+- **Regression Safety: 8/10.** Graph contracts and topology remain intact. The failure is visual route ownership.
+- **Test Verification: 3/10.** Existing tests assert route presence, distinct path strings, and branch contrast. They do not assert composed target termination, outcome arrows, or minimum attachment separation.
+
+**Remediation:** Complete Task 15. Restrict dashed styling to feedback edges, spread small port groups, verify composed endpoint ownership and outcome arrows, and review the rejected patterns at readable zoom.
+
+### Iteration 10 — Visible edge integrity acceptance
+
+**Evaluated at:** 2026-08-26T08:19:06Z
+**Verdict:** PASS
+
+- **Root Cause Accuracy: 10/10.** Spanning-tree priority was incorrectly used as a visual semantic. Twelve-pixel port spacing also made independent rounded routes look like loops.
+- **Fix Completeness: 10/10.** All non-feedback continuations are solid. Small port groups use a bounded wider span. Direct and composed routes expose target ownership and visible arrows.
+- **Regression Safety: 10/10.** Graph JSON, source IDs, edge IDs, Full detail, Readable, run mapping, dependencies, server behavior, storage, HTTP, and CI remain unchanged.
+- **Test Verification: 10/10.** All 85 unit tests pass. Svelte diagnostics and the production build pass. Browser tests assert node-boundary endpoints, solid forward connections, distinct parallel routes, and arrows into every supplied outcome. All three real graph reviews pass, and the dark reading-size renders received direct review.
+
+| Graph | Forward routes | Port clarity | Outcome arrows | Endpoint ownership | Reading review | Score |
+| --- | --- | --- | --- | --- | --- | ---: |
+| search users | Pass | Pass | Pass | Pass | Pass | 5/5 |
+| determine journey warnings | Pass | Pass | Pass | Pass | Pass | 5/5 |
+| validate journey direction | Pass | Pass | Pass | Pass | Pass | 5/5 |

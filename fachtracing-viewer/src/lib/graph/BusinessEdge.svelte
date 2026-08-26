@@ -11,7 +11,7 @@
   let visibleLabel = $derived(label ?? '');
 </script>
 
-<BaseEdge {id} {path} markerEnd={edgeData.sharedSegmentIds.length > 0 ? undefined : markerEnd} {interactionWidth} style={edgeStyle} data-route-edge={id} data-secondary={edgeData.secondary ? 'true' : 'false'} data-branch={edgeData.branch ? 'true' : 'false'} class={[edgeData.long && 'long-route', quietReference && 'secondary-route'].filter(Boolean).join(' ') || undefined} />
+<BaseEdge {id} {path} markerEnd={edgeData.sharedSegmentIds.length > 0 ? undefined : markerEnd} {interactionWidth} style={edgeStyle} data-route-edge={id} data-secondary={edgeData.secondary ? 'true' : 'false'} data-feedback={edgeData.feedback ? 'true' : 'false'} data-shared={edgeData.sharedSegmentIds.length > 0 ? 'true' : 'false'} data-branch={edgeData.branch ? 'true' : 'false'} class={[edgeData.long && 'long-route', quietReference && 'secondary-route'].filter(Boolean).join(' ') || undefined} />
 {#if shouldShowEdgeLabel(visibleLabel, edgeData)}
   <EdgeLabel x={edgeData.labelPosition.x} y={edgeData.labelPosition.y} class="business-edge-label" title={edgeData.rawOutcome} data-edge-label={id} transparent
     style="max-width: 148px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 7px; border: 1px solid color-mix(in oklch, var(--border), transparent 18%); border-radius: 999px; background: color-mix(in oklch, var(--card), transparent 3%); color: var(--foreground); box-shadow: 0 1px 4px color-mix(in oklch, var(--foreground), transparent 92%); font-size: 10px; font-weight: 700; line-height: 1.35; pointer-events: auto;">

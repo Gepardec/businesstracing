@@ -30,6 +30,7 @@ export interface BusinessEdgeData extends Record<string, unknown> {
   rawOutcome: string;
   long: boolean;
   secondary: boolean;
+  feedback: boolean;
   branch: boolean;
   sharedSegmentIds: readonly string[];
 }

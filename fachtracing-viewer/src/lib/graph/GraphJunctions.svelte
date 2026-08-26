@@ -36,7 +36,7 @@
     </g>
   {/each}
   {#each sharedSegments as segment (segment.id)}
-    <g class="shared-segment shared-segment--{state(segment.incomingEdgeIds)}" data-shared-segment={segment.id} data-member-count={segment.incomingEdgeIds.length}>
+    <g class="shared-segment shared-segment--{state(segment.incomingEdgeIds)}" data-shared-segment={segment.id} data-target-node={segment.targetNodeId} data-member-count={segment.incomingEdgeIds.length}>
       <path d={roundedOrthogonalPath(segment.lanePoints, 6)} />
       <path d={roundedOrthogonalPath(segment.points, 6)} />
       <polygon points={`${segment.points.at(-1)!.x},${segment.points.at(-1)!.y} ${segment.points.at(-1)!.x - 5},${segment.points.at(-1)!.y - 9} ${segment.points.at(-1)!.x + 5},${segment.points.at(-1)!.y - 9}`} />

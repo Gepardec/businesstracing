@@ -1,5 +1,6 @@
 export interface EdgePresentationState {
   readonly secondary: boolean;
+  readonly feedback: boolean;
   readonly branch: boolean;
   readonly current: boolean;
   readonly onPath: boolean;
@@ -7,7 +8,7 @@ export interface EdgePresentationState {
 }
 
 export function isQuietReference(state: EdgePresentationState): boolean {
-  return state.secondary && !state.branch && !state.current && !state.onPath && !state.inspected;
+  return state.feedback && !state.branch && !state.current && !state.onPath && !state.inspected;
 }
 
 export function shouldShowEdgeLabel(label: string, state: EdgePresentationState): boolean {

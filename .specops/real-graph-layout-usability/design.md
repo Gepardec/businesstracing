@@ -307,22 +307,31 @@ None approved. Do not add GSAP, another graph engine, a routing package, or a sc
 | RB-10 | Guide-model tests, panel navigation tests, absence of invented labels, responsive safe-area tests, and real-file screenshots |
 | RB-11 | Primary-skeleton tests, composition metrics, route-priority tests, and full-resolution Overview screenshots for all three supplied graphs |
 | RB-12 | Branch-semantics tests, grouped-sequence tests, DOM outcome audits, and normal-reading-zoom screenshots for all three supplied graphs |
+| RB-13 | Feedback-style tests, port-spacing tests, endpoint ownership checks, outcome-arrow browser assertions, and zoomed real-file screenshots |
 
 ## Complete-map composition
 
 Overview uses a topology-derived primary skeleton to establish reading order. Starting at each declared entry, the first forward incoming connection that reaches a node becomes its primary parent. Cycle returns, later incoming links, and long cross-branch links are secondary. This classification changes presentation priority only; it never removes source topology.
 
-ELK remains the placement engine. Candidate selection also measures the distribution of node centers, primary connection span, and empty internal bands. The selected map must keep related branches near their parent and avoid a large unused center between occupied regions. The route planner prefers direct south-to-north flow for primary forward links. Secondary links can use outer corridors and render with lower contrast until inspection.
+ELK remains the placement engine. Candidate selection also measures the distribution of node centers, primary connection span, and empty internal bands. The selected map must keep related branches near their parent and avoid a large unused center between occupied regions. The route planner prefers direct south-to-north flow for primary forward links. Feedback links can use outer corridors and render with lower contrast until inspection. Other forward links remain solid.
 
 ## Business branch presentation
 
-Topology priority and business meaning are separate properties. A route can be secondary to the spanning skeleton and still be a first-class alternative from a business decision. A presentation source with more than one distinct immediate destination marks all its outgoing routes as branches. Parallel source edges to the same destination do not create a false branch. A branch uses a solid route, normal contrast, and a visible supplied outcome. Only a non-branch cross-link can use the quiet dashed reference style.
+Topology priority and business meaning are separate properties. A route can be secondary to the spanning skeleton and still be a first-class alternative from a business decision. A presentation source with more than one distinct immediate destination marks all its outgoing routes as branches. Parallel source edges to the same destination do not create a false branch. A branch uses a solid route, normal contrast, and a visible supplied outcome. Only a directed feedback link can use the quiet dashed reference style.
 
 The label stays on the first route segment near the source. If the source JSON does not supply an outcome, the route remains unlabelled. The explanation panel names the destination so that the interface stays useful without inventing an outcome.
 
 A grouped sequence card uses two levels of information. The graph shows the first complete source label and a short `then N more actions` count. The explanation panel shows every member in order for the pointer and selected states. This keeps the map concise and gives a complete explanation without a clipped arrow sentence.
 
 The final comprehension review has five pass-or-fail dimensions: orientation, decision alternatives, route ownership, node meaning, and explanation recovery. Each supplied graph must pass all five dimensions at normal reading zoom. A complete-fit image is supporting topology evidence only.
+
+## Edge integrity and attachment
+
+Primary-skeleton membership controls layout composition only. It does not control whether a business continuation is solid. Only a directed feedback connection can use the quiet dashed style. Cross-branch, convergence, and later-parent continuations remain solid because they describe real forward alternatives or joins.
+
+Port placement uses a bounded visual span. For two to five connections on one side, attachment points are far enough apart to show distinct exits and entries. Larger groups use the available side width and convergence junctions. The router retains collision, reversal, detour, and label gates.
+
+Every normal route owns a source boundary point and a target boundary point. A converging route can instead terminate on a declared junction slot, but the shared segment then owns the final target boundary and arrow. Browser acceptance checks the composed route, not only the individual Svelte Flow edge path. Outcome nodes with incoming source edges must receive a visible arrow.
 
 ## Rollout
 

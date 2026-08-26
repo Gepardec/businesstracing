@@ -63,6 +63,18 @@ describe('static graph route planning', () => {
     expect(layout.metrics.detachedLabels).toBe(0);
   });
 
+  it('separates adjacent ports so rounded exits do not look like duplicate loops', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    const sourcePorts = layout.edges
+      .filter((edge) => edge.sourceNodeId === 'root')
+      .map((edge) => edge.sourcePort)
+      .filter((port) => port.side === 'south')
+      .sort((first, second) => first.point.x - second.point.x);
+
+    expect(sourcePorts).toHaveLength(2);
+    expect(sourcePorts[1].point.x - sourcePorts[0].point.x).toBeGreaterThanOrEqual(40);
+  });
+
   it('keeps sibling roots in one local branch band around the source', async () => {
     const layout = await computeLayout(balancedBranchFixture());
     const nodeById = new Map(layout.nodes.map((node) => [node.id, node]));
@@ -86,6 +98,7 @@ describe('static graph route planning', () => {
     const loopback = layout.edges.find((edge) => edge.id === 'edge-002')!;
     expect(loopback.long).toBe(true);
     expect(loopback.secondary).toBe(true);
+    expect(loopback.feedback).toBe(true);
     expect(loopback.length).toBe(loopback.shortestCandidateLength);
     expect(loopback.corridor).toBe('cycle');
     expect(layout.metrics.wrongWayBoundaryExits).toBe(0);
@@ -121,6 +134,7 @@ describe('static graph route planning', () => {
     const layout = await computeLayout(fanInFixture());
     expect(layout.junctions).toHaveLength(1);
     expect(layout.sharedSegments).toHaveLength(1);
+    expect(layout.sharedSegments[0].targetNodeId).toBe('outcome');
     expect(layout.junctions[0].incomingEdgeIds).toHaveLength(12);
     expect(layout.edges.filter((edge) => edge.sharedSegmentIds.length > 0)).toHaveLength(12);
     expect(layout.metrics.labelCollisions).toBe(0);

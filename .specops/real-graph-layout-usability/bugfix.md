@@ -216,7 +216,7 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 - [x] WHILE Overview is active THE SYSTEM SHALL arrange the complete readable graph as one balanced top-down map instead of distant visual islands.
 - [x] THE SYSTEM SHALL derive a primary forward skeleton from declared entries and graph topology. It SHALL NOT use graph-specific IDs, labels, coordinates, or diagrams.
 - [x] Primary connections SHALL have higher visual priority than feedback, cross-branch, duplicate, and long-range reference connections.
-- [x] Secondary connections SHALL remain present, accessible, and inspectable, but SHALL use a quiet style until hover, keyboard focus, or selection.
+- [x] Feedback connections SHALL remain present, accessible, and inspectable and MAY use a quiet style until hover, keyboard focus, or selection. Forward later-parent and convergence connections SHALL remain solid as specified by RB-13.
 - [x] A primary connection SHALL use the nearest safe source and target sides. It SHALL NOT leave through a remote side only to return to a directly reachable child.
 - [x] The selected complete layout SHALL include composition quality in candidate selection: occupied map balance, primary-edge span, and long empty internal corridors.
 - [x] The 55-node supplied graph SHALL receive human full-resolution review at desktop Overview scale before acceptance. Passing collision and crossing metrics alone is not sufficient.
@@ -232,6 +232,17 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 - [x] THE explanation panel SHALL show all grouped members in source order without requiring a click when the node is under the pointer or selected.
 - [x] THE three supplied graphs SHALL each score 5/5 for orientation, decision alternatives, route ownership, node meaning, and explanation recovery at normal reading zoom.
 - [x] Acceptance SHALL include browser evidence at normal reading zoom. Complete-fit screenshots and geometry metrics alone SHALL NOT prove comprehension.
+
+### RB-13 — Visible edge integrity
+
+- [x] A non-feedback business continuation SHALL use a solid line and normal contrast even when it is not part of the primary spanning tree.
+- [x] A feedback connection MAY use a dashed line, but it SHALL remain visibly attached to its source and target and SHALL retain an arrow at the target.
+- [x] WHEN two to five connections use the same side of a node THE SYSTEM SHALL separate their attachment points sufficiently that adjacent rounded corners do not look like loops.
+- [x] EVERY rendered edge SHALL visibly start on its source boundary and SHALL visibly terminate on its target boundary or on a declared convergence junction that terminates on the target.
+- [x] EVERY declared outcome with incoming connections SHALL show at least one visible terminating arrow. THE SYSTEM SHALL NOT draw a floating route that appears to end in empty canvas.
+- [x] Parallel connections SHALL remain individually traceable in Full detail without identical geometry, adjacent hairpins, or overlapping labels.
+- [x] THE three supplied screenshot patterns SHALL receive zoomed human review after browser geometry checks pass.
+- [x] THE graph JSON contracts SHALL remain unchanged.
 
 ## Regression Risk Analysis
 

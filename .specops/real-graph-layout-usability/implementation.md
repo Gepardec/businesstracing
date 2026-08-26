@@ -61,6 +61,8 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 | 24 | Add a topology-derived primary skeleton for visual hierarchy only. | Users need one main reading structure while all secondary source links remain available. | Task 13 | 2026-08-25T19:50:40Z |
 | 25 | Separate business-branch meaning from primary-skeleton priority. | A `No` or `Yes` alternative remains a first-class decision path even when it is not the spanning-tree parent. | Task 14 | 2026-08-26T07:22:51Z |
 | 26 | Replace grouped arrow summaries with one complete member and a remaining count. | A clipped chain repeats text but does not explain the sequence. The panel owns the complete ordered list. | Task 14 | 2026-08-26T07:22:51Z |
+| 27 | Restrict quiet dashed styling to directed feedback connections. | A later-parent or convergence connection is still a real business continuation. Dashing it makes the route look detached or unfinished. | Task 15 | 2026-08-26T08:01:31Z |
+| 28 | Spread small port groups over a bounded visual span. | Twelve-pixel attachment spacing makes rounded left and right elbows look like duplicate loops. | Task 15 | 2026-08-26T08:01:31Z |
 
 ## Deviations from Design
 
@@ -79,6 +81,18 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 | PostgreSQL and generated dogfood directories were not present. | Ran all graph-only browser journeys, both V1 contracts, real-file upload journeys, the 250-node graph, and run-highlight unit tests. | Five external-fixture browser journeys were skipped. No server, SQL, or run-view behavior changed. | Task 6 |
 
 ## Session Log
+
+### Session 9 — Rejected edge integrity (2026-08-26)
+
+- Reopened the specification after direct screenshots showed a floating-looking dashed continuation, unclear outcome termination, and adjacent rounded elbows that looked like double loops.
+- Invalidated the 5/5 acceptance claim. The prior browser checks proved presence and contrast for branches but did not prove visual endpoint ownership for all business continuations.
+- Added RB-13 and started Task 15 before product-code changes.
+- Confirmed that both V1 JSON contracts remain unchanged and that no dependency or CI change is needed.
+- Exposed directed feedback classification separately from spanning-tree priority. Forward later-parent and convergence links now remain solid.
+- Increased the bounded port span for small connection groups. Two bottom ports now use a 56-pixel separation instead of 12 pixels.
+- Added explicit target ownership to shared convergence segments and browser checks for source boundary, target boundary, and outcome arrow termination.
+- Re-rendered and reviewed all three supplied graphs in Readable, Full detail Explore, and complete Overview. The rejected floating line, double-loop, and missing-termination patterns are no longer present.
+- Passed 85 unit tests, clean Svelte diagnostics, the production build, the graph-only browser suite, the optional three-real-graph browser journey, and all three objective graph reviews.
 
 ### Session 8 — Rejected branch comprehension (2026-08-26)
 

@@ -543,6 +543,7 @@ Correct the rejected visual result. Keep the topology-derived graph, but pair it
 | RB-10 | 12 |
 | RB-11 | 13 |
 | RB-12 | 14 |
+| RB-13 | 15 |
 | Rejected route evidence | 7 |
 | Rejected focus and zoom evidence | 8 |
 
@@ -552,8 +553,8 @@ None. The required `static-graph-layout-quality` dependency is completed.
 
 ## Progress Tracking
 
-- Total Tasks: 14
-- Completed: 14
+- Total Tasks: 15
+- Completed: 15
 - In Progress: 0
 - Blocked: 0
 - Pending: 0
@@ -578,7 +579,7 @@ Correct the rejected 55-node Overview. Add a topology-derived visual hierarchy, 
 2. Add pure composition metrics for primary span, node distribution, and empty internal bands.
 3. Add Overview placement profiles that do not force source-file model order when it creates distant islands.
 4. Route primary forward connections through the nearest safe south and north ports.
-5. Keep secondary links visible but quiet until inspection.
+5. Keep feedback links visible but quiet until inspection. Keep other forward links solid.
 6. Render the three supplied graphs in Readable and Full detail Overview and inspect the screenshots at full resolution.
 
 **Acceptance Criteria:**
@@ -614,7 +615,7 @@ Correct the rejected branch and grouped-sequence presentation. Separate topology
 
 1. Derive branch semantics from source out-degree and supplied outcomes without graph-specific IDs or labels.
 2. Keep all business alternatives solid and keep their supplied labels visible near the source.
-3. Keep only non-branch cross-links quiet and dashed until inspection.
+3. Keep directed feedback links quiet and dashed until inspection.
 4. Present a grouped sequence as its first complete member plus the number of remaining members.
 5. Expose the complete ordered sequence in the persistent explanation panel for hover and selection.
 6. Review all three supplied graphs at normal reading zoom with the five-part comprehension rubric.
@@ -633,3 +634,42 @@ Correct the rejected branch and grouped-sequence presentation. Separate topology
 - [x] Grouped-sequence presentation unit tests
 - [x] Real-file browser assertions for supplied outcome visibility
 - [x] Normal-reading-zoom screenshots and human review for all three supplied graphs
+
+---
+
+### Task 15: Make every route visibly connected and distinct
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Tasks 13 and 14
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Correct floating-looking secondary continuations and adjacent route elbows that look like double loops. Restrict quiet dashed styling to actual feedback connections, spread small port groups, and verify visible source-to-target termination.
+
+**Implementation Steps:**
+
+1. Expose topology feedback classification to the route presentation model.
+2. Keep every non-feedback business continuation solid regardless of primary-skeleton membership.
+3. Distribute two to five source and target ports over a wider bounded span.
+4. Add pure tests for feedback styling, port separation, parallel geometry, and endpoint ownership.
+5. Add browser assertions for solid continuations, target arrows, outcome termination, and zoomed defect evidence.
+6. Review all supplied graphs and the three rejected screenshot patterns at readable zoom.
+
+**Acceptance Criteria:**
+
+- [x] RB-13 passes without graph-specific production code or a contract change.
+- [x] “Search for users” cannot appear to have a floating dashed continuation.
+- [x] Small route groups do not form adjacent U-shaped elbows at a node boundary.
+- [x] Every supplied outcome is visibly reachable by an incoming arrow.
+- [x] Full detail retains exact node and edge identity.
+
+**Tests Required:**
+
+- [x] Topology feedback-classification tests
+- [x] Edge-presentation tests
+- [x] Port-spacing and parallel-route tests
+- [x] Real-file browser endpoint and arrow assertions
+- [x] Zoomed visual review for all supplied graphs
