@@ -26,6 +26,7 @@ public final class StaticDecisionAnalyzerTest {
 
     public static void main(String[] args) {
         removesJavaConstructionVocabularyGenerically();
+        rendersAggregateRolesWithoutLanguageFillers();
         usesContextForLocalAndGenericSetterLabels();
         rendersFeatureEnablementWithoutTechnicalReceivers();
         usesTypeForAbbreviatedLocalLabels();
@@ -110,6 +111,15 @@ public final class StaticDecisionAnalyzerTest {
         assert BusinessLabelNormalizer.normalize("evaluate create warning with enum type")
                 .equals("create warning")
                 : BusinessLabelNormalizer.normalize("evaluate create warning with enum type");
+    }
+
+    private static void rendersAggregateRolesWithoutLanguageFillers() {
+        assert AggregateBusinessLabelRenderer.render(
+                "person", "employments", "covers (reference date)")
+                .equals("person — employments: covers (reference date)");
+        assert AggregateBusinessLabelRenderer.render(
+                "", "employments", "covers (reference date)")
+                .equals("employments: covers (reference date)");
     }
 
     private static void usesContextForLocalAndGenericSetterLabels() {
@@ -2407,7 +2417,7 @@ public final class StaticDecisionAnalyzerTest {
         BusinessLogicGraph business = new BusinessGraphProjector().project(analysis);
         assert business.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
                 .map(BusinessLogicGraph.Node::label).toList()
-                .equals(List.of("employments contains a value that covers on reference date"))
+                .equals(List.of("employments: covers (reference date)"))
                 : business.nodes();
         assert business.nodes().stream().noneMatch(node -> node.label().matches(
                 "(?i).*(?:stream|adapter|repository|converter|callback|iterator).*")) : business.nodes();

@@ -1,5 +1,5 @@
 import type { GraphModel } from '$contracts/graph-contract';
-import type { LayoutPoint } from './edge-route';
+import { MAX_LABEL_ANCHOR_DISTANCE, type LayoutPoint } from './edge-route';
 
 export interface QualityNode {
   id: string;
@@ -317,7 +317,7 @@ export function measureLayoutQuality(graph: GraphModel, nodes: readonly QualityN
   const labels = routes.map(estimatedLabelBox).filter((label): label is QualityNode => label !== null);
   for (const route of routes) {
     if (!route.displayLabel || !route.labelPosition || !route.labelAnchor) continue;
-    if (Math.hypot(route.labelPosition.x - route.labelAnchor.x, route.labelPosition.y - route.labelAnchor.y) > 24.01) detachedLabels += 1;
+    if (Math.hypot(route.labelPosition.x - route.labelAnchor.x, route.labelPosition.y - route.labelAnchor.y) > MAX_LABEL_ANCHOR_DISTANCE + 0.01) detachedLabels += 1;
   }
   for (let first = 0; first < labels.length; first += 1) {
     if (nodes.some((node) => nodeOverlap(labels[first], node))) labelCollisions += 1;

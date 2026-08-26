@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { directNeighborhood, focusedNodeBounds, neighborhoodBounds, openingNeighborhood, readingViewport, READING_MINIMUM_ZOOM, safeCanvasRect, viewportForBounds } from './graph-viewport';
+import { compactNeighborhood, compactOpeningNeighborhood, directNeighborhood, focusedNodeBounds, neighborhoodBounds, openingNeighborhood, readingViewport, READING_MINIMUM_ZOOM, safeCanvasRect, viewportForBounds } from './graph-viewport';
 import { graphFixture } from './graph-fixtures';
 
 describe('graph viewport', () => {
@@ -74,23 +74,24 @@ describe('graph viewport', () => {
     expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
   });
 
-  it('fits the complete local context beside a narrow bottom explanation sheet', () => {
+  it('does not shrink a local context below the reading floor', () => {
     const safeRect = { x: 16, y: 66, width: 760, height: 380 };
     const neighborhood = { x: 0, y: 0, width: 620, height: 650 };
     const focus = { x: 194, y: 279, width: 232, height: 92 };
     const viewport = readingViewport(neighborhood, focus, safeRect);
-    expect(viewport.zoom).toBeCloseTo(380 / 650);
-    expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
+    expect(viewport.zoom).toBe(READING_MINIMUM_ZOOM);
+    expect(viewport.x + focus.x * viewport.zoom).toBeGreaterThanOrEqual(safeRect.x);
+    expect(viewport.y + focus.y * viewport.zoom).toBeGreaterThanOrEqual(safeRect.y);
   });
 
-  it('keeps the complete local context above a compact explanation guide', () => {
+  it('frames the focus instead of shrinking complete context above a compact guide', () => {
     const safeRect = { x: 16, y: 110, width: 757, height: 286 };
     const neighborhood = { x: 0, y: 0, width: 1_216, height: 576 };
     const focus = { x: 384, y: 238, width: 232, height: 112 };
     const viewport = readingViewport(neighborhood, focus, safeRect);
-    expect(viewport.zoom).toBeCloseTo(286 / 576);
-    expect(viewport.y + neighborhood.y * viewport.zoom).toBeGreaterThanOrEqual(safeRect.y);
-    expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
+    expect(viewport.zoom).toBe(READING_MINIMUM_ZOOM);
+    expect(viewport.x + focus.x * viewport.zoom).toBeGreaterThanOrEqual(safeRect.x);
+    expect(viewport.y + focus.y * viewport.zoom).toBeGreaterThanOrEqual(safeRect.y);
   });
 
   it('builds focused-node bounds with reading context', () => {
@@ -112,6 +113,29 @@ describe('graph viewport', () => {
     expect([...context.edgeIds]).toEqual(['incoming', 'outgoing']);
   });
 
+  it('keeps every outgoing alternative before it adds compact incoming context', () => {
+    const graph = graphFixture('compact-context', ['incoming-a', 'incoming-b', 'selected', 'yes', 'no'], [
+      { id: 'incoming-a', from: 'incoming-a', to: 'selected' },
+      { id: 'incoming-b', from: 'incoming-b', to: 'selected' },
+      { id: 'yes', from: 'selected', to: 'yes' },
+      { id: 'no', from: 'selected', to: 'no' }
+    ]);
+    const context = compactNeighborhood(graph, 'selected');
+    expect([...context.nodeIds]).toEqual(['selected', 'yes', 'no']);
+    expect([...context.edgeIds]).toEqual(['yes', 'no']);
+  });
+
+  it('uses spare compact capacity for one stable predecessor', () => {
+    const graph = graphFixture('compact-chain', ['incoming-a', 'incoming-b', 'selected', 'next'], [
+      { id: 'incoming-a', from: 'incoming-a', to: 'selected' },
+      { id: 'incoming-b', from: 'incoming-b', to: 'selected' },
+      { id: 'next', from: 'selected', to: 'next' }
+    ]);
+    const context = compactNeighborhood(graph, 'selected');
+    expect([...context.nodeIds]).toEqual(['selected', 'next', 'incoming-a']);
+    expect([...context.edgeIds]).toEqual(['next', 'incoming-a']);
+  });
+
   it('shows the first material split in the opening neighborhood', () => {
     const graph = graphFixture('opening', ['entry', 'preparation', 'decision', 'yes', 'no', 'later'], [
       { id: 'prepare', from: 'entry', to: 'preparation' },
@@ -123,6 +147,18 @@ describe('graph viewport', () => {
     const context = openingNeighborhood(graph, 'entry');
     expect([...context.nodeIds]).toEqual(['entry', 'preparation', 'decision', 'yes', 'no']);
     expect([...context.edgeIds]).toEqual(['prepare', 'decide', 'yes', 'no']);
+  });
+
+  it('keeps a compact opening whole instead of showing part of a remote split', () => {
+    const graph = graphFixture('compact-opening', ['entry', 'preparation', 'decision', 'yes', 'no'], [
+      { id: 'prepare', from: 'entry', to: 'preparation' },
+      { id: 'decide', from: 'preparation', to: 'decision' },
+      { id: 'yes', from: 'decision', to: 'yes' },
+      { id: 'no', from: 'decision', to: 'no' }
+    ]);
+    const context = compactOpeningNeighborhood(graph, 'entry');
+    expect([...context.nodeIds]).toEqual(['entry', 'preparation', 'decision']);
+    expect([...context.edgeIds]).toEqual(['prepare', 'decide']);
   });
 
   it('bounds a branch-free opening neighborhood', () => {

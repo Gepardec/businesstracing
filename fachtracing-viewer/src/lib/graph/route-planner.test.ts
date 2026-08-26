@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeLayout, NODE_HEIGHT, NODE_WIDTH } from './layout-engine';
+import { MAX_LABEL_ANCHOR_DISTANCE } from './edge-route';
 import { balancedBranchFixture, chainFixture, crossingFixture, cycleFixture, diamondFixture, duplicateLabelFixture, fanInFixture, fixedPortDetourFixture, longShortcutFixture, multipleEntryFixture } from './graph-fixtures';
 import { parallelClearanceViolations } from './route-quality';
 
@@ -58,7 +59,7 @@ describe('static graph route planning', () => {
   it('keeps every branch label attached to its route', async () => {
     const layout = await computeLayout(balancedBranchFixture());
     for (const route of layout.edges.filter((edge) => edge.displayLabel)) {
-      expect(Math.hypot(route.labelPosition.x - route.labelAnchor.x, route.labelPosition.y - route.labelAnchor.y), route.id).toBeLessThanOrEqual(24);
+      expect(Math.hypot(route.labelPosition.x - route.labelAnchor.x, route.labelPosition.y - route.labelAnchor.y), route.id).toBeLessThanOrEqual(MAX_LABEL_ANCHOR_DISTANCE);
     }
     expect(layout.metrics.detachedLabels).toBe(0);
   });

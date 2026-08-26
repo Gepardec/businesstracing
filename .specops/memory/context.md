@@ -546,3 +546,18 @@ endpoint clearance, and compact Explore view reacts to explanation-guide size ch
 supplied business graphs pass objective layout review, the production Playwright journey, and
 manual light, dark, selected, Overview, Full detail, and narrow screenshot review. No dependency,
 schema, server, database, HTTP, storage, diagram, or CI contract changed.
+
+### compact-graph-reading-and-business-phrasing (bugfix) — 2026-08-26
+
+Completed all four tasks. Compact Explore view now keeps the focus and every direct outgoing
+alternative, then adds stable incoming context only within a three-card budget. It relays out when
+the measured safe area changes and never shrinks a local neighborhood below the 0.70 context floor.
+The 860-pixel real view shows three full-size cards above the guide while the guide keeps all four
+incoming rules.
+
+Aggregate business labels now join source-derived subject, collection, condition, and qualifier
+roles with punctuation. The real labels read `svnr — versicherungszeiten: begruendet anspruch
+(stichtag)` and `elternteil — versicherungszeiten: begruendet anspruch (stichtag)`. No translation,
+domain dictionary, application term, or JSON field was added. Both supplied graphs pass objective
+layout review with no label collisions or avoidable route defects. Engine contracts, 90 viewer
+tests, Svelte diagnostics, the production build, and 12 browser tests pass.

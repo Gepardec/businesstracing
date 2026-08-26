@@ -1,7 +1,7 @@
 import type { GraphEdge, GraphModel } from '$contracts/graph-contract';
 import { displayedEdgeLabel } from './edge-label';
 import { bendCount, manhattanLength } from './route-quality';
-import { routeLabelPosition, type LayoutPoint } from './edge-route';
+import { MAX_LABEL_ANCHOR_DISTANCE, routeLabelPosition, type LayoutPoint } from './edge-route';
 import type { TopologyAnalysis } from './topology-analysis';
 
 export type PortSide = 'north' | 'east' | 'south' | 'west';
@@ -116,9 +116,10 @@ const VERTICAL_PORT_INSET = 20;
 const PREFERRED_PORT_GAP = 56;
 const LABEL_ENDPOINT_CLEARANCE = 30;
 
-const LABEL_OFFSETS: readonly LayoutPoint[] = [-24, -16, -8, 0, 8, 16, 24]
-  .flatMap((x) => [-24, -16, -8, 0, 8, 16, 24].map((y) => ({ x, y })))
-  .filter(({ x, y }) => Math.hypot(x, y) <= 24)
+const LABEL_OFFSET_STEPS = [-48, -40, -32, -24, -16, -8, 0, 8, 16, 24, 32, 40, 48];
+const LABEL_OFFSETS: readonly LayoutPoint[] = LABEL_OFFSET_STEPS
+  .flatMap((x) => LABEL_OFFSET_STEPS.map((y) => ({ x, y })))
+  .filter(({ x, y }) => Math.hypot(x, y) <= MAX_LABEL_ANCHOR_DISTANCE)
   .sort((first, second) => Math.hypot(first.x, first.y) - Math.hypot(second.x, second.y) || first.y - second.y || first.x - second.x);
 
 function pointEqual(first: LayoutPoint, second: LayoutPoint): boolean {

@@ -2634,10 +2634,8 @@ public final class StaticDecisionAnalyzer {
                 String collection = aggregateCollection(matchSelect.getExpression());
                 String condition = aggregateCondition(match.getArguments().getFirst());
                 if (collection.isBlank() || condition == null || condition.isBlank()) return null;
-                if (businessSubjects.isEmpty()) {
-                    return collection + " contains a value that " + condition;
-                }
-                return words(businessSubjects.getLast()) + " has " + collection + " that " + condition;
+                String subject = businessSubjects.isEmpty() ? "" : words(businessSubjects.getLast());
+                return AggregateBusinessLabelRenderer.render(subject, collection, condition);
             }
 
             private String aggregateCollection(Tree pipeline) {
@@ -2700,14 +2698,9 @@ public final class StaticDecisionAnalyzer {
                 return invocation.getArguments().stream()
                         .filter(argument -> !(argument instanceof IdentifierTree identifier)
                                 || !parameters.contains(identifier.getName().toString()))
-                        .map(argument -> {
-                            TreePath path = TreePath.getPath(location.unit(), argument);
-                            TypeMirror type = path == null ? null : trees.getTypeMirror(path);
-                            String connector = type != null && (type.toString().equals("java.time.LocalDate")
-                                    || type.toString().equals("java.time.LocalDateTime")
-                                    || type.toString().equals("java.time.Instant")) ? " on " : " for ";
-                            return connector + expression(argument);
-                        }).collect(Collectors.joining());
+                        .map(argument -> expression(argument))
+                        .collect(Collectors.collectingAndThen(Collectors.joining(", "),
+                                value -> value.isBlank() ? "" : " (" + value + ")"));
             }
 
             @Override public Void visitThrow(ThrowTree node, Void unused) {

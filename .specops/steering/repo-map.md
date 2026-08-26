@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-25T10:53:52Z"
-_sourceHash: "fe450239862f10656ae5241270e52919fb93315c26a7c88020e78cd05671d5b8"
+_generatedAt: "2026-08-26T16:28:22Z"
+_sourceHash: "d197c58480321b69371a3493435f0c36cb7537aba6af98c92c40fb7c2d541545"
 ---
 
 ## Project Structure Map
@@ -69,7 +69,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (103 files)
+#### fachtracing-engine/ (104 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -116,6 +116,8 @@ fachtracing/
   - exact supported cancellation call-site discovery
 - `src/main/java/at/gepardec/fachtracing/analysis/CaughtThrowResolver.java`
   - attributed compatible local catch resolution
+- `src/main/java/at/gepardec/fachtracing/analysis/AggregateBusinessLabelRenderer.java`
+  - joins source-derived aggregate roles without language-specific sentence grammar
 - `src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
   - `public final class StaticDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`

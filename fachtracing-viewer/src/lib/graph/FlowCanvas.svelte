@@ -18,7 +18,7 @@
   import GraphLayoutStatus from './GraphLayoutStatus.svelte';
   import { graphGuideContext } from './graph-guide';
   import { createGraphPresentation, type GraphDetailMode, type GraphPresentation } from './graph-presentation';
-  import { directNeighborhood, focusedNodeBounds, openingNeighborhood, safeCanvasRect, type CanvasRect } from './graph-viewport';
+  import { compactNeighborhood, compactOpeningNeighborhood, directNeighborhood, focusedNodeBounds, openingNeighborhood, safeCanvasRect, type CanvasRect } from './graph-viewport';
   import type { BusinessFlowEdge, BusinessFlowNode } from './flow-types';
   import type { LayoutResult } from './layout-definition';
 
@@ -45,6 +45,7 @@
   let focusRequest = $state(0);
   let previousActiveNodeId: string | null = null;
   let previousGraphIdentity = '';
+  let previousCompactContext: boolean | null = null;
   let searchMessage = $state('');
   let inspectedEdgeId = $state<string | null>(null);
   let hoveredNodeId = $state<string | null>(null);
@@ -57,6 +58,7 @@
   let presentation = $derived(detailMode === 'full' ? createGraphPresentation(graph, 'full') : readablePresentation);
   let displayGraph = $derived(presentation.graph);
   let guideContext = $derived(graphGuideContext(presentation, viewMode === 'overview' ? hoveredNodeId ?? focusNodeId : focusNodeId));
+  let compactLocalContext = $derived(safeRect.width < 760 || safeRect.height < 520);
 
   function presentationNodeId(originalNodeId: string | null): string | null {
     return originalNodeId ? presentation.presentationNodeIdByOriginalNodeId.get(originalNodeId) ?? null : null;
@@ -170,8 +172,10 @@
     requestAnimationFrame(measureSafeArea);
   }
 
-  function createLocalGraph(input: GraphModel, focusId: string, showOpening: boolean): GraphModel {
-    const neighborhood = showOpening ? openingNeighborhood(input, focusId) : directNeighborhood(input, focusId);
+  function createLocalGraph(input: GraphModel, focusId: string, showOpening: boolean, compact: boolean): GraphModel {
+    const neighborhood = showOpening
+      ? compact ? compactOpeningNeighborhood(input, focusId) : openingNeighborhood(input, focusId)
+      : compact ? compactNeighborhood(input, focusId) : directNeighborhood(input, focusId);
     return {
       ...input,
       entryNodeId: focusId,
@@ -182,9 +186,9 @@
     };
   }
 
-  async function createLocalLayout(currentPresentation: GraphPresentation, focusId: string, parentRequest = layoutRequest, showOpening = false): Promise<void> {
+  async function createLocalLayout(currentPresentation: GraphPresentation, focusId: string, parentRequest = layoutRequest, showOpening = false, compact = compactLocalContext): Promise<void> {
     const request = ++localLayoutRequest;
-    const input = createLocalGraph(currentPresentation.graph, focusId, showOpening);
+    const input = createLocalGraph(currentPresentation.graph, focusId, showOpening, compact);
     try {
       let layout: LayoutResult;
       try {
@@ -271,6 +275,19 @@
     layoutStatus;
     const frame = requestAnimationFrame(measureSafeArea);
     return () => cancelAnimationFrame(frame);
+  });
+  $effect(() => {
+    const compact = compactLocalContext;
+    if (previousCompactContext === null) {
+      previousCompactContext = compact;
+      return;
+    }
+    if (compact === previousCompactContext) return;
+    previousCompactContext = compact;
+    if (viewMode === 'explore' && focusNodeId && globalLayoutResult) {
+      void createLocalLayout(presentation, focusNodeId, layoutRequest,
+        !selectedNodeId && !highlight?.activeNodeId, compact);
+    }
   });
 
   onMount(() => {

@@ -3,6 +3,8 @@ export interface LayoutPoint {
   y: number;
 }
 
+export const MAX_LABEL_ANCHOR_DISTANCE = 48;
+
 function distance(first: LayoutPoint, second: LayoutPoint): number {
   return Math.hypot(second.x - first.x, second.y - first.y);
 }

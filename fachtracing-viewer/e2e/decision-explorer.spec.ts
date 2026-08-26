@@ -500,6 +500,19 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
       await page.screenshot({ path: `test-results/real-graphs/${stem}-guided-step.png`, fullPage: true });
     }
     if (index === 0) {
+      const compactCandidate = [...document.nodes].sort((left, right) => {
+        const leftNeighbors = new Set(document.edges.flatMap((edge) => edge.from === left.id
+          ? [edge.to] : edge.to === left.id ? [edge.from] : [])).size;
+        const rightNeighbors = new Set(document.edges.flatMap((edge) => edge.from === right.id
+          ? [edge.to] : edge.to === right.id ? [edge.from] : [])).size;
+        return rightNeighbors - leftNeighbors;
+      })[0];
+      await page.getByPlaceholder('Find a node').fill(compactCandidate.id);
+      await page.getByPlaceholder('Find a node').press('Enter');
+      await expect(page.locator('.svelte-flow__node.selected')).toBeVisible();
+      const wideContextCount = await page.locator('.business-node').count();
+      const compactContextLimit = Math.max(3,
+        1 + new Set(outgoingEdges(document.edges, compactCandidate.id).map((edge) => edge.to)).size);
       await page.setViewportSize({ width: 860, height: 900 });
       await expect.poll(() => page.evaluate(() => {
         const panel = document.querySelector<HTMLElement>('.graph-guide')?.getBoundingClientRect();
@@ -507,8 +520,12 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
         const nodes = [...document.querySelectorAll<HTMLElement>('.business-node')].map((node) => node.getBoundingClientRect());
         const wide = Boolean(panel && canvas && panel.width > canvas.width * 0.8);
         const clear = Boolean(panel && nodes.every((node) => node.bottom + 8 <= panel.top));
-        return `${wide}:${clear}:${Math.round(panel?.top ?? 0)}:${Math.round(Math.max(0, ...nodes.map((node) => node.bottom)))}`;
-      })).toMatch(/^true:true:/);
+        const readable = nodes.every((node) => node.width >= 160 && node.height >= 76);
+        return `${wide}:${clear}:${readable}:${nodes.length}:${Math.round(panel?.top ?? 0)}:${Math.round(Math.max(0, ...nodes.map((node) => node.bottom)))}`;
+      })).toMatch(/^true:true:true:/);
+      const compactContextCount = await page.locator('.business-node').count();
+      expect(compactContextCount).toBeLessThanOrEqual(compactContextLimit);
+      if (wideContextCount > compactContextLimit) expect(compactContextCount).toBeLessThan(wideContextCount);
       await page.screenshot({ path: `test-results/real-graphs/${stem}-guided-narrow.png`, fullPage: true });
       await page.setViewportSize({ width: 1_440, height: 1_000 });
     }

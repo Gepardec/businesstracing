@@ -20,7 +20,7 @@ export interface GraphNeighborhood {
 }
 
 export const READING_MINIMUM_ZOOM = 0.86;
-export const NEIGHBORHOOD_MINIMUM_ZOOM = 0.62;
+export const NEIGHBORHOOD_MINIMUM_ZOOM = 0.7;
 
 export function safeCanvasRect(width: number, height: number, overlays: readonly CanvasRect[], gutter = 16): CanvasRect {
   let left = gutter;
@@ -66,10 +66,8 @@ export function readingViewport(
   maximumZoom = 1.2
 ): GraphViewport {
   const neighborhoodFit = Math.min(safeRect.width / Math.max(1, neighborhood.width), safeRect.height / Math.max(1, neighborhood.height));
-  const compactViewport = safeRect.width < 760 || safeRect.height < 760;
-  const contextMinimumZoom = compactViewport ? 0.48 : NEIGHBORHOOD_MINIMUM_ZOOM;
-  if (neighborhoodFit >= contextMinimumZoom) {
-    return viewportForBounds(neighborhood, safeRect, contextMinimumZoom, maximumZoom);
+  if (neighborhoodFit >= NEIGHBORHOOD_MINIMUM_ZOOM) {
+    return viewportForBounds(neighborhood, safeRect, NEIGHBORHOOD_MINIMUM_ZOOM, maximumZoom);
   }
   return viewportForBounds(focus, safeRect, minimumZoom, minimumZoom);
 }
@@ -82,6 +80,53 @@ export function directNeighborhood(graph: GraphModel, focusNodeId: string): Grap
     nodeIds.add(edge.from);
     nodeIds.add(edge.to);
     edgeIds.add(edge.id);
+  }
+  return { nodeIds, edgeIds };
+}
+
+export function compactNeighborhood(graph: GraphModel, focusNodeId: string, maximumNodeCount = 3): GraphNeighborhood {
+  const nodeIds = new Set([focusNodeId]);
+  const edgeIds = new Set<string>();
+  const outgoing = graph.edges.filter((edge) => edge.from === focusNodeId);
+
+  for (const edge of outgoing) {
+    nodeIds.add(edge.to);
+    edgeIds.add(edge.id);
+  }
+
+  const predecessorIds = new Set<string>();
+  for (const edge of graph.edges) {
+    if (edge.to !== focusNodeId || edge.from === focusNodeId || predecessorIds.has(edge.from)) continue;
+    if (nodeIds.size >= maximumNodeCount) break;
+    predecessorIds.add(edge.from);
+    nodeIds.add(edge.from);
+  }
+
+  for (const edge of graph.edges) {
+    if (edge.to === focusNodeId && predecessorIds.has(edge.from)) edgeIds.add(edge.id);
+  }
+  return { nodeIds, edgeIds };
+}
+
+export function compactOpeningNeighborhood(graph: GraphModel, entryNodeId: string, maximumNodeCount = 3): GraphNeighborhood {
+  const nodeIds = new Set([entryNodeId]);
+  const edgeIds = new Set<string>();
+  const visited = new Set<string>();
+  let currentNodeId = entryNodeId;
+
+  while (!visited.has(currentNodeId) && nodeIds.size < maximumNodeCount) {
+    visited.add(currentNodeId);
+    const outgoing = graph.edges.filter((edge) => edge.from === currentNodeId);
+    const successorIds = [...new Set(outgoing.map((edge) => edge.to))];
+    if (successorIds.length === 0) break;
+    if (nodeIds.size + successorIds.length > maximumNodeCount) break;
+
+    for (const edge of outgoing) {
+      nodeIds.add(edge.to);
+      edgeIds.add(edge.id);
+    }
+    if (successorIds.length > 1) break;
+    currentNodeId = successorIds[0];
   }
   return { nodeIds, edgeIds };
 }

@@ -1,11 +1,19 @@
 [
   {
-    "id": "business-graph-semantic-explanation",
+    "id": "compact-graph-reading-and-business-phrasing",
     "type": "bugfix",
-    "status": "draft",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-26T09:39:35Z",
+    "updated": "2026-08-26T16:26:48Z"
+  },
+  {
+    "id": "business-graph-semantic-explanation",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T10:29:55Z",
     "partOf": "business-graph-conformance"
   },
   {
