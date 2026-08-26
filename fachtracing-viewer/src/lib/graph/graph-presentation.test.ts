@@ -28,6 +28,7 @@ describe('readable graph presentation', () => {
     expect(presentation.graph.nodes).toHaveLength(4);
     expect(presentation.graph.edges).toHaveLength(3);
     expect(sequence.memberNodeIds).toEqual(['prepare', 'calculate', 'store']);
+    expect(presentation.graph.nodes.find((node) => node.id === sequence.id)?.label).toBe('prepare data');
     expect(presentation.presentationNodeIdByOriginalNodeId.get('calculate')).toBe(sequence.id);
     expect(presentation.presentationEdgeIdByOriginalEdgeId.get('edge-prepare')).toBeNull();
     expect(combined.outcome).toBe('Any result');

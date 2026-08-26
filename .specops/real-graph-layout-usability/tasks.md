@@ -542,6 +542,7 @@ Correct the rejected visual result. Keep the topology-derived graph, but pair it
 | RB-09 | 9, 10, 11 |
 | RB-10 | 12 |
 | RB-11 | 13 |
+| RB-12 | 14 |
 | Rejected route evidence | 7 |
 | Rejected focus and zoom evidence | 8 |
 
@@ -551,8 +552,8 @@ None. The required `static-graph-layout-quality` dependency is completed.
 
 ## Progress Tracking
 
-- Total Tasks: 13
-- Completed: 13
+- Total Tasks: 14
+- Completed: 14
 - In Progress: 0
 - Blocked: 0
 - Pending: 0
@@ -594,3 +595,41 @@ Correct the rejected 55-node Overview. Add a topology-derived visual hierarchy, 
 - [x] Composition-metric and placement-selection tests
 - [x] Route-side and route-priority tests
 - [x] Real-file Overview screenshots and geometry evidence
+
+---
+
+### Task 14: Make every business branch and grouped step understandable
+
+**Status:** Completed
+**Estimated Effort:** M
+**Dependencies:** Tasks 12 and 13
+**Priority:** High
+**IssueID:** None
+**Blocker:** None
+
+**Description:**
+Correct the rejected branch and grouped-sequence presentation. Separate topology reference priority from business-branch meaning, keep supplied outcomes visible, and replace clipped sequence summaries with a concise ordered explanation.
+
+**Implementation Steps:**
+
+1. Derive branch semantics from source out-degree and supplied outcomes without graph-specific IDs or labels.
+2. Keep all business alternatives solid and keep their supplied labels visible near the source.
+3. Keep only non-branch cross-links quiet and dashed until inspection.
+4. Present a grouped sequence as its first complete member plus the number of remaining members.
+5. Expose the complete ordered sequence in the persistent explanation panel for hover and selection.
+6. Review all three supplied graphs at normal reading zoom with the five-part comprehension rubric.
+
+**Acceptance Criteria:**
+
+- [x] RB-12 passes without graph-specific production data, coordinates, or diagrams.
+- [x] Supplied `Yes` and `No` outcomes do not disappear because an edge is secondary.
+- [x] A business alternative does not use quiet reference styling.
+- [x] Grouped action summaries do not end in an unexplained ellipsis.
+- [x] Every supplied graph scores 5/5 in the recorded browser review.
+
+**Tests Required:**
+
+- [x] Pure branch-priority and label-visibility unit tests
+- [x] Grouped-sequence presentation unit tests
+- [x] Real-file browser assertions for supplied outcome visibility
+- [x] Normal-reading-zoom screenshots and human review for all three supplied graphs

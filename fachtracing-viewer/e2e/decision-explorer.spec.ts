@@ -4,6 +4,23 @@ import { basename, delimiter, join, resolve } from 'node:path';
 import { displayedEdgeLabel } from '../src/lib/graph/edge-label';
 import { crossingGraphFile, cycleGraphFile, duplicateGraphFile, fanInGraphFile, generatedBranchingGraphFile, longShortcutGraphFile } from './visual-fixtures';
 
+function outgoingEdges<T extends { from: string }>(edges: readonly T[], nodeId: string): T[] {
+  return edges.filter((edge) => edge.from === nodeId);
+}
+
+function reaches(edges: readonly { from: string; to: string }[], start: string, target: string): boolean {
+  const pending = [start];
+  const visited = new Set<string>();
+  while (pending.length > 0) {
+    const nodeId = pending.shift()!;
+    if (nodeId === target) return true;
+    if (visited.has(nodeId)) continue;
+    visited.add(nodeId);
+    pending.push(...outgoingEdges(edges, nodeId).map((edge) => edge.to));
+  }
+  return false;
+}
+
 async function canvasGeometry(page: import('@playwright/test').Page) {
   return page.evaluate(() => {
     const nodeRects = new Map([...document.querySelectorAll<HTMLElement>('.svelte-flow__node[data-id]')].map((node) => [node.dataset.id!, node.getBoundingClientRect()]));
@@ -441,9 +458,45 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
       await page.screenshot({ path: `test-results/real-graphs/${stem}-guided-narrow.png`, fullPage: true });
       await page.setViewportSize({ width: 1_440, height: 1_000 });
     }
+    const labelledDecisions = document.nodes.filter((node) => {
+      const outgoing = outgoingEdges(document.edges, node.id);
+      return new Set(outgoing.map((edge) => edge.to)).size > 1
+        && outgoing.length > 1
+        && outgoing.every((edge) => displayedEdgeLabel(edge.outcome, outgoing.length, outgoing.findIndex((candidate) => candidate.id === edge.id)) !== null);
+    });
+    const labelledDecision = labelledDecisions.find((node) => {
+      const targets = outgoingEdges(document.edges, node.id).map((edge) => edge.to);
+      return targets.some((source, sourceIndex) => targets.some((target, targetIndex) => sourceIndex !== targetIndex && reaches(document.edges, source, target)));
+    }) ?? labelledDecisions[0];
+    if (labelledDecision) {
+      const outgoing = outgoingEdges(document.edges, labelledDecision.id);
+      await showFullDetail(page);
+      await waitForGraphLayout(page);
+      await page.getByPlaceholder('Find a node').fill(labelledDecision.id);
+      await page.getByPlaceholder('Find a node').press('Enter');
+      await expect(page.locator(`.svelte-flow__node.selected[data-id="${labelledDecision.id}"]`)).toBeVisible();
+      for (const [branchIndex, edge] of outgoing.entries()) {
+        const label = displayedEdgeLabel(edge.outcome, outgoing.length, branchIndex)!;
+        await expect(page.locator('.business-edge-label', { hasText: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).first()).toBeVisible();
+      }
+      expect(await page.locator('path[data-route-edge][data-branch="true"]').evaluateAll((paths) => paths.every((path) => {
+        const style = getComputedStyle(path);
+        return style.opacity === '1' && style.strokeDasharray === 'none';
+      }))).toBe(true);
+      await page.screenshot({ path: `test-results/real-graphs/${stem}-branch-review.png`, fullPage: true });
+      if (await readableButton.count()) {
+        await readableButton.click();
+        await waitForGraphLayout(page);
+      }
+    }
     await page.getByRole('button', { name: 'Overview' }).click();
     await expect(page.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-pressed', 'true');
     await expect(guide.getByText('Topology map')).toBeVisible();
+    const readableSequences = page.locator('.business-node.node-sequence');
+    if (await readableSequences.count()) {
+      await expect(readableSequences.locator('.sequence-more')).toHaveCount(await readableSequences.count());
+      expect(await readableSequences.locator('p').evaluateAll((labels) => labels.every((label) => !label.textContent?.includes('→')))).toBe(true);
+    }
     await page.screenshot({ path: `test-results/real-graphs/${stem}-readable-overview-light.png`, fullPage: true });
     await page.getByRole('button', { name: 'Explore' }).click();
 
@@ -469,12 +522,19 @@ test('keeps optional real graphs readable in Explore and Overview modes', async 
       const outgoing = outgoingBySource.get(edge.from)!;
       return displayedEdgeLabel(edge.outcome, outgoing.length, outgoing.findIndex((candidate) => candidate.id === edge.id)) !== null;
     }).map((edge) => edge.id);
-    const primaryLabelEdgeIds = await page.locator('path[data-route-edge][data-secondary="false"]').evaluateAll((paths, labelledIds) => {
+    const alwaysVisibleLabelEdgeIds = await page.locator('path[data-route-edge]').evaluateAll((paths, labelledIds) => {
       const expected = new Set(labelledIds as string[]);
-      return paths.map((path) => (path as SVGPathElement).dataset.routeEdge!).filter((id) => expected.has(id));
+      return paths
+        .filter((path) => (path as SVGPathElement).dataset.branch === 'true' || (path as SVGPathElement).dataset.secondary === 'false')
+        .map((path) => (path as SVGPathElement).dataset.routeEdge!)
+        .filter((id) => expected.has(id));
     }, expectedLabelEdgeIds);
-    await expect(page.locator('.business-edge-label')).toHaveCount(primaryLabelEdgeIds.length);
-    for (const edgeId of primaryLabelEdgeIds) await expect(page.locator(`[data-edge-label="${edgeId}"]`)).toBeAttached();
+    await expect(page.locator('.business-edge-label')).toHaveCount(alwaysVisibleLabelEdgeIds.length);
+    for (const edgeId of alwaysVisibleLabelEdgeIds) await expect(page.locator(`[data-edge-label="${edgeId}"]`)).toBeAttached();
+    expect(await page.locator('path[data-route-edge][data-branch="true"]').evaluateAll((paths) => paths.every((path) => {
+      const style = getComputedStyle(path);
+      return style.opacity === '1' && style.strokeDasharray === 'none';
+    }))).toBe(true);
     await page.locator(`.svelte-flow__node[data-id="${entryNode!.id}"]`).hover();
     await expect(page.getByLabel('Zoomed node label')).toContainText(entryNode!.label);
     await page.screenshot({ path: `test-results/real-graphs/${stem}-full-overview.png`, fullPage: true });

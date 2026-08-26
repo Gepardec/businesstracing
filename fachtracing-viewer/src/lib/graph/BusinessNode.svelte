@@ -22,14 +22,20 @@
     if (side === 'north' || side === 'south') return `left: ${point.x - data.layoutPosition.x}px`;
     return `top: ${point.y - data.layoutPosition.y}px`;
   }
+
+  function remainingSequenceLabel(): string {
+    const remaining = data.memberNodeIds.length - 1;
+    const item = data.node.kind === 'PREDICATE' ? 'rule' : 'action';
+    return `Then ${remaining} more ${item}${remaining === 1 ? '' : 's'}`;
+  }
 </script>
 
 {#each data.ports as port (port.id)}
   <Handle id={port.id} type={port.role} position={handlePosition(port.side)} class="business-handle" style={handleStyle(port.side, port.point)} role="presentation" aria-hidden="true" />
 {/each}
-<article class:node-path={data.onPath} class:node-current={data.current} class:node-dimmed={data.dimmed}
+<article class:node-path={data.onPath} class:node-current={data.current} class:node-dimmed={data.dimmed} class:node-sequence={data.memberNodeIds.length > 1}
   class="business-node business-node--{data.node.kind.toLowerCase()}" data-run-state={data.current ? 'current' : data.onPath ? 'path' : data.dimmed ? 'dimmed' : 'default'}
-  aria-label={`${data.node.kind}: ${data.node.label}. Node ${data.node.id}. ${data.incomingCount} incoming and ${data.outgoingCount} outgoing edges${data.occurrence ? `. Occurrence ${data.occurrence.index} of ${data.occurrence.total}` : ''}.`}>
+  aria-label={`${data.node.kind}: ${data.memberLabels.join(', ')}. Node ${data.node.id}. ${data.incomingCount} incoming and ${data.outgoingCount} outgoing edges${data.occurrence ? `. Occurrence ${data.occurrence.index} of ${data.occurrence.total}` : ''}.`}>
   <header>
     <span class="node-icon" aria-hidden="true">
       {#if data.node.kind === 'ENTRY'}<LogIn size={15} />
@@ -46,6 +52,7 @@
     {#if data.stepNumber !== null}<span class="node-step" aria-label={`Step ${data.stepNumber}`}>{data.stepNumber}</span>{/if}
   </header>
   <p title={data.memberLabels.join(' → ')}>{data.node.label}</p>
+  {#if data.memberNodeIds.length > 1}<span class="sequence-more">{remainingSequenceLabel()}</span>{/if}
 </article>
 
 <style>
@@ -58,6 +65,8 @@
   .node-occurrence + .node-step { margin-left: 0; }
   .node-step { margin-left: auto; width: 21px; height: 21px; display: grid; place-items: center; border-radius: 999px; background: var(--run-current); color: white; font-size: 10px; font-weight: 800; box-shadow: 0 0 0 2px color-mix(in oklch, var(--card), transparent 8%); }
   p { margin: 0; padding: 4px 14px 12px; font-size: 14px; line-height: 1.3; font-weight: 650; display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .node-sequence p { padding-bottom: 1px; line-clamp: 2; -webkit-line-clamp: 2; }
+  .sequence-more { display: block; padding: 1px 14px 8px; color: var(--muted-foreground); font-size: 10px; font-weight: 750; line-height: 1.25; }
   .business-node--entry { --node-color: var(--node-entry); border-color: color-mix(in oklch, var(--node-color), var(--border) 24%); border-radius: 999px; }
   .business-node--predicate { --node-color: var(--node-predicate); }
   .business-node--choice { --node-color: var(--node-choice); clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%); padding-inline: 10px; }

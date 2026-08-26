@@ -63,6 +63,7 @@ export interface RenderedRoute {
   bends: number;
   long: boolean;
   secondary: boolean;
+  branch: boolean;
   corridor: 'normal' | 'outer' | 'cycle';
 }
 
@@ -868,6 +869,7 @@ export function planRoutes(graph: GraphModel, positions: readonly LayoutNodePosi
       bends: selected.bends,
       long: topology.longEdgeIds.has(edge.id) || fallbackOuterCorridor,
       secondary: !topology.primaryEdgeIds.has(edge.id) || cycleLoopback || selected.usesOuterCorridor || target.y + target.height <= source.y,
+      branch: new Set(sourceEdges.map((candidate) => candidate.to)).size > 1,
       corridor: cycleLoopback && selected.usesOuterCorridor ? 'cycle' : selected.usesOuterCorridor ? 'outer' : 'normal'
     };
   }

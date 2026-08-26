@@ -222,6 +222,17 @@ The search field, controls, and minimap overlay the canvas. Focus and fit calcul
 - [x] The 55-node supplied graph SHALL receive human full-resolution review at desktop Overview scale before acceptance. Passing collision and crossing metrics alone is not sufficient.
 - [x] THE SYSTEM SHALL preserve every source node and connection, both V1 contracts, Readable and Full detail, search, accessibility, and run-highlight mappings.
 
+### RB-12 — Five-out-of-five graph comprehension
+
+- [x] WHEN a source node has more than one continuation and the JSON supplies an outcome THE SYSTEM SHALL keep each supplied outcome visible at the source in Overview and Explore.
+- [x] A supplied branch alternative SHALL use normal branch contrast and a solid route. The primary-skeleton classification SHALL NOT turn a business alternative into a quiet dashed reference.
+- [x] WHEN a multi-route source has no supplied outcome THE SYSTEM SHALL keep the route unlabelled and SHALL identify its destination in the explanation panel. THE SYSTEM SHALL NOT invent business meaning.
+- [x] A branch label SHALL remain attached to its route and close to the source. It SHALL NOT appear on an unrelated corridor or as a detached badge.
+- [x] A grouped action sequence SHALL show one complete first action and an explicit remaining-action count on the graph. It SHALL NOT show a clipped repeated sentence as its summary.
+- [x] THE explanation panel SHALL show all grouped members in source order without requiring a click when the node is under the pointer or selected.
+- [x] THE three supplied graphs SHALL each score 5/5 for orientation, decision alternatives, route ownership, node meaning, and explanation recovery at normal reading zoom.
+- [x] Acceptance SHALL include browser evidence at normal reading zoom. Complete-fit screenshots and geometry metrics alone SHALL NOT prove comprehension.
+
 ## Regression Risk Analysis
 
 ### Blast radius

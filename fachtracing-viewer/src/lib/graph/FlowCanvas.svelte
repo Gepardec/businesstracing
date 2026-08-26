@@ -147,6 +147,7 @@
           rawOutcome: edge.outcome,
           long: route.long,
           secondary: route.secondary,
+          branch: route.branch,
           sharedSegmentIds: route.sharedSegmentIds
         },
         focusable: true,

@@ -103,6 +103,20 @@ describe('static graph route planning', () => {
     expect(parallelClearanceViolations(layout.edges)).toEqual([]);
   });
 
+  it('keeps every business alternative distinct from quiet topology references', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    const alternatives = layout.edges.filter((edge) => edge.sourceNodeId === 'root');
+    const shortcutLayout = await computeLayout(longShortcutFixture());
+    const shortcutAlternatives = shortcutLayout.edges.filter((edge) => edge.sourceNodeId === 'rule-1');
+
+    expect(alternatives).toHaveLength(2);
+    expect(alternatives.map((edge) => edge.displayLabel).sort()).toEqual(['No', 'Yes']);
+    expect(alternatives.every((edge) => edge.branch)).toBe(true);
+    expect(shortcutAlternatives).toHaveLength(2);
+    expect(shortcutAlternatives.every((edge) => edge.branch)).toBe(true);
+    expect(shortcutAlternatives.some((edge) => edge.secondary)).toBe(true);
+  });
+
   it('creates one presentation junction for large fan-in', async () => {
     const layout = await computeLayout(fanInFixture());
     expect(layout.junctions).toHaveLength(1);

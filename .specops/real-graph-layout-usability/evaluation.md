@@ -183,3 +183,33 @@
 - **Test Verification: 10/10.** All 79 unit tests pass. Svelte diagnostics are clean. The production build passes. The real-file browser journey passes for all three supplied files, and each full-resolution Readable Overview screenshot received direct review.
 
 The review command reports: search users 45/77 at 1,418 by 6,152 with zero primary crossings; determine journey warnings 55/89 at 1,847 by 3,908 with zero primary crossings; validate journey direction 19/29 at 827 by 2,268 with zero primary crossings. All three pass.
+
+### Iteration 7 — Branch-comprehension rejection
+
+**Evaluated at:** 2026-08-26T07:22:51Z
+**Verdict:** FAIL
+
+- **Root Cause Accuracy: 8/10.** The primary skeleton improves composition, but the presentation incorrectly treats some secondary topology routes as secondary business meaning.
+- **Fix Completeness: 5/10.** Supplied outcomes can disappear, a real decision alternative can become dashed and faint, route labels can look detached, and grouped actions use a clipped arrow sentence.
+- **Regression Safety: 8/10.** Source topology, identifiers, parsing, and navigation remain intact. The defect is in visual priority and explanation.
+- **Test Verification: 4/10.** The prior checks prove complete topology and safe geometry. They do not prove that all supplied alternatives stay visible or that a grouped step is understandable at reading zoom.
+
+**Remediation:** Complete Task 14. Separate business branches from topology references, keep supplied branch outcomes visible, add a clear grouped-sequence summary, expose the complete sequence in the explanation panel, and require 5/5 comprehension evidence for every supplied graph.
+
+### Iteration 8 — Five-out-of-five comprehension acceptance
+
+**Evaluated at:** 2026-08-26T07:35:47Z
+**Verdict:** PASS
+
+- **Root Cause Accuracy: 10/10.** Business-branch semantics are now independent from primary-skeleton priority. The previous missing outcomes came from the quiet-reference rule.
+- **Fix Completeness: 10/10.** Supplied branch labels remain visible and attached. Business alternatives remain solid. Grouped cards show one complete member and a correct remaining count. The panel shows every grouped member and every continuation.
+- **Regression Safety: 10/10.** No graph contract, source topology, dependency, server, database, HTTP, run-state, or CI behavior changed.
+- **Test Verification: 10/10.** All 83 unit tests pass. Svelte diagnostics are clean. The production build passes. The real-file Chromium review checks branch contrast and outcome visibility and records normal-reading-zoom evidence for all three supplied graphs.
+
+| Graph | Orientation | Alternatives | Route ownership | Node meaning | Recovery | Score |
+| --- | --- | --- | --- | --- | --- | ---: |
+| search users | Pass | Pass | Pass | Pass | Pass | 5/5 |
+| determine journey warnings | Pass | Pass | Pass | Pass | Pass | 5/5 |
+| validate journey direction | Pass | Pass | Pass | Pass | Pass | 5/5 |
+
+Complete-fit Overview remains a topology map. The 5/5 score applies to the default Explore explanation at normal reading zoom, with Overview used for orientation and node selection.

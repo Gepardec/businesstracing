@@ -39,7 +39,10 @@
         <span class="guide-eyebrow"><CircleDot size={14} /> Node under pointer</span>
         <span class="kind">{kindLabel()}</span>
         <h2>{context.node.label}</h2>
-        {#if context.memberLabels.length > 1}<p>{context.memberLabels.length} source steps. Select the node to inspect the full sequence.</p>{/if}
+        {#if context.memberLabels.length > 1}
+          <div class="section-heading"><strong>Steps in this sequence</strong><span>{context.memberLabels.length}</span></div>
+          <ol>{#each context.memberLabels as label}<li>{label}</li>{/each}</ol>
+        {/if}
       </section>
     {/if}
   {:else if context}
@@ -94,7 +97,6 @@
   section + section, details { padding-top: 15px; border-top: 1px solid var(--border); }
   .guide-eyebrow { display: flex; align-items: center; gap: 7px; color: var(--primary); font-size: 10px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
   .decision-summary p, .overview-note p { margin: 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.45; }
-  .overview-inspection p { margin: 2px 0 0; color: var(--muted-foreground); font-size: 11px; line-height: 1.4; }
   .decision-summary p:first-of-type, .overview-note strong { color: var(--foreground); }
   .current-step { gap: 4px; }
   .kind { width: max-content; margin-top: 5px; padding: 3px 7px; border-radius: 999px; color: var(--muted-foreground); background: var(--secondary); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }

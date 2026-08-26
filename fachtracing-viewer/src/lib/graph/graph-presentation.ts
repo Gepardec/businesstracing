@@ -164,8 +164,7 @@ function linearSequences(graph: GraphModel, blocked: ReadonlySet<string>): strin
 }
 
 function sequenceLabel(members: readonly GraphNode[]): string {
-  if (members.length === 2) return `${members[0].label} → ${members[1].label}`;
-  return `${members[0].label} → ${members.at(-1)!.label}`;
+  return members[0].label;
 }
 
 function combinedOutcome(edges: readonly GraphEdge[]): string {

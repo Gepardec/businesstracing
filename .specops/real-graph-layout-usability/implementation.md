@@ -59,6 +59,8 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 | 22 | Pair Explore with a persistent explanation panel. | A local graph alone does not explain grouped steps or all immediate continuations. | Task 12 | 2026-08-25T19:31:00Z |
 | 23 | Treat the latest 55-node Overview screenshot as a failed acceptance test. | Safe routes and complete topology do not make a balanced map. The empty center, distant islands, and dominant cross-links prevent visual parsing. | Task 13 | 2026-08-25T19:50:40Z |
 | 24 | Add a topology-derived primary skeleton for visual hierarchy only. | Users need one main reading structure while all secondary source links remain available. | Task 13 | 2026-08-25T19:50:40Z |
+| 25 | Separate business-branch meaning from primary-skeleton priority. | A `No` or `Yes` alternative remains a first-class decision path even when it is not the spanning-tree parent. | Task 14 | 2026-08-26T07:22:51Z |
+| 26 | Replace grouped arrow summaries with one complete member and a remaining count. | A clipped chain repeats text but does not explain the sequence. The panel owns the complete ordered list. | Task 14 | 2026-08-26T07:22:51Z |
 
 ## Deviations from Design
 
@@ -77,6 +79,19 @@ The first implementation was rejected during direct user review. Tasks 7 and 8 r
 | PostgreSQL and generated dogfood directories were not present. | Ran all graph-only browser journeys, both V1 contracts, real-file upload journeys, the 250-node graph, and run-highlight unit tests. | Five external-fixture browser journeys were skipped. No server, SQL, or run-view behavior changed. | Task 6 |
 
 ## Session Log
+
+### Session 8 — Rejected branch comprehension (2026-08-26)
+
+- Reopened the completed specification after direct review found missing supplied outcomes and unclear grouped actions.
+- Added RB-12 and started Task 14 before product-code changes.
+- Defined a five-part comprehension rubric. Every supplied graph must pass orientation, decision alternatives, route ownership, node meaning, and explanation recovery at normal reading zoom.
+- Kept graph contracts, source topology, active-run behavior, dependencies, server behavior, and CI out of scope.
+- Added a pure edge-presentation policy so that only non-branch cross-links become quiet references.
+- Added explicit branch data to rendered routes and kept supplied branch labels visible at normal contrast.
+- Replaced grouped arrow sentences with the first complete step plus a grammatically correct remaining count.
+- Exposed every grouped member in the Overview pointer panel as well as the selected Explore panel.
+- Reviewed normal-reading-zoom screenshots for all three supplied graphs. Each graph passed the five-part comprehension rubric.
+- Passed 83 unit tests, clean Svelte diagnostics, the production build, and the optional-real-graph Chromium journey.
 
 ### Session 7 — Rejected complete-map composition (2026-08-25)
 
