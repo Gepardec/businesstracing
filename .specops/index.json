@@ -1,5 +1,14 @@
 [
   {
+    "id": "business-graph-semantic-explanation",
+    "type": "bugfix",
+    "status": "draft",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T09:39:35Z",
+    "partOf": "business-graph-conformance"
+  },
+  {
     "id": "real-graph-layout-usability",
     "type": "bugfix",
     "status": "completed",
