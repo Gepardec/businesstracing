@@ -48,6 +48,8 @@ for common Jakarta EE operations, SOAP setup, and gRPC channel setup.
 See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
 generates from its own Maven plugin policy.
 
+The [viewer guide](fachtracing-viewer/README.md#show-fachtracing-tracing-itself) shows how to open those generated graphs and real Java-agent paths in the Svelte flow explorer.
+
 See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
 delivery, JDBC, upgrade, and rollback flow.
 
@@ -131,6 +133,16 @@ explanations, persisted decision records, Mermaid, or PlantUML.
 
 ## Verification
 
+## Interactive decision viewer
+
+The optional [Svelte 5 decision viewer](fachtracing-viewer/README.md) lists stored runs, searches by any exact correlation name and canonical value, and explains one recorded path on a complete data-driven graph. It uses Svelte Flow with a deterministic top-to-bottom ELK layout. The local POC reads PostgreSQL and never sends developer source provenance to the browser.
+
+Run its focused checks with:
+
+```sh
+./scripts/verify-viewer.sh
+```
+
 Run all dependency-free executable contracts:
 
 ```sh
@@ -174,6 +186,16 @@ Run the Jakarta EE CDI conformance command (optionally set `JAKARTAEE_REST_SAMPL
 
 It analyzes an unchanged, pinned Jakarta EE REST application and proves that its CDI-injected
 repository resolves to the scoped JPA implementation.
+
+Run the pinned Architecture Dojo Anspruch conformance command (optionally set
+`ARCHITECTURE_DOJO_ANSPRUCH_DIR`):
+
+```sh
+./scripts/verify-architecture-dojo-anspruch.sh
+```
+
+It generates two V1 business graph JSON documents from the unchanged complete Onion solution. See
+the [Architecture Dojo Anspruch guide](conformance/architecture-dojo-anspruch/README.md).
 
 Run the optional long load comparison (60 total disabled baseline seconds paired across ten minutes
 enabled at 1,000 requests/second):

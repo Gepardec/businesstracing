@@ -1,0 +1,61 @@
+{
+  "id": "static-graph-layout-quality",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-25T07:29:57Z",
+  "updated": "2026-08-25T09:23:18Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "frontend-flow-explorer",
+      "reason": "This bugfix changes the completed viewer layout while it preserves the graph contracts and shared canvas.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "frontend-visual-design-quality",
+    "frontend-flow-explorer"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-25T07:42:57Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 9,
+        "fixCompleteness": 8,
+        "regressionSafety": 7,
+        "testVerification": 8
+      },
+      "evaluatedAt": "2026-08-25T09:23:18Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 16500,
+    "filesChanged": 33,
+    "linesAdded": 2746,
+    "linesRemoved": 252,
+    "tasksCompleted": 6,
+    "acceptanceCriteriaVerified": 8,
+    "specDurationMinutes": 113
+  }
+}

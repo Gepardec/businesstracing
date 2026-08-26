@@ -1,0 +1,492 @@
+import { expect, test } from '@playwright/test';
+import { mkdir, readFile, readdir } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { crossingGraphFile, cycleGraphFile, duplicateGraphFile, fanInGraphFile, generatedBranchingGraphFile, longShortcutGraphFile } from './visual-fixtures';
+
+async function canvasGeometry(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const nodeRects = new Map([...document.querySelectorAll<HTMLElement>('.svelte-flow__node[data-id]')].map((node) => [node.dataset.id!, node.getBoundingClientRect()]));
+    const intrusions: string[] = [];
+    const routes: { id: string; source: string; target: string; path: string }[] = [];
+    for (const edge of document.querySelectorAll<SVGGElement>('.svelte-flow__edge[data-source-node][data-target-node]')) {
+      const path = edge.querySelector<SVGPathElement>('path[data-route-edge]');
+      if (!path) continue;
+      const id = path.dataset.routeEdge!;
+      const source = edge.dataset.sourceNode!;
+      const target = edge.dataset.targetNode!;
+      routes.push({ id, source, target, path: path.getAttribute('d') ?? '' });
+      const matrix = path.getScreenCTM();
+      if (!matrix) continue;
+      const length = path.getTotalLength();
+      for (let offset = 0; offset <= length; offset += 3) {
+        const point = path.getPointAtLength(offset);
+        const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+        for (const [nodeId, box] of nodeRects) {
+          if (nodeId === source || nodeId === target) continue;
+          if (screen.x > box.left + 1 && screen.x < box.right - 1 && screen.y > box.top + 1 && screen.y < box.bottom - 1) {
+            intrusions.push(`${id} enters ${nodeId}`);
+            break;
+          }
+        }
+      }
+    }
+    const labels = [...document.querySelectorAll<HTMLElement>('.business-edge-label')].map((label) => ({ id: label.dataset.edgeLabel!, box: label.getBoundingClientRect() }));
+    const labelNodeCollisions = labels.flatMap(({ id, box }) => [...nodeRects].filter(([, node]) => box.left < node.right && box.right > node.left && box.top < node.bottom && box.bottom > node.top).map(([nodeId]) => `${id} covers ${nodeId}`));
+    const labelCollisions: string[] = [];
+    labels.forEach((first, index) => labels.slice(index + 1).forEach((second) => {
+      if (first.box.left < second.box.right && first.box.right > second.box.left && first.box.top < second.box.bottom && first.box.bottom > second.box.top) labelCollisions.push(`${first.id} covers ${second.id}`);
+    }));
+    const routeLabelCollisions: string[] = [];
+    for (const { id: labelId, box } of labels) {
+      for (const path of document.querySelectorAll<SVGPathElement>('path[data-route-edge]')) {
+        const routeId = path.dataset.routeEdge!;
+        if (routeId === labelId) continue;
+        const matrix = path.getScreenCTM();
+        if (!matrix) continue;
+        const length = path.getTotalLength();
+        for (let offset = 0; offset <= length; offset += 2) {
+          const point = path.getPointAtLength(offset);
+          const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix);
+          if (screen.x > box.left - 1 && screen.x < box.right + 1 && screen.y > box.top - 1 && screen.y < box.bottom + 1) {
+            routeLabelCollisions.push(`${routeId} crosses ${labelId}`);
+            break;
+          }
+        }
+      }
+    }
+    const parallelRoutes = [...Map.groupBy(routes, (route) => `${route.source}\u0000${route.target}`).values()]
+      .filter((group) => group.length > 1)
+      .map((group) => ({ ids: group.map((route) => route.id), distinctPaths: new Set(group.map((route) => route.path)).size }));
+    const handleOpacity = [...document.querySelectorAll<HTMLElement>('.business-handle')].map((handle) => getComputedStyle(handle).opacity);
+    return { routeCount: routes.length, intrusions, labelNodeCollisions, labelCollisions, routeLabelCollisions, parallelRoutes, handleOpacity };
+  });
+}
+
+async function openGeneratedFachtracingRun(page: import('@playwright/test').Page): Promise<void> {
+  await page.goto('/runs');
+  await page.getByLabel('Correlation name').fill('application');
+  await page.getByLabel('Exact stored value').fill('fachtracing');
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByRole('link', { name: 'Explain' }).first()).toBeVisible();
+  await page.getByRole('link', { name: 'Explain' }).first().click();
+  await expect(page.locator('.svelte-flow__node').first()).toBeVisible({ timeout: 15_000 });
+}
+
+const generatedNodeKinds = ['PREDICATE', 'CHOICE', 'COMPUTATION', 'DISPATCH', 'COVERAGE_GAP'] as const;
+
+function generatedGraphFile(nodeCount: number): { name: string; mimeType: string; buffer: Buffer } {
+  const nodes = Array.from({ length: nodeCount }, (_, index) => {
+    const kind = index === 0 ? 'ENTRY' : index === nodeCount - 1 ? 'OUTCOME' : generatedNodeKinds[(index - 1) % generatedNodeKinds.length];
+    return { id: `node-${index}`, kind, label: `generated ${kind.toLowerCase().replace('_', ' ')} ${index}`, attributes: {} };
+  });
+  const coverageGaps = nodes.filter((node) => node.kind === 'COVERAGE_GAP').map((node) => ({ nodeId: node.id, description: 'generated coverage gap' }));
+  const document = {
+    schema: 'fachtracing-developer-graph/v1',
+    sourceOrigins: [{ id: 'generated', kind: 'GENERATED', identity: 'browser visual test', checksum: 'fixture' }],
+    sourceFiles: [],
+    graph: {
+      id: `generated-browser-${nodeCount}`, version: 1, label: `generated ${nodeCount}-node graph`, entryNodeId: 'node-0',
+      completeness: coverageGaps.length ? 'INCOMPLETE' : 'COMPLETE', nodes,
+      edges: Array.from({ length: nodeCount - 1 }, (_, index) => ({ id: `edge-${index}`, from: `node-${index}`, to: `node-${index + 1}`, outcome: 'next' })),
+      coverageGaps
+    }
+  };
+  return { name: `generated-${nodeCount}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) };
+}
+
+function generatedNodeGrammarFile(): { name: string; mimeType: string; buffer: Buffer } {
+  const kinds = ['ENTRY', 'PREDICATE', 'CHOICE', 'COMPUTATION', 'DISPATCH', 'COVERAGE_GAP', 'OUTCOME'];
+  const nodes = kinds.map((kind, index) => ({ id: `node-${index}`, kind, label: `generated ${kind.toLowerCase().replace('_', ' ')}`, attributes: {} }));
+  const decisionNodes = nodes.slice(1, 3);
+  const actionNodes = nodes.slice(3, -1);
+  const edges = decisionNodes.map((node, index) => ({ id: `edge-entry-${index}`, from: nodes[0].id, to: node.id, outcome: index % 2 ? 'no' : 'yes' }));
+  actionNodes.forEach((node, index) => {
+    edges.push({ id: `edge-decision-${index}`, from: decisionNodes[index % decisionNodes.length].id, to: node.id, outcome: index % 2 ? 'no' : 'yes' });
+    edges.push({ id: `edge-outcome-${index}`, from: node.id, to: nodes.at(-1)!.id, outcome: 'yes' });
+  });
+  const document = {
+    schema: 'fachtracing-developer-graph/v1',
+    sourceOrigins: [{ id: 'generated', kind: 'GENERATED', identity: 'browser node grammar', checksum: 'fixture' }], sourceFiles: [],
+    graph: {
+      id: 'generated-node-grammar', version: 1, label: 'generated node grammar', entryNodeId: nodes[0].id, completeness: 'INCOMPLETE',
+      nodes, edges, coverageGaps: [{ nodeId: nodes.find((node) => node.kind === 'COVERAGE_GAP')!.id, description: 'generated coverage gap' }]
+    }
+  };
+  return { name: 'generated-node-grammar.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) };
+}
+
+test('shows a generic correlation search without placing values in the URL', async ({ page }) => {
+  await page.goto('/runs');
+  await expect(page.getByRole('heading', { name: 'Recorded decisions', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Correlation name')).toBeVisible();
+  await expect(page.getByLabel('Exact stored value')).toBeVisible();
+  await page.getByLabel('Correlation name').fill('routeId');
+  await page.getByLabel('Exact stored value').fill('route-17');
+  await page.getByRole('button', { name: 'Search' }).click();
+  if (process.env.FACHTRACING_DATABASE_URL) await expect(page.getByText('choose a delivery route')).toBeVisible();
+  else await expect(page.getByRole('alert')).toContainText('could not be completed');
+  await expect(page).toHaveURL(/\/runs$/);
+});
+
+test('finds and explains a generated run', async ({ page }) => {
+  test.skip(!process.env.FACHTRACING_DATABASE_URL, 'PostgreSQL fixture is required');
+  await page.goto('/runs');
+  await page.getByLabel('Correlation name').fill('routeId');
+  await page.getByLabel('Exact stored value').fill('route-17');
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByText('choose a delivery route')).toBeVisible();
+  await expect(page).toHaveURL(/\/runs$/);
+  await page.getByRole('link', { name: 'Explain' }).first().click();
+  await expect(page.getByRole('heading', { name: 'choose a delivery route' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Run explanation' })).toContainText('3 steps');
+  await page.getByRole('button', { name: /route is local/ }).click();
+  await expect(page.getByRole('complementary', { name: 'Run explanation' })).toContainText('route was Route 17');
+});
+
+test('keeps the explanation available at a narrow width', async ({ page }) => {
+  test.skip(!process.env.FACHTRACING_DATABASE_URL, 'PostgreSQL fixture is required');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/runs/e2e-execution');
+  await page.getByRole('button', { name: 'Explanation' }).click();
+  await expect(page.getByRole('complementary', { name: 'Run explanation' })).toBeVisible();
+});
+
+test('renders Fachtracing from its generated graph and Java-agent run', async ({ page }) => {
+  test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY || !process.env.FACHTRACING_DATABASE_URL, 'Generated Fachtracing artifacts and PostgreSQL are required');
+  const browserErrors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') browserErrors.push(message.text()); });
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto('/runs');
+  await page.getByLabel('Correlation name').fill('application');
+  await page.getByLabel('Exact stored value').fill('fachtracing');
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByText('include exact node in business graph').first()).toBeVisible();
+  await expect(page.getByText('select source inputs for graph analysis').first()).toBeVisible();
+  await page.getByRole('link', { name: 'Explain' }).first().click();
+  await expect(page.getByRole('complementary', { name: 'Run explanation' })).toContainText(/\d+ steps/);
+  await mkdir('test-results/dogfood', { recursive: true });
+  try {
+    const nodes = page.locator('.svelte-flow__node');
+    const layoutError = page.getByRole('alert');
+    await expect.poll(async () => await nodes.count() > 0 || await layoutError.count() > 0, { timeout: 15_000 }).toBe(true);
+    if (await layoutError.count() > 0) throw new Error(`graph layout failed: ${await layoutError.textContent()}`);
+    expect(browserErrors, `browser errors: ${browserErrors.join(' | ')}`).toEqual([]);
+    await expect(nodes.first()).toBeVisible();
+    await expect(page.getByLabel('Full path')).toBeChecked();
+  } finally {
+    await page.screenshot({ path: 'test-results/dogfood/fachtracing-viewer.png', fullPage: true });
+  }
+});
+
+test('previews a generated developer graph JSON file without storage', async ({ page }) => {
+  const dogfoodDirectory = process.env.FACHTRACING_DOGFOOD_DIRECTORY;
+  test.skip(!dogfoodDirectory, 'Generated Fachtracing artifacts are required');
+  const graphDirectory = join(dogfoodDirectory!, 'graphs');
+  const graphFiles = (await readdir(graphDirectory)).filter((name) => name.endsWith('.json')).sort();
+  expect(graphFiles.length).toBeGreaterThan(0);
+  const graphPath = join(graphDirectory, graphFiles[0]);
+  const document = JSON.parse(await readFile(graphPath, 'utf8')) as { graph: { label: string; nodes: unknown[]; edges: unknown[] } };
+
+  await page.goto('/graphs');
+  const nonReadRequests: string[] = [];
+  page.on('request', (request) => {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) nonReadRequests.push(`${request.method()} ${request.url()}`);
+  });
+  const storageBefore = await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }));
+  await expect(page.getByRole('heading', { name: 'Preview a graph JSON' })).toBeVisible();
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
+  await expect(page.getByRole('heading', { name: document.graph.label })).toBeVisible();
+  await expect(page.getByText(`${document.graph.nodes.length} nodes`, { exact: true })).toBeVisible();
+  await expect(page.getByText(`${document.graph.edges.length} edges`, { exact: true })).toBeVisible();
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(document.graph.nodes.length, { timeout: 15_000 });
+  const geometry = await canvasGeometry(page);
+  expect(geometry.routeCount).toBe(document.graph.edges.length);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  expect(geometry.handleOpacity.every((opacity) => opacity === '0')).toBe(true);
+  await expect(page.getByText('Your file is not uploaded or saved.')).toBeVisible();
+  expect(nonReadRequests).toEqual([]);
+  await expect.poll(() => page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual(storageBefore);
+  await mkdir('test-results/dogfood', { recursive: true });
+  await page.screenshot({ path: 'test-results/dogfood/fachtracing-graph-preview-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/dogfood/fachtracing-graph-preview-dark.png', fullPage: true });
+});
+
+test('keeps the generated decision explanation clear at every supported width', async ({ page }) => {
+  test.skip(!process.env.FACHTRACING_DOGFOOD_DIRECTORY || !process.env.FACHTRACING_DATABASE_URL, 'Generated Fachtracing artifacts and PostgreSQL are required');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openGeneratedFachtracingRun(page);
+
+  const header = page.locator('.decision-header');
+  const desktopInspector = page.locator('.desktop-inspector');
+  const sheetTrigger = page.getByRole('button', { name: 'Open run explanation' });
+  await expect(desktopInspector).toBeVisible();
+  await expect(sheetTrigger).toBeHidden();
+  expect((await header.boundingBox())!.height).toBeLessThanOrEqual(170);
+  const inspectorWidth = (await desktopInspector.boundingBox())!.width;
+  expect(inspectorWidth).toBeGreaterThanOrEqual(320);
+  expect(inspectorWidth).toBeLessThanOrEqual(520);
+  const resizer = page.getByRole('slider', { name: 'Explanation panel width' });
+  await resizer.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(resizer).toHaveAttribute('aria-valuenow', String(inspectorWidth + 16));
+  await page.keyboard.press('ArrowRight');
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await expect(page.locator('.business-node[data-run-state="current"]')).toHaveCount(1);
+  const currentStyle = await page.locator('.business-node[data-run-state="current"]').evaluate((node) => ({ border: getComputedStyle(node).borderTopWidth, outline: getComputedStyle(node).outlineStyle }));
+  expect(currentStyle).toEqual({ border: '3px', outline: 'none' });
+  const stepNumbers = await desktopInspector.locator('.step-number').allTextContents();
+  expect(stepNumbers).toEqual(stepNumbers.map((_, index) => String(index + 1)));
+  expect(await desktopInspector.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+  const edgeLabels = page.locator('.business-edge-label');
+  for (const label of await edgeLabels.allTextContents()) expect(label.length).toBeLessThanOrEqual(32);
+  const dogfoodGeometry = await canvasGeometry(page);
+  expect(dogfoodGeometry.routeCount).toBeGreaterThan(0);
+  expect(dogfoodGeometry.intrusions).toEqual([]);
+  expect(dogfoodGeometry.labelNodeCollisions).toEqual([]);
+  expect(dogfoodGeometry.labelCollisions).toEqual([]);
+  if (await page.locator('.svelte-flow__node').count() <= 8) await expect(page.locator('.business-minimap')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/visual/decision-1440-light.png', fullPage: true });
+
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await expect(desktopInspector).toBeVisible();
+  await expect(sheetTrigger).toBeHidden();
+  await expect.poll(async () => page.evaluate(() => {
+    const canvas = document.querySelector<HTMLElement>('.canvas')?.getBoundingClientRect();
+    if (!canvas) return false;
+    return [...document.querySelectorAll<HTMLElement>('.business-node')].every((node) => {
+      const box = node.getBoundingClientRect();
+      return box.left >= canvas.left && box.right <= canvas.right && box.top >= canvas.top && box.bottom <= canvas.bottom;
+    });
+  })).toBe(true);
+  await page.screenshot({ path: 'test-results/visual/decision-1024-light.png', fullPage: true });
+
+  await page.setViewportSize({ width: 900, height: 800 });
+  await expect(desktopInspector).toBeHidden();
+  await expect(sheetTrigger).toBeVisible();
+  await sheetTrigger.click();
+  const dialog = page.getByRole('dialog', { name: 'Run explanation' });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Tab');
+  expect(await page.evaluate(() => document.activeElement?.closest('.sheet-content') !== null)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(sheetTrigger).toBeFocused();
+  await sheetTrigger.click();
+  await expect(dialog).toBeVisible();
+  await page.locator('.sheet-overlay').click({ position: { x: 10, y: 10 } });
+  await expect(dialog).toBeHidden();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(sheetTrigger).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual/decision-390-closed-light.png', fullPage: true });
+  await sheetTrigger.click();
+  await expect(dialog).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  const sheetBox = (await dialog.boundingBox())!;
+  expect(sheetBox.x).toBeGreaterThanOrEqual(0);
+  expect(sheetBox.x + sheetBox.width).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: 'test-results/visual/decision-390-sheet-light.png', fullPage: true });
+  await page.keyboard.press('Escape');
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await expect(desktopInspector).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual/decision-1440-dark.png', fullPage: true });
+});
+
+test('renders the complete generated node grammar in both themes', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedNodeGrammarFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(7, { timeout: 15_000 });
+  for (const kind of ['entry', 'predicate', 'choice', 'computation', 'dispatch', 'outcome', 'coverage_gap']) {
+    await expect(page.locator(`.business-node--${kind}`)).toBeVisible();
+  }
+  const grammar = await page.evaluate(() => ({
+    entryRadius: getComputedStyle(document.querySelector<HTMLElement>('.business-node--entry')!).borderRadius,
+    choiceClip: getComputedStyle(document.querySelector<HTMLElement>('.business-node--choice')!).clipPath,
+    dispatchClip: getComputedStyle(document.querySelector<HTMLElement>('.business-node--dispatch')!).clipPath,
+    gapClip: getComputedStyle(document.querySelector<HTMLElement>('.business-node--coverage_gap')!).clipPath,
+    outcomeRadius: getComputedStyle(document.querySelector<HTMLElement>('.business-node--outcome')!).borderRadius,
+    colors: [...document.querySelectorAll<HTMLElement>('.business-node')].map((node) => getComputedStyle(node).getPropertyValue('--node-color')),
+    borders: [...document.querySelectorAll<HTMLElement>('.business-node')].map((node) => getComputedStyle(node).borderTopWidth),
+    handles: [...document.querySelectorAll<HTMLElement>('.business-handle')].map((handle) => getComputedStyle(handle).opacity)
+  }));
+  expect(grammar.entryRadius).not.toBe('12px');
+  expect(grammar.choiceClip).not.toBe('none');
+  expect(grammar.dispatchClip).not.toBe('none');
+  expect(grammar.gapClip).not.toBe('none');
+  expect(grammar.outcomeRadius).not.toBe('12px');
+  expect(new Set(grammar.colors).size).toBe(7);
+  expect(grammar.borders.every((width) => width === '1px')).toBe(true);
+  expect(grammar.handles.every((opacity) => opacity === '0')).toBe(true);
+  await page.screenshot({ path: 'test-results/visual/node-grammar-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/node-grammar-1440-dark.png', fullPage: true });
+  await page.emulateMedia({ colorScheme: 'light', forcedColors: 'active', reducedMotion: 'reduce' });
+  await page.screenshot({ path: 'test-results/visual/node-grammar-1440-monochrome.png', fullPage: true });
+});
+
+test('keeps a generated 250-node graph navigable', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedGraphFile(250));
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(250, { timeout: 15_000 });
+  await expect(page.locator('.business-minimap')).toHaveCount(0);
+  await expect(page.getByLabel('250-node graph navigation')).toContainText('Search to jump');
+  await page.getByPlaceholder('Find a node').fill('node-249');
+  await page.getByPlaceholder('Find a node').press('Enter');
+  await expect(page.getByRole('status')).toContainText('Focused generated outcome 249');
+  await expect.poll(async () => page.evaluate(() => {
+    const canvas = document.querySelector<HTMLElement>('.preview-canvas')?.getBoundingClientRect();
+    const node = document.querySelector<HTMLElement>('.svelte-flow__node[data-id="node-249"]')?.getBoundingClientRect();
+    return Boolean(canvas && node && node.width > 100 && node.left >= canvas.left && node.right <= canvas.right && node.top >= canvas.top && node.bottom <= canvas.bottom);
+  })).toBe(true);
+  await page.screenshot({ path: 'test-results/visual/graph-250-focused.png', fullPage: true });
+});
+
+test('previews the stable business graph V1 contract from the repository', async ({ page }) => {
+  const graphPath = resolve('..', 'conformance/spring-petclinic/src/test/resources/oracles/owner-search-business.json');
+  const document = JSON.parse(await readFile(graphPath, 'utf8')) as { decision: string; nodes: unknown[]; edges: unknown[] };
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(graphPath);
+  await expect(page.getByRole('heading', { name: document.decision })).toBeVisible();
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(document.nodes.length, { timeout: 15_000 });
+  await expect(page.locator('path[data-route-edge]')).toHaveCount(document.edges.length);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  expect(geometry.parallelRoutes.length).toBeGreaterThan(0);
+  for (const group of geometry.parallelRoutes) expect(group.distinctPaths).toBe(group.ids.length);
+  await mkdir('test-results/visual', { recursive: true });
+  await page.screenshot({ path: 'test-results/visual/business-v1-preview-light.png', fullPage: true });
+});
+
+test('renders branching and parallel routes without overlap in both themes', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(generatedBranchingGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
+  await expect(page.locator('path[data-route-edge]')).toHaveCount(5);
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  expect(geometry.parallelRoutes).toHaveLength(1);
+  expect(geometry.parallelRoutes[0].distinctPaths).toBe(geometry.parallelRoutes[0].ids.length);
+  expect(geometry.handleOpacity.every((opacity) => opacity === '0')).toBe(true);
+  await page.screenshot({ path: 'test-results/visual/branch-routes-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/branch-routes-1440-dark.png', fullPage: true });
+});
+
+test('renders a twelve-source convergence as one inspectable junction', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(fanInGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(14, { timeout: 15_000 });
+  await expect(page.locator('.svelte-flow__edge')).toHaveCount(24);
+  const junction = page.locator('[data-junction]');
+  const trunk = page.locator('[data-shared-segment]');
+  await expect(junction).toHaveCount(1);
+  await expect(junction).toHaveAttribute('data-member-count', '12');
+  await expect(trunk).toHaveCount(1);
+  await expect(trunk).toHaveAttribute('data-member-count', '12');
+  await page.locator('.svelte-flow__edge[data-id="edge-merge-0"]').focus();
+  await expect(trunk).toHaveClass(/shared-segment--inspect/);
+  await expect(junction).toHaveClass(/junction--inspect/);
+  await expect(page.getByText('12 routes converge before combined result.')).toBeAttached();
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/fan-in-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/fan-in-1440-dark.png', fullPage: true });
+  await page.getByPlaceholder('Find a node').fill('combined result');
+  await page.getByPlaceholder('Find a node').press('Enter');
+  await expect(page.getByRole('status')).toContainText('Focused combined result');
+  await page.screenshot({ path: 'test-results/visual/fan-in-focused-1440-dark.png', fullPage: true });
+});
+
+test('renders duplicate context and a cycle without changing semantic node count', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(duplicateGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
+  await expect(page.getByText('1 of 2')).toBeVisible();
+  await expect(page.getByText('2 of 2')).toBeVisible();
+  await expect(page.locator('.svelte-flow__node[data-id="first-check"]')).toHaveAttribute('aria-label', /Node first-check/);
+  await page.screenshot({ path: 'test-results/visual/duplicates-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/duplicates-1440-dark.png', fullPage: true });
+
+  await page.getByRole('button', { name: 'Choose another file' }).click();
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(cycleGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(4, { timeout: 15_000 });
+  await expect(page.locator('.structural-region')).toHaveCount(1);
+  await expect(page.locator('.structural-region text')).toHaveText('Cycle');
+  await expect(page.locator('.semantic-node-list summary')).toHaveText('Accessible graph list (4 nodes, 4 edges)');
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/cycle-1440-dark.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use light theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/cycle-1440-light.png', fullPage: true });
+});
+
+test('keeps a proven long route in a separate continuation corridor', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(longShortcutGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(6, { timeout: 15_000 });
+  await expect(page.locator('path.long-route')).toHaveCount(1);
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  expect(geometry.labelNodeCollisions).toEqual([]);
+  expect(geometry.labelCollisions).toEqual([]);
+  expect(geometry.routeLabelCollisions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/long-route-1440-light.png', fullPage: true });
+});
+
+test('renders crossings as bridges without adding graph nodes', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/graphs');
+  await page.getByLabel('Graph JSON', { exact: true }).setInputFiles(crossingGraphFile());
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(7, { timeout: 15_000 });
+  await expect(page.locator('.svelte-flow__edge')).toHaveCount(12);
+  await expect(page.locator('[data-route-crossing]').first()).toBeAttached();
+  await expect(page.locator('.semantic-node-list summary')).toHaveText('Accessible graph list (7 nodes, 12 edges)');
+  const geometry = await canvasGeometry(page);
+  expect(geometry.intrusions).toEqual([]);
+  await page.screenshot({ path: 'test-results/visual/crossings-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.screenshot({ path: 'test-results/visual/crossings-1440-dark.png', fullPage: true });
+});

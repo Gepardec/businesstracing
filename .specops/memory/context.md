@@ -521,3 +521,39 @@ stays passive: the container injects the bean or proxy and implementation entry 
 Custom scopes, stereotypes, priority and XML alternatives, dynamic lookup, interceptor bindings,
 transactions, security, validation, events, lifecycle callbacks, timers, JAX-RS, and JPA boundaries
 have executable regression coverage. The local pull-request gate and GitHub Actions run 116 passed.
+
+### normalize-nested-map-transfer-label (bugfix) — 2026-08-19
+
+Completed one task. Nested mapped collection transfers now use a guarded business label with
+`converted` and no technical map term. The pinned Hogarama reactor generated two complete V1 JSON
+graphs. The Mega conformance harness generated five complete V1 JSON graphs and the shared schema.
+The full pull-request gate passed with all pinned corpora and no new dependency.
+
+### static-graph-layout-quality
+
+Completed all six tasks. The Svelte viewer now analyzes topology before placement and uses a
+deterministic four-side orthogonal router. Direct branches stay local. Long and cycle edges use
+explicit corridors. Branch labels avoid nodes, other labels, and unrelated routes. Large fan-in
+uses stable feeder slots, one presentation-only junction, and one shared trunk. Crossings use
+bridges and do not change graph connectivity. Duplicate nodes show stable occurrence context.
+
+The JSON, SQL, HTTP, storage, node-ID, and edge-ID contracts did not change. Svelte check, 43 unit
+tests, the production build, 10 browser journeys, the generated 250-node gate, both graph V1
+formats, and generated Fachtracing dogfood pass. Four PostgreSQL-backed run-detail journeys and
+final user design approval remain deferred environment or review gates.
+
+### architecture-dojo-anspruch-conformance (feature) — 2026-08-26
+
+Completed two tasks. A new external conformance adapter analyzes the unchanged complete Onion
+solution in `Gepardec/ArchitectureDojoAnspruch` and generates two complete V1 business graphs from
+39 Java source files. Entry-point configuration selects source boundaries only; the generic analyzer
+derives all 60 business nodes and 88 business edges without a topology oracle or fixed diagram.
+
+The pinned application tests, dependency-free schema checks, PR 33 viewer checks, exact generated
+file parsing, and full Fachtracing pull-request gate passed. No dependency or production behavior
+was added.
+
+Version 2 pins the newer `feature/solution1` revision. It generates two complete graphs from 28
+Java source files with 80 business nodes and 113 business edges. A generic analyzer correction now
+merges mutation effects from all source-visible concrete implementations of an interface call. The
+regression test, viewer checks, direct file parsing, and full repository verification pass.

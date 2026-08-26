@@ -141,9 +141,33 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: fachtracing-viewer/package-lock.json
       - name: Run PostgreSQL storage contract
         env:
           FACHTRACING_POSTGRES_URL: jdbc:postgresql://localhost:5432/fachtracing
           FACHTRACING_POSTGRES_USER: fachtracing
           FACHTRACING_POSTGRES_PASSWORD: fachtracing
         run: ./scripts/verify-postgres.sh
+      - name: Run viewer verification
+        run: ./scripts/verify-viewer.sh
+      - name: Generate Fachtracing viewer dogfood
+        run: ./scripts/verify-viewer-dogfood.sh
+      - name: Run viewer PostgreSQL journey
+        working-directory: fachtracing-viewer
+        env:
+          FACHTRACING_DATABASE_URL: postgresql://fachtracing:fachtracing@localhost:5432/fachtracing
+          FACHTRACING_DOGFOOD_DIRECTORY: ${{ github.workspace }}/target/viewer-dogfood
+          PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/google-chrome
+        run: npm run test:browser
+      - name: Upload Fachtracing viewer proof
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fachtracing-viewer-dogfood-${{ github.run_id }}
+          path: fachtracing-viewer/test-results
+          if-no-files-found: error
+          retention-days: 14

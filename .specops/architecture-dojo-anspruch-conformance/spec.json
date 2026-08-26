@@ -1,0 +1,59 @@
+{
+  "id": "architecture-dojo-anspruch-conformance",
+  "type": "feature",
+  "status": "completed",
+  "version": 2,
+  "created": "2026-08-26T09:02:22Z",
+  "updated": "2026-08-26T20:10:08Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "It provides the V1 business model, projector, renderers, exporter, and artifact guard.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "spring-petclinic-business-conformance",
+    "keycloak-business-graph-json-output",
+    "frontend-flow-explorer"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-26T09:02:22Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 10,
+        "designFidelity": 10,
+        "regressionSafety": 10,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-26T20:10:08Z"
+    }
+  },
+  "metrics": {
+    "filesChanged": 17,
+    "tasksCompleted": 5,
+    "acceptanceCriteriaVerified": 6,
+    "specDurationMinutes": 27
+  }
+}

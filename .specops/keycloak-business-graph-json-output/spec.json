@@ -1,0 +1,58 @@
+{
+  "id": "keycloak-business-graph-json-output",
+  "type": "feature",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-21T11:27:45Z",
+  "updated": "2026-08-21T11:36:06Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "generic-business-graph-projection",
+      "reason": "It defines the V1 business graph JSON contract and schema generator.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "generated-keycloak-diagram-correctness",
+    "normalize-nested-map-transfer-label"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 10
+      },
+      "evaluatedAt": "2026-08-21T11:36:06Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionality": 10,
+        "designFidelity": 10,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-21T11:36:06Z"
+    }
+  },
+  "metrics": {
+    "filesChanged": 2,
+    "tasksCompleted": 1,
+    "acceptanceCriteriaVerified": 4,
+    "specDurationMinutes": 9
+  }
+}

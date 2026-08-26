@@ -1,0 +1,120 @@
+import { describe, expect, it } from 'vitest';
+import { computeLayout } from './layout-engine';
+import { balancedBranchFixture, chainFixture, crossingFixture, cycleFixture, diamondFixture, duplicateLabelFixture, fanInFixture, fixedPortDetourFixture, longShortcutFixture, multipleEntryFixture } from './graph-fixtures';
+import { parallelClearanceViolations } from './route-quality';
+
+describe('static graph route planning', () => {
+  it('uses compact ranks for a chain', async () => {
+    const layout = await computeLayout(chainFixture());
+    expect(new Set(layout.nodes.map((node) => node.x)).size).toBe(1);
+    expect(layout.metrics.nodeOverlaps).toBe(0);
+    expect(layout.metrics.unrelatedNodeIntrusions).toBe(0);
+  });
+
+  it('uses four-side ports when a side route is shorter', async () => {
+    const layout = await computeLayout(fixedPortDetourFixture());
+    const sidePorts = layout.edges.filter((edge) => edge.sourcePort.side === 'east' || edge.sourcePort.side === 'west');
+    expect(sidePorts.length).toBeGreaterThan(0);
+    expect(layout.metrics.unrelatedNodeIntrusions).toBe(0);
+  });
+
+  it('keeps the first route segment outside its source node', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    for (const route of layout.edges) {
+      const [port, lead] = route.points;
+      if (route.sourcePort.side === 'east') expect(lead.x).toBeGreaterThan(port.x);
+      if (route.sourcePort.side === 'west') expect(lead.x).toBeLessThan(port.x);
+      if (route.sourcePort.side === 'north') expect(lead.y).toBeLessThan(port.y);
+      if (route.sourcePort.side === 'south') expect(lead.y).toBeGreaterThan(port.y);
+    }
+  });
+
+  it('keeps normal routes inside the graph instead of using remote outer corridors', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    for (const route of layout.edges.filter((edge) => !edge.long)) {
+      expect(route.points.every((point) => point.x >= 0 && point.x <= layout.width && point.y >= 0 && point.y <= layout.height), route.id).toBe(true);
+    }
+  });
+
+  it('reserves the outer corridor for proven long routes', async () => {
+    const layout = await computeLayout(longShortcutFixture());
+    const longRoutes = layout.edges.filter((edge) => edge.long);
+    expect(longRoutes.length).toBeGreaterThan(0);
+    expect(longRoutes.every((route) => route.corridor === 'outer')).toBe(true);
+    expect(layout.metrics.longEdgeCorridorViolations).toBe(0);
+  });
+
+  it('keeps sibling roots on one rank and centers them around the source', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    const nodeById = new Map(layout.nodes.map((node) => [node.id, node]));
+    expect(nodeById.get('yes-1')!.y).toBe(nodeById.get('no-1')!.y);
+    const siblingCenter = (nodeById.get('yes-1')!.x + nodeById.get('no-1')!.x + nodeById.get('yes-1')!.width) / 2;
+    expect(siblingCenter).toBe(nodeById.get('root')!.x + nodeById.get('root')!.width / 2);
+  });
+
+  it('places multiple entries in the first rank and outcomes last', async () => {
+    const layout = await computeLayout(multipleEntryFixture());
+    const nodeById = new Map(layout.nodes.map((node) => [node.id, node]));
+    expect(nodeById.get('entry-a')!.y).toBe(nodeById.get('entry-b')!.y);
+    expect(nodeById.get('outcome-a')!.y).toBeGreaterThan(nodeById.get('rule-a')!.y);
+    expect(nodeById.get('outcome-b')!.y).toBeGreaterThan(nodeById.get('rule-b')!.y);
+  });
+
+  it('shows a multi-node cycle as one presentation-only region', async () => {
+    const layout = await computeLayout(cycleFixture());
+    expect(layout.regions.filter((region) => region.label === 'Cycle')).toHaveLength(1);
+    expect(layout.regions[0].nodeIds).toEqual(['rule-a', 'rule-b']);
+    expect(layout.nodes).toHaveLength(4);
+    const loopback = layout.edges.find((edge) => edge.id === 'edge-002')!;
+    expect(loopback.long).toBe(true);
+    expect(loopback.corridor).toBe('cycle');
+    const cycleNodes = layout.nodes.filter((node) => ['rule-a', 'rule-b'].includes(node.id));
+    const cycleTop = Math.min(...cycleNodes.map((node) => node.y));
+    const cycleBottom = Math.max(...cycleNodes.map((node) => node.y + node.height));
+    expect(loopback.points.some((point) => point.y < cycleTop || point.y > cycleBottom)).toBe(true);
+    expect(layout.metrics.labelCollisions).toBe(0);
+  });
+
+  it('keeps branch labels visible and source-adjacent', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    const labels = layout.edges.map((edge) => edge.displayLabel).filter(Boolean);
+    expect(labels).toEqual(expect.arrayContaining(['Yes', 'No', 'accepted', 'declined']));
+    expect(layout.edges.filter((edge) => edge.sourcePort.nodeId === 'root').every((edge) => edge.displayLabel !== null)).toBe(true);
+    expect(layout.metrics.labelCollisions).toBe(0);
+    expect(layout.metrics.branchRegionViolations).toBe(0);
+    expect(layout.metrics.avoidableCrossings).toBe(0);
+    expect(parallelClearanceViolations(layout.edges)).toEqual([]);
+  });
+
+  it('creates one presentation junction for large fan-in', async () => {
+    const layout = await computeLayout(fanInFixture());
+    expect(layout.junctions).toHaveLength(1);
+    expect(layout.sharedSegments).toHaveLength(1);
+    expect(layout.junctions[0].incomingEdgeIds).toHaveLength(12);
+    expect(layout.edges.filter((edge) => edge.sharedSegmentIds.length > 0)).toHaveLength(12);
+    expect(layout.metrics.labelCollisions).toBe(0);
+    expect(parallelClearanceViolations(layout.edges)).toEqual([]);
+  });
+
+  it('does not create a junction for a two-way diamond', async () => {
+    const layout = await computeLayout(diamondFixture());
+    expect(layout.junctions).toHaveLength(0);
+    expect(layout.sharedSegments).toHaveLength(0);
+  });
+
+  it('classifies non-planar route intersections as crossings', async () => {
+    const layout = await computeLayout(crossingFixture());
+    expect(layout.crossings.length).toBeGreaterThan(0);
+    expect(layout.crossings.every((crossing) => crossing.overEdgeId !== crossing.underEdgeId)).toBe(true);
+    expect(layout.metrics.avoidableCrossings).toBe(0);
+    expect(layout.metrics.unavoidableCrossings).toBe(layout.crossings.length);
+    expect(layout.metrics.unrelatedNodeIntrusions).toBe(0);
+  });
+
+  it('keeps duplicate occurrence markers stable', async () => {
+    const first = await computeLayout(duplicateLabelFixture());
+    const second = await computeLayout(duplicateLabelFixture());
+    expect(second.nodes).toEqual(first.nodes);
+    expect(first.nodes.find((node) => node.id === 'first-check')?.occurrence).toEqual({ index: 1, total: 2 });
+  });
+});

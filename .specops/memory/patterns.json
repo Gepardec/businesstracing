@@ -3,7 +3,7 @@
   "decisionCategories": [
     {
       "category": "reference-application-isolation",
-      "count": 3,
+      "count": 4,
       "pattern": "Keep pinned brownfield knowledge in conformance assertions; never use it as generated topology, and add only target-neutral production support."
     },
     {
@@ -13,12 +13,12 @@
     },
     {
       "category": "multi-format-projection",
-      "count": 2,
+      "count": 3,
       "pattern": "Resolve graph semantics once and keep text formats as deterministic dependency-free projections."
     },
     {
       "category": "business-vocabulary-normalization",
-      "count": 7,
+      "count": 8,
       "pattern": "Preserve result-relevant optionality as absent/exists, strip language- and persistence-specific vocabulary including method references, and reject structural terms only in their structural context."
     },
     {
@@ -90,9 +90,44 @@
       "category": "automatic-business-output-boundary",
       "count": 2,
       "pattern": "Keep automatic endpoint files redacted and business-safe while exact developer records retain detailed result and coverage diagnostics."
+    },
+    {
+      "category": "static-graph-presentation",
+      "count": 1,
+      "pattern": "Analyze topology before placement, keep final route planning outside the renderer, and add junctions, crossings, regions, and duplicate context as presentation-only data that preserves exact graph IDs."
     }
   ],
   "fileOverlaps": [
+    {
+      "file": "fachtracing-viewer/src/lib/graph/FlowCanvas.svelte",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/src/lib/graph/BusinessNode.svelte",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/src/lib/graph/BusinessEdge.svelte",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/src/lib/graph/layout-definition.ts",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/e2e/decision-explorer.spec.ts",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
+    {
+      "file": "fachtracing-viewer/README.md",
+      "specs": ["frontend-flow-explorer", "static-graph-layout-quality"],
+      "count": 2
+    },
     {
       "file": "fachtracing-agent/src/main/java/at/gepardec/fachtracing/agent/BusinessTraceFileSink.java",
       "specs": ["configured-endpoint-business-tracing", "keycloak-live-business-output-correctness"],
@@ -115,8 +150,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessGraphProjector.java",
-      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness"],
-      "count": 2
+      "specs": ["generic-business-graph-projection", "generated-keycloak-diagram-correctness", "normalize-nested-map-transfer-label"],
+      "count": 3
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/business/BusinessLogicArtifactGuard.java",
@@ -186,9 +221,10 @@
         "path-sensitive-definition-integration",
         "external-method-semantic-contracts",
         "hogajama-strict-aggregate-regression",
-        "keycloak-live-business-output-correctness"
+        "keycloak-live-business-output-correctness",
+        "architecture-dojo-anspruch-conformance"
       ],
-      "count": 22
+      "count": 23
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/developer/DeveloperGraphExporter.java",
@@ -217,8 +253,8 @@
     },
     {
       "file": "fachtracing-engine/src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java",
-      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "keycloak-live-business-output-correctness", "cdi-dispatch-selection-correctness", "jakarta-ee-cdi-soap-semantics"],
-      "count": 23
+      "specs": ["generic-tracing-walking-skeleton", "reactor-wide-implementation-resolution", "generic-java-extractor-completion", "release-explanation-async-correctness", "jdk-mutation-alias-effect-correctness", "annotation-processor-output-analysis", "fix-jakarta-platform-call-completeness", "conditional-alias-method-reference-effects", "review-followup-correctness", "fix-hogarama-aggregate-completeness", "explicit-opaque-library-boundaries", "context-aware-operation-labels", "context-label-symbol-correctness", "integrate-main-pr15", "implicit-field-local-callback-correctness", "explainable-relevance-and-polymorphic-dispatch", "result-relevance-review-findings", "path-sensitive-definition-integration", "external-method-semantic-contracts", "hogajama-strict-aggregate-regression", "keycloak-live-business-output-correctness", "cdi-dispatch-selection-correctness", "jakarta-ee-cdi-soap-semantics", "architecture-dojo-anspruch-conformance"],
+      "count": 24
     },
     {
       "file": "docs/supported-java-constructs.md",
