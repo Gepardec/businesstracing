@@ -64,3 +64,6 @@ Implementation is pending.
   journey after the independent viewer gate consumed 50 seconds.
 - Version 3 focused budget, workflow routing, and repository integrity contracts: PASS with six
   parallel three-minute jobs.
+- PR run `33008335544`: the split completed all five independent jobs, but PostgreSQL exposed an
+  accidental dependency on the moved viewer step for `node_modules`; Playwright did not start.
+- PostgreSQL now installs its own locked Node dependencies before the browser journey.

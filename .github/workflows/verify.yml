@@ -167,6 +167,9 @@ jobs:
         run: ./scripts/verify-postgres.sh
       - name: Generate Fachtracing viewer dogfood
         run: ./scripts/verify-viewer-dogfood.sh
+      - name: Install viewer dependencies
+        working-directory: fachtracing-viewer
+        run: npm ci --ignore-scripts
       - name: Run viewer PostgreSQL journey
         working-directory: fachtracing-viewer
         env:

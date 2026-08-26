@@ -64,3 +64,6 @@
   during its final browser journey.
 - Task 3 follow-up: move standalone viewer verification to a sixth parallel job, keep the
   three-minute hard limit, and rerun all hosted checks.
+- Task 3 remote follow-up: run `33008335544` proved the job split but exposed that PostgreSQL had
+  relied on the moved viewer step for `node_modules`. Add an explicit locked dependency install
+  before Playwright and rerun.

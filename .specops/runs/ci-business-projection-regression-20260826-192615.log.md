@@ -49,3 +49,6 @@ phases: [1, 2, 3]
 - Finding: standalone viewer verification consumes 50 seconds before the database journey.
 - Action: split viewer verification into a sixth parallel three-minute job; focused workflow
   contracts pass.
+- Result: remote run `33008335544` passed five jobs; PostgreSQL failed before Playwright because
+  the moved viewer step no longer installed `node_modules` in that job.
+- Action: add an explicit locked viewer dependency install to PostgreSQL.
