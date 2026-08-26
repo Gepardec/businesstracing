@@ -52,3 +52,6 @@ phases: [1, 2, 3]
 - Result: remote run `33008335544` passed five jobs; PostgreSQL failed before Playwright because
   the moved viewer step no longer installed `node_modules` in that job.
 - Action: add an explicit locked viewer dependency install to PostgreSQL.
+- Result: remote run `33008631033` passed five jobs; PostgreSQL failed before its server started
+  because the moved viewer step had also produced the `build` directory.
+- Action: add an explicit viewer build before the PostgreSQL browser journey.

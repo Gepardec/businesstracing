@@ -170,6 +170,9 @@ jobs:
       - name: Install viewer dependencies
         working-directory: fachtracing-viewer
         run: npm ci --ignore-scripts
+      - name: Build viewer application
+        working-directory: fachtracing-viewer
+        run: npm run build
       - name: Run viewer PostgreSQL journey
         working-directory: fachtracing-viewer
         env:

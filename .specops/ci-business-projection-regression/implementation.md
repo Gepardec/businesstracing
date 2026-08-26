@@ -67,3 +67,5 @@
 - Task 3 remote follow-up: run `33008335544` proved the job split but exposed that PostgreSQL had
   relied on the moved viewer step for `node_modules`. Add an explicit locked dependency install
   before Playwright and rerun.
+- Task 3 remote follow-up: run `33008631033` then exposed the same old step dependency for the
+  production viewer build. Build the viewer explicitly before Playwright and rerun.

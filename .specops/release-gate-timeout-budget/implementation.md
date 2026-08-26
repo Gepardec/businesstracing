@@ -67,3 +67,6 @@ Implementation is pending.
 - PR run `33008335544`: the split completed all five independent jobs, but PostgreSQL exposed an
   accidental dependency on the moved viewer step for `node_modules`; Playwright did not start.
 - PostgreSQL now installs its own locked Node dependencies before the browser journey.
+- PR run `33008631033`: all independent jobs passed; PostgreSQL installed Playwright but exposed a
+  second accidental dependency on the moved viewer step for the production `build` directory.
+- PostgreSQL now builds the viewer explicitly before it starts Playwright's Node web server.
