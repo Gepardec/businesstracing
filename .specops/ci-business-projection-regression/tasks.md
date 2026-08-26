@@ -84,7 +84,7 @@
 
 ### Task 3: Align release proof and verify CI
 
-**Status:** In Progress
+**Status:** Completed
 **Estimated Effort:** M
 **Dependencies:** Task 2
 **Priority:** High
@@ -107,7 +107,7 @@ gates.
 
 - [x] Self-tracing proves discovery and intentional technical-choice removal.
 - [x] Mega, PetClinic, viewer dogfood, and pull-request gates pass.
-- [ ] All required GitHub checks pass on the pushed commit.
+- [x] All required GitHub checks pass on the pushed commit.
 
 **Files to Modify:**
 
@@ -126,7 +126,7 @@ gates.
 - [x] Self-tracing verification.
 - [x] Viewer dogfood verification.
 - [x] Full pull-request verifier.
-- [ ] GitHub pull-request checks.
+- [x] GitHub pull-request checks.
 
 ## Implementation Order
 
@@ -137,7 +137,7 @@ gates.
 ## Progress Tracking
 
 - Total Tasks: 3
-- Completed: 2
-- In Progress: 1
+- Completed: 3
+- In Progress: 0
 - Blocked: 0
 - Pending: 0

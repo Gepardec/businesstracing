@@ -24,12 +24,12 @@
 
 **Acceptance Criteria:**
 
-- [ ] The old workflow fails the maximum budget contract.
-- [ ] Five required jobs have a three-minute timeout and PostgreSQL has a five-minute timeout.
-- [ ] Required work runs in parallel for all workflow events.
-- [ ] The hosted workflow does not call the long release gate.
-- [ ] Local core and conformance checks pass.
-- [ ] Hosted PR jobs pass within their configured limits.
+- [x] The old workflow fails the maximum budget contract.
+- [x] Five required jobs have a three-minute timeout and PostgreSQL has a five-minute timeout.
+- [x] Required work runs in parallel for all workflow events.
+- [x] The hosted workflow does not call the long release gate.
+- [x] Local core and conformance checks pass.
+- [x] Hosted PR jobs pass within their configured limits.
 - [ ] The final `main` jobs pass within their configured limits.
 
 ## Progress

@@ -578,3 +578,16 @@ stays passive: the container injects the bean or proxy and implementation entry 
 Custom scopes, stereotypes, priority and XML alternatives, dynamic lookup, interceptor bindings,
 transactions, security, validation, events, lifecycle callbacks, timers, JAX-RS, and JPA boundaries
 have executable regression coverage. The local pull-request gate and GitHub Actions run 116 passed.
+
+### ci-business-projection-regression (bugfix) — 2026-08-26
+
+Completed all three tasks. Aggregate qualifiers use neutral em-dash punctuation, direct predicate
+and action semantics outrank architecture suffixes, and every exact failure terminal remains a
+business result. Technical choices remain outside business output and have explicit projection
+audit evidence. Three source-reviewed Mega inventories now include the exact aggregate and return
+evidence present in their pinned source.
+
+Required CI now runs core, Mega, PetClinic, Jakarta EE, viewer, and PostgreSQL work in six parallel
+jobs. Five jobs have three-minute limits. The integrated PostgreSQL, dogfood, viewer-build, and
+17-test browser journey has a five-minute limit. GitHub Actions run `33010762980` passed all six
+jobs; PostgreSQL completed in 3 minutes 15 seconds. No dependency or public contract changed.

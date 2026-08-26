@@ -2,10 +2,10 @@
   {
     "id": "ci-business-projection-regression",
     "type": "bugfix",
-    "status": "implementing",
+    "status": "completed",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-26T20:30:00Z"
+    "updated": "2026-08-26T20:34:00Z"
   },
   {
     "id": "compact-graph-reading-and-business-phrasing",
@@ -469,7 +469,7 @@
     "status": "implementing",
     "version": 4,
     "author": "lucostus",
-    "updated": "2026-08-26T20:30:00Z"
+    "updated": "2026-08-26T20:34:00Z"
   },
   {
     "id": "configured-endpoint-business-tracing",

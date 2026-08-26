@@ -152,14 +152,14 @@ evidence, and update their documented hashes.
 
 - [x] Regression Risk Analysis is complete for High severity.
 - [x] The current CI failures are reproduced and tied to concrete assertions.
-- [ ] WHEN aggregate evidence includes a qualifier THE SYSTEM SHALL render it without parentheses
+- [x] WHEN aggregate evidence includes a qualifier THE SYSTEM SHALL render it without parentheses
   or call syntax and SHALL retain every source-derived role.
-- [ ] WHEN an exact terminal edge represents failure THE SYSTEM SHALL create a business result even
+- [x] WHEN an exact terminal edge represents failure THE SYSTEM SHALL create a business result even
   when the source owner has an infrastructure-role suffix.
-- [ ] WHEN a technical choice is reduced THE SYSTEM SHALL keep it out of the business graph and
+- [x] WHEN a technical choice is reduced THE SYSTEM SHALL keep it out of the business graph and
   SHALL record `REMOVED / TECHNICAL_CHOICE` in the projection audit.
-- [ ] All Must-Test unchanged behaviors pass.
-- [ ] All required pull-request checks are successful on the pushed commit.
+- [x] All Must-Test unchanged behaviors pass.
+- [x] All required pull-request checks are successful on the pushed commit.
 
 ## Team Conventions
 

@@ -1480,6 +1480,36 @@
       "task": "Task 5",
       "date": "2026-08-18",
       "completedAt": "2026-08-18T11:08:32Z"
+    },
+    {
+      "specId": "ci-business-projection-regression",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Prefer direct business semantics to owner suffixes",
+      "rationale": "A predicate, material action, or terminal edge is stronger evidence than an enclosing controller or infrastructure class name.",
+      "task": "Task 2",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T20:34:00Z"
+    },
+    {
+      "specId": "ci-business-projection-regression",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Test graph presentation in its declared view mode",
+      "rationale": "Explore renders a local context, while Overview renders the full readable presentation and supports full node and route assertions.",
+      "task": "Task 3",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T20:34:00Z"
+    },
+    {
+      "specId": "ci-business-projection-regression",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Use one larger budget only for the integrated PostgreSQL boundary",
+      "rationale": "Independent jobs finish within three minutes, while database startup, dogfood, viewer build, and all browser tests form one five-minute integration journey.",
+      "task": "Task 3",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T20:34:00Z"
     }
   ]
 }

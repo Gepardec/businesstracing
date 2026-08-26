@@ -75,16 +75,16 @@ dogfood and all browser tests in PostgreSQL, and keep the independent viewer gat
 
 ## Acceptance Criteria
 
-- [ ] THE WORKFLOW SHALL give each independent job a three-minute timeout.
-- [ ] THE WORKFLOW SHALL give PostgreSQL integration a five-minute timeout.
-- [ ] THE BUDGET CONTRACT SHALL reject a timeout above the job-specific limit.
-- [ ] THE WORKFLOW SHALL run core, Mega, PetClinic, Jakarta EE, viewer, and PostgreSQL checks in
+- [x] THE WORKFLOW SHALL give each independent job a three-minute timeout.
+- [x] THE WORKFLOW SHALL give PostgreSQL integration a five-minute timeout.
+- [x] THE BUDGET CONTRACT SHALL reject a timeout above the job-specific limit.
+- [x] THE WORKFLOW SHALL run core, Mega, PetClinic, Jakarta EE, viewer, and PostgreSQL checks in
   parallel.
-- [ ] THE WORKFLOW SHALL run the same required jobs for pull requests and release events.
-- [ ] THE REQUIRED WORKFLOW SHALL NOT call the 600-second release gate.
-- [ ] THE OPTIONAL RELEASE COMMAND SHALL remain available for manual long evidence.
-- [ ] THE SYSTEM SHALL pass local and hosted checks.
-- [ ] EACH HOSTED REQUIRED JOB SHALL complete within its configured execution limit.
+- [x] THE WORKFLOW SHALL run the same required jobs for pull requests and release events.
+- [x] THE REQUIRED WORKFLOW SHALL NOT call the 600-second release gate.
+- [x] THE OPTIONAL RELEASE COMMAND SHALL remain available for manual long evidence.
+- [x] THE SYSTEM SHALL pass local and hosted checks.
+- [x] EACH HOSTED REQUIRED JOB SHALL complete within its configured execution limit.
 
 ## Scope Assessment
 
