@@ -372,7 +372,7 @@ test('keeps the generated decision explanation clear at every supported width', 
   const dialog = page.getByRole('dialog', { name: 'Run explanation' });
   await expect(dialog).toBeVisible();
   await page.keyboard.press('Tab');
-  expect(await page.evaluate(() => document.activeElement?.closest('.sheet-content') !== null)).toBe(true);
+  expect(await page.evaluate(() => document.activeElement?.closest('[data-slot="sheet-content"]') !== null)).toBe(true);
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(sheetTrigger).toBeFocused();
@@ -884,7 +884,7 @@ test('uses the shadcn-svelte control system on the application pages', async ({ 
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   await page.goto('/runs');
-  await expect(page.locator('[data-slot="card"]')).toHaveCount(2);
+  await expect(page.locator('.filter-card[data-slot="card"]')).toHaveCount(1);
   await expect(page.locator('[data-slot="input"]')).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'Search' })).toHaveAttribute('data-slot', 'button');
   await page.getByRole('button', { name: 'Filters' }).click();

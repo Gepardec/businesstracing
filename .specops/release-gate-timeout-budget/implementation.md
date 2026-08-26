@@ -78,3 +78,6 @@ Implementation is pending.
   pixels. The test now selects Overview before it verifies presentation counts and asserts the
   current design token.
 - Version 4 gives only PostgreSQL five minutes. It keeps all 17 browser tests.
+- PR run `33009937304`: five jobs passed and PostgreSQL finished in 2 minutes 40 seconds. The
+  browser suite reported two stale pre-shadcn selectors after 13 tests passed. The focused tests
+  now verify the sheet and filter card by their shadcn data slots.
