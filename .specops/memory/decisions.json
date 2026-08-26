@@ -1380,6 +1380,26 @@
       "task": "Tasks 3 and 6",
       "date": "2026-08-25",
       "completedAt": "2026-08-25T09:22:00Z"
+    },
+    {
+      "specId": "architecture-dojo-anspruch-conformance",
+      "specType": "feature",
+      "number": 1,
+      "decision": "Pin the complete Onion solution branch",
+      "rationale": "Repository main has no application source to analyze.",
+      "task": "Task 1",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T09:14:02Z"
+    },
+    {
+      "specId": "architecture-dojo-anspruch-conformance",
+      "specType": "feature",
+      "number": 2,
+      "decision": "Select application boundary methods only",
+      "rationale": "The analyzer must derive all downstream graph structure from source.",
+      "task": "Task 1",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T09:14:02Z"
     }
   ]
 }

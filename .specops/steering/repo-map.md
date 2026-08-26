@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-25T09:12:18Z"
-_sourceHash: "14b8c25cfb0ddad1281e1f0e7dfdac6deecd7d448eafed85d54fa990c9948c03"
+_generatedAt: "2026-08-26T09:14:02Z"
+_sourceHash: "93893dbab7903689ac53e1f136297ae58898dbe8ae3ce74b487b14f209562317"
 ---
 
 ## Project Structure Map
@@ -46,6 +46,9 @@ fachtracing/
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
     conformance-report.md
+  conformance/architecture-dojo-anspruch/
+    src/test/java/at/gepardec/fachtracing/conformance/
+    README.md
   conformance/keycloak/
     src/test/java/at/gepardec/fachtracing/conformance/
     README.md
@@ -297,6 +300,12 @@ fachtracing/
 - `target/generated/` — five structural/semantic artifacts and one runtime explanation/execution pair
 - `selection.md`, `README.md`, and `conformance-report.md`
 
+#### conformance/architecture-dojo-anspruch/ (2 files)
+
+- `src/test/java/at/gepardec/fachtracing/conformance/ArchitectureDojoAnspruchConformanceTest.java`
+  - `public final class ArchitectureDojoAnspruchConformanceTest`
+- `README.md` — pin, entry-point selection, command, and disposable output guide
+
 #### conformance/keycloak/ (3 files)
 
 - `src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java`
@@ -317,6 +326,6 @@ fachtracing/
 - `AGENTS.md`
 - `README.md`
 - `pom.xml`
-- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-keycloak.sh`, `verify-mega-backend.sh`, `verify-spring-petclinic.sh`, and `verify-release.sh`
+- `scripts/verify.sh`, `verify-self-tracing.sh`, `verify-pr.sh`, `verify-external-release.sh`, `verify-keycloak.sh`, `verify-mega-backend.sh`, `verify-spring-petclinic.sh`, `verify-architecture-dojo-anspruch.sh`, and `verify-release.sh`
 - `scripts/capture-gate-output.sh`, `test-capture-gate-output.sh`, and `verify-release-gates.sh`
 - `scripts/maven-repository-path.sh` and `test-maven-repository-path.sh`

@@ -3,7 +3,7 @@
   "decisionCategories": [
     {
       "category": "reference-application-isolation",
-      "count": 3,
+      "count": 4,
       "pattern": "Keep pinned brownfield knowledge in conformance assertions; never use it as generated topology, and add only target-neutral production support."
     },
     {
@@ -13,7 +13,7 @@
     },
     {
       "category": "multi-format-projection",
-      "count": 2,
+      "count": 3,
       "pattern": "Resolve graph semantics once and keep text formats as deterministic dependency-free projections."
     },
     {

@@ -541,3 +541,14 @@ The JSON, SQL, HTTP, storage, node-ID, and edge-ID contracts did not change. Sve
 tests, the production build, 10 browser journeys, the generated 250-node gate, both graph V1
 formats, and generated Fachtracing dogfood pass. Four PostgreSQL-backed run-detail journeys and
 final user design approval remain deferred environment or review gates.
+
+### architecture-dojo-anspruch-conformance (feature) — 2026-08-26
+
+Completed two tasks. A new external conformance adapter analyzes the unchanged complete Onion
+solution in `Gepardec/ArchitectureDojoAnspruch` and generates two complete V1 business graphs from
+39 Java source files. Entry-point configuration selects source boundaries only; the generic analyzer
+derives all 60 business nodes and 88 business edges without a topology oracle or fixed diagram.
+
+The pinned application tests, dependency-free schema checks, PR 33 viewer checks, exact generated
+file parsing, and full Fachtracing pull-request gate passed. No dependency or production behavior
+was added.

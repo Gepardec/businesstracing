@@ -187,6 +187,16 @@ Run the Jakarta EE CDI conformance command (optionally set `JAKARTAEE_REST_SAMPL
 It analyzes an unchanged, pinned Jakarta EE REST application and proves that its CDI-injected
 repository resolves to the scoped JPA implementation.
 
+Run the pinned Architecture Dojo Anspruch conformance command (optionally set
+`ARCHITECTURE_DOJO_ANSPRUCH_DIR`):
+
+```sh
+./scripts/verify-architecture-dojo-anspruch.sh
+```
+
+It generates two V1 business graph JSON documents from the unchanged complete Onion solution. See
+the [Architecture Dojo Anspruch guide](conformance/architecture-dojo-anspruch/README.md).
+
 Run the optional long load comparison (60 total disabled baseline seconds paired across ten minutes
 enabled at 1,000 requests/second):
 

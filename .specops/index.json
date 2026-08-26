@@ -469,5 +469,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-25T09:56:25Z"
+  },
+  {
+    "id": "architecture-dojo-anspruch-conformance",
+    "type": "feature",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T09:14:02Z"
   }
 ]
