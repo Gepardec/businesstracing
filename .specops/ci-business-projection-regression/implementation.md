@@ -29,6 +29,8 @@
 | 2 | Prefer direct node semantics to owner suffixes | A controller suffix is weak architecture evidence; explicit predicates, material actions, and terminal edges are stronger business evidence. | Task 2 | 2026-08-26T19:45:30Z |
 | 3 | Keep clear normalized labels before call metadata | Source labels such as `validation has errors` are clearer than reconstructed labels such as `result has errors`; metadata is a fallback for technical placeholders. | Task 2 | 2026-08-26T19:45:30Z |
 | 4 | Preserve the three-minute budget with a parallel viewer job | Remote step evidence shows that viewer verification is independent and consumes the time needed by the database browser journey. | Task 3 | 2026-08-26T20:00:00Z |
+| 5 | Use a five-minute limit only for PostgreSQL integration | The five independent jobs pass in three minutes. The integrated job must start PostgreSQL, generate dogfood, install and build the viewer, and run all 17 browser tests. | Task 3 | 2026-08-26T20:15:00Z |
+| 6 | Select Overview before full presentation assertions | Explore mode intentionally shows a local context. Full node and route counts apply to Overview. | Task 3 | 2026-08-26T20:15:00Z |
 
 ## Deviations from Design
 
@@ -69,3 +71,9 @@
   before Playwright and rerun.
 - Task 3 remote follow-up: run `33008631033` then exposed the same old step dependency for the
   production viewer build. Build the viewer explicitly before Playwright and rerun.
+- Task 3 remote follow-up: run `33008949036` passed all five independent jobs. PostgreSQL started
+  all 17 browser tests. It exposed stale assertions for grouped presentation counts and the current
+  two-pixel selected-node border, then reached its three-minute limit during retry.
+- Task 3 current work: select Overview before full presentation assertions, derive graph counts
+  from `createGraphPresentation`, assert the current selected-node design token, and give only
+  PostgreSQL five minutes.

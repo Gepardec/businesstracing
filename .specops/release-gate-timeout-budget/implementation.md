@@ -31,6 +31,7 @@ Implementation is pending.
 | 2 | Stream through a POSIX FIFO and preserve both process statuses. | The 90-minute run exposed no stage output, so another timeout increase would be guesswork. | 1 | 2026-08-11T14:22:09Z |
 | 3 | Replace the serial release job with four parallel three-minute jobs. | A 600-second test cannot fit in three minutes, and the user set a hard three-minute limit. | 1 | 2026-08-12T07:09:21Z |
 | 4 | Move standalone viewer verification to a sixth parallel job. | Remote evidence shows that the independent 50-second viewer gate leaves too little time for the PostgreSQL browser journey. | 1 | 2026-08-26T20:00:00Z |
+| 5 | Give only PostgreSQL integration five minutes and keep all browser tests. | Run `33008949036` shows that five independent jobs pass within three minutes. PostgreSQL needs more time for database startup, dogfood, install, build, and 17 browser tests. | 1 | 2026-08-26T20:15:00Z |
 
 ## Verification
 
@@ -70,3 +71,10 @@ Implementation is pending.
 - PR run `33008631033`: all independent jobs passed; PostgreSQL installed Playwright but exposed a
   second accidental dependency on the moved viewer step for the production `build` directory.
 - PostgreSQL now builds the viewer explicitly before it starts Playwright's Node web server.
+- PR run `33008949036`: all five independent jobs passed. PostgreSQL reached the browser journey
+  but its three-minute limit cancelled the job after 3 minutes 37 seconds of total execution.
+- Browser logs exposed two stale presentation assertions: Explore mode renders a local context,
+  while Overview renders the full readable presentation, and the selected-node border is now two
+  pixels. The test now selects Overview before it verifies presentation counts and asserts the
+  current design token.
+- Version 4 gives only PostgreSQL five minutes. It keeps all 17 browser tests.

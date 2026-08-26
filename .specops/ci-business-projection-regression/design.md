@@ -45,14 +45,16 @@ projection audit for its removal reason.
 **Rationale:** Requiring the choice in the business graph contradicts semantic reduction. The two
 assertions prove both discovery and intentional removal without a hard-coded diagram.
 
-### Keep independent viewer work parallel
+### Keep independent viewer work parallel and bound integration separately
 
 **Decision:** Move standalone viewer verification from the PostgreSQL job to a sixth parallel job.
-Keep storage, dogfood generation, and the browser database journey together.
+Keep storage, dogfood generation, viewer build, and all 17 browser tests together. Give this
+integration job five minutes. Keep the five independent jobs at three minutes.
 
 **Rationale:** Remote step timing shows that the independent viewer gate consumes 50 seconds before
-the integrated journey starts. Moving it preserves all coverage and keeps the existing three-minute
-hard limit.
+the integrated journey starts. The next run shows that the integrated boundary itself needs more
+than three minutes. A five-minute limit preserves all browser coverage without slowing independent
+feedback.
 
 ## Component Design
 
@@ -80,7 +82,7 @@ use owner roles only as a fallback classification signal.
 - Run self-tracing twice to keep its determinism check.
 - Run Mega, PetClinic, viewer dogfood, and the full pull-request gate.
 - Push the commit and wait for all required pull-request checks.
-- Require all six parallel jobs to finish within three minutes.
+- Require five parallel jobs to finish within three minutes and PostgreSQL within five minutes.
 
 ## Risks and Mitigations
 

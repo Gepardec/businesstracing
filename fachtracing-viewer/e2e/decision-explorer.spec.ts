@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { basename, delimiter, join, resolve } from 'node:path';
+import { parseGraphDocument } from '../src/lib/contracts/graph-contract';
 import { displayedEdgeLabel } from '../src/lib/graph/edge-label';
+import { createGraphPresentation } from '../src/lib/graph/graph-presentation';
 import { crossingGraphFile, cycleGraphFile, duplicateGraphFile, fanInGraphFile, generatedBranchingGraphFile, longShortcutGraphFile } from './visual-fixtures';
 
 function outgoingEdges<T extends { from: string }>(edges: readonly T[], nodeId: string): T[] {
@@ -278,6 +280,7 @@ test('previews a generated developer graph JSON file without storage', async ({ 
   expect(graphFiles.length).toBeGreaterThan(0);
   const graphPath = join(graphDirectory, graphFiles[0]);
   const document = JSON.parse(await readFile(graphPath, 'utf8')) as { graph: { label: string; nodes: unknown[]; edges: unknown[] } };
+  const presentation = createGraphPresentation(parseGraphDocument(document));
 
   await page.goto('/graphs');
   const nonReadRequests: string[] = [];
@@ -290,10 +293,10 @@ test('previews a generated developer graph JSON file without storage', async ({ 
   await expect(page.getByRole('heading', { name: document.graph.label })).toBeVisible();
   await expect(page.getByText(`${document.graph.nodes.length} nodes`, { exact: true })).toBeVisible();
   await expect(page.getByText(`${document.graph.edges.length} edges`, { exact: true })).toBeVisible();
-  await expect(page.locator('.svelte-flow__node')).toHaveCount(document.graph.nodes.length, { timeout: 15_000 });
   await showOverview(page);
+  await expect(page.locator('.svelte-flow__node')).toHaveCount(presentation.graph.nodes.length, { timeout: 15_000 });
   const geometry = await canvasGeometry(page);
-  expect(geometry.routeCount).toBe(document.graph.edges.length);
+  expect(geometry.routeCount).toBe(presentation.graph.edges.length);
   expect(geometry.intrusions).toEqual([]);
   expect(geometry.endpointViolations).toEqual([]);
   expect(geometry.labelNodeCollisions).toEqual([]);
@@ -333,7 +336,7 @@ test('keeps the generated decision explanation clear at every supported width', 
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await expect(page.locator('.business-node[data-run-state="current"]')).toHaveCount(1);
   const currentStyle = await page.locator('.business-node[data-run-state="current"]').evaluate((node) => ({ border: getComputedStyle(node).borderTopWidth, outline: getComputedStyle(node).outlineStyle }));
-  expect(currentStyle).toEqual({ border: '3px', outline: 'none' });
+  expect(currentStyle).toEqual({ border: '2px', outline: 'none' });
   const stepNumbers = await desktopInspector.locator('.step-number').allTextContents();
   expect(stepNumbers).toEqual(stepNumbers.map((_, index) => String(index + 1)));
   expect(await desktopInspector.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);

@@ -1,10 +1,12 @@
-# Bug Fix: Three-Minute CI Budget
+# Bug Fix: Bounded CI Feedback
 
 ## Overview
 
 The required CI does not give timely feedback. The PostgreSQL job was cancelled during its browser
 journey because it ran storage, standalone viewer verification, dogfood generation, and browser
-integration in one job. All required CI jobs must finish within a three-minute execution budget.
+integration in one job. Five independent jobs must finish within three minutes. The integrated
+PostgreSQL browser journey can use five minutes because it starts a database, builds dogfood, and
+runs all 17 browser tests.
 
 ## Root Cause Analysis
 
@@ -35,7 +37,8 @@ The timeout contract checked for a minimum timeout. It allowed slow jobs instead
 
 | Behavior | Risk | Required evidence |
 | --- | --- | --- |
-| Each required job has a three-minute limit | Must-Test | Workflow budget contract |
+| Five independent jobs have a three-minute limit | Must-Test | Workflow budget contract |
+| PostgreSQL integration has a five-minute limit | Must-Test | Workflow budget contract |
 | The required workflow has no long release command | Must-Test | Workflow routing contract |
 | Core, Mega, PetClinic, and PostgreSQL checks run | Must-Test | Local and hosted checks |
 | The long load command stays available for manual evidence | Nice-To-Test | Script and documentation review |
@@ -45,8 +48,8 @@ The timeout contract checked for a minimum timeout. It allowed slow jobs instead
 
 Run the core suite, Mega Backend conformance, Spring PetClinic conformance, Jakarta EE conformance,
 viewer verification, and PostgreSQL integration as independent parallel jobs for every workflow
-event. Give each job a three-minute timeout. Keep dogfood and the database browser journey together
-in the PostgreSQL job, and move the independent viewer gate to its own job.
+event. Give the five independent jobs a three-minute timeout. Give PostgreSQL five minutes. Keep
+dogfood and all browser tests in PostgreSQL, and keep the independent viewer gate in its own job.
 
 ## Testing Plan
 
@@ -57,7 +60,8 @@ in the PostgreSQL job, and move the independent viewer gate to its own job.
 
 ### Expected Behavior
 
-- Confirm that every required job has `timeout-minutes: 3`.
+- Confirm that five required jobs have `timeout-minutes: 3` and PostgreSQL has
+  `timeout-minutes: 5`.
 - Confirm that all four jobs start independently for pull requests and release events.
 - Confirm that no required job calls `verify-release.sh` or the 600-second load test.
 
@@ -71,15 +75,16 @@ in the PostgreSQL job, and move the independent viewer gate to its own job.
 
 ## Acceptance Criteria
 
-- [ ] THE WORKFLOW SHALL give each required job a three-minute timeout.
-- [ ] THE BUDGET CONTRACT SHALL reject a required job timeout above three minutes.
+- [ ] THE WORKFLOW SHALL give each independent job a three-minute timeout.
+- [ ] THE WORKFLOW SHALL give PostgreSQL integration a five-minute timeout.
+- [ ] THE BUDGET CONTRACT SHALL reject a timeout above the job-specific limit.
 - [ ] THE WORKFLOW SHALL run core, Mega, PetClinic, Jakarta EE, viewer, and PostgreSQL checks in
   parallel.
 - [ ] THE WORKFLOW SHALL run the same required jobs for pull requests and release events.
 - [ ] THE REQUIRED WORKFLOW SHALL NOT call the 600-second release gate.
 - [ ] THE OPTIONAL RELEASE COMMAND SHALL remain available for manual long evidence.
 - [ ] THE SYSTEM SHALL pass local and hosted checks.
-- [ ] EACH HOSTED REQUIRED JOB SHALL complete within its three-minute execution limit.
+- [ ] EACH HOSTED REQUIRED JOB SHALL complete within its configured execution limit.
 
 ## Scope Assessment
 

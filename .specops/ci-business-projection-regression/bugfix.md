@@ -28,6 +28,9 @@ break the business-output contract and stop the release gate.
 - After all product gates pass, remote run `33007667194` cancels PostgreSQL during its browser
   journey. The job runs an independent 50-second viewer gate before database integration and
   exceeds the existing three-minute budget.
+- After the split, remote run `33008949036` proves that all five independent jobs pass within three
+  minutes. PostgreSQL starts all 17 browser tests but exposes two stale UI assertions and reaches
+  its limit before Playwright can complete its retry.
 
 **Affected components:**
 

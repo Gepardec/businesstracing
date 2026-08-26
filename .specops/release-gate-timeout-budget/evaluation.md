@@ -16,6 +16,20 @@
 
 **Verdict:** PASS.
 
+### Iteration 4
+
+**Evaluated at:** 2026-08-26T20:15:00Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Result |
+| --- | --- | --- | --- | --- |
+| Criteria Testability | Six named jobs and exact job-specific limits | Hosted completion needs the next PR run. | 10 | Pass |
+| Criteria Completeness | All 17 browser tests remain required. | PostgreSQL has a larger limit than independent jobs. | 10 | Pass |
+| Design Coherence | The five-minute exception matches one integrated boundary. | Browser setup remains intentionally grouped with storage. | 9 | Pass |
+| Task Coverage | Contracts, browser assertions, and hosted timing cover the change. | Final `main` proof remains post-merge work. | 9 | Pass |
+
+**Verdict:** PASS.
+
 ### Iteration 3
 
 **Evaluated at:** 2026-08-26T20:00:00Z

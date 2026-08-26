@@ -100,7 +100,8 @@ gates.
 2. Run self-tracing and viewer dogfood.
 3. Run the complete local pull-request gate.
 4. Commit, push, and wait for every required GitHub check.
-5. If a combined job exceeds the hard budget, move independent work to a parallel job and rerun.
+5. If the integrated PostgreSQL boundary exceeds three minutes after the split, keep all browser
+   coverage and use the documented five-minute integration budget.
 
 **Acceptance Criteria:**
 

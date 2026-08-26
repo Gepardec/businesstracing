@@ -5,7 +5,7 @@
     "status": "implementing",
     "version": 1,
     "author": "lucostus",
-    "updated": "2026-08-26T20:00:00Z"
+    "updated": "2026-08-26T20:15:00Z"
   },
   {
     "id": "compact-graph-reading-and-business-phrasing",
@@ -467,9 +467,9 @@
     "id": "release-gate-timeout-budget",
     "type": "bugfix",
     "status": "implementing",
-    "version": 2,
+    "version": 4,
     "author": "lucostus",
-    "updated": "2026-08-26T20:00:00Z"
+    "updated": "2026-08-26T20:15:00Z"
   },
   {
     "id": "configured-endpoint-business-tracing",

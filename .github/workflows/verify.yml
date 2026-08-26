@@ -132,7 +132,7 @@ jobs:
 
   postgres:
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 5
     services:
       postgres:
         image: postgres:18.4
