@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import Button from '$components/ui/Button.svelte';
+  import { Button } from '$components/ui/button';
 </script>
 
 <div class="error-page"><span class="eyebrow">{page.status}</span><h1>{page.error?.message ?? 'The page is unavailable'}</h1><p>The stored decision was not changed. Return to the decision list and try again.</p><Button onclick={() => location.href = '/runs'}>Return to decisions</Button></div>

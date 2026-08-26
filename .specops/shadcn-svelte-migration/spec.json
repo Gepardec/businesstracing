@@ -1,0 +1,36 @@
+{
+  "id": "shadcn-svelte-migration",
+  "type": "refactor",
+  "status": "complete",
+  "version": 1,
+  "created": "2026-08-26T08:31:59Z",
+  "updated": "2026-08-26T08:46:35Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": { "name": "lucostus" },
+  "relatedSpecs": ["frontend-flow-explorer", "frontend-visual-design-quality"],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-26T08:31:59Z"
+    },
+    "implementation": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 9,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-26T08:46:35Z"
+    }
+  }
+}

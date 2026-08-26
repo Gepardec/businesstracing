@@ -4,8 +4,10 @@
   import Route from '@lucide/svelte/icons/route';
   import type { GraphModel } from '$contracts/graph-contract';
   import type { RunModel } from '$contracts/run-contract';
-  import Button from '$components/ui/Button.svelte';
-  import Badge from '$components/ui/Badge.svelte';
+  import { Badge } from '$components/ui/badge';
+  import { Button } from '$components/ui/button';
+  import { Label } from '$components/ui/label';
+  import { Switch } from '$components/ui/switch';
   import { conciseEdgeLabel } from '$graph/edge-label';
   import { explainObservation } from './run-highlight';
   let { graph, run, activeIndex, fullPath, onSelect, onFullPath }: {
@@ -17,12 +19,12 @@
 <aside class="run-inspector" aria-label="Run explanation">
   <div class="inspector-header">
     <div><span class="eyebrow">Recorded path</span><h2>{run.observations.length} steps</h2></div>
-    <label class="path-toggle"><input type="checkbox" checked={fullPath} onchange={(event) => onFullPath(event.currentTarget.checked)} /><Route size={15} /> Full path</label>
+    <div class="path-toggle"><Switch id="full-path" size="sm" checked={fullPath} onCheckedChange={onFullPath} /><Label for="full-path"><Route /> Full path</Label></div>
   </div>
   <div class="step-nav" aria-label="Step navigation">
-    <Button variant="outline" size="sm" disabled={activeIndex <= 0} onclick={() => onSelect(activeIndex - 1)}><ChevronLeft size={15} /> Previous</Button>
+    <Button variant="outline" size="sm" disabled={activeIndex <= 0} onclick={() => onSelect(activeIndex - 1)}><ChevronLeft data-icon="inline-start" /> Previous</Button>
     <span>{Math.min(activeIndex + 1, run.observations.length)} / {run.observations.length}</span>
-    <Button variant="outline" size="sm" disabled={activeIndex >= run.observations.length - 1} onclick={() => onSelect(activeIndex + 1)}>Next <ChevronRight size={15} /></Button>
+    <Button variant="outline" size="sm" disabled={activeIndex >= run.observations.length - 1} onclick={() => onSelect(activeIndex + 1)}>Next <ChevronRight data-icon="inline-end" /></Button>
   </div>
   <ol class="steps">
     {#each run.observations as observation, index}
@@ -32,7 +34,7 @@
         <button onclick={() => onSelect(index)} aria-current={index === activeIndex ? 'step' : undefined}>
           <span class="step-number" title={`Recorded sequence ${observation.sequence}`}>{index + 1}</span>
           <span class="step-content">
-            <span class="step-meta"><Badge>{node?.kind.replace('_', ' ') ?? 'UNKNOWN'}</Badge>{#if selectedEdge}<span>Followed “{conciseEdgeLabel(selectedEdge.outcome)}”</span>{/if}</span>
+            <span class="step-meta"><Badge variant="secondary">{node?.kind.replace('_', ' ') ?? 'UNKNOWN'}</Badge>{#if selectedEdge}<span>Followed “{conciseEdgeLabel(selectedEdge.outcome)}”</span>{/if}</span>
             <strong>{node?.label ?? observation.nodeId}</strong>
             <span>{explainObservation(graph, observation)}</span>
             <details class="technical-details">
@@ -53,8 +55,9 @@
   .run-inspector { height: 100%; background: var(--card); border-left: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
   .inspector-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 13px; border-bottom: 1px solid var(--border); }
   h2 { margin: 3px 0 0; font-size: 1.15rem; }
-  .path-toggle { display: flex; gap: 7px; align-items: center; padding: 7px 9px; background: var(--muted); border-radius: 8px; font-size: .78rem; font-weight: 650; }
-  .path-toggle input { accent-color: var(--primary); }
+  .path-toggle { display: flex; gap: 8px; align-items: center; padding: 7px 9px; background: var(--muted); border-radius: var(--radius-lg); }
+  .path-toggle :global([data-slot='label']) { gap: 5px; font-size: .76rem; }
+  .path-toggle :global(svg) { width: 14px; height: 14px; }
   .step-nav { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--muted-foreground); font-size: .75rem; }
   .steps { list-style: none; margin: 0; padding: 12px 10px 40px; overflow: auto; }
   li { position: relative; }

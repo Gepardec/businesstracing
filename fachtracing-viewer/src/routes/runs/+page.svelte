@@ -1,5 +1,7 @@
 <script lang="ts">
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import type { PageData } from './$types';
+  import * as Alert from '$components/ui/alert';
   import type { RunPage, RunSearch } from '$contracts/run-search';
   import RunFilters from '$runs/RunFilters.svelte';
   import RunList from '$runs/RunList.svelte';
@@ -40,7 +42,13 @@
 <div class="runs-page">
   <header class="page-heading"><div><span class="eyebrow">Run explorer</span><h1>Recorded decisions</h1><p>Find a run by any stored business correlation and explain its exact path.</p></div><div class="count"><strong>{page.items.length}</strong><span>shown</span></div></header>
   <RunFilters correlationNames={data.correlationNames} {busy} onSearch={search} />
-  {#if searchError}<div class="alert" role="alert">{searchError}</div>{/if}
+  {#if searchError}
+    <Alert.Root variant="destructive">
+      <CircleAlert />
+      <Alert.Title>Search unavailable</Alert.Title>
+      <Alert.Description>{searchError}</Alert.Description>
+    </Alert.Root>
+  {/if}
   <RunList items={page.items} nextCursor={page.nextCursor} {busy} onNext={next} />
 </div>
 

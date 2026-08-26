@@ -1,7 +1,7 @@
 <script lang="ts">
   import FileJson from '@lucide/svelte/icons/file-json';
   import Upload from '@lucide/svelte/icons/upload';
-  import Button from '$components/ui/Button.svelte';
+  import { Button } from '$components/ui/button';
 
   let { busy = false, compact = false, onFile }: {
     busy?: boolean; compact?: boolean; onFile: (file: File) => void
@@ -49,7 +49,7 @@
     </div>
   {/if}
   <Button variant={compact ? 'outline' : 'default'} onclick={choose} disabled={busy}>
-    <Upload size={16} />{busy ? 'Reading…' : compact ? 'Choose another file' : 'Choose JSON file'}
+    <Upload data-icon="inline-start" />{busy ? 'Reading…' : compact ? 'Choose another file' : 'Choose JSON file'}
   </Button>
 </div>
 

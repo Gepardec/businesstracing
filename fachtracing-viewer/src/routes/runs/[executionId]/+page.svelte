@@ -2,9 +2,10 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left';
   import PanelRightOpen from '@lucide/svelte/icons/panel-right-open';
   import type { PageData } from './$types';
-  import Badge from '$components/ui/Badge.svelte';
+  import { Badge } from '$components/ui/badge';
+  import { Button } from '$components/ui/button';
   import CopyValue from '$components/ui/CopyValue.svelte';
-  import Sheet from '$components/ui/Sheet.svelte';
+  import * as Sheet from '$components/ui/sheet';
   import FlowCanvas from '$graph/FlowCanvas.svelte';
   import InspectorResizer from '$runs/InspectorResizer.svelte';
   import RunInspector from '$runs/RunInspector.svelte';
@@ -16,7 +17,7 @@
   let inspectorWidth = $state(380);
   let viewportWidth = $state(1_440);
   let highlight = $derived(deriveRunHighlight(data.graph, data.run, activeIndex));
-  const tone = $derived(data.run.status === 'SUCCEEDED' ? 'success' : data.run.status === 'FAILED' ? 'danger' : 'warning');
+  const statusVariant = $derived<'success' | 'destructive' | 'warning'>(data.run.status === 'SUCCEEDED' ? 'success' : data.run.status === 'FAILED' ? 'destructive' : 'warning');
   const result = $derived(data.run.finalDecision?.displayValue ?? data.run.failure?.displayValue ?? 'No final result');
   function selectNode(nodeId: string) {
     const index = data.run.observations.findIndex((item, itemIndex) => item.nodeId === nodeId && itemIndex >= activeIndex);
@@ -37,13 +38,18 @@
     <div class="header-topline">
       <a href="/runs" class="back-link"><ArrowLeft size={16} /> Decisions</a>
       <div class="header-actions">
-        <Badge tone={tone}>{data.run.status.toLowerCase()}</Badge>
+        <Badge variant={statusVariant}>{data.run.status.toLowerCase()}</Badge>
         <div class="mobile-explanation">
-          <Sheet bind:open={inspectorOpen} title="Run explanation" description="Recorded steps and evidence for this decision" triggerLabel="Open run explanation">
-            {#snippet trigger()}<PanelRightOpen size={16} /> Explanation <span class="step-count">{data.run.observations.length}</span>{/snippet}
-            <RunInspector graph={data.graph} run={data.run} {activeIndex} {fullPath}
-              onSelect={(index) => activeIndex = index} onFullPath={(enabled) => fullPath = enabled} />
-          </Sheet>
+          <Sheet.Root bind:open={inspectorOpen}>
+            <Sheet.Trigger>
+              {#snippet child({ props })}<Button {...props} variant="outline" size="sm" aria-label="Open run explanation"><PanelRightOpen data-icon="inline-start" /> Explanation <span class="step-count">{data.run.observations.length}</span></Button>{/snippet}
+            </Sheet.Trigger>
+            <Sheet.Content class="run-sheet w-[min(430px,94vw)] gap-0 p-0 sm:max-w-[430px]">
+              <Sheet.Header class="sr-only"><Sheet.Title>Run explanation</Sheet.Title><Sheet.Description>Recorded steps and evidence for this decision</Sheet.Description></Sheet.Header>
+              <RunInspector graph={data.graph} run={data.run} {activeIndex} {fullPath}
+                onSelect={(index) => activeIndex = index} onFullPath={(enabled) => fullPath = enabled} />
+            </Sheet.Content>
+          </Sheet.Root>
         </div>
       </div>
     </div>
@@ -79,6 +85,8 @@
   .canvas, .desktop-inspector { min-height: 0; position: relative; }
   .mobile-explanation { display: none; }
   .step-count { min-width: 19px; height: 19px; display: inline-grid; place-items: center; padding: 0 5px; border-radius: 999px; background: var(--muted); color: var(--muted-foreground); font-size: .68rem; }
+  :global(.run-sheet .run-inspector) { border-left: 0; }
+  :global(.run-sheet .inspector-header) { padding-right: 58px; }
   @media (max-width: 1023px) {
     .decision-workspace { display: block; }
     .canvas { height: 100%; min-height: 0; }

@@ -1,8 +1,10 @@
 <script lang="ts">
   import FileCheck from '@lucide/svelte/icons/file-check';
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
-  import Badge from '$components/ui/Badge.svelte';
-  import Card from '$components/ui/Card.svelte';
+  import * as Alert from '$components/ui/alert';
+  import { Badge } from '$components/ui/badge';
+  import * as Card from '$components/ui/card';
   import type { GraphModel } from '$contracts/graph-contract';
   import FlowCanvas from '$graph/FlowCanvas.svelte';
   import GraphUpload from '$graph/GraphUpload.svelte';
@@ -40,18 +42,26 @@
     <div class="privacy"><ShieldCheck size={17} /><span><strong>Browser only</strong>Your file is not uploaded or saved.</span></div>
   </header>
 
-  {#if error}<div class="alert" role="alert"><strong>The graph cannot be shown.</strong> {error}</div>{/if}
+  {#if error}
+    <Alert.Root variant="destructive">
+      <CircleAlert />
+      <Alert.Title>The graph cannot be shown.</Alert.Title>
+      <Alert.Description>{error}</Alert.Description>
+    </Alert.Root>
+  {/if}
 
   {#if graph}
-    <Card class="graph-summary">
-      <div class="file-summary"><span class="file-icon"><FileCheck size={19} /></span><div><strong>{fileName}</strong><span>{formatFileSize(fileSize)} · {graph.schema}</span></div></div>
-      <div class="graph-identity"><div><span class="eyebrow">Graph</span><h2>{graph.label}</h2></div><div class="badges"><Badge>{graph.nodes.length} nodes</Badge><Badge>{graph.edges.length} edges</Badge><Badge tone={graph.completeness === 'COMPLETE' ? 'success' : 'warning'}>{graph.completeness.toLowerCase()}</Badge></div></div>
-      {#if graph.nodes.length > 250}<p class="profile-note">This graph is larger than the tested 250-node safety profile. The complete graph is still available.</p>{/if}
-      <GraphUpload compact {busy} onFile={selectFile} />
-    </Card>
+    <Card.Root class="graph-summary" size="sm">
+      <Card.Content class="graph-summary-content">
+        <div class="file-summary"><span class="file-icon"><FileCheck size={19} /></span><div><strong>{fileName}</strong><span>{formatFileSize(fileSize)} · {graph.schema}</span></div></div>
+        <div class="graph-identity"><div><span class="eyebrow">Graph</span><h2>{graph.label}</h2></div><div class="badges"><Badge variant="secondary">{graph.nodes.length} nodes</Badge><Badge variant="secondary">{graph.edges.length} edges</Badge><Badge variant={graph.completeness === 'COMPLETE' ? 'success' : 'warning'}>{graph.completeness.toLowerCase()}</Badge></div></div>
+        {#if graph.nodes.length > 250}<p class="profile-note">This graph is larger than the tested 250-node safety profile. The complete graph is still available.</p>{/if}
+        <GraphUpload compact {busy} onFile={selectFile} />
+      </Card.Content>
+    </Card.Root>
     <div class="preview-canvas"><FlowCanvas {graph} highlight={null} fullPath={false} showGuide /></div>
   {:else}
-    <Card class="upload-card"><GraphUpload {busy} onFile={selectFile} /></Card>
+    <Card.Root class="upload-card"><Card.Content class="upload-card-content"><GraphUpload {busy} onFile={selectFile} /></Card.Content></Card.Root>
     <p class="contract-note">Accepted formats: <code>fachtracing-developer-graph/v1</code> and <code>fachtracing-business-graph/v1</code>. A page reload clears the preview.</p>
   {/if}
 </div>
@@ -64,10 +74,10 @@
   .privacy { display: flex; align-items: center; gap: 9px; color: var(--status-success); font-size: .78rem; white-space: nowrap; }
   .privacy span { display: grid; color: var(--muted-foreground); }
   .privacy strong { color: var(--foreground); }
-  :global(.upload-card) { padding: 12px; }
+  :global(.upload-card-content) { padding: 12px; }
   .contract-note { text-align: center; }
   .contract-note code { font-size: .82rem; color: var(--foreground); }
-  :global(.graph-summary) { padding: 14px 16px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; }
+  :global(.graph-summary-content) { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; }
   .file-summary { display: flex; align-items: center; gap: 10px; min-width: 220px; }
   .file-summary > div { display: grid; gap: 2px; }
   .file-summary strong { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; }
@@ -81,7 +91,7 @@
   @media (max-width: 900px) {
     .page-heading { align-items: flex-start; flex-direction: column; }
     .privacy { white-space: normal; }
-    :global(.graph-summary) { grid-template-columns: 1fr auto; }
+    :global(.graph-summary-content) { grid-template-columns: 1fr auto; }
     .graph-identity { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; }
     .preview-canvas { height: 72vh; min-height: 560px; }
   }

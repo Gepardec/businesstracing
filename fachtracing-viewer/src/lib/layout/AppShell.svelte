@@ -4,7 +4,7 @@
   import Sun from '@lucide/svelte/icons/sun';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import Button from '$components/ui/Button.svelte';
+  import { Button } from '$components/ui/button';
   let { children }: { children?: import('svelte').Snippet } = $props();
   let dark = $state(false);
   function toggleTheme() {
@@ -24,7 +24,7 @@
     <a class="brand" href="/runs"><span class="brand__mark"><Network size={18} /></span><span>Fachtracing</span></a>
     <nav aria-label="Primary navigation"><a class="nav-link" class:active={page.url.pathname.startsWith('/runs')} aria-current={page.url.pathname.startsWith('/runs') ? 'page' : undefined} href="/runs">Decisions</a><a class="nav-link" class:active={page.url.pathname.startsWith('/graphs')} aria-current={page.url.pathname.startsWith('/graphs') ? 'page' : undefined} href="/graphs">Graph preview</a></nav>
     <Button variant="ghost" size="icon" onclick={toggleTheme} aria-label={dark ? 'Use light theme' : 'Use dark theme'}>
-      {#if dark}<Sun size={17} />{:else}<Moon size={17} />{/if}
+      {#if dark}<Sun />{:else}<Moon />{/if}
     </Button>
   </header>
   <main class="app-main">{@render children?.()}</main>

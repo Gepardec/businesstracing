@@ -858,3 +858,39 @@ test('renders crossings as bridges without adding graph nodes', async ({ page })
   await page.getByRole('button', { name: 'Use dark theme' }).click();
   await page.screenshot({ path: 'test-results/visual/crossings-1440-dark.png', fullPage: true });
 });
+
+test('uses the shadcn-svelte control system on the application pages', async ({ page }) => {
+  await mkdir('test-results/visual', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+
+  await page.goto('/runs');
+  await expect(page.locator('[data-slot="card"]')).toHaveCount(2);
+  await expect(page.locator('[data-slot="input"]')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'Search' })).toHaveAttribute('data-slot', 'button');
+  await page.getByRole('button', { name: 'Filters' }).click();
+  await expect(page.locator('[data-slot="select-trigger"]')).toBeVisible();
+  await page.locator('[data-slot="select-trigger"]').click();
+  await page.getByRole('option', { name: 'Failed' }).click();
+  await expect(page.locator('[data-slot="select-trigger"]')).toContainText('FAILED');
+  await expect(page.locator('.button, .input, .card, .badge')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/visual/shadcn-runs-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: 'test-results/visual/shadcn-runs-1440-dark.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use light theme' }).click();
+  await page.waitForTimeout(200);
+
+  await page.goto('/graphs');
+  await expect(page.locator('[data-slot="card"]')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Choose JSON file' })).toHaveAttribute('data-slot', 'button');
+  await page.screenshot({ path: 'test-results/visual/shadcn-graph-upload-1440-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Use dark theme' }).click();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: 'test-results/visual/shadcn-graph-upload-1440-dark.png', fullPage: true });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/runs');
+  await page.getByRole('button', { name: 'Filters' }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/visual/shadcn-runs-390-dark.png', fullPage: true });
+});
