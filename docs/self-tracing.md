@@ -26,6 +26,8 @@ The script uses the `self-tracing` Maven profile and the public `analyze-reactor
 
 The script runs the compiled policies through the Java agent. It writes five evaluated Mermaid paths under `target/fachtracing-runtime`: two node-inclusion paths and three source-selection paths. Each path contains the recorded result of the actual call.
 
+Each evaluated path also has a `*.decision.json` file with the unchanged `fachtracing-decision-record/v1` payload. The payload includes `application=fachtracing` and the selected policy as generic correlations. Run `./scripts/verify-viewer-dogfood.sh` to add the matching developer graph V1 documents and stage both formats under `target/viewer-dogfood` for the Svelte viewer.
+
 The gate also checks byte-identical static output on a second run. A focused renderer test changes synthetic input and checks that the generated audit changes. Repository integrity checks prevent fixed self-example labels and AI integrations in production graph generation.
 
 All generated files stay under `target`. Git does not track them.

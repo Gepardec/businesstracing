@@ -528,3 +528,16 @@ Completed one task. Nested mapped collection transfers now use a guarded busines
 `converted` and no technical map term. The pinned Hogarama reactor generated two complete V1 JSON
 graphs. The Mega conformance harness generated five complete V1 JSON graphs and the shared schema.
 The full pull-request gate passed with all pinned corpora and no new dependency.
+
+### static-graph-layout-quality
+
+Completed all six tasks. The Svelte viewer now analyzes topology before placement and uses a
+deterministic four-side orthogonal router. Direct branches stay local. Long and cycle edges use
+explicit corridors. Branch labels avoid nodes, other labels, and unrelated routes. Large fan-in
+uses stable feeder slots, one presentation-only junction, and one shared trunk. Crossings use
+bridges and do not change graph connectivity. Duplicate nodes show stable occurrence context.
+
+The JSON, SQL, HTTP, storage, node-ID, and edge-ID contracts did not change. Svelte check, 43 unit
+tests, the production build, 10 browser journeys, the generated 250-node gate, both graph V1
+formats, and generated Fachtracing dogfood pass. Four PostgreSQL-backed run-detail journeys and
+final user design approval remain deferred environment or review gates.

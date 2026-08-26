@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-18T11:03:07Z"
-_sourceHash: "9e5cabc5d3c70841599d59988f849ed43b0317994f85334be26f9c6fb99c16f0"
+_generatedAt: "2026-08-25T09:12:18Z"
+_sourceHash: "14b8c25cfb0ddad1281e1f0e7dfdac6deecd7d448eafed85d54fa990c9948c03"
 ---
 
 ## Project Structure Map
@@ -38,6 +38,10 @@ fachtracing/
   fachtracing-storage-jdbc/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
+  fachtracing-viewer/
+    src/lib/{components,contracts,graph,layout,runs,server}/
+    src/routes/{api,graphs,runs}/
+    e2e/
   conformance/mega-backend/
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
@@ -251,6 +255,28 @@ fachtracing/
 - `src/test/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepositoryTest.java`
 - `src/main/java/module-info.java`
 - `pom.xml`
+
+#### fachtracing-viewer/ (83 files)
+
+- `src/lib/contracts/` — stable graph, run, and query adapters
+- `src/lib/graph/topology-analysis.ts`
+  - `export function analyzeTopology`
+- `src/lib/graph/layout-engine.ts`
+  - ranked ELK node placement and immutable layout coordination
+- `src/lib/graph/route-planner.ts`
+  - `export function planRoutes`
+- `src/lib/graph/route-quality.ts`
+  - deterministic geometry and route-quality metrics
+- `src/lib/graph/FlowCanvas.svelte`
+  - shared read-only Svelte Flow canvas
+- `src/lib/graph/BusinessNode.svelte`, `BusinessEdge.svelte`, and `GraphJunctions.svelte`
+  - static node, edge, junction, trunk, crossing, and region presentation
+- `src/lib/graph/graph-fixtures.ts` and `e2e/visual-fixtures.ts`
+  - generated topology fixtures without fixed coordinates or routes
+- `src/routes/graphs/` — browser-only graph JSON preview
+- `src/routes/runs/` — generic result search and run explanation
+- `e2e/decision-explorer.spec.ts` — upload, static graph, dogfood, and run-detail browser journeys
+- `README.md`, `package.json`, and `playwright.config.ts`
 
 #### docs/ (13 files)
 

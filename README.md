@@ -48,6 +48,8 @@ for common Jakarta EE operations, SOAP setup, and gRPC channel setup.
 See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
 generates from its own Maven plugin policy.
 
+The [viewer guide](fachtracing-viewer/README.md#show-fachtracing-tracing-itself) shows how to open those generated graphs and real Java-agent paths in the Svelte flow explorer.
+
 See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
 delivery, JDBC, upgrade, and rollback flow.
 
@@ -130,6 +132,16 @@ Repository coordinates are developer data. They never enter `BusinessDecisionGra
 explanations, persisted decision records, Mermaid, or PlantUML.
 
 ## Verification
+
+## Interactive decision viewer
+
+The optional [Svelte 5 decision viewer](fachtracing-viewer/README.md) lists stored runs, searches by any exact correlation name and canonical value, and explains one recorded path on a complete data-driven graph. It uses Svelte Flow with a deterministic top-to-bottom ELK layout. The local POC reads PostgreSQL and never sends developer source provenance to the browser.
+
+Run its focused checks with:
+
+```sh
+./scripts/verify-viewer.sh
+```
 
 Run all dependency-free executable contracts:
 

@@ -23,6 +23,7 @@ public final class PostgresDecisionRecordRepositoryIT {
         source.setUser(required("FACHTRACING_POSTGRES_USER"));
         source.setPassword(required("FACHTRACING_POSTGRES_PASSWORD"));
         try (var connection = source.getConnection(); var statement = connection.createStatement()) {
+            statement.execute("drop table if exists fachtracing_graph");
             statement.execute("drop table if exists fachtracing_correlation");
             statement.execute("drop table if exists fachtracing_decision_record");
             statement.execute("drop table if exists fachtracing_schema_version");
@@ -31,6 +32,10 @@ public final class PostgresDecisionRecordRepositoryIT {
         var repository = new JdbcDecisionRecordRepository(source, Duration.ofSeconds(1));
         repository.migrate();
         repository.migrate();
+        try (var connection = source.getConnection(); var statement = connection.createStatement();
+             var rows = statement.executeQuery("select count(*) from fachtracing_schema_version")) {
+            assert rows.next() && rows.getInt(1) == 2;
+        }
         var first = envelope("postgres-record-1", "postgres-execution-1",
                 Instant.parse("2026-08-05T10:00:00Z"));
         var second = envelope("postgres-record-2", "postgres-execution-2",

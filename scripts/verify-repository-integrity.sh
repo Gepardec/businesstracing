@@ -21,6 +21,7 @@ require_tracked AGENTS.md
 require_tracked README.md
 require_tracked scripts/verify.sh
 require_tracked scripts/verify-self-tracing.sh
+require_tracked scripts/verify-viewer-dogfood.sh
 require_tracked scripts/capture-gate-output.sh
 require_tracked scripts/maven-repository-path.sh
 require_tracked scripts/test-capture-gate-output.sh
@@ -35,6 +36,10 @@ require_tracked scripts/verify-keycloak.sh
 require_tracked scripts/verify-spring-petclinic.sh
 require_tracked scripts/verify-jakartaee-rest.sh
 require_tracked scripts/verify-postgres.sh
+require_tracked scripts/verify-viewer.sh
+require_tracked fachtracing-viewer/package.json
+require_tracked fachtracing-viewer/package-lock.json
+require_tracked fachtracing-viewer/src/lib/graph/layout-engine.ts
 require_tracked .github/workflows/verify.yml
 require_tracked conformance/mega-backend/README.md
 require_tracked conformance/mega-backend/selection.md
@@ -71,6 +76,8 @@ test -z "$(git ls-files conformance/keycloak/target)" \
   || fail "generated Keycloak artifacts must not be tracked: use conformance/keycloak/target/generated"
 test -z "$(git ls-files conformance/spring-petclinic/generated)" \
   || fail "generated PetClinic artifacts must not be tracked: use conformance/spring-petclinic/target/generated"
+test -z "$(git ls-files 'fachtracing-viewer/src/**/*.json' | grep -v 'components.json' || true)" \
+  || fail "the viewer must not contain hardcoded graph JSON in production source"
 
 KEYCLOAK_HARNESS=conformance/keycloak/src/test/java/at/gepardec/fachtracing/conformance/KeycloakConformanceTest.java
 if grep -E -q 'reviewedOverview|overviewNode|overviewEdge|new BusinessLogicGraph' "$KEYCLOAK_HARNESS"

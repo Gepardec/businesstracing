@@ -42,7 +42,7 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
         this.statementTimeoutSeconds = (int) seconds;
     }
 
-    /** Applies the repeatable V1 schema migration. */
+    /** Applies the repeatable storage schema migration. */
     public void migrate() {
         transaction(connection -> {
             execute(connection, """
@@ -66,6 +66,10 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                     on fachtracing_decision_record(graph_id, completed_at)
                     """);
             execute(connection, """
+                    create index if not exists idx_fachtracing_completed_execution
+                    on fachtracing_decision_record(completed_at desc, execution_id desc)
+                    """);
+            execute(connection, """
                     create table if not exists fachtracing_correlation (
                       record_id varchar(200) not null,
                       correlation_name varchar(200) not null,
@@ -78,16 +82,34 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
                     create index if not exists idx_fachtracing_correlation_time
                     on fachtracing_correlation(correlation_name, correlation_value, completed_at)
                     """);
-            try (var statement = connection.prepareStatement(
-                    "insert into fachtracing_schema_version(version, applied_at) values(1, ?)")) {
-                timeout(statement);
-                statement.setTimestamp(1, Timestamp.from(Instant.now()));
-                try { statement.executeUpdate(); } catch (SQLException duplicate) {
-                    if (!duplicateKey(duplicate)) throw duplicate;
-                }
-            }
+            execute(connection, """
+                    create table if not exists fachtracing_graph (
+                      graph_id varchar(200) not null,
+                      graph_version bigint not null,
+                      schema_id varchar(100) not null,
+                      media_type varchar(100) not null,
+                      payload %s not null,
+                      sha256 varchar(64) not null,
+                      imported_at timestamp with time zone not null,
+                      primary key(graph_id, graph_version))
+                    """.formatted(payloadType(connection)));
+            recordSchemaVersion(connection, 1);
+            recordSchemaVersion(connection, 2);
             return null;
         });
+    }
+
+    private void recordSchemaVersion(Connection connection, int version) throws SQLException {
+        String sql = isPostgres(connection)
+                ? "insert into fachtracing_schema_version(version, applied_at) values(?, ?) "
+                        + "on conflict (version) do nothing"
+                : "merge into fachtracing_schema_version(version, applied_at) key(version) values(?, ?)";
+        try (var statement = connection.prepareStatement(sql)) {
+            timeout(statement);
+            statement.setInt(1, version);
+            statement.setTimestamp(2, Timestamp.from(Instant.now()));
+            statement.executeUpdate();
+        }
     }
 
     @Override public DecisionRecordId save(DecisionRecord record) {
@@ -205,8 +227,11 @@ public final class JdbcDecisionRecordRepository implements DecisionRecordReposit
         try (var statement = connection.createStatement()) { timeout(statement); statement.execute(sql); }
     }
     private static String payloadType(Connection connection) throws SQLException {
+        return isPostgres(connection) ? "bytea" : "blob";
+    }
+    private static boolean isPostgres(Connection connection) throws SQLException {
         String product = connection.getMetaData().getDatabaseProductName().toLowerCase(java.util.Locale.ROOT);
-        return product.contains("postgresql") ? "bytea" : "blob";
+        return product.contains("postgresql");
     }
     private void timeout(java.sql.Statement statement) throws SQLException {
         statement.setQueryTimeout(statementTimeoutSeconds);
