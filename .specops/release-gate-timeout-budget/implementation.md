@@ -81,3 +81,5 @@ Implementation is pending.
 - PR run `33009937304`: five jobs passed and PostgreSQL finished in 2 minutes 40 seconds. The
   browser suite reported two stale pre-shadcn selectors after 13 tests passed. The focused tests
   now verify the sheet and filter card by their shadcn data slots.
+- PR run `33010324734`: five jobs passed and the browser suite passed 14 tests. The remaining
+  failure was the final legacy Sheet overlay selector. It now uses the shadcn overlay data slot.

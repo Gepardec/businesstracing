@@ -32,6 +32,7 @@
 | 5 | Use a five-minute limit only for PostgreSQL integration | The five independent jobs pass in three minutes. The integrated job must start PostgreSQL, generate dogfood, install and build the viewer, and run all 17 browser tests. | Task 3 | 2026-08-26T20:15:00Z |
 | 6 | Select Overview before full presentation assertions | Explore mode intentionally shows a local context. Full node and route counts apply to Overview. | Task 3 | 2026-08-26T20:15:00Z |
 | 7 | Verify shadcn data slots instead of removed legacy classes and card counts | Run `33009937304` shows that two browser assertions still described the UI before its shadcn migration. | Task 3 | 2026-08-26T20:24:00Z |
+| 8 | Use the shadcn overlay data slot | Run `33010324734` passed 14 browser tests and exposed the final legacy `.sheet-overlay` selector. | Task 3 | 2026-08-26T20:30:00Z |
 
 ## Deviations from Design
 
@@ -81,3 +82,6 @@
 - Task 3 remote follow-up: run `33009937304` passed five jobs and completed 13 browser tests. Two
   tests still used pre-migration UI structure: `.sheet-content` instead of the shadcn
   `data-slot="sheet-content"`, and two generic cards instead of the one responsible filter card.
+- Task 3 remote follow-up: run `33010324734` passed five jobs and 14 browser tests. The only failure
+  was the last pre-migration Sheet selector, `.sheet-overlay`; the shadcn overlay exposes
+  `data-slot="sheet-overlay"`.

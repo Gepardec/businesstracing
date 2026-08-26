@@ -378,7 +378,7 @@ test('keeps the generated decision explanation clear at every supported width', 
   await expect(sheetTrigger).toBeFocused();
   await sheetTrigger.click();
   await expect(dialog).toBeVisible();
-  await page.locator('.sheet-overlay').click({ position: { x: 10, y: 10 } });
+  await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 10, y: 10 } });
   await expect(dialog).toBeHidden();
 
   await page.setViewportSize({ width: 390, height: 844 });
