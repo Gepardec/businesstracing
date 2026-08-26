@@ -300,6 +300,35 @@ The plugin loads visible providers through `ExternalMethodContractProvider`. The
 only its exact catalog. An unsupported Spring call stays incomplete. The adapter production code
 has no Spring dependency and contains no application rule.
 
+To enable the Jakarta EE catalog and CDI injection selection, add this optional adapter in the
+same plugin dependency section:
+
+```xml
+<dependency>
+  <groupId>at.gepardec.fachtracing</groupId>
+  <artifactId>fachtracing-jakartaee</artifactId>
+  <version>0.1.0-rc.1</version>
+</dependency>
+```
+
+The adapter supports source-visible CDI beans at `@Inject` fields and constructor parameters. It
+identifies built-in scopes, source-visible custom scopes, stereotypes, qualifier binding values,
+and `@Priority` alternatives. XML-selected alternatives, dynamic `Instance<T>` or `Provider<T>`
+lookup, producers, portable extensions, and other unproved injection mechanisms make the graph
+incomplete.
+
+The adapter also reports source-visible container behavior for interceptor bindings, transactions,
+security, validation, CDI events, lifecycle callbacks, decorators, asynchronous EJB methods,
+timers, servlet filters and listeners, JAX-RS providers, and WebSocket endpoints. Exact JPA,
+validation, transaction, JMS, mail, WebSocket, and SOAP contracts keep the known local operation
+but add a gap when callbacks, infrastructure, or a remote peer are not reconstructed.
+
+At runtime, the CDI container still creates and injects each bean or proxy. Fachtracing does not
+call `CDI.current()` or `BeanManager.getReference()`. The agent confirms one static dispatch edge
+when execution enters a proven implementation method. If no proven candidate is entered, the
+execution has an unresolved-dispatch runtime gap. The adapter production code has no Jakarta EE
+or gRPC binary dependency.
+
 ## Business-only artifacts
 
 Business JSON is always available. It uses the `fachtracing-business-graph/v1` identifier and JSON

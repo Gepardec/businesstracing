@@ -6,8 +6,10 @@ MAVEN_REPOSITORY=$("$ROOT/scripts/maven-repository-path.sh")
 PIN=782cdec8dfe5b4062eb5c1859e6a9e53afe02770
 SOURCE=${MEGA_BACKEND_DIR:-/tmp/fachtracing-mega-backend}
 WORKTREE=$(mktemp -d /tmp/fachtracing-mega-conformance.XXXXXX)
+BUILD_LOG=
 cleanup() {
   git -C "$SOURCE" worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true
+  test -z "$BUILD_LOG" || rm -f "$BUILD_LOG"
 }
 trap cleanup EXIT INT TERM
 
@@ -20,7 +22,13 @@ git -C "$SOURCE" worktree add --detach "$WORKTREE" "$PIN" >/dev/null
 if [ "${FACHTRACING_SKIP_PROJECT_BUILD:-false}" != "true" ]; then
   mvn -q -f "$ROOT/pom.xml" package
 fi
-mvn -q -f "$WORKTREE/pom.xml" -DskipTests test-compile
+BUILD_LOG=$(mktemp /tmp/fachtracing-mega-build.XXXXXX)
+if ! mvn -q -f "$WORKTREE/pom.xml" -DskipTests test-compile >"$BUILD_LOG" 2>&1; then
+  cat "$BUILD_LOG" >&2
+  exit 1
+fi
+rm -f "$BUILD_LOG"
+BUILD_LOG=
 mvn -q -f "$WORKTREE/pom.xml" dependency:build-classpath \
   -Dmdep.outputFile="$WORKTREE/target/conformance-classpath.txt" -DincludeScope=test
 MEGA_CP=$(cat "$WORKTREE/target/conformance-classpath.txt")

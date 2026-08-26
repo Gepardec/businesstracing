@@ -88,6 +88,35 @@ jobs:
           SPRING_PETCLINIC_DIR: ${{ runner.temp }}/fachtracing-spring-petclinic
         run: ./scripts/verify-spring-petclinic.sh
 
+  jakartaee-rest:
+    runs-on: macos-15
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Restore pinned Jakarta EE REST source
+        id: jakartaee-rest-cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/fachtracing-jakartaee-rest-sample
+          key: jakartaee-rest-${{ runner.os }}-85da1d6861fea14579b1c6eb76253f0549a8e80f
+      - name: Prepare pinned Jakarta EE REST source
+        if: steps.jakartaee-rest-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone -q https://github.com/hantsy/jakartaee-rest-sample.git "${{ runner.temp }}/fachtracing-jakartaee-rest-sample"
+          git -C "${{ runner.temp }}/fachtracing-jakartaee-rest-sample" checkout -q 85da1d6861fea14579b1c6eb76253f0549a8e80f
+      - name: Build Fachtracing classes
+        run: mvn -q -DskipTests package
+      - name: Run Jakarta EE REST conformance
+        env:
+          FACHTRACING_SKIP_PROJECT_BUILD: 'true'
+          JAKARTAEE_REST_SAMPLE_DIR: ${{ runner.temp }}/fachtracing-jakartaee-rest-sample
+        run: ./scripts/verify-jakartaee-rest.sh
+
   postgres:
     runs-on: ubuntu-24.04
     timeout-minutes: 3

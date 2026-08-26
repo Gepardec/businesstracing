@@ -8,6 +8,14 @@
     "updated": "2026-08-26T16:26:48Z"
   },
   {
+    "id": "shadcn-svelte-migration",
+    "type": "refactor",
+    "status": "complete",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T08:46:35Z"
+  },
+  {
     "id": "business-graph-semantic-explanation",
     "type": "bugfix",
     "status": "completed",
@@ -47,6 +55,22 @@
     "version": 14,
     "author": "lucostus",
     "updated": "2026-08-19T22:17:14Z"
+  },
+  {
+    "id": "cdi-dispatch-selection-correctness",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-18T10:33:36Z"
+  },
+  {
+    "id": "jakarta-ee-cdi-soap-semantics",
+    "type": "feature",
+    "status": "completed",
+    "version": 2,
+    "author": "lucostus",
+    "updated": "2026-08-18T11:08:32Z"
   },
   {
     "id": "self-explainable-runtime-dogfood",
@@ -454,14 +478,6 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-14T08:58:18Z"
-  },
-  {
-    "id": "real-graph-layout-usability",
-    "type": "bugfix",
-    "status": "completed",
-    "version": 1,
-    "author": "lucostus",
-    "updated": "2026-08-25T19:31:00Z"
   },
   {
     "id": "business-rule-values-and-viewer-regressions",

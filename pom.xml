@@ -12,6 +12,7 @@
     <module>fachtracing-api</module>
     <module>fachtracing-engine</module>
     <module>fachtracing-spring</module>
+    <module>fachtracing-jakartaee</module>
     <module>fachtracing-storage-jdbc</module>
     <module>fachtracing-agent</module>
     <module>fachtracing-maven-plugin</module>

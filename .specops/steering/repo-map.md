@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-26T16:28:22Z"
-_sourceHash: "d197c58480321b69371a3493435f0c36cb7537aba6af98c92c40fb7c2d541545"
+_generatedAt: "2026-08-26T16:32:50Z"
+_sourceHash: "53d5f15f0ef6e36084e1d637aef3cb0bcf5f25cbace42ce966f9c56a799985b5"
 ---
 
 ## Project Structure Map
@@ -32,6 +32,9 @@ fachtracing/
   fachtracing-spring/
     src/main/java/at/gepardec/fachtracing/spring/
     src/test/java/at/gepardec/fachtracing/spring/
+  fachtracing-jakartaee/
+    src/main/java/at/gepardec/fachtracing/jakartaee/
+    src/test/java/at/gepardec/fachtracing/jakartaee/
   fachtracing-storage-jdbc/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
@@ -44,6 +47,10 @@ fachtracing/
     src/test/resources/oracles/
     conformance-report.md
   conformance/keycloak/
+    src/test/java/at/gepardec/fachtracing/conformance/
+    README.md
+    selection.md
+  conformance/jakartaee-rest/
     src/test/java/at/gepardec/fachtracing/conformance/
     README.md
     selection.md
@@ -87,6 +94,10 @@ fachtracing/
   - immutable source-unavailable method semantics
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContractProvider.java`
   - trusted exact contract provider
+- `src/main/java/at/gepardec/fachtracing/analysis/SourceSemanticProvider.java`
+  - framework-managed source semantic gap provider
+- `src/main/java/at/gepardec/fachtracing/analysis/SourceSemanticProviders.java`
+  - deterministic service loader for source semantic providers
 - `src/main/java/at/gepardec/fachtracing/analysis/ExternalMethodContractRegistry.java`
   - deterministic exact resolution and conflict detection
 - `src/main/java/at/gepardec/fachtracing/analysis/ApplicationSourceBoundary.java`
@@ -228,6 +239,18 @@ fachtracing/
 - `src/main/java/at/gepardec/fachtracing/spring/SpringMethodContractProvider.java`
   - optional exact application-neutral Spring method contracts
 - `src/test/java/at/gepardec/fachtracing/spring/SpringMethodContractProviderTest.java`
+- `src/main/java/module-info.java`
+- `pom.xml`
+
+#### fachtracing-jakartaee/ (11 files)
+
+- `src/main/java/at/gepardec/fachtracing/jakartaee/CdiDispatchTargetSelector.java`
+  - source-visible CDI candidate selection and unresolved proof states
+- `src/main/java/at/gepardec/fachtracing/jakartaee/JakartaEeMethodContractProvider.java`
+  - exact Jakarta EE local operations and incomplete-boundary facts
+- `src/main/java/at/gepardec/fachtracing/jakartaee/JakartaEeSourceSemanticProvider.java`
+  - container-driven annotation and meta-annotation gaps
+- `src/test/java/at/gepardec/fachtracing/jakartaee/JakartaEeMethodContractProviderTest.java`
 - `src/main/java/module-info.java`
 - `pom.xml`
 

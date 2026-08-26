@@ -41,6 +41,10 @@ Spring applications can add the optional `fachtracing-spring` artifact as a Mave
 dependency. It supplies exact, application-neutral contracts for supported validation, page,
 persistence, and response APIs. The generic engine does not depend on Spring.
 
+Jakarta EE applications can add the optional `fachtracing-jakartaee` artifact as a Maven plugin
+dependency. It resolves source-visible scoped CDI injection targets and supplies exact contracts
+for common Jakarta EE operations, SOAP setup, and gRPC channel setup.
+
 See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
 generates from its own Maven plugin policy.
 
@@ -179,6 +183,15 @@ Run the smaller Spring PetClinic teaching and conformance suite (optionally set 
 
 It adds three annotations to a disposable pinned source tree and shows complete entity and domain
 graphs plus explicit framework-boundary gaps. See [the PetClinic graph report](conformance/spring-petclinic/conformance-report.md).
+
+Run the Jakarta EE CDI conformance command (optionally set `JAKARTAEE_REST_SAMPLE_DIR`):
+
+```sh
+./scripts/verify-jakartaee-rest.sh
+```
+
+It analyzes an unchanged, pinned Jakarta EE REST application and proves that its CDI-injected
+repository resolves to the scoped JPA implementation.
 
 Run the optional long load comparison (60 total disabled baseline seconds paired across ten minutes
 enabled at 1,000 requests/second):

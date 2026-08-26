@@ -20,10 +20,16 @@ final class AnalysisSourceSelector {
             ApplicationSourceBoundary boundary,
             ApplicationSourceBoundary.ProjectSources project,
             List<ExternalMethodContractProvider> contractProviders,
+            List<DynamicDispatchTargetSelector> dispatchTargetSelectors,
+            List<SourceSemanticProvider> sourceSemanticProviders,
             List<BusinessEntryPoint> businessEntryPoints) {
         Objects.requireNonNull(boundary, "boundary");
         Objects.requireNonNull(project, "project");
         contractProviders = List.copyOf(Objects.requireNonNull(contractProviders, "contractProviders"));
+        dispatchTargetSelectors = List.copyOf(Objects.requireNonNull(
+                dispatchTargetSelectors, "dispatchTargetSelectors"));
+        sourceSemanticProviders = List.copyOf(Objects.requireNonNull(
+                sourceSemanticProviders, "sourceSemanticProviders"));
         businessEntryPoints = List.copyOf(Objects.requireNonNull(businessEntryPoints, "businessEntryPoints"));
 
         SourceSelectionPlan plan = selectPlan(
@@ -49,6 +55,8 @@ final class AnalysisSourceSelector {
                 analysisSources, connectedClasspath, project.compilerModel().charset(),
                 project.entrySourceFiles())
                 .withExternalMethodContractProviders(contractProviders)
+                .withDynamicDispatchTargetSelectors(dispatchTargetSelectors)
+                .withSourceSemanticProviders(sourceSemanticProviders)
                 .withBusinessEntryPoints(businessEntryPoints);
         return Optional.of(new Selection(request, sourceProjects, modular));
     }
