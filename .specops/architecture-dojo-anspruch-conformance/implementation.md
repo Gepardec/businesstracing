@@ -59,3 +59,22 @@ None.
 
 All six acceptance criteria and both tasks pass. Documentation, viewer compatibility, full Java
 verification, memory, index, and repository map are complete.
+
+## Version 2
+
+- Selected `feature/solution1` because its head is newer than the previously pinned Onion branch.
+- Updated only the source pin and application boundary mapping. The analyzer still derives all
+  graph structure from source.
+- Fixed generic interface-call effect analysis. The analyzer now merges mutation summaries from
+  all source-visible concrete implementations before it reports an unknown side effect.
+- Added a regression fixture for a read-only interface method that supplies an enhanced loop.
+
+## Version 2 verification
+
+- Architecture Dojo conformance passed for 28 source files and two decisions.
+- Benefit entitlement: 102 exact nodes, 134 exact edges, 39 business nodes, 55 business edges,
+  `COMPLETE`.
+- Incapacity notification: 106 exact nodes, 137 exact edges, 41 business nodes, 58 business edges,
+  `COMPLETE`.
+- V1 JSON Schema validation and direct viewer parsing passed for both documents.
+- Viewer check, 43 tests, production build, and the full repository verification passed.

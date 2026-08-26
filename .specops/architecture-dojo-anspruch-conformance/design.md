@@ -18,8 +18,8 @@ writes Mermaid, PlantUML, JSON, and the shared JSON Schema under `target/generat
 
 ## Entry points
 
-- `AnspruchWebCheck.pruefe(String)` with the business label `check benefit entitlement`.
-- `ErstelleAuMeldungService.erstelleAuMeldung(String, LocalDate)` with the business label
+- `AnspruchWebCheck.check(String)` with the business label `check benefit entitlement`.
+- `AUService.anlegen(Meldung)` with the business label
   `submit incapacity notification`.
 
 These identifiers select source roots only. They do not provide nodes, edges, branches, results, or

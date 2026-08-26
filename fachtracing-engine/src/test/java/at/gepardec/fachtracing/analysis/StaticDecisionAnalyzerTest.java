@@ -50,6 +50,7 @@ public final class StaticDecisionAnalyzerTest {
         reportsUnknownPlatformEffects();
         usesProvenValidationRolesWithoutGlobalReceiverRemoval();
         followsDirectCallsAcrossDomains();
+        usesSourceImplementationsToProveInterfaceCallEffects();
         representsDynamicDispatchWithoutGuessing();
         appliesFrameworkDispatchTargetSelection();
         explainsReceiverCompatibleDispatchCandidates();
@@ -716,6 +717,14 @@ public final class StaticDecisionAnalyzerTest {
                         && decision.reason() == AnalysisManifest.AnalysisReason.ABSTRACT_IMPLEMENTATION
                         && decision.subject().endsWith("AbstractDecisionRule"))
                 : result.manifest().analysisDecisions();
+    }
+
+    private static void usesSourceImplementationsToProveInterfaceCallEffects() {
+        var result = analyzeLabel(
+                "strategy/SourceDispatchEffects.java", "source dispatch effects");
+        assert result.graph().completeness() == BusinessDecisionGraph.Completeness.COMPLETE
+                : result.graph().coverageGaps();
+        assert result.graph().coverageGaps().isEmpty() : result.graph().coverageGaps();
     }
 
     private static void explainsReceiverCompatibleDispatchCandidates() {

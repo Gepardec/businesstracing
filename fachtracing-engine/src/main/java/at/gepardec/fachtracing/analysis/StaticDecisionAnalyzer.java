@@ -615,6 +615,11 @@ public final class StaticDecisionAnalyzer {
                 return mergeEffects(callbackEffects,
                         new DependencyGraphBuilder.CallEffects(proven, possible));
             }
+            List<DependencyGraphBuilder.CallEffects> sourceDispatchEffects = callee == null
+                    ? List.of() : sourceDispatchEffects(call, executable);
+            if (!sourceDispatchEffects.isEmpty()) {
+                return mergeEffects(callbackEffects, mergeAlternativeEffects(sourceDispatchEffects));
+            }
             ExternalMethodContractRegistry.Resolution contract = externalMethodContract(executable);
             if (contract.kind() == ExternalMethodContractRegistry.ResolutionKind.RESOLVED) {
                 return mergeEffects(callbackEffects,
@@ -631,6 +636,26 @@ public final class StaticDecisionAnalyzer {
             if (isProvenReadOnlyLibraryOperation(executable)) return callbackEffects;
             return mergeEffects(callbackEffects,
                     new DependencyGraphBuilder.CallEffects(Set.of(), possibleReferenceRoots(caller, call)));
+        }
+
+        private List<DependencyGraphBuilder.CallEffects> sourceDispatchEffects(
+                MethodInvocationTree call, ExecutableElement executable) {
+            return index.types().stream()
+                    .filter(type -> type.getKind().isClass())
+                    .filter(type -> !type.getModifiers().contains(Modifier.ABSTRACT))
+                    .filter(type -> types.isSubtype(
+                            types.erasure(type.asType()),
+                            types.erasure(executable.getEnclosingElement().asType())))
+                    .map(type -> implementationOf(executable, type))
+                    .filter(Objects::nonNull)
+                    .filter(location -> location.method().getBody() != null)
+                    .map(location -> {
+                        MutationSummary summary = mutationSummary(location);
+                        return new DependencyGraphBuilder.CallEffects(
+                                mapSummaryRoots(call, summary.receiverWrite(), summary.parameterWrites()),
+                                mapSummaryRoots(call, summary.receiverUnknown(), summary.parameterUnknown()));
+                    })
+                    .toList();
         }
 
         private DependencyGraphBuilder.CallEffects callbackEffects(

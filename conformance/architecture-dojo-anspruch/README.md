@@ -1,9 +1,9 @@
 # Architecture Dojo Anspruch conformance
 
-This harness analyzes the unchanged Onion solution in
+This harness analyzes the unchanged solution in
 `Gepardec/ArchitectureDojoAnspruch`. Repository `main` has no `dojo-leistung` application source,
-so the harness pins `feature/onion` at commit
-`5767ba85bffd82520d7ee7f72c281a9395d1b7ee`.
+so the harness pins the newer `feature/solution1` branch at commit
+`c87dda139553ee51c87d8ed640e9bddff11a2df6`.
 
 The harness selects two application boundaries:
 

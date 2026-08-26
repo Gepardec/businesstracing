@@ -3,7 +3,7 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 MAVEN_REPOSITORY=$("$ROOT/scripts/maven-repository-path.sh")
-PIN=5767ba85bffd82520d7ee7f72c281a9395d1b7ee
+PIN=c87dda139553ee51c87d8ed640e9bddff11a2df6
 SOURCE=${ARCHITECTURE_DOJO_ANSPRUCH_DIR:-/tmp/fachtracing-architecture-dojo-anspruch}
 WORKTREE=$(mktemp -d /tmp/fachtracing-architecture-dojo-anspruch-conformance.XXXXXX)
 JAVA_HOME_21=$(/usr/libexec/java_home -v 21)

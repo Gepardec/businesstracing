@@ -2,9 +2,9 @@
   "id": "architecture-dojo-anspruch-conformance",
   "type": "feature",
   "status": "completed",
-  "version": 1,
+  "version": 2,
   "created": "2026-08-26T09:02:22Z",
-  "updated": "2026-08-26T09:14:02Z",
+  "updated": "2026-08-26T20:10:08Z",
   "specopsCreatedWith": "1.8.0",
   "specopsUpdatedWith": "1.8.0",
   "author": {
@@ -47,13 +47,13 @@
         "regressionSafety": 10,
         "testVerification": 10
       },
-      "evaluatedAt": "2026-08-26T09:14:02Z"
+      "evaluatedAt": "2026-08-26T20:10:08Z"
     }
   },
   "metrics": {
-    "filesChanged": 12,
-    "tasksCompleted": 2,
+    "filesChanged": 17,
+    "tasksCompleted": 5,
     "acceptanceCriteriaVerified": 6,
-    "specDurationMinutes": 12
+    "specDurationMinutes": 27
   }
 }

@@ -43,7 +43,7 @@ public final class ArchitectureDojoAnspruchConformanceTest {
         collectSources(checkout.resolve("dojo-external-domains/src/main/java"), sources);
         collectSources(checkout.resolve("dojo-leistung/src/main/java"), sources);
         sources.sort(Comparator.naturalOrder());
-        assert sources.size() >= 35 : "expected the complete Onion source corpus: " + sources.size();
+        assert sources.size() >= 25 : "expected the complete solution source corpus: " + sources.size();
 
         List<Path> classpath = new ArrayList<>();
         classpath.add(checkout.resolve("dojo-external-domains/target/classes"));
@@ -54,11 +54,11 @@ public final class ArchitectureDojoAnspruchConformanceTest {
 
         var entries = List.of(
                 new BusinessEntryPoint(
-                        "at.gepardec.dojo.leistung.anspruch.infrastructure.AnspruchWebCheck",
-                        "pruefe", List.of("java.lang.String"), ENTITLEMENT),
+                        "at.gepardec.dojo.anspruch.uc.AnspruchWebCheck",
+                        "check", List.of("java.lang.String"), ENTITLEMENT),
                 new BusinessEntryPoint(
-                        "at.gepardec.dojo.leistung.au.application.ErstelleAuMeldungService",
-                        "erstelleAuMeldung", List.of("java.lang.String", "java.time.LocalDate"),
+                        "at.gepardec.dojo.au.domain.AUService",
+                        "anlegen", List.of("at.gepardec.dojo.au.domain.Meldung"),
                         NOTIFICATION));
 
         long started = System.nanoTime();
@@ -85,7 +85,8 @@ public final class ArchitectureDojoAnspruchConformanceTest {
             BusinessDecisionGraph exact = analysis.graph();
             if (!exact.coverageGaps().isEmpty()) {
                 System.err.println(decision + " coverage gaps:");
-                exact.coverageGaps().forEach(gap -> System.err.println("  " + gap.description()));
+                exact.coverageGaps().forEach(gap -> System.err.println("  " + gap.description()
+                        + " at " + analysis.manifest().sourceMappings().get(gap.nodeId())));
             }
             assert exact.completeness() == BusinessDecisionGraph.Completeness.COMPLETE : exact.coverageGaps();
             assert new BusinessArtifactGuard().violations(exact).isEmpty()
@@ -126,7 +127,7 @@ public final class ArchitectureDojoAnspruchConformanceTest {
         for (String artifact : artifacts) {
             String lower = artifact.toLowerCase(java.util.Locale.ROOT);
             for (String forbidden : List.of(
-                    "at.gepardec.dojo", ".java", "anspruchwebcheck", "erstelleaumeldungservice",
+                    "at.gepardec.dojo", ".java", "anspruchwebcheck", "auservice",
                     "bytecode", "stack frame", "unresolved")) {
                 assert !lower.contains(forbidden)
                         : decision + " exposes developer content: " + forbidden;

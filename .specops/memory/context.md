@@ -552,3 +552,8 @@ derives all 60 business nodes and 88 business edges without a topology oracle or
 The pinned application tests, dependency-free schema checks, PR 33 viewer checks, exact generated
 file parsing, and full Fachtracing pull-request gate passed. No dependency or production behavior
 was added.
+
+Version 2 pins the newer `feature/solution1` revision. It generates two complete graphs from 28
+Java source files with 80 business nodes and 113 business edges. A generic analyzer correction now
+merges mutation effects from all source-visible concrete implementations of an interface call. The
+regression test, viewer checks, direct file parsing, and full repository verification pass.

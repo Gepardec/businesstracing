@@ -3,8 +3,8 @@
 ## Context
 
 The linked repository `Gepardec/ArchitectureDojoAnspruch` has no `dojo-leistung` application source
-on `main`. The complete Onion solution is on `feature/onion` at commit
-`5767ba85bffd82520d7ee7f72c281a9395d1b7ee`. This feature pins that revision.
+on `main`. The newer solution is on `feature/solution1` at commit
+`c87dda139553ee51c87d8ed640e9bddff11a2df6`. This feature pins that revision.
 
 ## User story
 
@@ -30,4 +30,4 @@ the graph viewer.
 
 - Changes to the linked repository.
 - A topology oracle or a manually maintained graph.
-- Analysis of all alternative solution branches.
+- Analysis of other solution branches.

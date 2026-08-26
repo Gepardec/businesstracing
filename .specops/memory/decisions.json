@@ -1400,6 +1400,16 @@
       "task": "Task 1",
       "date": "2026-08-26",
       "completedAt": "2026-08-26T09:14:02Z"
+    },
+    {
+      "specId": "architecture-dojo-anspruch-conformance",
+      "specType": "feature",
+      "number": 3,
+      "decision": "Merge call effects from all source-visible concrete implementations",
+      "rationale": "An interface declaration without a body must not cause a false unknown-mutation gap when all implementation bodies are present.",
+      "task": "Version 2 task 2",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T20:18:47Z"
     }
   ]
 }

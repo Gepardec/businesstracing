@@ -21,3 +21,11 @@
 ## Completion rule
 
 Both tasks and all six acceptance criteria must pass before the specification is completed.
+
+## Version 2: Regenerate from the newer solution branch
+
+**Status:** Completed
+
+1. [x] Pin `feature/solution1` and update its application entry points.
+2. [x] Regenerate and validate both graphs.
+3. [x] Run the viewer and repository gates.
