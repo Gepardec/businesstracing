@@ -18,6 +18,7 @@ public final class BusinessSemanticAttributes {
     public static final String AGGREGATE_ITEM = "semantic.aggregateItem";
     public static final String PARENT_AGGREGATE_SCOPE = "semantic.parentAggregateScope";
     public static final String ROLE = "semantic.role";
+    public static final String SOURCE_VALUE = "semantic.sourceValue";
 
     public static final String IMPLEMENTATION = "implementation";
     public static final String AGGREGATE = "aggregate";

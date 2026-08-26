@@ -533,3 +533,16 @@ applicable production browser journeys, and desktop, Overview, dark, and narrow 
 pass. Five external
 PostgreSQL or generated-dogfood journeys skip because those fixtures are absent. Graph, SQL, HTTP,
 storage, dependency, and CI contracts did not change.
+
+### business-rule-values-and-viewer-regressions (bugfix) — 2026-08-26
+
+Completed all four tasks. Static analysis now carries one numeric configuration value only when a
+relevant source method reads its matching field or string key and all evidence agrees. Business
+JSON stays V1; the real entitlement rule now reads `svnr ist unter altersgrenze (18)`. Ambiguous
+values and an unrelated constant are omitted.
+
+Graph cards now show four label lines, selection uses one border and shadow, edge labels reserve
+endpoint clearance, and compact Explore view reacts to explanation-guide size changes. Both
+supplied business graphs pass objective layout review, the production Playwright journey, and
+manual light, dark, selected, Overview, Full detail, and narrow screenshot review. No dependency,
+schema, server, database, HTTP, storage, diagram, or CI contract changed.

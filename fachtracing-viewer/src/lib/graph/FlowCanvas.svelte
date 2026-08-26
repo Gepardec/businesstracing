@@ -264,6 +264,14 @@
       if (focusNodeId && globalLayoutResult) void createLocalLayout(presentation, focusNodeId);
     }
   });
+  $effect(() => {
+    selectedNodeId;
+    viewMode;
+    detailMode;
+    layoutStatus;
+    const frame = requestAnimationFrame(measureSafeArea);
+    return () => cancelAnimationFrame(frame);
+  });
 
   onMount(() => {
     let frame = 0;
@@ -272,6 +280,9 @@
       frame = requestAnimationFrame(measureSafeArea);
     });
     observer.observe(flowPanel);
+    for (const overlay of flowPanel.querySelectorAll<HTMLElement>('.canvas-toolbar, .graph-guide, .svelte-flow__controls, .business-minimap, .large-graph-guide')) {
+      observer.observe(overlay);
+    }
     return () => { cancelAnimationFrame(frame); observer.disconnect(); };
   });
 

@@ -70,6 +70,7 @@ public final class StaticDecisionAnalyzerTest {
         exposesRelevantCoverageGaps();
         representsCallerVisibleSourceBoundaries();
         usesSourceVisibleBoundariesWithoutGuessing();
+        carriesOneSourceProvenRuleValueWithoutGuessing();
         usesControlledBytecodeFallbackAndRepresentsOpaqueBinaryRules();
         appliesExactExternalMethodContractsWithoutGuessing();
         supportsExplicitOpaqueLibraryBoundaries();
@@ -1486,6 +1487,83 @@ public final class StaticDecisionAnalyzerTest {
                     node.kind() == BusinessDecisionGraph.NodeKind.PREDICATE
                             && node.businessLabel().equals("unsafe binary rule accepts age"))
                     : unsafe.graph().nodes();
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
+    private static void carriesOneSourceProvenRuleValueWithoutGuessing() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-source-rule-value-");
+            Path source = root.resolve("example/MembershipPolicy.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package example;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import java.util.Map;
+
+                    interface MembershipLimits { int maximumAge(); }
+
+                    final class StoredMembershipLimits implements MembershipLimits {
+                        private static final Map<String, Integer> DEFAULTS = Map.of("maximum.age", 18);
+                        private static final int UNRELATED_RETRY_LIMIT = 99;
+                        private final Map<String, Integer> values = DEFAULTS;
+                        public int maximumAge() { return values.get("maximum.age"); }
+                    }
+
+                    final class MembershipPolicy {
+                        private final MembershipLimits limits = new StoredMembershipLimits();
+                        @FachTracing("membership eligibility")
+                        boolean decide(int age) { return isBelowMaximumAge(age); }
+                        private boolean isBelowMaximumAge(int age) {
+                            return age < limits.maximumAge();
+                        }
+                    }
+                    """);
+
+            var result = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            var business = new BusinessGraphProjector().project(result);
+            List<String> labels = business.nodes().stream()
+                    .map(BusinessLogicGraph.Node::label).toList();
+
+            assert labels.stream().anyMatch(label -> label.contains("below maximum age")
+                    && label.contains("18")) : labels + " " + result.graph().nodes();
+            assert result.graph().nodes().stream().anyMatch(node ->
+                    "18".equals(node.attributes().get(BusinessSemanticAttributes.SOURCE_VALUE)))
+                    : result.graph().nodes();
+
+            Path ambiguous = root.resolve("ambiguous/AmbiguousPolicy.java");
+            Files.createDirectories(ambiguous.getParent());
+            Files.writeString(ambiguous, """
+                    package ambiguous;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    interface Limits { int maximum(); }
+                    final class FirstLimits implements Limits {
+                        private static final int VALUE = 18;
+                        public int maximum() { return VALUE; }
+                    }
+                    final class SecondLimits implements Limits {
+                        private static final int VALUE = 21;
+                        public int maximum() { return VALUE; }
+                    }
+                    final class AmbiguousPolicy {
+                        private final Limits limits;
+                        AmbiguousPolicy(Limits limits) { this.limits = limits; }
+                        @FachTracing("ambiguous threshold")
+                        boolean decide(int age) { return belowMaximum(age); }
+                        private boolean belowMaximum(int age) { return age < limits.maximum(); }
+                    }
+                    """);
+            var ambiguousResult = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(ambiguous), CLASSPATH));
+            List<String> ambiguousLabels = new BusinessGraphProjector().project(ambiguousResult)
+                    .nodes().stream().map(BusinessLogicGraph.Node::label).toList();
+            assert ambiguousLabels.stream().noneMatch(label -> label.contains("18")
+                    || label.contains("21")) : ambiguousLabels;
         } catch (IOException exception) {
             throw new AssertionError(exception);
         } finally {

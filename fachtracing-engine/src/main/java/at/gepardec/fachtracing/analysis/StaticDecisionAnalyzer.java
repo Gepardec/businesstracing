@@ -52,6 +52,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -500,6 +501,7 @@ public final class StaticDecisionAnalyzer {
                 new SourceUnavailableCallClassifier();
         private final List<String> pendingFailureNodes = new ArrayList<>();
         private final Map<ExecutableElement, MutationSummary> mutationSummaries = new HashMap<>();
+        private final Map<ExecutableElement, Optional<String>> sourceValues = new HashMap<>();
         private final Set<ExecutableElement> activeMutationSummaries = new HashSet<>();
         private final ArrayDeque<String> businessSubjects = new ArrayDeque<>();
         private final ArrayDeque<String> aggregateScopes = new ArrayDeque<>();
@@ -3021,6 +3023,10 @@ public final class StaticDecisionAnalyzer {
                             executable.getEnclosingElement().toString());
                     putSemantic(attributes, BusinessSemanticAttributes.CALL_RETURN_TYPE,
                             executable.getReturnType().toString());
+                    if (executable.getReturnType().getKind() == TypeKind.BOOLEAN) {
+                        sourceValue(executable).ifPresent(value -> attributes.put(
+                                BusinessSemanticAttributes.SOURCE_VALUE, value));
+                    }
                 }
                 if (invocation.getMethodSelect() instanceof MemberSelectTree member) {
                     putSemantic(attributes, BusinessSemanticAttributes.RECEIVER,
@@ -3045,6 +3051,142 @@ public final class StaticDecisionAnalyzer {
                     attributes.put(BusinessSemanticAttributes.STATEMENT_CALL, "true");
                 }
                 return Map.copyOf(attributes);
+            }
+
+            private Optional<String> sourceValue(ExecutableElement executable) {
+                Optional<String> cached = sourceValues.get(executable);
+                if (cached != null) return cached;
+                var values = new LinkedHashSet<String>();
+                collectSourceValues(executable, values, new HashSet<>(), 0);
+                Optional<String> result = values.size() == 1
+                        ? Optional.of(values.iterator().next()) : Optional.empty();
+                sourceValues.put(executable, result);
+                return result;
+            }
+
+            private void collectSourceValues(
+                    ExecutableElement executable,
+                    Set<String> values,
+                    Set<ExecutableElement> visiting,
+                    int depth) {
+                if (depth > 6 || !visiting.add(executable)) return;
+                for (MethodLocation method : sourceMethods(executable)) {
+                    if (method.method().getBody() == null) continue;
+                    var referencedFields = new LinkedHashSet<String>();
+                    var referencedKeys = new LinkedHashSet<String>();
+                    new TreeScanner<Void, Void>() {
+                        @Override public Void visitLiteral(LiteralTree literal, Void unused) {
+                            if (literal.getValue() instanceof Number number) {
+                                values.add(String.valueOf(number));
+                            } else if (literal.getValue() instanceof String text && !text.isBlank()) {
+                                referencedKeys.add(text);
+                            }
+                            return super.visitLiteral(literal, unused);
+                        }
+
+                        @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
+                            TreePath path = TreePath.getPath(method.unit(), identifier);
+                            Element element = path == null ? null : trees.getElement(path);
+                            if (element instanceof VariableElement variable
+                                    && variable.getKind().isField()) {
+                                referencedFields.add(variable.getSimpleName().toString());
+                            }
+                            return super.visitIdentifier(identifier, unused);
+                        }
+
+                        @Override public Void visitMemberSelect(MemberSelectTree selection, Void unused) {
+                            TreePath path = TreePath.getPath(method.unit(), selection);
+                            Element element = path == null ? null : trees.getElement(path);
+                            if (element instanceof VariableElement variable
+                                    && variable.getKind().isField()) {
+                                referencedFields.add(variable.getSimpleName().toString());
+                            }
+                            return super.visitMemberSelect(selection, unused);
+                        }
+
+                        @Override public Void visitMethodInvocation(
+                                MethodInvocationTree invocation, Void unused) {
+                            TreePath path = TreePath.getPath(method.unit(), invocation);
+                            Element called = path == null ? null : trees.getElement(path);
+                            if (called instanceof ExecutableElement nested
+                                    && !isSupportedLibraryOperation(nested)) {
+                                collectSourceValues(nested, values, visiting, depth + 1);
+                            }
+                            return super.visitMethodInvocation(invocation, unused);
+                        }
+                    }.scan(method.method().getBody(), null);
+                    Element owner = trees.getElement(method.path().getParentPath());
+                    if (owner instanceof TypeElement type) {
+                        collectImmutableConfigurationValues(
+                                type, referencedFields, referencedKeys, values);
+                    }
+                }
+                visiting.remove(executable);
+            }
+
+            private List<MethodLocation> sourceMethods(ExecutableElement executable) {
+                MethodLocation direct = index.methods().get(executable);
+                if (direct != null && direct.method().getBody() != null) return List.of(direct);
+                if (!(executable.getEnclosingElement() instanceof TypeElement owner)) return List.of();
+                return index.types().stream()
+                        .filter(type -> type.getKind().isClass())
+                        .filter(type -> !type.getModifiers().contains(Modifier.ABSTRACT))
+                        .filter(type -> types.isSubtype(
+                                types.erasure(type.asType()), types.erasure(owner.asType())))
+                        .map(type -> implementationOf(executable, type))
+                        .filter(Objects::nonNull)
+                        .toList();
+            }
+
+            private void collectImmutableConfigurationValues(
+                    TypeElement type,
+                    Set<String> referencedFields,
+                    Set<String> referencedKeys,
+                    Set<String> values) {
+                Tree declaration = trees.getTree(type);
+                if (!(declaration instanceof ClassTree classTree)) return;
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitMethod(MethodTree method, Void unused) {
+                        return null;
+                    }
+
+                    @Override public Void visitVariable(VariableTree variable, Void unused) {
+                        if (variable.getInitializer() == null
+                                || !variable.getModifiers().getFlags().contains(Modifier.FINAL)) return null;
+                        var initializerFields = new LinkedHashSet<String>();
+                        var initializerKeys = new LinkedHashSet<String>();
+                        var initializerValues = new LinkedHashSet<String>();
+                        initializerFields.add(variable.getName().toString());
+                        new TreeScanner<Void, Void>() {
+                            @Override public Void visitIdentifier(
+                                    IdentifierTree identifier, Void ignored) {
+                                initializerFields.add(identifier.getName().toString());
+                                return super.visitIdentifier(identifier, ignored);
+                            }
+
+                            @Override public Void visitMemberSelect(
+                                    MemberSelectTree selection, Void ignored) {
+                                initializerFields.add(selection.getIdentifier().toString());
+                                return super.visitMemberSelect(selection, ignored);
+                            }
+
+                            @Override public Void visitLiteral(LiteralTree literal, Void ignored) {
+                                if (literal.getValue() instanceof Number number) {
+                                    initializerValues.add(String.valueOf(number));
+                                } else if (literal.getValue() instanceof String text
+                                        && !text.isBlank()) {
+                                    initializerKeys.add(text);
+                                }
+                                return super.visitLiteral(literal, ignored);
+                            }
+                        }.scan(variable.getInitializer(), null);
+                        boolean fieldMatch = initializerFields.stream()
+                                .anyMatch(referencedFields::contains);
+                        boolean keyMatch = initializerKeys.stream().anyMatch(referencedKeys::contains);
+                        if (fieldMatch || keyMatch) values.addAll(initializerValues);
+                        return null;
+                    }
+                }.scan(classTree, null);
             }
 
             private void putSemantic(Map<String, String> attributes, String key, String value) {

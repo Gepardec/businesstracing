@@ -114,6 +114,7 @@ const PORT_SLOT_GAP = 12;
 const HORIZONTAL_PORT_INSET = 36;
 const VERTICAL_PORT_INSET = 20;
 const PREFERRED_PORT_GAP = 56;
+const LABEL_ENDPOINT_CLEARANCE = 30;
 
 const LABEL_OFFSETS: readonly LayoutPoint[] = [-24, -16, -8, 0, 8, 16, 24]
   .flatMap((x) => [-24, -16, -8, 0, 8, 16, 24].map((y) => ({ x, y })))
@@ -553,7 +554,12 @@ function safeLabelPosition(
       const labelCollisions = occupiedLabels.filter((box) => boxesIntersect(candidate, box, 6)).length;
       const routeCollisions = allRoutes.filter((route) => route.id !== routeId).reduce((count, route) =>
         count + route.points.slice(1).filter((point, index) => segmentIntersectsLabelBox(route.points[index], point, candidate, 4)).length, 0);
-      const collisions = nodeCollisions * 100 + labelCollisions * 10 + routeCollisions;
+      const source = points[0];
+      const target = points.at(-1)!;
+      const endpointCollisions = [source, target].filter((endpoint) =>
+        Math.hypot(position.x - endpoint.x, position.y - endpoint.y) < LABEL_ENDPOINT_CLEARANCE).length;
+      const collisions = nodeCollisions * 100 + endpointCollisions * 100
+        + labelCollisions * 10 + routeCollisions;
       if (collisions === 0) return { position, anchor: base };
       if (!best || collisions < best.collisions) best = { position, anchor: base, collisions };
     }

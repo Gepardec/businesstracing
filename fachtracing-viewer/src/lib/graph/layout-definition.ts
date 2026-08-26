@@ -6,7 +6,7 @@ import { analyzeTopology, type DuplicateOccurrence, type TopologyAnalysis } from
 import { planRoutes, type LayoutJunction, type LayoutPort, type RenderedRoute, type RouteCrossing, type SharedRouteSegment } from './route-planner';
 
 export const NODE_WIDTH = 232;
-export const NODE_HEIGHT = 92;
+export const NODE_HEIGHT = 112;
 const HORIZONTAL_GAP = 64;
 const VERTICAL_GAP = 72;
 const PADDING = 32;

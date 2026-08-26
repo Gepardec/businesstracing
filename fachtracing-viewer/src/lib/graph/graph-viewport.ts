@@ -66,7 +66,8 @@ export function readingViewport(
   maximumZoom = 1.2
 ): GraphViewport {
   const neighborhoodFit = Math.min(safeRect.width / Math.max(1, neighborhood.width), safeRect.height / Math.max(1, neighborhood.height));
-  const contextMinimumZoom = safeRect.height < 420 ? 0.5 : NEIGHBORHOOD_MINIMUM_ZOOM;
+  const compactViewport = safeRect.width < 760 || safeRect.height < 760;
+  const contextMinimumZoom = compactViewport ? 0.48 : NEIGHBORHOOD_MINIMUM_ZOOM;
   if (neighborhoodFit >= contextMinimumZoom) {
     return viewportForBounds(neighborhood, safeRect, contextMinimumZoom, maximumZoom);
   }

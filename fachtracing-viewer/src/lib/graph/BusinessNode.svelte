@@ -56,7 +56,7 @@
 </article>
 
 <style>
-  .business-node { box-sizing: border-box; position: relative; width: 232px; height: 92px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(90deg, color-mix(in oklch, var(--node-color), transparent 18%) 0 4px, var(--card) 4px); box-shadow: 0 4px 16px color-mix(in oklch, var(--foreground), transparent 92%); overflow: hidden; transition: opacity 120ms, border-color 120ms, box-shadow 120ms; }
+  .business-node { box-sizing: border-box; position: relative; width: 232px; height: 112px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(90deg, color-mix(in oklch, var(--node-color), transparent 18%) 0 4px, var(--card) 4px); box-shadow: 0 4px 16px color-mix(in oklch, var(--foreground), transparent 92%); overflow: hidden; transition: opacity 120ms, border-color 120ms, box-shadow 120ms; }
   .business-node header { display: flex; align-items: center; gap: 7px; padding: 11px 13px 4px; color: color-mix(in oklch, var(--node-color), var(--foreground) 30%); }
   .node-icon { display: grid; place-items: center; }
   .node-kind { font-size: 10px; font-weight: 800; letter-spacing: .09em; }
@@ -64,7 +64,7 @@
   .node-count { margin-left: auto; color: var(--muted-foreground); font-size: 9px; font-weight: 750; }
   .node-occurrence + .node-step { margin-left: 0; }
   .node-step { margin-left: auto; width: 21px; height: 21px; display: grid; place-items: center; border-radius: 999px; background: var(--run-current); color: white; font-size: 10px; font-weight: 800; box-shadow: 0 0 0 2px color-mix(in oklch, var(--card), transparent 8%); }
-  p { margin: 0; padding: 4px 14px 12px; font-size: 14px; line-height: 1.3; font-weight: 650; display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  p { margin: 0; padding: 4px 14px 12px; font-size: 14px; line-height: 1.3; font-weight: 650; display: -webkit-box; line-clamp: 4; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .node-sequence p { padding-bottom: 1px; line-clamp: 2; -webkit-line-clamp: 2; }
   .sequence-more { display: block; padding: 1px 14px 8px; color: var(--muted-foreground); font-size: 10px; font-weight: 750; line-height: 1.25; }
   .business-node--entry { --node-color: var(--node-entry); border-color: color-mix(in oklch, var(--node-color), var(--border) 24%); border-radius: 999px; }
@@ -75,9 +75,10 @@
   .business-node--outcome { --node-color: var(--node-outcome); border-color: color-mix(in oklch, var(--node-color), var(--border) 24%); border-radius: 16px; }
   .business-node--coverage_gap { --node-color: var(--node-gap); border-color: var(--node-color); border-style: dashed; clip-path: polygon(8% 0, 92% 0, 100% 20%, 100% 80%, 92% 100%, 8% 100%, 0 80%, 0 20%); }
   .node-path:not(.node-current) { border: 2px solid var(--run-path); box-shadow: 0 5px 20px color-mix(in oklch, var(--run-path), transparent 84%); }
-  .node-current { border: 3px solid var(--run-current); box-shadow: 0 0 0 4px color-mix(in oklch, var(--run-current), transparent 88%), 0 8px 24px color-mix(in oklch, var(--run-current), transparent 78%); }
+  .node-current { border: 2px solid var(--run-current); box-shadow: 0 8px 24px color-mix(in oklch, var(--run-current), transparent 78%); }
   .node-dimmed { opacity: .68; }
   :global(.svelte-flow__node:focus-visible .business-node) { outline: 2px solid var(--ring); outline-offset: 3px; }
-  :global(.svelte-flow__node.selected .business-node:not(.node-current):not(.node-path)) { border: 3px solid var(--primary); box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary), transparent 82%), 0 8px 22px color-mix(in oklch, var(--foreground), transparent 84%); }
+  :global(.svelte-flow__node.selected) { outline: none; box-shadow: none; }
+  :global(.svelte-flow__node.selected .business-node:not(.node-current):not(.node-path)) { border: 2px solid var(--primary); box-shadow: 0 8px 22px color-mix(in oklch, var(--primary), transparent 84%); }
   :global(.business-handle) { width: 1px; height: 1px; opacity: 0; border: 0; background: transparent; pointer-events: none; }
 </style>

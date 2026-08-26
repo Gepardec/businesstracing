@@ -83,6 +83,16 @@ describe('graph viewport', () => {
     expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
   });
 
+  it('keeps the complete local context above a compact explanation guide', () => {
+    const safeRect = { x: 16, y: 110, width: 757, height: 286 };
+    const neighborhood = { x: 0, y: 0, width: 1_216, height: 576 };
+    const focus = { x: 384, y: 238, width: 232, height: 112 };
+    const viewport = readingViewport(neighborhood, focus, safeRect);
+    expect(viewport.zoom).toBeCloseTo(286 / 576);
+    expect(viewport.y + neighborhood.y * viewport.zoom).toBeGreaterThanOrEqual(safeRect.y);
+    expect(viewport.y + (neighborhood.y + neighborhood.height) * viewport.zoom).toBeLessThanOrEqual(safeRect.y + safeRect.height);
+  });
+
   it('builds focused-node bounds with reading context', () => {
     const bounds = focusedNodeBounds([{ id: 'selected', x: 100, y: 200, width: 232, height: 92, ports: [], occurrence: null, incomingCount: 0, outgoingCount: 0 }], 'selected')!;
     expect(bounds.x).toBeLessThan(100);

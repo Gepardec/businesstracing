@@ -32,7 +32,8 @@ final class BusinessSemanticReducer {
                 return new Reduction(actionLabel(attributes, label), false, false, false);
             }
             if (booleanBusinessCall(attributes)) {
-                return new Reduction(namedPredicate(attributes, label), false, false, true);
+                return new Reduction(withSourceValue(attributes, namedPredicate(attributes, label)),
+                        false, false, true);
             }
             if (attributes.containsKey(BusinessSemanticAttributes.OWNER_TYPE)
                     || implementationWrapper(attributes)) {
@@ -81,10 +82,19 @@ final class BusinessSemanticReducer {
                     false, true, false);
         }
         if (lower.startsWith("not ")) {
-            String positive = namedPredicate(attributes, label.substring(4).strip());
+            String positive = withSourceValue(
+                    attributes, namedPredicate(attributes, label.substring(4).strip()));
             return new Reduction(positive, false, true, false);
         }
-        return new Reduction(namedPredicate(attributes, label), false, false, false);
+        return new Reduction(withSourceValue(attributes, namedPredicate(attributes, label)),
+                false, false, false);
+    }
+
+    private static String withSourceValue(Map<String, String> attributes, String label) {
+        String value = attributes.getOrDefault(BusinessSemanticAttributes.SOURCE_VALUE, "").strip();
+        if (value.isBlank() || Pattern.compile("(?<![\\p{L}\\p{N}])" + Pattern.quote(value)
+                + "(?![\\p{L}\\p{N}])").matcher(label).find()) return label;
+        return label + " (" + value + ")";
     }
 
     private static String namedPredicate(Map<String, String> attributes, String fallback) {

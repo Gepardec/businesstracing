@@ -63,6 +63,24 @@ describe('static graph route planning', () => {
     expect(layout.metrics.detachedLabels).toBe(0);
   });
 
+  it('keeps labels clear of route endpoints and gives business rules four readable lines', async () => {
+    const layout = await computeLayout(balancedBranchFixture());
+    expect(NODE_HEIGHT).toBeGreaterThanOrEqual(108);
+    for (const route of layout.edges.filter((edge) => edge.displayLabel)) {
+      const sourceDistance = Math.hypot(
+        route.labelPosition.x - route.points[0].x,
+        route.labelPosition.y - route.points[0].y
+      );
+      const target = route.points.at(-1)!;
+      const targetDistance = Math.hypot(
+        route.labelPosition.x - target.x,
+        route.labelPosition.y - target.y
+      );
+      expect(sourceDistance, `${route.id} source`).toBeGreaterThanOrEqual(30);
+      expect(targetDistance, `${route.id} target`).toBeGreaterThanOrEqual(30);
+    }
+  });
+
   it('separates adjacent ports so rounded exits do not look like duplicate loops', async () => {
     const layout = await computeLayout(balancedBranchFixture());
     const sourcePorts = layout.edges
