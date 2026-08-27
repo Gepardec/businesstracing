@@ -1182,6 +1182,246 @@
       "completedAt": "2026-08-14T08:58:18Z"
     },
     {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Create a focused static-graph bugfix spec",
+      "rationale": "The static graph layout can change without adding active-run behavior to the same change.",
+      "task": "Spec",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Keep ELK for ranked node placement and remove final route ownership from ELK",
+      "rationale": "ELK supplies stable layered ordering, while explicit topology, port, route, convergence, and crossing control fixes the visual defects.",
+      "task": "Tasks 2 and 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Use all four node sides and compare valid orthogonal route candidates",
+      "rationale": "Fixed north and south ports cause remote starts, avoidable hooks, and long routes.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Keep junctions, trunks, regions, and crossings presentation-only",
+      "rationale": "The layout must explain geometry without changing supplied graph topology.",
+      "task": "Task 5",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 5,
+      "decision": "Keep the shared canvas and treat run highlighting as regression behavior",
+      "rationale": "Static preview and run detail must use one topology, but this bugfix adds no run-state requirement.",
+      "task": "Task 6",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 6,
+      "decision": "Preserve source and target port leads during point simplification",
+      "rationale": "Removing a collinear reversal can move a route through a node and start it on the wrong side.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 7,
+      "decision": "Reserve a cycle corridor for one proven strongly connected component",
+      "rationale": "Undefined cycle identifiers must not classify ordinary edges as cycle edges.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 8,
+      "decision": "Place labels in one global collision pass",
+      "rationale": "A label can be clear on its own route and still hide another route or branch label.",
+      "task": "Task 4",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 9,
+      "decision": "Keep normal edges inside graph corridors",
+      "rationale": "Only proven long and cycle edges should use outer corridors; a marked fallback is permitted only when no internal candidate is collision-free.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 10,
+      "decision": "Use stable fan-in slots and one shared final trunk",
+      "rationale": "A single point for all feeders creates a dense comb and removes individual traceability.",
+      "task": "Task 5",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 11,
+      "decision": "Penalize near-parallel route congestion",
+      "rationale": "Routes that differ by a few pixels can still look like one ambiguous connection.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 12,
+      "decision": "Do not transition button foreground and background colors across themes",
+      "rationale": "Different transition timing caused a short low-contrast state in dark-theme references.",
+      "task": "Task 6",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:12:18Z"
+    },
+    {
+      "specId": "static-graph-layout-quality",
+      "specType": "bugfix",
+      "number": 13,
+      "decision": "Refine crossings twice and report any remaining single-edge improvement",
+      "rationale": "A hard-coded zero metric would hide an avoidable route crossing.",
+      "task": "Tasks 3 and 6",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T09:22:00Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Create a focused real-graph usability follow-up",
+      "rationale": "The completed static layout established the pipeline, while medium real graphs exposed measurable reading, routing, and selection defects.",
+      "task": "Spec",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Keep broad visual design related but not required",
+      "rationale": "The fix is limited to static graph behavior and does not require run, dashboard, or mobile redesign.",
+      "task": "Spec",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Separate Reading view from Overview",
+      "rationale": "A complete fit cannot keep labels readable on a medium or deep graph.",
+      "task": "Task 2",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 4,
+      "decision": "Preserve full ELK placement candidates",
+      "rationale": "Rebuilding global ranks caused extreme wide and tall layouts.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 5,
+      "decision": "Measure detour against the shortest valid route candidate",
+      "rationale": "Obstacle-aware candidates give a fair route bound and expose avoidable detours.",
+      "task": "Tasks 1 and 4",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 6,
+      "decision": "Keep real evidence optional and identify it by content hash",
+      "rationale": "Real files must support local review without becoming product-specific diagrams or test fixtures.",
+      "task": "Tasks 1 and 6",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 7,
+      "decision": "Add no animation or graph dependency",
+      "rationale": "The defect is layout and viewport policy, not missing animation infrastructure.",
+      "task": "Spec",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 8,
+      "decision": "Score completed routes before placement acceptance",
+      "rationale": "Crossings, branch containment, and detour must influence which bounded ELK profile is selected.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 9,
+      "decision": "Memoize the longest forward topology path",
+      "rationale": "Enumerating every possible path was exponential on the 45-node real graph.",
+      "task": "Task 3",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 10,
+      "decision": "Fade unrelated topology in static Reading view",
+      "rationale": "The complete model remains loaded while the focus and its direct graph context stay visually dominant.",
+      "task": "Task 5",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "specType": "bugfix",
+      "number": 11,
+      "decision": "Use a focus-centered reading-floor fallback",
+      "rationale": "A selected node must remain visible and readable when its complete direct neighborhood cannot fit.",
+      "task": "Task 5",
+      "date": "2026-08-25",
+      "completedAt": "2026-08-25T10:53:52Z"
+    },
+    {
       "specId": "cdi-dispatch-selection-correctness",
       "specType": "bugfix",
       "number": 1,
@@ -1240,6 +1480,36 @@
       "task": "Task 5",
       "date": "2026-08-18",
       "completedAt": "2026-08-18T11:08:32Z"
+    },
+    {
+      "specId": "ci-business-projection-regression",
+      "specType": "bugfix",
+      "number": 1,
+      "decision": "Prefer direct business semantics to owner suffixes",
+      "rationale": "A predicate, material action, or terminal edge is stronger evidence than an enclosing controller or infrastructure class name.",
+      "task": "Task 2",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T20:34:00Z"
+    },
+    {
+      "specId": "ci-business-projection-regression",
+      "specType": "bugfix",
+      "number": 2,
+      "decision": "Test graph presentation in its declared view mode",
+      "rationale": "Explore renders a local context, while Overview renders the full readable presentation and supports full node and route assertions.",
+      "task": "Task 3",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T20:34:00Z"
+    },
+    {
+      "specId": "ci-business-projection-regression",
+      "specType": "bugfix",
+      "number": 3,
+      "decision": "Use one larger budget only for the integrated PostgreSQL boundary",
+      "rationale": "Independent jobs finish within three minutes, while database startup, dogfood, viewer build, and all browser tests form one five-minute integration journey.",
+      "task": "Task 3",
+      "date": "2026-08-26",
+      "completedAt": "2026-08-26T20:34:00Z"
     }
   ]
 }

@@ -3,8 +3,8 @@ name: "Repo Map"
 description: "Machine-generated structural map of the codebase"
 inclusion: always
 _generated: true
-_generatedAt: "2026-08-18T11:03:07Z"
-_sourceHash: "9e5cabc5d3c70841599d59988f849ed43b0317994f85334be26f9c6fb99c16f0"
+_generatedAt: "2026-08-26T16:32:50Z"
+_sourceHash: "53d5f15f0ef6e36084e1d637aef3cb0bcf5f25cbace42ce966f9c56a799985b5"
 ---
 
 ## Project Structure Map
@@ -38,11 +38,19 @@ fachtracing/
   fachtracing-storage-jdbc/
     src/main/java/at/gepardec/fachtracing/storage/jdbc/
     src/test/java/at/gepardec/fachtracing/storage/jdbc/
+  fachtracing-viewer/
+    src/lib/{components,contracts,graph,layout,runs,server}/
+    src/routes/{api,graphs,runs}/
+    e2e/
   conformance/mega-backend/
     src/test/java/at/gepardec/fachtracing/conformance/
     src/test/resources/oracles/
     conformance-report.md
   conformance/keycloak/
+    src/test/java/at/gepardec/fachtracing/conformance/
+    README.md
+    selection.md
+  conformance/jakartaee-rest/
     src/test/java/at/gepardec/fachtracing/conformance/
     README.md
     selection.md
@@ -68,7 +76,7 @@ fachtracing/
 - `src/main/java/module-info.java`
 - `pom.xml`
 
-#### fachtracing-engine/ (103 files)
+#### fachtracing-engine/ (104 files)
 
 - `src/main/java/at/gepardec/fachtracing/FachtracingEngine.java`
   - `public final class FachtracingEngine`
@@ -119,6 +127,8 @@ fachtracing/
   - exact supported cancellation call-site discovery
 - `src/main/java/at/gepardec/fachtracing/analysis/CaughtThrowResolver.java`
   - attributed compatible local catch resolution
+- `src/main/java/at/gepardec/fachtracing/analysis/AggregateBusinessLabelRenderer.java`
+  - joins source-derived aggregate roles without language-specific sentence grammar
 - `src/main/java/at/gepardec/fachtracing/analysis/StaticDecisionAnalyzer.java`
   - `public final class StaticDecisionAnalyzer`
 - `src/main/java/at/gepardec/fachtracing/analysis/ReachingDefinitionIndex.java`
@@ -251,6 +261,38 @@ fachtracing/
 - `src/test/java/at/gepardec/fachtracing/storage/jdbc/JdbcDecisionRecordRepositoryTest.java`
 - `src/main/java/module-info.java`
 - `pom.xml`
+
+#### fachtracing-viewer/ (91 files)
+
+- `src/lib/contracts/` — stable graph, run, and query adapters
+- `src/lib/graph/topology-analysis.ts`
+  - `export function analyzeTopology`
+- `src/lib/graph/layout-engine.ts`
+  - deterministic route-aware ELK placement and immutable layout coordination
+- `src/lib/graph/placement-profiles.ts`
+  - bounded ELK profiles and lexicographic placement scoring
+- `src/lib/graph/route-planner.ts`
+  - `export function planRoutes`
+- `src/lib/graph/route-quality.ts`
+  - deterministic geometry and route-quality metrics
+- `src/lib/graph/graph-viewport.ts`
+  - Reading, Overview, focus-neighborhood, and safe-control viewport calculations
+- `src/lib/graph/layout-review.ts` and `scripts/review-graphs.ts`
+  - generic file-driven layout acceptance metrics
+- `src/lib/graph/FlowCanvas.svelte`
+  - shared read-only Svelte Flow canvas
+- `src/lib/graph/GraphGuide.svelte` and `src/lib/graph/graph-guide.ts`
+  - static-preview explanation panel and pure source-derived navigation model
+- `src/lib/graph/GraphLayoutStatus.svelte`
+  - accessible arranging state
+- `src/lib/graph/BusinessNode.svelte`, `BusinessEdge.svelte`, and `GraphJunctions.svelte`
+  - static node, edge, junction, trunk, crossing, and region presentation
+- `src/lib/graph/graph-fixtures.ts` and `e2e/visual-fixtures.ts`
+  - generated topology fixtures without fixed coordinates or routes
+- `src/routes/graphs/` — browser-only graph JSON preview
+- `src/routes/runs/` — generic result search and run explanation
+- `e2e/decision-explorer.spec.ts` — upload, static graph, dogfood, and run-detail browser journeys
+- `README.md`, `package.json`, and `playwright.config.ts`
 
 #### docs/ (13 files)
 

@@ -1,5 +1,70 @@
 [
   {
+    "id": "ci-business-projection-regression",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T20:34:00Z"
+  },
+  {
+    "id": "compact-graph-reading-and-business-phrasing",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T16:26:48Z"
+  },
+  {
+    "id": "shadcn-svelte-migration",
+    "type": "refactor",
+    "status": "complete",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T08:46:35Z"
+  },
+  {
+    "id": "business-graph-semantic-explanation",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T10:29:55Z",
+    "partOf": "business-graph-conformance"
+  },
+  {
+    "id": "real-graph-layout-usability",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-25T20:06:19Z"
+  },
+  {
+    "id": "static-graph-layout-quality",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-25T09:23:18Z"
+  },
+  {
+    "id": "frontend-visual-design-quality",
+    "type": "bugfix",
+    "status": "draft",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-21T11:32:26Z"
+  },
+  {
+    "id": "frontend-flow-explorer",
+    "type": "feature",
+    "status": "completed",
+    "version": 14,
+    "author": "lucostus",
+    "updated": "2026-08-19T22:17:14Z"
+  },
+  {
     "id": "cdi-dispatch-selection-correctness",
     "type": "bugfix",
     "status": "completed",
@@ -11,7 +76,7 @@
     "id": "jakarta-ee-cdi-soap-semantics",
     "type": "feature",
     "status": "completed",
-    "version": 2,
+    "version": 3,
     "author": "lucostus",
     "updated": "2026-08-18T11:08:32Z"
   },
@@ -402,9 +467,9 @@
     "id": "release-gate-timeout-budget",
     "type": "bugfix",
     "status": "implementing",
-    "version": 2,
+    "version": 4,
     "author": "lucostus",
-    "updated": "2026-08-12T07:09:21Z"
+    "updated": "2026-08-26T20:34:00Z"
   },
   {
     "id": "configured-endpoint-business-tracing",
@@ -421,5 +486,13 @@
     "version": 1,
     "author": "lucostus",
     "updated": "2026-08-14T08:58:18Z"
+  },
+  {
+    "id": "business-rule-values-and-viewer-regressions",
+    "type": "bugfix",
+    "status": "completed",
+    "version": 1,
+    "author": "lucostus",
+    "updated": "2026-08-26T16:03:46Z"
   }
 ]

@@ -1,6 +1,7 @@
 package at.gepardec.fachtracing.analysis;
 
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
+import at.gepardec.fachtracing.model.BusinessSemanticAttributes;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ArrayAccessTree;
 import com.sun.source.tree.AssignmentTree;
@@ -25,6 +26,7 @@ import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.ReturnTree;
@@ -50,6 +52,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -68,6 +71,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -528,7 +532,10 @@ public final class StaticDecisionAnalyzer {
                 new SourceUnavailableCallClassifier();
         private final List<String> pendingFailureNodes = new ArrayList<>();
         private final Map<ExecutableElement, MutationSummary> mutationSummaries = new HashMap<>();
+        private final Map<ExecutableElement, Optional<String>> sourceValues = new HashMap<>();
         private final Set<ExecutableElement> activeMutationSummaries = new HashSet<>();
+        private final ArrayDeque<String> businessSubjects = new ArrayDeque<>();
+        private final ArrayDeque<String> aggregateScopes = new ArrayDeque<>();
         private String rootStop;
 
         private Extractor(
@@ -2318,7 +2325,10 @@ public final class StaticDecisionAnalyzer {
                     String alternative = builder.addNode(
                             BusinessDecisionGraph.NodeKind.COMPUTATION,
                             businessRuleLabel(implementation),
-                            Map.of(), null, null, "", "");
+                            Map.of(
+                                    BusinessSemanticAttributes.OWNER_TYPE, implementation.toString(),
+                                    BusinessSemanticAttributes.ROLE, BusinessSemanticAttributes.IMPLEMENTATION),
+                            null, null, "", "");
                     candidate++;
                     String candidateEdge = builder.addEdge(dispatch, alternative, "selected rule");
                     auditDispatchCandidate(node, implementation,
@@ -2333,8 +2343,15 @@ public final class StaticDecisionAnalyzer {
                     builder.addDispatchTarget(dispatch, candidateEdge, implementation.toString(),
                             implementationMethod.method().getName().toString(),
                             methodDescriptor(implementationMethod));
-                    Extraction linked = extract(implementationMethod, alternative, false, activeMethods);
-                    resultTails.addAll(linked.exits());
+                    String subject = node.getArguments().isEmpty()
+                            ? "" : expression(node.getArguments().getFirst());
+                    if (!subject.isBlank()) businessSubjects.addLast(subject);
+                    try {
+                        Extraction linked = extract(implementationMethod, alternative, false, activeMethods);
+                        resultTails.addAll(linked.exits());
+                    } finally {
+                        if (!subject.isBlank()) businessSubjects.removeLast();
+                    }
                 }
                 if (candidate == 0) {
                     if (!unresolvedFrameworkSelection) {
@@ -2607,10 +2624,46 @@ public final class StaticDecisionAnalyzer {
             @Override public Void visitReturn(ReturnTree node, Void unused) {
                 if (!slice.contains(node)) return super.visitReturn(node, unused);
                 if (node.getExpression() != null) {
-                    scan(node.getExpression(), unused);
-                    if (isPredicateExpression(node.getExpression())
-                            || isCallerBoundaryPredicate(node.getExpression())) {
-                        PredicatePlan predicate = addPredicatePlan(node.getExpression());
+                    String aggregateMatch = aggregateMatchLabel(node.getExpression());
+                    Tree returnedExpression = unwrapParentheses(node.getExpression());
+                    Tree returnedCondition = returnedExpression instanceof ConditionalExpressionTree conditional
+                            ? conditional.getCondition() : returnedExpression;
+                    if (aggregateMatch != null) {
+                        String item = aggregateItem(returnedExpression);
+                        String scope = aggregateScope(returnedExpression);
+                        String parentAggregateScope = aggregateScopes.isEmpty()
+                                ? "" : aggregateScopes.getLast();
+                        aggregateScopes.addLast(scope);
+                        if (!item.isBlank()) businessSubjects.addLast(item);
+                        try {
+                            scan(node.getExpression(), unused);
+                        } finally {
+                            if (!item.isBlank()) businessSubjects.removeLast();
+                            aggregateScopes.removeLast();
+                        }
+                        var attributes = new LinkedHashMap<>(semanticAttributes(returnedExpression));
+                        attributes.put(BusinessSemanticAttributes.ROLE, BusinessSemanticAttributes.AGGREGATE);
+                        attributes.put(BusinessSemanticAttributes.AGGREGATE_SCOPE, scope);
+                        if (!parentAggregateScope.isBlank()) {
+                            attributes.put(BusinessSemanticAttributes.PARENT_AGGREGATE_SCOPE,
+                                    parentAggregateScope);
+                        }
+                        if (!item.isBlank()) attributes.put(BusinessSemanticAttributes.AGGREGATE_ITEM, item);
+                        String id = builder.addNode(BusinessDecisionGraph.NodeKind.PREDICATE, aggregateMatch,
+                                Map.copyOf(attributes), mapping(location, returnedExpression),
+                                AnalysisManifest.ProbeKind.PREDICATE, ownerHint(location.path()),
+                                runtimeMemberHint(returnedExpression), methodDescriptor(location));
+                        builder.setBranchCompletions(id,
+                                List.of(AnalysisManifest.BranchCompletion.BOTH_OUTCOMES));
+                        enter(new PredicatePlan(id, List.of(new Tail(id, "true")),
+                                List.of(new Tail(id, "false"))));
+                        frontier = List.of(new Tail(id, "true"), new Tail(id, "false"));
+                    } else {
+                        scan(node.getExpression(), unused);
+                    }
+                    if (aggregateMatch == null && (isPredicateExpression(returnedCondition)
+                            || isCallerBoundaryPredicate(returnedCondition))) {
+                        PredicatePlan predicate = addPredicatePlan(returnedCondition);
                         enter(predicate);
                         var outcomes = new ArrayList<Tail>(predicate.trueTails());
                         outcomes.addAll(predicate.falseTails());
@@ -2623,9 +2676,11 @@ public final class StaticDecisionAnalyzer {
                     return null;
                 }
                 if (!root) {
+                    String returned = returnedLabel(node);
                     frontier.forEach(tail -> {
                         exitNodes.add(new Tail(tail.nodeId(),
-                                tail.outcome().equals("next") ? "result" : tail.outcome()));
+                                tail.outcome().equals("next") ? returned
+                                        : tail.outcome() + "; " + returned));
                     });
                     frontier = List.of();
                     return null;
@@ -2639,10 +2694,11 @@ public final class StaticDecisionAnalyzer {
                 builder.addProbe(id, AnalysisManifest.ProbeKind.OUTCOME,
                         ownerHint(location.path()), runtimeMemberHint(node), methodDescriptor(location),
                         mapping(location, node));
-                String returned = returnedLabel(node);
                 for (Tail tail : frontier) {
+                    String returned = returnedLabel(node, tail.outcome());
                     String outcome = tail.outcome().equals("next")
-                            ? returned : tail.outcome() + "; " + returned;
+                            ? returned : tail.outcome().contains("returns ")
+                                    ? tail.outcome() : tail.outcome() + "; " + returned;
                     builder.addEdge(tail.nodeId(), id, outcome);
                 }
                 lastNode = id;
@@ -2650,6 +2706,104 @@ public final class StaticDecisionAnalyzer {
                 frontier = List.of();
                 return null;
             }
+
+            private String aggregateItem(Tree returnedExpression) {
+                Tree unwrapped = unwrapParentheses(returnedExpression);
+                if (!(unwrapped instanceof MethodInvocationTree match) || match.getArguments().isEmpty()
+                        || !(match.getArguments().getFirst() instanceof LambdaExpressionTree lambda)
+                        || lambda.getParameters().isEmpty()) return "";
+                return words(lambda.getParameters().getFirst().getName().toString());
+            }
+
+            private String aggregateScope(Tree returnedExpression) {
+                long position = trees.getSourcePositions().getStartPosition(location.unit(), returnedExpression);
+                return location.unit().getSourceFile().toUri() + "#" + position;
+            }
+
+            private String aggregateMatchLabel(Tree returnedExpression) {
+                Tree unwrapped = unwrapParentheses(returnedExpression);
+                if (!(unwrapped instanceof MethodInvocationTree match)
+                        || !(match.getMethodSelect() instanceof MemberSelectTree matchSelect)
+                        || !matchSelect.getIdentifier().contentEquals("anyMatch")
+                        || match.getArguments().size() != 1) return null;
+                TreePath matchPath = TreePath.getPath(location.unit(), match);
+                Element matchMethod = matchPath == null ? null : trees.getElement(matchPath);
+                if (!(matchMethod instanceof ExecutableElement executable)
+                        || !(executable.getEnclosingElement() instanceof TypeElement owner)
+                        || !owner.getQualifiedName().contentEquals("java.util.stream.Stream")) return null;
+                String collection = aggregateCollection(matchSelect.getExpression());
+                AggregateCondition condition = aggregateCondition(match.getArguments().getFirst());
+                if (collection.isBlank() || condition == null || condition.rule().isBlank()) return null;
+                String subject = businessSubjects.isEmpty() ? "" : words(businessSubjects.getLast());
+                return AggregateBusinessLabelRenderer.render(
+                        subject, collection, condition.rule(), condition.qualifier());
+            }
+
+            private String aggregateCollection(Tree pipeline) {
+                Tree unwrapped = unwrapParentheses(pipeline);
+                if (!(unwrapped instanceof MethodInvocationTree stream)
+                        || !(stream.getMethodSelect() instanceof MemberSelectTree streamSelect)) return "items";
+                Tree source = unwrapParentheses(streamSelect.getExpression());
+                if (source instanceof IdentifierTree identifier) return words(identifier.getName().toString());
+                if (source instanceof MethodInvocationTree sourceCall) {
+                    if (sourceCall.getMethodSelect() instanceof MemberSelectTree sourceSelect) {
+                        return words(sourceSelect.getIdentifier().toString());
+                    }
+                    if (sourceCall.getMethodSelect() instanceof IdentifierTree sourceIdentifier) {
+                        return words(sourceIdentifier.getName().toString());
+                    }
+                }
+                return "items";
+            }
+
+            private AggregateCondition aggregateCondition(Tree callback) {
+                if (!(callback instanceof LambdaExpressionTree lambda)) return null;
+                Tree body = unwrapParentheses(lambda.getBody());
+                if (!(body instanceof MethodInvocationTree invocation)) return null;
+                TreePath path = TreePath.getPath(location.unit(), invocation);
+                Element called = path == null ? null : trees.getElement(path);
+                DependencyGraphBuilder.CallEffects effects = callEffects(location, invocation);
+                if (!effects.provenWrites().isEmpty() || !effects.possibleWrites().isEmpty()) {
+                    return null;
+                }
+                boolean receiverIsLambdaParameter = invocation.getMethodSelect() instanceof MemberSelectTree select
+                        && select.getExpression() instanceof IdentifierTree receiver
+                        && lambda.getParameters().stream().anyMatch(parameter ->
+                        parameter.getName().contentEquals(receiver.getName()));
+                if (called instanceof ExecutableElement executable
+                        && (executable.getModifiers().contains(Modifier.ABSTRACT)
+                        || executable.getEnclosingElement().getKind() == ElementKind.INTERFACE)
+                        && receiverIsLambdaParameter) {
+                    return null;
+                }
+                String method = invocation.getMethodSelect() instanceof MemberSelectTree select
+                        ? select.getIdentifier().toString()
+                        : invocation.getMethodSelect().toString();
+                String predicate = words(method);
+                String qualifier = aggregateQualifier(invocation, lambda);
+                if (invocation.getMethodSelect() instanceof MemberSelectTree select) {
+                    String receiver = words(expression(select.getExpression()));
+                    if (java.util.Arrays.stream(receiver.split(" "))
+                            .anyMatch(word -> word.length() > 3 && predicate.contains(word))) {
+                        String relation = predicate.contains(" ") ? predicate : "has " + predicate;
+                        return new AggregateCondition(relation, qualifier);
+                    }
+                }
+                return new AggregateCondition(predicate, qualifier);
+            }
+
+            private String aggregateQualifier(
+                    MethodInvocationTree invocation, LambdaExpressionTree lambda) {
+                Set<String> parameters = lambda.getParameters().stream()
+                        .map(parameter -> parameter.getName().toString()).collect(Collectors.toSet());
+                return invocation.getArguments().stream()
+                        .filter(argument -> !(argument instanceof IdentifierTree identifier)
+                                || !parameters.contains(identifier.getName().toString()))
+                        .map(argument -> expression(argument))
+                        .collect(Collectors.joining(", "));
+            }
+
+            private record AggregateCondition(String rule, String qualifier) { }
 
             @Override public Void visitThrow(ThrowTree node, Void unused) {
                 if (!relevant(node, slice, dependencies)) return super.visitThrow(node, unused);
@@ -2930,8 +3084,208 @@ public final class StaticDecisionAnalyzer {
                     String label,
                     Tree tree,
                     AnalysisManifest.ProbeKind probe) {
-                return builder.addNode(kind, label, Map.of(), mapping(location, tree), probe,
+                return builder.addNode(kind, label, semanticAttributes(tree), mapping(location, tree), probe,
                         ownerHint(location.path()), runtimeMemberHint(tree), methodDescriptor(location));
+            }
+
+            private Map<String, String> semanticAttributes(Tree tree) {
+                var attributes = new LinkedHashMap<String, String>();
+                putSemantic(attributes, BusinessSemanticAttributes.OWNER_TYPE, ownerHint(location.path()));
+                putSemantic(attributes, BusinessSemanticAttributes.ENCLOSING_METHOD,
+                        location.method().getName().toString());
+                putSemantic(attributes, BusinessSemanticAttributes.TREE_KIND, tree.getKind().name());
+                if (!businessSubjects.isEmpty()) {
+                    putSemantic(attributes, BusinessSemanticAttributes.CONTEXT_SUBJECT,
+                            businessSubjects.getLast());
+                }
+                if (!aggregateScopes.isEmpty()) {
+                    putSemantic(attributes, BusinessSemanticAttributes.AGGREGATE_SCOPE,
+                            aggregateScopes.getLast());
+                }
+
+                Tree semanticTree = unwrapParentheses(tree);
+                boolean negated = semanticTree instanceof UnaryTree unary
+                        && unary.getKind() == Tree.Kind.LOGICAL_COMPLEMENT;
+                if (negated) semanticTree = unwrapParentheses(((UnaryTree) semanticTree).getExpression());
+                if (!(semanticTree instanceof MethodInvocationTree invocation)) return Map.copyOf(attributes);
+
+                TreePath invocationPath = TreePath.getPath(location.unit(), invocation);
+                Element called = invocationPath == null ? null : trees.getElement(invocationPath);
+                if (called instanceof ExecutableElement executable) {
+                    putSemantic(attributes, BusinessSemanticAttributes.CALL_METHOD,
+                            executable.getSimpleName().toString());
+                    putSemantic(attributes, BusinessSemanticAttributes.CALL_OWNER_TYPE,
+                            executable.getEnclosingElement().toString());
+                    putSemantic(attributes, BusinessSemanticAttributes.CALL_RETURN_TYPE,
+                            executable.getReturnType().toString());
+                    if (executable.getReturnType().getKind() == TypeKind.BOOLEAN) {
+                        sourceValue(executable).ifPresent(value -> attributes.put(
+                                BusinessSemanticAttributes.SOURCE_VALUE, value));
+                    }
+                }
+                if (invocation.getMethodSelect() instanceof MemberSelectTree member) {
+                    putSemantic(attributes, BusinessSemanticAttributes.RECEIVER,
+                            expression(member.getExpression()));
+                }
+                putSemantic(attributes, BusinessSemanticAttributes.ARGUMENTS,
+                        invocation.getArguments().stream().map(StaticDecisionAnalyzer::expression)
+                                .collect(Collectors.joining("|")));
+                putSemantic(attributes, BusinessSemanticAttributes.ARGUMENT_TYPES,
+                        invocation.getArguments().stream().map(argument -> {
+                            TreePath argumentPath = TreePath.getPath(location.unit(), argument);
+                            TypeMirror type = argumentPath == null ? null : trees.getTypeMirror(argumentPath);
+                            return type == null ? "" : type.toString();
+                        }).collect(Collectors.joining("|")));
+                if (negated) attributes.put(BusinessSemanticAttributes.NEGATED, "true");
+                TreePath parent = invocationPath == null ? null : invocationPath.getParentPath();
+                while (parent != null && (parent.getLeaf() instanceof ParenthesizedTree
+                        || parent.getLeaf() instanceof TypeCastTree)) {
+                    parent = parent.getParentPath();
+                }
+                if (parent != null && parent.getLeaf() instanceof ExpressionStatementTree) {
+                    attributes.put(BusinessSemanticAttributes.STATEMENT_CALL, "true");
+                }
+                return Map.copyOf(attributes);
+            }
+
+            private Optional<String> sourceValue(ExecutableElement executable) {
+                Optional<String> cached = sourceValues.get(executable);
+                if (cached != null) return cached;
+                var values = new LinkedHashSet<String>();
+                collectSourceValues(executable, values, new HashSet<>(), 0);
+                Optional<String> result = values.size() == 1
+                        ? Optional.of(values.iterator().next()) : Optional.empty();
+                sourceValues.put(executable, result);
+                return result;
+            }
+
+            private void collectSourceValues(
+                    ExecutableElement executable,
+                    Set<String> values,
+                    Set<ExecutableElement> visiting,
+                    int depth) {
+                if (depth > 6 || !visiting.add(executable)) return;
+                for (MethodLocation method : sourceMethods(executable)) {
+                    if (method.method().getBody() == null) continue;
+                    var referencedFields = new LinkedHashSet<String>();
+                    var referencedKeys = new LinkedHashSet<String>();
+                    new TreeScanner<Void, Void>() {
+                        @Override public Void visitLiteral(LiteralTree literal, Void unused) {
+                            if (literal.getValue() instanceof Number number) {
+                                values.add(String.valueOf(number));
+                            } else if (literal.getValue() instanceof String text && !text.isBlank()) {
+                                referencedKeys.add(text);
+                            }
+                            return super.visitLiteral(literal, unused);
+                        }
+
+                        @Override public Void visitIdentifier(IdentifierTree identifier, Void unused) {
+                            TreePath path = TreePath.getPath(method.unit(), identifier);
+                            Element element = path == null ? null : trees.getElement(path);
+                            if (element instanceof VariableElement variable
+                                    && variable.getKind().isField()) {
+                                referencedFields.add(variable.getSimpleName().toString());
+                            }
+                            return super.visitIdentifier(identifier, unused);
+                        }
+
+                        @Override public Void visitMemberSelect(MemberSelectTree selection, Void unused) {
+                            TreePath path = TreePath.getPath(method.unit(), selection);
+                            Element element = path == null ? null : trees.getElement(path);
+                            if (element instanceof VariableElement variable
+                                    && variable.getKind().isField()) {
+                                referencedFields.add(variable.getSimpleName().toString());
+                            }
+                            return super.visitMemberSelect(selection, unused);
+                        }
+
+                        @Override public Void visitMethodInvocation(
+                                MethodInvocationTree invocation, Void unused) {
+                            TreePath path = TreePath.getPath(method.unit(), invocation);
+                            Element called = path == null ? null : trees.getElement(path);
+                            if (called instanceof ExecutableElement nested
+                                    && !isSupportedLibraryOperation(nested)) {
+                                collectSourceValues(nested, values, visiting, depth + 1);
+                            }
+                            return super.visitMethodInvocation(invocation, unused);
+                        }
+                    }.scan(method.method().getBody(), null);
+                    Element owner = trees.getElement(method.path().getParentPath());
+                    if (owner instanceof TypeElement type) {
+                        collectImmutableConfigurationValues(
+                                type, referencedFields, referencedKeys, values);
+                    }
+                }
+                visiting.remove(executable);
+            }
+
+            private List<MethodLocation> sourceMethods(ExecutableElement executable) {
+                MethodLocation direct = index.methods().get(executable);
+                if (direct != null && direct.method().getBody() != null) return List.of(direct);
+                if (!(executable.getEnclosingElement() instanceof TypeElement owner)) return List.of();
+                return index.types().stream()
+                        .filter(type -> type.getKind().isClass())
+                        .filter(type -> !type.getModifiers().contains(Modifier.ABSTRACT))
+                        .filter(type -> types.isSubtype(
+                                types.erasure(type.asType()), types.erasure(owner.asType())))
+                        .map(type -> implementationOf(executable, type))
+                        .filter(Objects::nonNull)
+                        .toList();
+            }
+
+            private void collectImmutableConfigurationValues(
+                    TypeElement type,
+                    Set<String> referencedFields,
+                    Set<String> referencedKeys,
+                    Set<String> values) {
+                Tree declaration = trees.getTree(type);
+                if (!(declaration instanceof ClassTree classTree)) return;
+                new TreeScanner<Void, Void>() {
+                    @Override public Void visitMethod(MethodTree method, Void unused) {
+                        return null;
+                    }
+
+                    @Override public Void visitVariable(VariableTree variable, Void unused) {
+                        if (variable.getInitializer() == null
+                                || !variable.getModifiers().getFlags().contains(Modifier.FINAL)) return null;
+                        var initializerFields = new LinkedHashSet<String>();
+                        var initializerKeys = new LinkedHashSet<String>();
+                        var initializerValues = new LinkedHashSet<String>();
+                        initializerFields.add(variable.getName().toString());
+                        new TreeScanner<Void, Void>() {
+                            @Override public Void visitIdentifier(
+                                    IdentifierTree identifier, Void ignored) {
+                                initializerFields.add(identifier.getName().toString());
+                                return super.visitIdentifier(identifier, ignored);
+                            }
+
+                            @Override public Void visitMemberSelect(
+                                    MemberSelectTree selection, Void ignored) {
+                                initializerFields.add(selection.getIdentifier().toString());
+                                return super.visitMemberSelect(selection, ignored);
+                            }
+
+                            @Override public Void visitLiteral(LiteralTree literal, Void ignored) {
+                                if (literal.getValue() instanceof Number number) {
+                                    initializerValues.add(String.valueOf(number));
+                                } else if (literal.getValue() instanceof String text
+                                        && !text.isBlank()) {
+                                    initializerKeys.add(text);
+                                }
+                                return super.visitLiteral(literal, ignored);
+                            }
+                        }.scan(variable.getInitializer(), null);
+                        boolean fieldMatch = initializerFields.stream()
+                                .anyMatch(referencedFields::contains);
+                        boolean keyMatch = initializerKeys.stream().anyMatch(referencedKeys::contains);
+                        if (fieldMatch || keyMatch) values.addAll(initializerValues);
+                        return null;
+                    }
+                }.scan(classTree, null);
+            }
+
+            private void putSemantic(Map<String, String> attributes, String key, String value) {
+                if (value != null && !value.isBlank()) attributes.put(key, value);
             }
 
             private PredicatePlan addPredicatePlan(Tree condition) {
@@ -3275,7 +3629,27 @@ public final class StaticDecisionAnalyzer {
                         ? "no value"
                         : (isPredicateExpression(node.getExpression())
                                 || isCallerBoundaryPredicate(node.getExpression()) ? "whether " : "")
-                                + expression(node.getExpression()));
+                                + returnedExpressionLabel(node.getExpression()));
+            }
+
+            private String returnedExpressionLabel(Tree returnedExpression) {
+                Tree unwrapped = unwrapParentheses(returnedExpression);
+                if (!(unwrapped instanceof NewClassTree)) return expression(unwrapped);
+                TreePath path = TreePath.getPath(location.unit(), unwrapped);
+                TypeMirror type = path == null ? null : trees.getTypeMirror(path);
+                Element element = type == null ? null : types.asElement(type);
+                return element instanceof TypeElement resultType
+                        ? words(resultType.getSimpleName().toString()) : expression(unwrapped);
+            }
+
+            private String returnedLabel(ReturnTree node, String branchOutcome) {
+                if (node.getExpression() != null
+                        && unwrapParentheses(node.getExpression()) instanceof ConditionalExpressionTree conditional) {
+                    String outcome = branchOutcome.split(";", 2)[0].strip().toLowerCase(Locale.ROOT);
+                    if (outcome.equals("true")) return "returns " + expression(conditional.getTrueExpression());
+                    if (outcome.equals("false")) return "returns " + expression(conditional.getFalseExpression());
+                }
+                return returnedLabel(node);
             }
 
             private boolean isCallerBoundaryPredicate(Tree expression) {

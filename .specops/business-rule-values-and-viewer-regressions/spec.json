@@ -1,0 +1,46 @@
+{
+  "id": "business-rule-values-and-viewer-regressions",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-26T11:30:38Z",
+  "updated": "2026-08-26T16:03:46Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "business-graph-semantic-explanation",
+      "reason": "The value correction extends the completed semantic reduction.",
+      "required": true
+    },
+    {
+      "specId": "real-graph-layout-usability",
+      "reason": "The UI correction preserves the completed route-quality contract.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "shadcn-svelte-migration",
+    "static-graph-layout-quality"
+  ],
+  "evaluation": {
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 10,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-26T16:03:46Z"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "id": "compact-graph-reading-and-business-phrasing",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-26T16:12:51Z",
+  "updated": "2026-08-26T16:26:48Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "business-rule-values-and-viewer-regressions",
+      "reason": "This correction replaces the compact zoom fallback and refines the generated labels introduced by the completed fix.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "business-graph-semantic-explanation",
+    "real-graph-layout-usability",
+    "frontend-visual-design-quality"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 9,
+        "designCoherence": 9,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-26T16:12:51Z"
+    },
+    "implementation": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "functionalCorrectness": 10,
+        "readability": 10,
+        "graphIntegrity": 10,
+        "genericDesign": 9
+      },
+      "evaluatedAt": "2026-08-26T16:26:48Z"
+    }
+  },
+  "metrics": {
+    "tasksTotal": 4,
+    "acceptanceCriteriaTotal": 7,
+    "evidenceGraphs": 2,
+    "viewerTests": 90,
+    "browserTestsPassed": 12
+  },
+  "implementation": {
+    "completedAt": "2026-08-26T16:26:48Z",
+    "graphsReviewed": 2
+  }
+}

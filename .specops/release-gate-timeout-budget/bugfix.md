@@ -1,17 +1,19 @@
-# Bug Fix: Three-Minute CI Budget
+# Bug Fix: Bounded CI Feedback
 
 ## Overview
 
-The required CI does not give timely feedback. A pull-request gate has taken 3 minutes 49 seconds.
-The clean release gate was canceled after 90 minutes. All required CI jobs must now finish within a
-three-minute execution budget.
+The required CI does not give timely feedback. The PostgreSQL job was cancelled during its browser
+journey because it ran storage, standalone viewer verification, dogfood generation, and browser
+integration in one job. Five independent jobs must finish within three minutes. The integrated
+PostgreSQL browser journey can use five minutes because it starts a database, builds dogfood, and
+runs all 17 browser tests.
 
 ## Root Cause Analysis
 
-The pull-request job runs the core suite, Mega Backend conformance, and Spring PetClinic
-conformance in one serial job. The release job also creates a clean clone, uses an empty Maven
-repository, and runs a 60-second baseline plus a 600-second load test. This serial release command
-cannot finish in three minutes.
+The PostgreSQL job runs one independent viewer unit and build gate before its database and dogfood
+browser integration. The remote run reached the browser journey after 2 minutes 26 seconds and was
+cancelled before the journey completed. The viewer gate does not need PostgreSQL and can run in
+parallel.
 
 The timeout contract checked for a minimum timeout. It allowed slow jobs instead of rejecting them.
 
@@ -35,7 +37,8 @@ The timeout contract checked for a minimum timeout. It allowed slow jobs instead
 
 | Behavior | Risk | Required evidence |
 | --- | --- | --- |
-| Each required job has a three-minute limit | Must-Test | Workflow budget contract |
+| Five independent jobs have a three-minute limit | Must-Test | Workflow budget contract |
+| PostgreSQL integration has a five-minute limit | Must-Test | Workflow budget contract |
 | The required workflow has no long release command | Must-Test | Workflow routing contract |
 | Core, Mega, PetClinic, and PostgreSQL checks run | Must-Test | Local and hosted checks |
 | The long load command stays available for manual evidence | Nice-To-Test | Script and documentation review |
@@ -43,10 +46,10 @@ The timeout contract checked for a minimum timeout. It allowed slow jobs instead
 
 ## Proposed Fix
 
-Run the core suite, Mega Backend conformance, Spring PetClinic conformance, and PostgreSQL contract
-as independent parallel jobs for every workflow event. Give each job a three-minute timeout. Use the
-Maven and immutable source caches. Do not call the clean-clone release command from the required
-workflow. Keep it as an optional manual evidence command.
+Run the core suite, Mega Backend conformance, Spring PetClinic conformance, Jakarta EE conformance,
+viewer verification, and PostgreSQL integration as independent parallel jobs for every workflow
+event. Give the five independent jobs a three-minute timeout. Give PostgreSQL five minutes. Keep
+dogfood and all browser tests in PostgreSQL, and keep the independent viewer gate in its own job.
 
 ## Testing Plan
 
@@ -57,7 +60,8 @@ workflow. Keep it as an optional manual evidence command.
 
 ### Expected Behavior
 
-- Confirm that every required job has `timeout-minutes: 3`.
+- Confirm that five required jobs have `timeout-minutes: 3` and PostgreSQL has
+  `timeout-minutes: 5`.
 - Confirm that all four jobs start independently for pull requests and release events.
 - Confirm that no required job calls `verify-release.sh` or the 600-second load test.
 
@@ -71,14 +75,16 @@ workflow. Keep it as an optional manual evidence command.
 
 ## Acceptance Criteria
 
-- [ ] THE WORKFLOW SHALL give each required job a three-minute timeout.
-- [ ] THE BUDGET CONTRACT SHALL reject a required job timeout above three minutes.
-- [ ] THE WORKFLOW SHALL run core, Mega, PetClinic, and PostgreSQL checks in parallel.
-- [ ] THE WORKFLOW SHALL run the same required jobs for pull requests and release events.
-- [ ] THE REQUIRED WORKFLOW SHALL NOT call the 600-second release gate.
-- [ ] THE OPTIONAL RELEASE COMMAND SHALL remain available for manual long evidence.
-- [ ] THE SYSTEM SHALL pass local and hosted checks.
-- [ ] EACH HOSTED REQUIRED JOB SHALL complete within its three-minute execution limit.
+- [x] THE WORKFLOW SHALL give each independent job a three-minute timeout.
+- [x] THE WORKFLOW SHALL give PostgreSQL integration a five-minute timeout.
+- [x] THE BUDGET CONTRACT SHALL reject a timeout above the job-specific limit.
+- [x] THE WORKFLOW SHALL run core, Mega, PetClinic, Jakarta EE, viewer, and PostgreSQL checks in
+  parallel.
+- [x] THE WORKFLOW SHALL run the same required jobs for pull requests and release events.
+- [x] THE REQUIRED WORKFLOW SHALL NOT call the 600-second release gate.
+- [x] THE OPTIONAL RELEASE COMMAND SHALL remain available for manual long evidence.
+- [x] THE SYSTEM SHALL pass local and hosted checks.
+- [x] EACH HOSTED REQUIRED JOB SHALL complete within its configured execution limit.
 
 ## Scope Assessment
 

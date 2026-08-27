@@ -1,0 +1,62 @@
+{
+  "id": "real-graph-layout-usability",
+  "type": "bugfix",
+  "status": "completed",
+  "version": 1,
+  "created": "2026-08-25T09:48:51Z",
+  "updated": "2026-08-26T08:19:06Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "static-graph-layout-quality",
+      "reason": "This bugfix tightens the completed topology-first placement, routing, and shared-canvas implementation.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "frontend-flow-explorer",
+    "frontend-visual-design-quality",
+    "static-graph-layout-quality"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 1,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 9,
+        "criteriaCompleteness": 8,
+        "designCoherence": 8,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-25T09:56:25Z"
+    },
+    "implementation": {
+      "iterations": 10,
+      "passed": true,
+      "scores": {
+        "rootCauseAccuracy": 10,
+        "fixCompleteness": 10,
+        "regressionSafety": 10,
+        "testVerification": 10
+      },
+      "evaluatedAt": "2026-08-26T08:19:06Z"
+    }
+  },
+  "metrics": {
+    "specArtifactTokensEstimate": 12000,
+    "filesChanged": 39,
+    "linesAdded": 2250,
+    "linesRemoved": 330,
+    "tasksCompleted": 15,
+    "acceptanceCriteriaVerified": 13,
+    "specDurationMinutes": 600
+  }
+}

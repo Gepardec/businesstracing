@@ -1,0 +1,42 @@
+{
+  "id": "frontend-visual-design-quality",
+  "type": "bugfix",
+  "status": "draft",
+  "version": 1,
+  "created": "2026-08-21T11:16:08Z",
+  "updated": "2026-08-21T11:32:26Z",
+  "specopsCreatedWith": "1.8.0",
+  "specopsUpdatedWith": "1.8.0",
+  "author": {
+    "name": "lucostus"
+  },
+  "reviewers": [],
+  "reviewRounds": 0,
+  "approvals": 0,
+  "requiredApprovals": 0,
+  "specDependencies": [
+    {
+      "specId": "frontend-flow-explorer",
+      "reason": "This bugfix revises the completed viewer design while preserving its contracts and behavior.",
+      "required": true
+    }
+  ],
+  "relatedSpecs": [
+    "frontend-flow-explorer",
+    "unify-developer-graph-contract",
+    "generic-application-readiness"
+  ],
+  "evaluation": {
+    "spec": {
+      "iterations": 2,
+      "passed": true,
+      "scores": {
+        "criteriaTestability": 10,
+        "criteriaCompleteness": 9,
+        "designCoherence": 10,
+        "taskCoverage": 9
+      },
+      "evaluatedAt": "2026-08-21T11:32:26Z"
+    }
+  }
+}

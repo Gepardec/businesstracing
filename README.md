@@ -48,6 +48,8 @@ for common Jakarta EE operations, SOAP setup, and gRPC channel setup.
 See the [self-tracing dogfood example](docs/self-tracing.md) for a graph that Fachtracing
 generates from its own Maven plugin policy.
 
+The [viewer guide](fachtracing-viewer/README.md#show-fachtracing-tracing-itself) shows how to open those generated graphs and real Java-agent paths in the Svelte flow explorer.
+
 See [runtime integration](docs/runtime-integration.md) for the verified release-candidate agent,
 delivery, JDBC, upgrade, and rollback flow.
 
@@ -88,6 +90,12 @@ The default `*-business.mmd`, `*-business.puml`, and `*-business.json` files exp
 behavior. Business JSON uses `fachtracing-business-graph/v1`; its generated JSON Schema uses Draft
 2020-12. The compatible `*-structure.*` files show the exact technical graph. Developer tools can
 also use the opt-in `fachtracing-developer-graph/v1` JSON data format with source data.
+
+The analyzer keeps source-owner, call, argument, effect, predicate-polarity, and aggregate-call
+evidence in the exact graph. The business projection uses this evidence to remove adapters,
+selectors, conversions, collection mechanics, and delegation wrappers. It keeps business checks,
+material state changes, and source-proven results. A collapsed aggregate check does not remove its
+callback details from the exact graph. Existing viewers do not need a new JSON format.
 
 The Maven plugin writes `fachtracing-developer-graph-v1.schema.json` when developer JSON is enabled.
 Give the frontend developer the `*-developer.json` file and this schema file. The one V1 contract
@@ -130,6 +138,16 @@ Repository coordinates are developer data. They never enter `BusinessDecisionGra
 explanations, persisted decision records, Mermaid, or PlantUML.
 
 ## Verification
+
+## Interactive decision viewer
+
+The optional [Svelte 5 decision viewer](fachtracing-viewer/README.md) lists stored runs, searches by any exact correlation name and canonical value, and explains one recorded path on a complete data-driven graph. It uses Svelte Flow with a deterministic top-to-bottom ELK layout. The local POC reads PostgreSQL and never sends developer source provenance to the browser.
+
+Run its focused checks with:
+
+```sh
+./scripts/verify-viewer.sh
+```
 
 Run all dependency-free executable contracts:
 

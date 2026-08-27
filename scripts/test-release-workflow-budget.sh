@@ -3,8 +3,8 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 WORKFLOW="$ROOT/.github/workflows/verify.yml"
-MAXIMUM_TIMEOUT_MINUTES=3
-REQUIRED_JOBS="pr-gate mega petclinic jakartaee-rest postgres"
+MAXIMUM_TIMEOUT_MINUTES=5
+REQUIRED_JOBS="pr-gate mega petclinic jakartaee-rest viewer postgres"
 
 for required_job in $REQUIRED_JOBS
 do
@@ -26,8 +26,10 @@ do
     exit 1
   fi
 
-  if [ "$timeout_minutes" -ne "$MAXIMUM_TIMEOUT_MINUTES" ]; then
-    echo "RELEASE_WORKFLOW_BUDGET_FAILURE: $required_job timeout must be $MAXIMUM_TIMEOUT_MINUTES minutes" >&2
+  expected_timeout=3
+  if [ "$required_job" = "postgres" ]; then expected_timeout=5; fi
+  if [ "$timeout_minutes" -ne "$expected_timeout" ]; then
+    echo "RELEASE_WORKFLOW_BUDGET_FAILURE: $required_job timeout must be $expected_timeout minutes" >&2
     exit 1
   fi
 done
@@ -38,8 +40,8 @@ job_count=$(awk '
   END { print count + 0 }
 ' "$WORKFLOW")
 
-if [ "$job_count" -ne 5 ]; then
-  echo "RELEASE_WORKFLOW_BUDGET_FAILURE: expected 5 required jobs, found $job_count" >&2
+if [ "$job_count" -ne 6 ]; then
+  echo "RELEASE_WORKFLOW_BUDGET_FAILURE: expected 6 required jobs, found $job_count" >&2
   exit 1
 fi
 

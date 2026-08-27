@@ -45,13 +45,13 @@ edge 12 -> 15 | next
 edge 11 -> 15 | false
 edge 16 -> 17 | true
 edge 15 -> 16 | next
-edge 17 -> 18 | true
-edge 16 -> 18 | false
-edge 17 -> 18 | false
+edge 17 -> 18 | true; returns whether former direction exists and former direction equals back
+edge 16 -> 18 | false; returns whether former direction exists and former direction equals back
+edge 17 -> 18 | false; returns whether former direction exists and former direction equals back
 edge 19 -> 20 | true
 edge 21 -> 22 | false
 edge 20 -> 21 | true
-edge 18 -> 19 | result
+edge 18 -> 19 | returns to equals direction
 edge 21 -> 23 | true
 edge 22 -> 23 | true
 edge 23 -> 14 | returns back missing

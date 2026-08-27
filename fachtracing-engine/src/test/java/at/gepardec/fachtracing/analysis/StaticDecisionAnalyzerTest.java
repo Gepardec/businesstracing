@@ -1,7 +1,10 @@
 package at.gepardec.fachtracing.analysis;
 
 import at.gepardec.fachtracing.developer.DeveloperGraphExporter;
+import at.gepardec.fachtracing.business.BusinessGraphProjector;
 import at.gepardec.fachtracing.model.BusinessDecisionGraph;
+import at.gepardec.fachtracing.model.BusinessLogicGraph;
+import at.gepardec.fachtracing.model.BusinessSemanticAttributes;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +26,7 @@ public final class StaticDecisionAnalyzerTest {
 
     public static void main(String[] args) {
         removesJavaConstructionVocabularyGenerically();
+        rendersAggregateRolesWithoutLanguageFillers();
         usesContextForLocalAndGenericSetterLabels();
         rendersFeatureEnablementWithoutTechnicalReceivers();
         usesTypeForAbbreviatedLocalLabels();
@@ -68,6 +72,7 @@ public final class StaticDecisionAnalyzerTest {
         exposesRelevantCoverageGaps();
         representsCallerVisibleSourceBoundaries();
         usesSourceVisibleBoundariesWithoutGuessing();
+        carriesOneSourceProvenRuleValueWithoutGuessing();
         usesControlledBytecodeFallbackAndRepresentsOpaqueBinaryRules();
         appliesExactExternalMethodContractsWithoutGuessing();
         supportsExplicitOpaqueLibraryBoundaries();
@@ -81,6 +86,7 @@ public final class StaticDecisionAnalyzerTest {
         supportsCollectionFactsAndRecordEquality();
         followsStrategiesThatMutateReturnedCollectionsInsideLambdas();
         streamPredicatesStayBusinessFacing();
+        projectsAggregateBusinessChecksWithoutCallbackMechanics();
         usesOneBusinessStartAndStopWithExplicitReturns();
         removesIdentifierAndNullImplementationVocabulary();
         exportsDeveloperGraphWithRevisionPinnedSourceLinks();
@@ -106,6 +112,15 @@ public final class StaticDecisionAnalyzerTest {
         assert BusinessLabelNormalizer.normalize("evaluate create warning with enum type")
                 .equals("create warning")
                 : BusinessLabelNormalizer.normalize("evaluate create warning with enum type");
+    }
+
+    private static void rendersAggregateRolesWithoutLanguageFillers() {
+        assert AggregateBusinessLabelRenderer.render(
+                "person", "employments", "covers", "reference date")
+                .equals("person — employments: covers — reference date");
+        assert AggregateBusinessLabelRenderer.render(
+                "", "employments", "covers", "")
+                .equals("employments: covers");
     }
 
     private static void usesContextForLocalAndGenericSetterLabels() {
@@ -614,6 +629,19 @@ public final class StaticDecisionAnalyzerTest {
         if (!predicateGap) {
             failures.add("mutating predicate reference remained false complete: "
                     + predicateReference.graph());
+        }
+
+        var predicateLambda = analyzeLabel(
+                "slicing/ResultSlicePolicy.java", "predicate lambda mutation");
+        String predicateLambdaLabels = predicateLambda.graph().nodes().stream()
+                .map(BusinessDecisionGraph.DecisionNode::businessLabel).toList().toString();
+        boolean lambdaExpanded = predicateLambda.graph().nodes().stream().noneMatch(node ->
+                BusinessSemanticAttributes.AGGREGATE.equals(
+                        node.attributes().get(BusinessSemanticAttributes.ROLE)))
+                && predicateLambdaLabels.contains("add candidate to accepted");
+        if (!lambdaExpanded) {
+            failures.add("mutating predicate lambda was collapsed as a read-only aggregate: "
+                    + predicateLambda.graph());
         }
 
         var implicitField = analyzeLabel(
@@ -1498,6 +1526,83 @@ public final class StaticDecisionAnalyzerTest {
         }
     }
 
+    private static void carriesOneSourceProvenRuleValueWithoutGuessing() {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("fachtracing-source-rule-value-");
+            Path source = root.resolve("example/MembershipPolicy.java");
+            Files.createDirectories(source.getParent());
+            Files.writeString(source, """
+                    package example;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    import java.util.Map;
+
+                    interface MembershipLimits { int maximumAge(); }
+
+                    final class StoredMembershipLimits implements MembershipLimits {
+                        private static final Map<String, Integer> DEFAULTS = Map.of("maximum.age", 18);
+                        private static final int UNRELATED_RETRY_LIMIT = 99;
+                        private final Map<String, Integer> values = DEFAULTS;
+                        public int maximumAge() { return values.get("maximum.age"); }
+                    }
+
+                    final class MembershipPolicy {
+                        private final MembershipLimits limits = new StoredMembershipLimits();
+                        @FachTracing("membership eligibility")
+                        boolean decide(int age) { return isBelowMaximumAge(age); }
+                        private boolean isBelowMaximumAge(int age) {
+                            return age < limits.maximumAge();
+                        }
+                    }
+                    """);
+
+            var result = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(source), CLASSPATH));
+            var business = new BusinessGraphProjector().project(result);
+            List<String> labels = business.nodes().stream()
+                    .map(BusinessLogicGraph.Node::label).toList();
+
+            assert labels.stream().anyMatch(label -> label.contains("below maximum age")
+                    && label.contains("18")) : labels + " " + result.graph().nodes();
+            assert result.graph().nodes().stream().anyMatch(node ->
+                    "18".equals(node.attributes().get(BusinessSemanticAttributes.SOURCE_VALUE)))
+                    : result.graph().nodes();
+
+            Path ambiguous = root.resolve("ambiguous/AmbiguousPolicy.java");
+            Files.createDirectories(ambiguous.getParent());
+            Files.writeString(ambiguous, """
+                    package ambiguous;
+                    import at.gepardec.fachtracing.api.FachTracing;
+                    interface Limits { int maximum(); }
+                    final class FirstLimits implements Limits {
+                        private static final int VALUE = 18;
+                        public int maximum() { return VALUE; }
+                    }
+                    final class SecondLimits implements Limits {
+                        private static final int VALUE = 21;
+                        public int maximum() { return VALUE; }
+                    }
+                    final class AmbiguousPolicy {
+                        private final Limits limits;
+                        AmbiguousPolicy(Limits limits) { this.limits = limits; }
+                        @FachTracing("ambiguous threshold")
+                        boolean decide(int age) { return belowMaximum(age); }
+                        private boolean belowMaximum(int age) { return age < limits.maximum(); }
+                    }
+                    """);
+            var ambiguousResult = new StaticDecisionAnalyzer().analyze(
+                    AnalysisRequest.of(List.of(ambiguous), CLASSPATH));
+            List<String> ambiguousLabels = new BusinessGraphProjector().project(ambiguousResult)
+                    .nodes().stream().map(BusinessLogicGraph.Node::label).toList();
+            assert ambiguousLabels.stream().noneMatch(label -> label.contains("18")
+                    || label.contains("21")) : ambiguousLabels;
+        } catch (IOException exception) {
+            throw new AssertionError(exception);
+        } finally {
+            if (root != null) deleteTree(root);
+        }
+    }
+
     private static void supportsExplicitOpaqueLibraryBoundaries() {
         Path root = null;
         try {
@@ -2324,6 +2429,20 @@ public final class StaticDecisionAnalyzerTest {
             assert !label.contains("->") && !label.contains("::") && !label.contains(".stream")
                     && !label.contains("instanceof") : node;
         });
+    }
+
+    private static void projectsAggregateBusinessChecksWithoutCallbackMechanics() {
+        var analysis = analyze("employment/EmploymentEligibilityPolicy.java");
+        assert analysis.graph().nodes().stream().anyMatch(node -> node.businessLabel().contains("reference date")
+                && !BusinessSemanticAttributes.AGGREGATE.equals(
+                node.attributes().get(BusinessSemanticAttributes.ROLE))) : analysis.graph().nodes();
+        BusinessLogicGraph business = new BusinessGraphProjector().project(analysis);
+        assert business.nodes().stream().filter(node -> node.kind() == BusinessLogicGraph.NodeKind.RULE)
+                .map(BusinessLogicGraph.Node::label).toList()
+                .equals(List.of("employments: covers — reference date"))
+                : business.nodes();
+        assert business.nodes().stream().noneMatch(node -> node.label().matches(
+                "(?i).*(?:stream|adapter|repository|converter|callback|iterator).*")) : business.nodes();
     }
 
     private static void usesOneBusinessStartAndStopWithExplicitReturns() {

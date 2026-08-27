@@ -505,6 +505,63 @@ keeps an ordinary `put order on hold` business action. The business guard reject
 method-reference syntax. The full repository gate and final pinned Keycloak conformance passed; the
 activation still contains one exact 169-node decision with probe sites and class fingerprints.
 
+### static-graph-layout-quality
+
+Completed all six tasks. The Svelte viewer now analyzes topology before placement and uses a
+deterministic four-side orthogonal router. Direct branches stay local. Long and cycle edges use
+explicit corridors. Branch labels avoid nodes, other labels, and unrelated routes. Large fan-in
+uses stable feeder slots, one presentation-only junction, and one shared trunk. Crossings use
+bridges and do not change graph connectivity. Duplicate nodes show stable occurrence context.
+
+The JSON, SQL, HTTP, storage, node-ID, and edge-ID contracts did not change. Svelte check, 43 unit
+tests, the production build, 10 browser journeys, the generated 250-node gate, both graph V1
+formats, and generated Fachtracing dogfood pass. Four PostgreSQL-backed run-detail journeys and
+final user design approval remain deferred environment or review gates.
+
+### real-graph-layout-usability (bugfix) — 2026-08-25
+
+Completed all twelve tasks. The Svelte viewer now exposes arranging, Explore, and Overview states;
+keeps direct static topology readable; marks exact search selection; protects focus from fixed
+controls; and compares route-aware deterministic ELK placement profiles. Explore has a persistent
+explanation panel for the current step, complete grouped sequence, incoming context, and all
+immediate continuations. Unlabelled edges stay unlabelled; navigation uses supplied target labels.
+
+All three supplied 19-to-55-node business graphs pass the generic review in 49 to 371 milliseconds
+with zero overlaps, intrusions, label collisions, avoidable crossings, branch violations, corridor
+violations, and avoidable detours. Svelte diagnostics, 58 unit tests, the production build, 11
+applicable production browser journeys, and desktop, Overview, dark, and narrow real-file review
+pass. Five external
+PostgreSQL or generated-dogfood journeys skip because those fixtures are absent. Graph, SQL, HTTP,
+storage, dependency, and CI contracts did not change.
+
+### business-rule-values-and-viewer-regressions (bugfix) — 2026-08-26
+
+Completed all four tasks. Static analysis now carries one numeric configuration value only when a
+relevant source method reads its matching field or string key and all evidence agrees. Business
+JSON stays V1; the real entitlement rule now reads `svnr ist unter altersgrenze (18)`. Ambiguous
+values and an unrelated constant are omitted.
+
+Graph cards now show four label lines, selection uses one border and shadow, edge labels reserve
+endpoint clearance, and compact Explore view reacts to explanation-guide size changes. Both
+supplied business graphs pass objective layout review, the production Playwright journey, and
+manual light, dark, selected, Overview, Full detail, and narrow screenshot review. No dependency,
+schema, server, database, HTTP, storage, diagram, or CI contract changed.
+
+### compact-graph-reading-and-business-phrasing (bugfix) — 2026-08-26
+
+Completed all four tasks. Compact Explore view now keeps the focus and every direct outgoing
+alternative, then adds stable incoming context only within a three-card budget. It relays out when
+the measured safe area changes and never shrinks a local neighborhood below the 0.70 context floor.
+The 860-pixel real view shows three full-size cards above the guide while the guide keeps all four
+incoming rules.
+
+Aggregate business labels now join source-derived subject, collection, condition, and qualifier
+roles with punctuation. The real labels read `svnr — versicherungszeiten: begruendet anspruch
+(stichtag)` and `elternteil — versicherungszeiten: begruendet anspruch (stichtag)`. No translation,
+domain dictionary, application term, or JSON field was added. Both supplied graphs pass objective
+layout review with no label collisions or avoidable route defects. Engine contracts, 90 viewer
+tests, Svelte diagnostics, the production build, and 12 browser tests pass.
+
 ### cdi-dispatch-selection-correctness (bugfix) — 2026-08-18
 
 Completed three tasks. Dynamic dispatch selectors now receive direct constructor-parameter origins
@@ -521,3 +578,16 @@ stays passive: the container injects the bean or proxy and implementation entry 
 Custom scopes, stereotypes, priority and XML alternatives, dynamic lookup, interceptor bindings,
 transactions, security, validation, events, lifecycle callbacks, timers, JAX-RS, and JPA boundaries
 have executable regression coverage. The local pull-request gate and GitHub Actions run 116 passed.
+
+### ci-business-projection-regression (bugfix) — 2026-08-26
+
+Completed all three tasks. Aggregate qualifiers use neutral em-dash punctuation, direct predicate
+and action semantics outrank architecture suffixes, and every exact failure terminal remains a
+business result. Technical choices remain outside business output and have explicit projection
+audit evidence. Three source-reviewed Mega inventories now include the exact aggregate and return
+evidence present in their pinned source.
+
+Required CI now runs core, Mega, PetClinic, Jakarta EE, viewer, and PostgreSQL work in six parallel
+jobs. Five jobs have three-minute limits. The integrated PostgreSQL, dogfood, viewer-build, and
+17-test browser journey has a five-minute limit. GitHub Actions run `33010762980` passed all six
+jobs; PostgreSQL completed in 3 minutes 15 seconds. No dependency or public contract changed.

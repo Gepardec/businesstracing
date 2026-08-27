@@ -24,8 +24,8 @@ edge 3 -> 4 | next
 edge 5 -> 6 | true
 edge 6 -> 7 | true
 edge 7 -> 8 | true
-edge 4 -> 5 | true
-edge 4 -> 5 | false
+edge 4 -> 5 | true; returns whether status equals open
+edge 4 -> 5 | false; returns whether status equals open
 edge 8 -> 9 | true; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
 edge 5 -> 9 | false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
 edge 6 -> 9 | false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
@@ -33,17 +33,17 @@ edge 7 -> 9 | false; returns whether is open and eligible project lead contains 
 edge 8 -> 9 | false; returns whether is open and eligible project lead contains actor and actor does not equal subject employee and actor does not equal user
 edge 2 -> 10 | false
 edge 10 -> 11 | next
-edge 11 -> 12 | true
-edge 11 -> 12 | false
+edge 11 -> 12 | true; returns whether status equals open
+edge 11 -> 12 | false; returns whether status equals open
 edge 14 -> 15 | true
 edge 13 -> 14 | false
 edge 12 -> 13 | next
 edge 16 -> 17 | true
 edge 17 -> 18 | true
-edge 13 -> 16 | true
-edge 15 -> 16 | true
-edge 14 -> 16 | false
-edge 15 -> 16 | false
+edge 13 -> 16 | true; returns whether eligible project lead contains actor or all of subject employee exists and subject employee equals actor
+edge 15 -> 16 | true; returns whether eligible project lead contains actor or all of subject employee exists and subject employee equals actor
+edge 14 -> 16 | false; returns whether eligible project lead contains actor or all of subject employee exists and subject employee equals actor
+edge 15 -> 16 | false; returns whether eligible project lead contains actor or all of subject employee exists and subject employee equals actor
 edge 18 -> 9 | true; returns whether is open and is involved actor and actor does not equal created by
 edge 16 -> 9 | false; returns whether is open and is involved actor and actor does not equal created by
 edge 17 -> 9 | false; returns whether is open and is involved actor and actor does not equal created by

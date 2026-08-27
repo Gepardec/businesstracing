@@ -28,6 +28,7 @@ public final class JdbcDecisionRecordRepositoryTest {
         var tracking = new TimeoutTrackingDataSource(source);
         var repository = new JdbcDecisionRecordRepository(tracking, Duration.ofMillis(1500));
         repository.migrate(); repository.migrate();
+        assertViewerSchema(source);
         var first = envelope("record-1", "execution-1", Instant.parse("2026-01-01T00:00:01Z"));
         var second = envelope("record-2", "execution-2", Instant.parse("2026-01-02T00:00:01Z"));
         repository.saveEnvelope(first); repository.saveEnvelope(first); repository.saveEnvelope(second);
@@ -46,6 +47,19 @@ public final class JdbcDecisionRecordRepositoryTest {
         assert repository.findByExecutionId("execution-2").isPresent();
         assert !tracking.timeouts.isEmpty();
         assert tracking.timeouts.stream().allMatch(timeout -> timeout == 2) : tracking.timeouts;
+    }
+
+    private static void assertViewerSchema(DataSource source) {
+        try (var connection = source.getConnection(); var statement = connection.createStatement()) {
+            try (var rows = statement.executeQuery("select count(*) from fachtracing_schema_version")) {
+                assert rows.next() && rows.getInt(1) == 2;
+            }
+            try (var rows = statement.executeQuery("select count(*) from fachtracing_graph")) {
+                assert rows.next() && rows.getInt(1) == 0;
+            }
+        } catch (SQLException failure) {
+            throw new AssertionError("viewer schema is unavailable", failure);
+        }
     }
 
     private static void assertConflict(Runnable operation) {

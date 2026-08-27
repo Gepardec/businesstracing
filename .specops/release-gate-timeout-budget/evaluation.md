@@ -16,6 +16,34 @@
 
 **Verdict:** PASS.
 
+### Iteration 4
+
+**Evaluated at:** 2026-08-26T20:15:00Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Result |
+| --- | --- | --- | --- | --- |
+| Criteria Testability | Six named jobs and exact job-specific limits | Hosted completion needs the next PR run. | 10 | Pass |
+| Criteria Completeness | All 17 browser tests remain required. | PostgreSQL has a larger limit than independent jobs. | 10 | Pass |
+| Design Coherence | The five-minute exception matches one integrated boundary. | Browser setup remains intentionally grouped with storage. | 9 | Pass |
+| Task Coverage | Contracts, browser assertions, and hosted timing cover the change. | Final `main` proof remains post-merge work. | 9 | Pass |
+
+**Verdict:** PASS.
+
+### Iteration 3
+
+**Evaluated at:** 2026-08-26T20:00:00Z
+**Threshold:** 7/10
+
+| Dimension | Evidence | Findings | Score | Result |
+| --- | --- | --- | --- | --- |
+| Criteria Testability | Six named jobs, exact timeout, and remote step timing | Final evidence still needs the next hosted run. | 10 | Pass |
+| Criteria Completeness | The split preserves storage, dogfood, browser, and standalone viewer coverage. | Runner startup variance remains outside repository control. | 9 | Pass |
+| Design Coherence | The viewer job has one responsibility and removes 50 seconds from PostgreSQL. | Node setup occurs in two parallel jobs. | 10 | Pass |
+| Task Coverage | Focused contracts and hosted proof cover the workflow change. | Final `main` proof remains a post-merge task. | 9 | Pass |
+
+**Verdict:** PASS.
+
 ### Iteration 2
 
 **Evaluated at:** 2026-08-12T07:09:21Z

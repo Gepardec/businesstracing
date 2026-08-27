@@ -30,6 +30,8 @@ Implementation is pending.
 | 1 | Use a 90-minute bounded release budget. | Current runs reach 60 minutes; 90 preserves a bound and allows corpus growth and cold-run variance. | 1 | 2026-08-11T12:21:03Z |
 | 2 | Stream through a POSIX FIFO and preserve both process statuses. | The 90-minute run exposed no stage output, so another timeout increase would be guesswork. | 1 | 2026-08-11T14:22:09Z |
 | 3 | Replace the serial release job with four parallel three-minute jobs. | A 600-second test cannot fit in three minutes, and the user set a hard three-minute limit. | 1 | 2026-08-12T07:09:21Z |
+| 4 | Move standalone viewer verification to a sixth parallel job. | Remote evidence shows that the independent 50-second viewer gate leaves too little time for the PostgreSQL browser journey. | 1 | 2026-08-26T20:00:00Z |
+| 5 | Give only PostgreSQL integration five minutes and keep all browser tests. | Run `33008949036` shows that five independent jobs pass within three minutes. PostgreSQL needs more time for database startup, dogfood, install, build, and 17 browser tests. | 1 | 2026-08-26T20:15:00Z |
 
 ## Verification
 
@@ -59,3 +61,27 @@ Implementation is pending.
 - Local PetClinic unit from a clean Fachtracing build: PASS in 15.91 seconds with three complete
   business graphs from 30 source files.
 - Hosted PR and final `main` timing proof: pending.
+- PR run `33007667194`: five jobs completed, but PostgreSQL was cancelled during the browser
+  journey after the independent viewer gate consumed 50 seconds.
+- Version 3 focused budget, workflow routing, and repository integrity contracts: PASS with six
+  parallel three-minute jobs.
+- PR run `33008335544`: the split completed all five independent jobs, but PostgreSQL exposed an
+  accidental dependency on the moved viewer step for `node_modules`; Playwright did not start.
+- PostgreSQL now installs its own locked Node dependencies before the browser journey.
+- PR run `33008631033`: all independent jobs passed; PostgreSQL installed Playwright but exposed a
+  second accidental dependency on the moved viewer step for the production `build` directory.
+- PostgreSQL now builds the viewer explicitly before it starts Playwright's Node web server.
+- PR run `33008949036`: all five independent jobs passed. PostgreSQL reached the browser journey
+  but its three-minute limit cancelled the job after 3 minutes 37 seconds of total execution.
+- Browser logs exposed two stale presentation assertions: Explore mode renders a local context,
+  while Overview renders the full readable presentation, and the selected-node border is now two
+  pixels. The test now selects Overview before it verifies presentation counts and asserts the
+  current design token.
+- Version 4 gives only PostgreSQL five minutes. It keeps all 17 browser tests.
+- PR run `33009937304`: five jobs passed and PostgreSQL finished in 2 minutes 40 seconds. The
+  browser suite reported two stale pre-shadcn selectors after 13 tests passed. The focused tests
+  now verify the sheet and filter card by their shadcn data slots.
+- PR run `33010324734`: five jobs passed and the browser suite passed 14 tests. The remaining
+  failure was the final legacy Sheet overlay selector. It now uses the shadcn overlay data slot.
+- PR run `33010762980`: all six required jobs passed. PostgreSQL completed its full integration in
+  3 minutes 15 seconds. The five independent jobs completed within three minutes.

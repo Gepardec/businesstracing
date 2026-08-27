@@ -44,6 +44,9 @@ Java 21 is the application/plugin baseline. Maven 3.9.x is the supported build b
 
 - Compiler-provided source analysis APIs: approved when they avoid a third-party parser and preserve typed Java source structure.
 - Focused bytecode visitor libraries: approved when runtime path correlation requires probe injection and the library has no transitive runtime dependencies.
+- Frontend application frameworks: approved when a browser UI and server-only read boundary must ship together.
+- Interactive graph renderers and layout engines: approved when they are isolated behind one component, derive all positions from input data, and have browser contracts.
+- Database drivers: approved when server-only parameterized access to the supported production database is required.
 
 ### Rejected Patterns
 
